@@ -1,15 +1,16 @@
 # STATUS
 
-## Run 1: NOT ACCEPTED yet (2026-10-19): waiting for the CI mutation job
+## Run 1: ACCEPTED (2026-10-19)
 
 packages/num (SPEC §3). Base check first: Run 0 was ACCEPTED, `pnpm install && pnpm verify`
 was green locally on e413a0f, and ci, tex, deploy and nightly were green in CI on that commit
 (`main` and the `run-0` tag), so there was no red base to repair.
 
-Locally every criterion holds: coverage of num is 100% lines and 100% branches (gate:
-95%, enforced by `pnpm verify`); mutation score 89.56% (target 80%, reported; gated
-from v1.1). In CI, ci and deploy are green on cc502d8; the nightly `mutation-num` job
-(first run in CI) is still running, so the run is not marked ACCEPTED yet.
+Every criterion holds: coverage of num is 100% lines and 100% branches (gate: 95%,
+enforced by `pnpm verify`); mutation score 89.56% (target 80%; reported, gated from
+v1.1), the same locally and in CI; verify green locally, in a clean clone and in CI
+(ci run https://github.com/youseng/geomira/actions/runs/39224402956; all workflows
+in the table under "CI on GitHub").
 
 ## Done (each item → the test file that proves it)
 
@@ -65,7 +66,9 @@ from v1.1). In CI, ci and deploy are green on cc502d8; the nightly `mutation-num
    per-test coverage analysis, incremental) on `vitest.num.config.ts`; `pnpm
 mutation:num`; nightly.yml job `mutation-num` restores and saves the incremental
    result through the Actions cache, writes the score to the job summary and uploads the
-   HTML/JSON report (first CI run in progress, see the table below).
+   HTML/JSON report. First CI run: "num mutation score: 89.56% (609 detected, 71
+   undetected; target 80%, gated from v1.1)", incremental result saved to the cache,
+   report uploaded as artifact `mutation-report-num`.
 6. **Coverage gate**: `pnpm verify` now runs `pnpm test:coverage`; vitest.config.ts
    fails the run if packages/num drops below 95% lines or branches. Checked by adding a
    60-branch uncovered function to an internal num module: the run failed with "Coverage
@@ -183,7 +186,7 @@ Commit cc502d8 (branch claude/gallant-brahmagupta-nce2a2):
 | -------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | ci       | https://github.com/youseng/geomira/actions/runs/39224402956 | success (verify incl. coverage 100% on every num file, build, Playwright 2/2) |
 | deploy   | https://github.com/youseng/geomira/actions/runs/39224402795 | success (build job; deploy job skipped off the default branch)                |
-| nightly  | https://github.com/youseng/geomira/actions/runs/39224402905 | `test` job success; `mutation-num` job in progress                            |
+| nightly  | https://github.com/youseng/geomira/actions/runs/39224402905 | success (`test`; `mutation-num`: 89.56%, cache saved, report uploaded)        |
 
 From the ci log (verify step):
 
