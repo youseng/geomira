@@ -1,0 +1,59 @@
+name: deploy
+
+# Builds the static site with the GitHub Pages base path (/<repo>/), checks it with
+# Playwright under that base path, and deploys it from the default branch.
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GEOMIRA_BASE: /${{ github.event.repository.name }}/
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build with the Pages base path
+        run: pnpm build
+      - name: Check the base path in index.html
+        run: |
+          grep -q "src=\"${GEOMIRA_BASE}assets/" apps/web/dist/index.html
+          grep -q "href=\"${GEOMIRA_BASE}assets/" apps/web/dist/index.html
+      - name: Install Playwright browser
+        run: pnpm --filter @geomira/web exec playwright install --with-deps chromium
+      - name: End-to-end under the base path
+        run: pnpm e2e
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: apps/web/dist
+
+  deploy:
+    needs: build
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

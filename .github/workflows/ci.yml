@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The add-only guard (pnpm rules) diffs frozen tests against the latest run-* tag,
+          # so it needs full history and tags; it fails on a shallow clone by design.
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Verify (typecheck, lint, depcruise, rules, test)
+        run: pnpm verify
+      - name: Build
+        run: pnpm build
+      - name: Install Playwright browser
+        run: pnpm --filter @geomira/web exec playwright install --with-deps chromium
+      - name: End-to-end
+        run: pnpm e2e
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 14
