@@ -12,7 +12,7 @@ was no red base. Verify was green locally, in a clean clone and in CI on f873e55
 https://github.com/youseng/geomira/actions/runs/39270898956, deploy
 https://github.com/youseng/geomira/actions/runs/39270898955). On review the maintainer chose
 the continuous sqrt (ADR-0005, "Revision"; 382985f): verify is green locally and in a clean
-clone on 382985f, CI below. Kernel coverage 99.72% lines; kernel mutation score 99.47%
+clone on 382985f, and CI is green on 382985f (pull_request run) and c5ddc46 (table below). Kernel coverage 99.72% lines; kernel mutation score 99.47%
 (full run on f873e55), and 0 survivors in functions.ts after the revision (focused run). The
 test-count floor is raised from 681 to 718.
 
@@ -545,7 +545,11 @@ Mutation scores are reported, gated from v1.1 (SPEC §17 L15).
 | Workflow | Run                                                         | Result                                                                                                                                                         |
 | -------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ci       | https://github.com/youseng/geomira/actions/runs/39270898956 | completion: success on f873e55 (push): verify, build, Playwright                                                                                               |
-| ci       | https://github.com/youseng/geomira/actions/runs/39278464186 | revision: queued on 382985f (push) when this STATUS was committed; result recorded in the next commit                                                          |
+| ci       | https://github.com/youseng/geomira/actions/runs/39278468170 | revision: success on 382985f (pull_request, PR #5): verify, build, Playwright                                                                                  |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39278464233 | revision: success on 382985f (build job)                                                                                                                       |
+| ci       | https://github.com/youseng/geomira/actions/runs/39278464186 | revision: cancelled on 382985f (push; superseded by the push of c5ddc46)                                                                                       |
+| ci       | https://github.com/youseng/geomira/actions/runs/39278939447 | revision: success on c5ddc46 (push, the STATUS commit)                                                                                                         |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39278939611 | revision: success on c5ddc46 (build job)                                                                                                                       |
 | ci       | https://github.com/youseng/geomira/actions/runs/39276556007 | completion: success on b7b3c01 (push)                                                                                                                          |
 | ci       | https://github.com/youseng/geomira/actions/runs/39276607688 | completion: success on b7b3c01 (pull_request, PR #5)                                                                                                           |
 | deploy   | https://github.com/youseng/geomira/actions/runs/39276555958 | completion: success on b7b3c01 (build job)                                                                                                                     |
