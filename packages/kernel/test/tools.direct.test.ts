@@ -16,6 +16,16 @@ describe('compute with arguments it does not accept', () => {
     it(`${F.name}: every tool returns Undefined for bad argument lists`, () => {
       const p = pointOf(F.one, F.zero);
       const n = numOf(F.one);
+      const o = { x: F.zero, y: F.zero };
+      const l: Value<unknown> = {
+        kind: 'line',
+        p: o,
+        d: { x: F.one, y: F.zero },
+        lo: null,
+        hi: null,
+        chiral: false,
+      };
+      const g: Value<unknown> = { kind: 'polygon', pts: [p, { x: F.zero, y: F.one }, o] };
       const bogus: Value<unknown>[][] = [
         [],
         [n],
@@ -25,12 +35,24 @@ describe('compute with arguments it does not accept', () => {
         [n, p],
         [p, n, p],
         [p, p, n, p],
+        [p, l, p],
+        [p, l, n],
+        [l, l, l],
+        [g, p],
+        [g, g],
+        [p, p, p, n],
+        [n, n, n, n],
+        [l],
+        [p, g, p],
       ];
       for (const tool of REGISTRY.tools) {
         for (const args of bogus) {
           if (REGISTRY.resolve(tool.name, args).ok) continue;
           const v = tool.compute(F, args, { scale: 1 });
-          expect(v.kind, `${tool.name}(${args.map((a) => a.kind).join(', ')})`).toBe('undefined');
+          expect(v, `${tool.name}(${args.map((a) => a.kind).join(', ')})`).toEqual({
+            kind: 'undefined',
+            reason: `${tool.name} received arguments it does not accept`,
+          });
         }
       }
     });
@@ -46,9 +68,12 @@ describe('compute with arguments it does not accept', () => {
       chiral: false,
     };
     const P = pointOf(1, 1);
+    const good: Value<number> = { ...l, d: { x: 1, y: 0 } };
     for (const [tool, args] of [
       ['foot', [P, l]],
       ['intersect', [l, l]],
+      ['intersect', [l, good]],
+      ['intersect', [good, l]],
       ['dist', [P, l]],
     ] as const) {
       expect(REGISTRY.get(tool)?.compute(FloatField, args, { scale: 1 })).toEqual({

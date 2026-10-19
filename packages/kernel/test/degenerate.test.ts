@@ -53,7 +53,9 @@ const C = pt(-2, 5);
 function coincidentTwoPoints(tool: string): () => void {
   return () => {
     for (const F of FIELDS)
-      expect(reason(at(F, tool, A, A))).toMatch(/^undefined: coincident points/);
+      expect(reason(at(F, tool, A, A))).toBe(
+        `undefined: coincident points: ${tool}(A, B) needs A ≠ B`,
+      );
     expect(at(FloatField, tool, pt(1, 2), pt(1 + 1e-12, 2)).kind).toBe('undefined');
     expect(at(RationalField, tool, pt(1, 2), pt(1 + 1e-12, 2)).kind).toBe('line');
   };
@@ -79,6 +81,7 @@ const CASES: Record<string, Record<string, () => void>> = {
           'undefined: param: the value is below min',
         );
         expect(plain(F, at(F, 'param', num(0), num(1), num(1)))).toBe(1);
+        expect(plain(F, at(F, 'param', num(0), num(1), num(0)))).toBe(0);
       }
     },
     'a range decision inside the band → Undefined (ambiguous)': () => {
@@ -107,7 +110,9 @@ const CASES: Record<string, Record<string, () => void>> = {
   foot: {
     'foot(P, A, A) → Undefined (coincident points)': () => {
       for (const F of FIELDS)
-        expect(reason(at(F, 'foot', C, A, A))).toMatch(/^undefined: coincident points/);
+        expect(reason(at(F, 'foot', C, A, A))).toBe(
+          'undefined: coincident points: foot(P, A, B) needs A ≠ B',
+        );
     },
     'P on the line → P': () => {
       for (const F of ORDERED)
@@ -184,12 +189,14 @@ const CASES: Record<string, Record<string, () => void>> = {
   circumcenter: {
     'coincident vertices → Undefined': () => {
       for (const F of FIELDS)
-        expect(reason(at(F, 'circumcenter', A, B, A))).toMatch(/^undefined: coincident points/);
+        expect(reason(at(F, 'circumcenter', A, B, A))).toBe(
+          'undefined: coincident points: circumcenter needs three distinct vertices',
+        );
     },
     'collinear vertices → Undefined (use cline)': () => {
       for (const F of FIELDS)
-        expect(reason(at(F, 'circumcenter', A, B, pt(7, 10)))).toMatch(
-          /^undefined: collinear points/,
+        expect(reason(at(F, 'circumcenter', A, B, pt(7, 10)))).toBe(
+          'undefined: collinear points: circumcenter needs a non-degenerate triangle',
         );
       expect(at(FloatField, 'circumcenter', A, B, pt(7, 10 + 1e-12)).kind).toBe('undefined');
       expect(at(RationalField, 'circumcenter', A, B, pt(7, 10 + 1e-12)).kind).toBe('point');
@@ -206,12 +213,14 @@ const CASES: Record<string, Record<string, () => void>> = {
   orthocenter: {
     'coincident vertices → Undefined': () => {
       for (const F of FIELDS)
-        expect(reason(at(F, 'orthocenter', A, A, B))).toMatch(/^undefined: coincident points/);
+        expect(reason(at(F, 'orthocenter', A, A, B))).toBe(
+          'undefined: coincident points: orthocenter needs three distinct vertices',
+        );
     },
     'collinear vertices → Undefined': () => {
       for (const F of FIELDS)
-        expect(reason(at(F, 'orthocenter', A, B, pt(7, 10)))).toMatch(
-          /^undefined: collinear points/,
+        expect(reason(at(F, 'orthocenter', A, B, pt(7, 10)))).toBe(
+          'undefined: collinear points: orthocenter needs a non-degenerate triangle',
         );
     },
   },
@@ -278,7 +287,9 @@ const CASES: Record<string, Record<string, () => void>> = {
   ratio: {
     'C = D → Undefined (coincident points)': () => {
       for (const F of FIELDS)
-        expect(reason(at(F, 'ratio', A, B, C, C))).toMatch(/^undefined: coincident points/);
+        expect(reason(at(F, 'ratio', A, B, C, C))).toBe(
+          'undefined: coincident points: ratio(A, B, C, D) needs C ≠ D',
+        );
     },
     'A = B → 0': () => {
       for (const F of ORDERED) expect(plain(F, at(F, 'ratio', A, A, A, B))).toBe(0);
@@ -287,8 +298,12 @@ const CASES: Record<string, Record<string, () => void>> = {
   angle: {
     'A = B or C = B → Undefined': () => {
       for (const F of FIELDS) {
-        expect(reason(at(F, 'angle', A, A, B))).toMatch(/^undefined: coincident points/);
-        expect(reason(at(F, 'angle', A, B, B))).toMatch(/^undefined: coincident points/);
+        expect(reason(at(F, 'angle', A, A, B))).toBe(
+          'undefined: coincident points: angle(A, B, C) needs A ≠ B',
+        );
+        expect(reason(at(F, 'angle', A, B, B))).toBe(
+          'undefined: coincident points: angle(A, B, C) needs C ≠ B',
+        );
       }
     },
     'collinear: 0° or 180°': () => {
@@ -304,8 +319,12 @@ const CASES: Record<string, Record<string, () => void>> = {
   dangle: {
     'A = B or C = B → Undefined': () => {
       for (const F of FIELDS) {
-        expect(reason(at(F, 'dangle', A, A, B))).toMatch(/^undefined: coincident points/);
-        expect(reason(at(F, 'dangle', A, B, B))).toMatch(/^undefined: coincident points/);
+        expect(reason(at(F, 'dangle', A, A, B))).toBe(
+          'undefined: coincident points: dangle(A, B, C) needs A ≠ B',
+        );
+        expect(reason(at(F, 'dangle', A, B, B))).toBe(
+          'undefined: coincident points: dangle(A, B, C) needs C ≠ B',
+        );
       }
     },
     'collinear → 0': () => {
@@ -321,7 +340,9 @@ const CASES: Record<string, Record<string, () => void>> = {
       expect(plain(FloatField, at(FloatField, 'dangle', pt(1, 0), pt(0, 0), pt(1, 1e-12)))).toBe(0);
     },
     'mod p → Inexact': () => {
-      expect(at(ModPField, 'dangle', B, A, C).kind).toBe('inexact');
+      expect(reason(at(ModPField, 'dangle', B, A, C))).toBe(
+        'inexact: directed angles need an order, which ModPField lacks',
+      );
     },
   },
   area: {
@@ -338,9 +359,16 @@ const CASES: Record<string, Record<string, () => void>> = {
   polygon: {
     'consecutive coincident vertices → Undefined': () => {
       for (const F of FIELDS) {
-        expect(reason(at(F, 'polygon', A, A, B))).toMatch(/^undefined: coincident points/);
-        expect(reason(at(F, 'polygon', A, B, C, A))).toMatch(/^undefined: coincident points/);
+        expect(reason(at(F, 'polygon', A, A, B))).toBe(
+          'undefined: coincident points: polygon vertices 1 and 2 coincide',
+        );
+        expect(reason(at(F, 'polygon', A, B, C, A))).toBe(
+          'undefined: coincident points: polygon vertices 4 and 1 coincide',
+        );
       }
+      expect(reason(at(FloatField, 'polygon', B, A, A))).toBe(
+        'undefined: coincident points: polygon vertices 2 and 3 coincide',
+      );
       expect(at(FloatField, 'polygon', A, B, A, C).kind).toBe('polygon');
     },
     'collinear vertices → a flat polygon': () => {
