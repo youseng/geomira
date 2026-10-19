@@ -13,11 +13,13 @@ import { RationalField } from '@geomira/num/rational-field';
 import { evalContextFor } from './context';
 import { MAIN_LAYER_ID, emptyDocument, type Document } from './document';
 import { evaluate } from './evaluate';
-import { call, lit, type Expr } from './expr';
+import { call, lit, type Expr, type Selector } from './expr';
+import { formatExpr, formatSelector } from './selector';
 import type { Registry } from './registry';
 import {
   formatSignature,
   type ExampleArg,
+  type ExampleSelector,
   type ToolExample,
   type ToolFamily,
   type ToolSpec,
@@ -44,9 +46,23 @@ function argExpr(a: ExampleArg): Expr {
 /** The id of the only object of an example document. */
 const EXAMPLE_ID = 1;
 
-/** A one-object document `x = tool(args…)` for an example. */
+function selectorOf(s: ExampleSelector): Selector {
+  switch (s.kind) {
+    case 'along':
+    case 'orient':
+      return { kind: s.kind, sign: s.sign };
+    case 'other':
+    case 'near':
+    case 'far_from':
+      return { kind: s.kind, p: argExpr(s.p) };
+    default:
+      return assertNever(s, 'example selector');
+  }
+}
+
+/** A one-object document `x = tool(args…, selectors…)` for an example. */
 export function exampleDocument(tool: ToolSpec, example: ToolExample): Document {
-  const def = call(tool.name, example.args.map(argExpr));
+  const def = call(tool.name, example.args.map(argExpr), (example.selectors ?? []).map(selectorOf));
   const x = { id: EXAMPLE_ID, name: 'x', def, style: {}, layers: [MAIN_LAYER_ID] };
   return { ...emptyDocument(), nextId: EXAMPLE_ID + 1, objects: [x] };
 }
@@ -62,6 +78,11 @@ export function runExample<T>(
   const c = evalContextFor(doc);
   if (!c.ok) return undef(c.reason);
   return evaluate(doc, registry, F, c.ctx).values.get(EXAMPLE_ID) ?? undef('no example value');
+}
+
+/** An example expression as text (example documents have no named objects). */
+function exprText(e: Expr): string {
+  return formatExpr(e, () => undefined);
 }
 
 function argText(a: ExampleArg): string {
@@ -134,7 +155,8 @@ function toolSection(registry: Registry, t: ToolSpec): string[] {
   for (const d of t.degenerate) lines.push(`  - ${d}`);
   lines.push('- Examples:');
   for (const e of t.examples) {
-    const callText = `${t.name}(${e.args.map(argText).join(', ')})`;
+    const sels = (e.selectors ?? []).map((s) => formatSelector(selectorOf(s), exprText));
+    const callText = `${t.name}(${[...e.args.map(argText), ...sels].join(', ')})`;
     const q = runExample(registry, t, e, RationalField);
     const shown =
       q.kind === 'inexact'

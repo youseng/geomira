@@ -13,17 +13,27 @@ import type { EvalContext } from './tool';
 import { undef, type Circle, type Line, type Undefined, type Vec } from './value';
 
 /**
- * |P − O| − r as a length: (d² − r²) / (d + r) when both roots are representable
- * (always in FloatField), else d² − r² (exact fields, where only its zero and sign are
- * used). Degenerate: none (r2 > 0 is the caller's check, so d + r > 0).
+ * √a2 − √b2 as a length, from two squares a2, b2 ≥ 0: (a2 − b2) / (√a2 + √b2) when both
+ * roots are representable (always in FloatField), else a2 − b2 (exact fields, where only
+ * its zero and sign are used; they are the same). Measuring a discriminant this way keeps
+ * a rounding residue of a zero tiny (no square root of it is taken) and judges small and
+ * large circles alike (ADR-0004 item 1, ADR-0006). Degenerate: a2 = b2 = 0 → 0.
  */
-function circleGap<T>(F: Field<T>, P: Vec<T>, c: Circle<T>): T {
+export function rootGap<T>(F: Field<T>, a2: T, b2: T): T {
+  const raw = F.sub(a2, b2);
+  const [a, b] = [F.sqrt(a2), F.sqrt(b2)];
+  if (isInexact(a) || isInexact(b)) return raw;
+  const sum = F.add(a, b);
+  return F.eq(sum, F.zero) ? raw : F.div(raw, sum);
+}
+
+/**
+ * |P − O| − r as a length (rootGap of d² and r²). Degenerate: none (r2 > 0 is the
+ * caller's check, so d + r > 0).
+ */
+export function circleGap<T>(F: Field<T>, P: Vec<T>, c: Circle<T>): T {
   const w = vSub(F, P, c.c);
-  const d2 = vDot(F, w, w);
-  const raw = F.sub(d2, c.r2);
-  const [d, r] = [F.sqrt(d2), F.sqrt(c.r2)];
-  if (isInexact(d) || isInexact(r)) return raw;
-  return F.div(raw, F.add(d, r));
+  return rootGap(F, vDot(F, w, w), c.r2);
 }
 
 function decide(s: FieldSign, zero: () => boolean, what: string): Undefined | undefined {

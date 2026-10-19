@@ -15,6 +15,7 @@ import { MEASURE_TOOLS } from './measures';
 import { GLIDER_TOOLS } from './on';
 import { OTHER_TOOLS } from './other';
 import { POINT_TOOLS } from './points';
+import { TANGENT_FROM_TOOLS } from './tangent-from';
 import { TANGENT_TOOLS } from './tangents';
 import { TRIANGLE_TOOLS } from './triangle';
 
@@ -34,4 +35,5 @@ export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze([
   ...FUNCTION_TOOLS,
   NINEPOINT_CENTER_TOOL,
   ...CIRCLE_MEASURE_TOOLS,
+  ...TANGENT_FROM_TOOLS,
 ]);

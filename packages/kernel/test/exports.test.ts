@@ -13,6 +13,8 @@ import * as invariants from '../src/invariants';
 import * as layers from '../src/layers';
 import * as names from '../src/names';
 import * as registry from '../src/registry';
+import * as selector from '../src/selector';
+import * as selectorCheck from '../src/selector-check';
 import * as tool from '../src/tool';
 import * as value from '../src/value';
 
@@ -82,6 +84,20 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     names: ['exactness', 'exampleDocument', 'formatValue', 'renderToolDocs', 'runExample'],
   },
   './glider': { module: glider, names: ['dragParameter', 'gliderParameter', 'gliderPoint'] },
+  './selector': {
+    module: selector,
+    names: ['formatExpr', 'formatSelector', 'isOrientationDependent', 'selectorClass'],
+  },
+  './selector-check': {
+    module: selectorCheck,
+    names: [
+      'bareIndexMessage',
+      'bareIndexProblem',
+      'callDiagnostics',
+      'selectorDiagnostics',
+      'staticKinds',
+    ],
+  },
 };
 
 describe('@geomira/kernel subpath surface', () => {

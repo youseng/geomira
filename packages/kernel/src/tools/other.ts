@@ -13,7 +13,7 @@ import { vAdd, vDot, vScale, vSub } from '../geom';
 import { requireOnCircle, requireOnLine } from '../incidence';
 import { pointOf, undef, type Circle, type Line, type Point, type Value } from '../value';
 import { badArgs, circleAt, degenerateCircle, degenerateLine, lineAt, pointAt } from './args';
-import { outOfRange } from './intersect';
+import { outOfRange } from './range';
 
 /** The parameter of X's projection on l (X ↦ (X − p)·d / |d|²). */
 function along<T>(F: Field<T>, l: Line<T>, X: { readonly x: T; readonly y: T }): T {

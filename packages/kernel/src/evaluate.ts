@@ -10,10 +10,21 @@ import { inexact, isInexact, type Field } from '@geomira/num/field';
 import { contextProblem } from './context';
 import { FLOAT_ARG_LIMIT } from './limits';
 import type { Document } from './document';
-import { refsOf, type CallExpr, type Expr } from './expr';
+import { refsOf, selectorExprs, type CallExpr, type Expr } from './expr';
 import type { Registry } from './registry';
+import { bareIndexProblem } from './selector-check';
+import { formatExpr, formatSelector, type EvaluatedSelector } from './selector';
 import type { EvalContext } from './tool';
-import { isKnownKind, isUnavailable, numbersOf, numOf, undef, type Value } from './value';
+import {
+  isKnownKind,
+  isUnavailable,
+  numbersOf,
+  numOf,
+  undef,
+  type Inexact,
+  type Undefined,
+  type Value,
+} from './value';
 
 export interface Evaluation<T> {
   readonly field: Field<T>;
@@ -34,9 +45,10 @@ interface Env<T> {
 /**
  * Every object's value. Degenerate cases: an invalid ctx → every object Undefined with
  * the reason; an unknown tool, a reference to a missing or later object, arguments no
- * signature accepts, selectors on a tool that takes none → Undefined for that object;
- * an Undefined argument → Undefined ("A is undefined"); an Inexact argument → that
- * Inexact; FloatField arguments beyond 2^200 or a non-finite FloatField result → Inexact.
+ * signature accepts (a bare index on a branchable tool: with a hint), selectors on a tool
+ * that takes none → Undefined for that object; an Undefined argument or selector
+ * argument → Undefined ("A is undefined"); an Inexact one → that Inexact; FloatField
+ * arguments beyond 2^200 or a non-finite FloatField result → Inexact.
  */
 export function evaluate<T>(
   doc: Document,
@@ -122,22 +134,47 @@ function evalExpr<T>(e: Expr, env: Env<T>): Value<T> {
   }
 }
 
-function evalCall<T>(e: CallExpr, env: Env<T>): Value<T> {
-  if (env.registry.get(e.tool) === undefined) return undef(`unknown tool "${e.tool}"`);
-  if (e.selectors.length > 0) return undef(`${e.tool} takes no selectors`);
-  const args = e.args.map((a) => evalExpr(a, env));
-  for (const [i, a] of args.entries()) {
+/** The values of `exprs`, or the first unavailable one ("A is undefined" for a named A). */
+function evalAll<T>(exprs: readonly Expr[], env: Env<T>): Value<T>[] | Undefined | Inexact {
+  const values = exprs.map((a) => evalExpr(a, env));
+  for (const [i, a] of values.entries()) {
     if (!isUnavailable(a)) continue;
-    const src = e.args[i];
+    const src = exprs[i];
     const name = src?.kind === 'ref' ? env.names.get(src.id) : undefined;
     return a.kind === 'undefined' && name !== undefined ? undef(`${name} is undefined`) : a;
   }
+  return values;
+}
+
+/** The evaluated selectors of a call, or the first unavailable selector argument. */
+function evalSelectors<T>(e: CallExpr, env: Env<T>): EvaluatedSelector<T>[] | Undefined | Inexact {
+  const out: EvaluatedSelector<T>[] = [];
+  const show = (x: Expr) => formatExpr(x, (id) => env.names.get(id));
+  for (const selector of e.selectors) {
+    const args = evalAll(selectorExprs(selector), env);
+    if (!Array.isArray(args)) return args;
+    out.push({ selector, args, text: formatSelector(selector, show) });
+  }
+  return out;
+}
+
+function evalCall<T>(e: CallExpr, env: Env<T>): Value<T> {
+  const tool = env.registry.get(e.tool);
+  if (tool === undefined) return undef(`unknown tool "${e.tool}"`);
+  if (e.selectors.length > 0 && tool.candidates === undefined) {
+    return undef(`${e.tool} takes no selectors`);
+  }
+  const args = evalAll(e.args, env);
+  if (!Array.isArray(args)) return args;
   const r = env.registry.resolve(e.tool, args);
-  if (!r.ok) return undef(r.reason);
-  if (!args.every((a) => inFloatRange(env.F, a, FLOAT_ARG_LIMIT))) {
+  if (!r.ok) return undef(bareIndexProblem(e, args, env.registry) ?? r.reason);
+  const selectors = evalSelectors(e, env);
+  if (!Array.isArray(selectors)) return selectors;
+  const inputs = [...args, ...selectors.flatMap((s) => s.args)];
+  if (!inputs.every((a) => inFloatRange(env.F, a, FLOAT_ARG_LIMIT))) {
     return inexact(`${e.tool}: an argument is too large for double-precision geometry`);
   }
-  const out = r.tool.compute(env.F, args, env.ctx);
+  const out = r.tool.compute(env.F, args, env.ctx, selectors);
   return inFloatRange(env.F, out, Infinity)
     ? out
     : inexact(`${e.tool}: the result is beyond the double range`);
