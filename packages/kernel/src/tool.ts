@@ -1,7 +1,7 @@
 /**
  * ToolSpec (SPEC §6.1). A tool is data plus ONE field-generic `compute<T>`; nothing
- * outside the registry enumerates tools. Run 2 has no branchable tool, so ToolSpec has no
- * `candidates` and `compute` takes no selectors yet (ADR-0003, item 10).
+ * outside the registry enumerates tools. No tool up to Run 3a is branchable, so ToolSpec
+ * has no `candidates` and `compute` takes no selectors yet (ADR-0003, item 10).
  */
 import type { Field } from '@geomira/num/field';
 import type { ToleranceContext } from '@geomira/num/tolerance';
@@ -27,7 +27,8 @@ export type ExportMapping = 'numeric';
 
 /**
  * An example argument, as exact text: a point `[x, y]`, a number `"2/3"`, a line-like
- * object through two points, or a polygon.
+ * object through two points, a polygon, or any nested call (`circle(O, A)` as
+ * `{ call: 'circle', args: [O, A] }`).
  */
 export type ExampleArg =
   | readonly [string, string]
@@ -36,7 +37,8 @@ export type ExampleArg =
       readonly through: readonly [readonly [string, string], readonly [string, string]];
       readonly as: 'line' | 'segment' | 'ray';
     }
-  | { readonly polygon: readonly (readonly [string, string])[] };
+  | { readonly polygon: readonly (readonly [string, string])[] }
+  | { readonly call: string; readonly args: readonly ExampleArg[] };
 
 export interface ToolExample {
   readonly args: readonly ExampleArg[];

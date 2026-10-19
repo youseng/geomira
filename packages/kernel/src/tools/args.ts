@@ -8,6 +8,7 @@ import type { EvalContext } from '../tool';
 import { isZeroVec } from '../geom';
 import {
   undef,
+  type Circle,
   type Line,
   type Num,
   type Point,
@@ -29,6 +30,11 @@ export function pointAt<T>(args: readonly Value<T>[], i: number): Point<T> | und
 export function lineAt<T>(args: readonly Value<T>[], i: number): Line<T> | undefined {
   const v = args[i];
   return v?.kind === 'line' ? v : undefined;
+}
+
+export function circleAt<T>(args: readonly Value<T>[], i: number): Circle<T> | undefined {
+  const v = args[i];
+  return v?.kind === 'circle' ? v : undefined;
 }
 
 export function numAt<T>(args: readonly Value<T>[], i: number): Num<T> | undefined {
@@ -76,4 +82,19 @@ export function degenerateLine<T>(
   ctx: EvalContext,
 ): Undefined | undefined {
   return isZeroVec(F, l.d, ctx) ? undef('the line has no direction') : undefined;
+}
+
+/**
+ * A circle's squared radius is positive (r2 > 0, SPEC §4). Circles built by the v1 tools
+ * always satisfy this; the check keeps every division and square root total for any
+ * Circle value. Degenerate: r2 zero (as an area) or negative → Undefined.
+ */
+export function degenerateCircle<T>(
+  F: Field<T>,
+  c: Circle<T>,
+  ctx: EvalContext,
+): Undefined | undefined {
+  return F.isZero(c.r2, 'area', ctx) || F.sign(c.r2, 'area', ctx) === -1
+    ? undef('the circle has no positive radius')
+    : undefined;
 }
