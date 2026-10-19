@@ -110,3 +110,103 @@ describe('compute on malformed circle and line values', () => {
     }
   });
 });
+
+describe('the Run 3a tools on argument lists their signatures reject', () => {
+  for (const F of [FloatField, RationalField, ModPField] as Field<unknown>[]) {
+    it(`${F.name}: compute returns "<tool> received arguments it does not accept"`, () => {
+      let rejected = 0;
+      for (const tool of REGISTRY.tools) {
+        for (const args of lists(pool(F), 3)) {
+          if (REGISTRY.resolve(tool.name, args).ok) continue;
+          expect(tool.compute(F, args, { scale: 1 }), tool.name).toEqual({
+            kind: 'undefined',
+            reason: `${tool.name} received arguments it does not accept`,
+          });
+          rejected += 1;
+        }
+      }
+      expect(rejected).toBeGreaterThan(REGISTRY.tools.length * 1000);
+      // One argument too many for each Run 3a signature (a valid list plus a point).
+      const [P, , , n, c] = pool(F);
+      const L = pool(F)[10];
+      if (P === undefined || n === undefined || c === undefined || L === undefined)
+        throw new Error('pool');
+      for (const [tool, args] of [
+        ['on', [c, n, n, n]],
+        ['on', [L, n, P]],
+        ['other', [L, c, P, P]],
+        ['other', [c, c, P, P]],
+        ['tangent', [P, c, P]],
+        ['circle', [P, n, P, P]],
+        ['incenter', [P, P, P, P]],
+      ] as const) {
+        expect(REGISTRY.resolve(tool, args).ok).toBe(false);
+        expect(REGISTRY.get(tool)?.compute(F, args, { scale: 1 })).toEqual({
+          kind: 'undefined',
+          reason: `${tool} received arguments it does not accept`,
+        });
+      }
+    });
+  }
+});
+
+describe('guards that documents rarely reach', () => {
+  const circle = (F: Field<unknown>, r: Value<unknown>) =>
+    REGISTRY.get('circle')?.compute(F, [{ kind: 'point', x: F.zero, y: F.zero }, r], { scale: 1 });
+
+  it('circle(O, r): a zero radius without an exact value (mod p), and an exact zero that floats round to −1', () => {
+    expect(circle(ModPField as Field<unknown>, { kind: 'number', v: 0n })).toEqual({
+      kind: 'undefined',
+      reason: 'zero radius: circle(O, r) needs r > 0',
+    });
+    expect(circle(ModPField as Field<unknown>, { kind: 'number', v: 3n })).toMatchObject({
+      r2: 9n,
+    });
+    const exactZero = { kind: 'number', v: -1, exact: { num: 0n, den: 1n } } as const;
+    expect(circle(FloatField as Field<unknown>, exactZero)).toEqual({
+      kind: 'undefined',
+      reason: 'zero radius: circle(O, r) needs r > 0',
+    });
+  });
+
+  it('the excenter of a triangle flatter than its side lengths can resolve', () => {
+    const ex = (h: number) => {
+      const P = (x: number, y: number): Value<number> => ({ kind: 'point', x, y });
+      return REGISTRY.get('excenter')?.compute(FloatField, [P(0, h), P(-1, 0), P(1, 0)], {
+        scale: 2,
+      });
+    };
+    expect(ex(1e-4)).toEqual({
+      kind: 'undefined',
+      reason: 'ambiguous: excenter: the triangle is within the band of flat',
+    });
+    expect(ex(3e-5)).toEqual({
+      kind: 'undefined',
+      reason: 'collinear points: excenter needs a non-degenerate triangle',
+    });
+    expect(ex(1)).toMatchObject({ kind: 'point' });
+  });
+
+  it('bisectors: one component of w exactly 0 is a regular direction; the band in either component', () => {
+    const P = (x: number, y: number): Value<number> => ({ kind: 'point', x, y });
+    const bis = (tool: string, a: Value<number>, c: Value<number>) =>
+      REGISTRY.get(tool)?.compute(FloatField, [a, P(0, 0), c], { scale: 2 });
+    expect(bis('bisector', P(-1, 1), P(1, 1))).toMatchObject({
+      kind: 'line',
+      d: { x: 0 },
+      chiral: false,
+    });
+    expect(bis('bisector', P(1, -1), P(1, 1))).toMatchObject({
+      kind: 'line',
+      d: { y: 0 },
+      chiral: false,
+    });
+    for (const tool of ['bisector', 'ext_bisector']) {
+      expect(bis(tool, P(0, -1), P(1e-8, 1))).toEqual({
+        kind: 'undefined',
+        reason: `ambiguous: ${tool}: the angle is within the band of a straight angle`,
+      });
+      expect(bis(tool, P(-1, 0), P(1, 1e-8))).toMatchObject({ kind: 'undefined' });
+    }
+  });
+});
