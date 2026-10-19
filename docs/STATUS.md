@@ -1,5 +1,230 @@
 # STATUS
 
+## Run 1: NOT ACCEPTED yet (2026-10-19): waiting for the CI mutation job
+
+packages/num (SPEC §3). Base check first: Run 0 was ACCEPTED, `pnpm install && pnpm verify`
+was green locally on e413a0f, and ci, tex, deploy and nightly were green in CI on that commit
+(`main` and the `run-0` tag), so there was no red base to repair.
+
+Locally every criterion holds: coverage of num is 100% lines and 100% branches (gate:
+95%, enforced by `pnpm verify`); mutation score 89.56% (target 80%, reported; gated
+from v1.1). In CI, ci and deploy are green on cc502d8; the nightly `mutation-num` job
+(first run in CI) is still running, so the run is not marked ACCEPTED yet.
+
+## Done (each item → the test file that proves it)
+
+1. **tolerance.ts** (SPEC §3.1): EPS, BAND, FLOOR_MIN, FLOOR_MAX, FLOOR_DELTA,
+   FLOOR_SAMPLES, TRUE_FACTOR, FALSE_FACTOR, FALSE_ABS, MAX_SCALE; `toleranceContext`
+   (scale = max(1, diameter)); `isZeroLen`/`isZeroArea`/`isZeroDimless`/`isZero`
+   (inclusive at EPS·scale^k); `sign3` (0 up to EPS·scale^k, `'ambiguous'` below
+   BAND·scale^k, ±1 from there); `noiseFloor`; `residualThresholds`;
+   `classifyResidual` → `'true' | 'false' | 'ambiguous' | 'ill-conditioned'`.
+   → `packages/num/test/tolerance.test.ts`: every threshold tested at, one ulp below and
+   one ulp above, at figure diameters 1e-3, 1 and 1e3 and for length, area and
+   dimensionless quantities; floor = 0 (clamped by FLOOR_MIN, residual 0 → true);
+   FALSE_ABS vs 1e4·floor; FLOOR_MAX boundary; the laws "a residual of 1e-10 is never
+   FALSE whatever the floor" (5,000 floors) and "the class is monotone in the residual";
+   "no decision flips from −1 to 1 without passing through 0 or ambiguous"; decisions
+   invariant under rescaling; NaN/±Infinity → RangeError (zero tests) or ill-conditioned
+   (classification).
+2. **rng.ts** (SPEC §3.2): xoshiro128\*\* with explicit state (`createRng`, `state`,
+   `restoreRng`), `deriveSeed` for per-sample streams, `nextFloat` (53 bits), unbiased
+   `nextInt`, `uniform`, `gaussian` (Box–Muller), `uniformBigInt`, and `cryptoSource`
+   wrapping a host-supplied `getRandomValues` (pure packages read no globals).
+   → `packages/num/test/rng.test.ts`: reproducible streams, hand-checked xoshiro128\*\*
+   outputs from state [1, 2, 3, 4], pinned outputs for several seeds (a verdict's seed
+   must reproduce across versions), resume from a snapshot, independence of generators,
+   chi-square and moment checks (uniform, nextInt, bits, gaussian mean/variance/68–95),
+   rejection-sampling bias check, crypto wrapper with a fake and with Node's webcrypto.
+3. **rational.ts** (SPEC §3.3, §3.4): BigInt fractions in normal form, `parseRational`
+   ("0.1", "2/3", "-3/4", "+5"; rejects "1/0", "1e3", ".5", whitespace…), arithmetic,
+   `compare`, `toNumber` (correctly rounded: ties to even, gradual underflow, RangeError
+   beyond the double range) and `tryToNumber`, exact `fromNumber`, `bitSize`,
+   `sqrtExact`. → `packages/num/test/rational.test.ts`: `toNumber` equals IEEE division
+   for operands below 2^53 (5,000 cases: IEEE division is correctly rounded, so this is an
+   independent oracle); nearest-double check done exactly in rational arithmetic on
+   [1e-12, 1e12] with numerators and denominators of 80 to 190 bits (so within half an ulp,
+   better than the one ulp asked); ties, carries into the next binade, subnormals,
+   MAX_VALUE and overflow;
+   `fromNumber` round trip of 3,000 random bit patterns.
+4. **field.ts and the three fields** (SPEC §3.3): `Field<T>` with partial `sqrt`,
+   `sin`/`cos`/`atan2` (degrees) returning `Inexact`; `FloatField` (tolerance-aware
+   `isZero`/`sign`), `RationalField` (exact; sqrt of squares of rationals; exact trig at
+   multiples of 30° where rational, atan2 on axes and diagonals), `ModPField`
+   (p = 2^61 − 1, `sign` → `'none'`, sqrt/trig `Inexact`); `Complex<T>` (complex.ts);
+   `withDivisorLog`, `withSqrtLog`; `mapExact`/`allExact` for propagation. QuadExt,
+   PolyFractionField, DegreeBoundField are documented as reserved in
+   packages/num/README.md (no code).
+   → `packages/num/test/field-conformance.test.ts` (one generic suite run against all
+   three fields: addition and multiplication axioms, distributivity, inverses, division
+   by zero, zero/one/sign, `fromRational` homomorphism, sqrt of squares, trig at 0,
+   `Inexact` propagation with its first reason, both logs and their composition,
+   Complex<T> ring laws, conjugation, multiplicative norm, division, powers);
+   `float-field.test.ts`, `rational-field.test.ts`, `modp.test.ts`, `field.test.ts`.
+5. **Stryker** for packages/num: `stryker.num.json` (vitest runner, TypeScript checker,
+   per-test coverage analysis, incremental) on `vitest.num.config.ts`; `pnpm
+mutation:num`; nightly.yml job `mutation-num` restores and saves the incremental
+   result through the Actions cache, writes the score to the job summary and uploads the
+   HTML/JSON report (first CI run in progress, see the table below).
+6. **Coverage gate**: `pnpm verify` now runs `pnpm test:coverage`; vitest.config.ts
+   fails the run if packages/num drops below 95% lines or branches. Checked by adding a
+   60-branch uncovered function to an internal num module: the run failed with "Coverage
+   for lines (84.5%) does not meet … threshold (95%)" (exit 1); the probe was removed.
+7. **Public surface** (ADR-0002): one subpath export per module (`@geomira/num/field`,
+   …); the root entry still exports only `VERSION`, so the frozen
+   `packages/num/test/index.test.ts` is untouched. → `packages/num/test/exports.test.ts`
+   (exact names per module, export targets exist, exported constants and fields frozen).
+8. `assertNever` shared from `@geomira/num/assert` → `packages/num/test/assert.test.ts`;
+   internal BigInt helpers → `packages/num/test/bigint.test.ts`.
+9. docs/test-count.txt raised from 73 to 309.
+
+## Not done
+
+Nothing in Run 1's scope. Not started (later runs): any kernel, claims or other package
+code. The `run-1` tag is for the maintainer to place on the commit that records
+acceptance, as with `run-0`.
+
+## Known bugs
+
+None known.
+
+## Uncertain
+
+- "Tests … at scales 1e-3, 1, 1e3": SPEC §3.1 says `ctx.scale` is the bounding-box
+  diameter and "≥ 1", so a figure of diameter 1e-3 gets scale 1 and absolute thresholds
+  (EPS = 1e-9 for lengths). The tests read "scale 1e-3" as "figure diameter 1e-3"
+  under that clamp. If very small figures should get relative thresholds, SPEC needs to
+  drop the clamp.
+- MAX_SCALE = 1e100 is new (ADR-0002); SPEC sets no upper bound. Above it EPS·scale²
+  heads towards the double range, so the context constructor rejects it.
+- The exact special values rely on Niven's theorem (at a rational number of degrees, sin
+  is rational only for 0, ±1/2, ±1; tan only for 0, ±1). I am confident of both
+  statements; the tests check every integer angle in [−720°, 720°] against FloatField.
+- FloatField's sign is the banded `sign3` (0 ≤ EPS·scale^k < ambiguous < BAND·scale^k ≤
+  ±1). SPEC fixes EPS for zero tests and BAND for decisions but not this exact layering;
+  ADR-0002 records it.
+- Mutation score: of the 71 undetected mutants, 43 are error-message strings or `''`
+  defaults of regex groups that always participate (a `noUncheckedIndexedAccess`
+  artefact); the other 28 were analysed one by one and are equivalent (examples:
+  `×(±1)` vs `÷(±1)`; `<` vs `≤` where equality cannot occur; removing a zero-divisor
+  check that `rational(…, 0)` repeats; `t ≥ 0` → `false` in `tryToNumber`, since a
+  negative BigInt shift is a right shift and ⌊n/2^t⌋ < d ⟺ n < d·2^t). Two mutants are
+  equivalent only on V8 (Math.atan2 is exact on diagonals there) or only with
+  probability 1 − 2^−32 per draw (`w < limit` vs `w ≤ limit` in `nextInt`).
+
+## Changed frozen tests
+
+None. (`packages/num/test/index.test.ts`, frozen at run-0, is unchanged; ADR-0002
+explains why the API lives in subpath modules.)
+
+## Acceptance command output
+
+### Local (commit cc502d8)
+
+```
+$ pnpm verify
+> pnpm typecheck && pnpm lint && pnpm depcruise && pnpm rules && pnpm test:coverage
+(8 workspace projects + tests: typecheck Done)
+All matched files use Prettier code style!
+✔ no dependency violations found (51 modules, 85 dependencies cruised)
+ok   tolerance: 115 files scanned, 0 violation(s)
+ok   file-length: 115 files scanned, 0 violation(s)
+ok   test-count: 309 tests, floor 309, 0 violation(s)
+ok   disabled-tests: 115 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-0, 0 violation(s)
+ok   forbidden-words: 115 files scanned, 0 violation(s)
+ Test Files  29 passed (29)
+      Tests  309 passed (309)
+=============================== Coverage summary ===============================
+Statements   : 100% ( 391/391 )
+Branches     : 100% ( 248/248 )
+Functions    : 100% ( 120/120 )
+Lines        : 100% ( 339/339 )
+```
+
+The same in a clean clone (`git clone` → `pnpm install --frozen-lockfile` → `pnpm
+verify` → `pnpm build`, all exit 0; build: "✓ built in 1.23s").
+
+### Mutation testing (`pnpm mutation:num`, local, commit cc502d8)
+
+```
+-------------------|------------------|----------|-----------|------------|----------|----------|
+                   | % Mutation score |          |           |            |          |          |
+File               |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+-------------------|--------|---------|----------|-----------|------------|----------|----------|
+All files          |  89.56 |   90.22 |      580 |        29 |         66 |        5 |      242 |
+ assert.ts         | 100.00 |  100.00 |        2 |         0 |          0 |        0 |        1 |
+ bigint.ts         |  92.16 |   92.16 |       38 |         9 |          4 |        0 |       13 |
+ complex.ts        |  95.24 |   95.24 |       17 |         3 |          1 |        0 |       20 |
+ field.ts          | 100.00 |  100.00 |        8 |         0 |          0 |        0 |       31 |
+ float-field.ts    |  86.76 |   86.76 |       59 |         0 |          9 |        0 |       30 |
+ modp.ts           |  91.30 |   91.30 |       21 |         0 |          2 |        0 |       16 |
+ rational-field.ts |  86.36 |   86.36 |       19 |         0 |          3 |        0 |       22 |
+ rational.ts       |  87.56 |   89.55 |      196 |         1 |         23 |        5 |       53 |
+ rng.ts            |  92.50 |   92.50 |       95 |        16 |          9 |        0 |       23 |
+ tolerance.ts      |  89.52 |   89.52 |       94 |         0 |         11 |        0 |       30 |
+ trig.ts           |  88.57 |   88.57 |       31 |         0 |          4 |        0 |        3 |
+-------------------|--------|---------|----------|-----------|------------|----------|----------|
+```
+
+"errors" are mutants rejected by the TypeScript checker (not counted in the score). The
+first full run scored 86.72%; reviewing its survivors found real gaps (rounding carry
+at a non-maximal exponent, `sin(30/7°)` taken for `sin(30°)` if the integer check were
+dropped, the −180° fold in atan2 asserted only with ≤, `sqrt(Infinity)`, MAX_SCALE in a
+hand-made context, zero words in a restored RNG state, a rejection-sampling bias
+invisible at n = 2^31 + 1, a 4th bucket hiding in a chi-square, `isInexact` on other
+tagged values), each closed by a test in this run. An incremental re-run takes ~15 s.
+
+### CI on GitHub
+
+Commit cc502d8 (branch claude/gallant-brahmagupta-nce2a2):
+
+| Workflow | Run                                                         | Result                                                                        |
+| -------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| ci       | https://github.com/youseng/geomira/actions/runs/39224402956 | success (verify incl. coverage 100% on every num file, build, Playwright 2/2) |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39224402795 | success (build job; deploy job skipped off the default branch)                |
+| nightly  | https://github.com/youseng/geomira/actions/runs/39224402905 | `test` job success; `mutation-num` job in progress                            |
+
+From the ci log (verify step):
+
+```
+> pnpm typecheck && pnpm lint && pnpm depcruise && pnpm rules && pnpm test:coverage
+All matched files use Prettier code style!
+✔ no dependency violations found (51 modules, 85 dependencies cruised)
+ok   tolerance: 115 files scanned, 0 violation(s)
+ok   file-length: 115 files scanned, 0 violation(s)
+ok   test-count: 309 tests, floor 309, 0 violation(s)
+ok   disabled-tests: 115 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-0, 0 violation(s)
+ok   forbidden-words: 115 files scanned, 0 violation(s)
+ Test Files  29 passed (29)
+      Tests  309 passed (309)
+ % Coverage report from v8
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+All files          |     100 |      100 |     100 |     100 |
+ (every file of packages/num/src: 100 | 100 | 100 | 100)
+✓ built in 1.02s
+  2 passed (2.7s)
+```
+
+## Requests
+
+- None. Dev-only dependencies added (allowed runtime dependencies unchanged):
+  @vitest/coverage-v8 4.1.12, @stryker-mutator/core, @stryker-mutator/vitest-runner and
+  @stryker-mutator/typescript-checker 10.0.0.
+
+## Notes for later runs
+
+- Import num through its subpaths (`@geomira/num/field`, `@geomira/num/tolerance`, …);
+  see packages/num/README.md and ADR-0002. Field preconditions throw RangeError: test
+  divisors and radicands with `F.isZero` / `F.sign` first and return Undefined.
+- Add each new package to `coverage.include` / `coverage.thresholds` in vitest.config.ts
+  and, for L15, a `stryker.<pkg>.json` + `vitest.<pkg>.config.ts` pair and a nightly job.
+- Stryker needs its plugins listed explicitly (`plugins` in the config): pnpm's isolated
+  node_modules hides them from auto-discovery.
+
+---
+
 ## Run 0: ACCEPTED (2026-10-19)
 
 Scaffold and guardrails. Everything is in place and green locally, in a clean clone and in
