@@ -20,6 +20,8 @@ export default tseslint.config(
       '**/coverage/**',
       '**/playwright-report/**',
       '**/test-results/**',
+      'reports/**',
+      '.stryker-tmp/**',
       'scripts/check-rules/fixtures/**',
     ],
   },

@@ -10,3 +10,5 @@ tests/fixtures/
 # Maintainer-owned prose.
 docs/SPEC.md
 CLAUDE.md
+reports/
+.stryker-tmp/

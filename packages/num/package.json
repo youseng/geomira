@@ -5,7 +5,16 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./tolerance": "./src/tolerance.ts",
+    "./rng": "./src/rng.ts",
+    "./rational": "./src/rational.ts",
+    "./field": "./src/field.ts",
+    "./float-field": "./src/float-field.ts",
+    "./rational-field": "./src/rational-field.ts",
+    "./modp": "./src/modp.ts",
+    "./complex": "./src/complex.ts",
+    "./assert": "./src/assert.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
