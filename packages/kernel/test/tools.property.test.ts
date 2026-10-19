@@ -11,6 +11,8 @@ import { LAW_TIMEOUT } from './helpers/laws';
 import { call } from '../src/expr';
 import { REGISTRY, num, type Builder } from './helpers/doc';
 import { asNum, forFigures, numIs, samePoints, type Figure, type Pts } from './helpers/figure';
+import { CIRCLE_PROPERTIES } from './helpers/circle-properties';
+import { CIRCLE_PROPERTIES_2 } from './helpers/circle-properties-2';
 
 interface Property {
   readonly tools: readonly string[];
@@ -266,6 +268,8 @@ const PROPERTIES: readonly Property[] = [
       ['s', 't'].every((n) => numIs(f, n, '0') || numIs(f, n, '180') || numIs(f, n, '360')),
     fields: FLOAT,
   },
+  ...CIRCLE_PROPERTIES,
+  ...CIRCLE_PROPERTIES_2,
   {
     tools: ['add', 'sub', 'mul', 'div', 'neg'],
     name: 'arithmetic: a − b = a + (−b), (a·b)/b = a, exact values carried',

@@ -8,6 +8,7 @@
 import { assertNever } from '@geomira/num/assert';
 import { inexact, isInexact, type Field } from '@geomira/num/field';
 import { contextProblem } from './context';
+import { FLOAT_ARG_LIMIT } from './limits';
 import type { Document } from './document';
 import { refsOf, type CallExpr, type Expr } from './expr';
 import type { Registry } from './registry';
@@ -141,15 +142,6 @@ function evalCall<T>(e: CallExpr, env: Env<T>): Value<T> {
     ? out
     : inexact(`${e.tool}: the result is beyond the double range`);
 }
-
-/**
- * The largest magnitude of a FloatField argument a tool computes with (2^200 ≈ 1.6e60).
- * Every v1 formula is a polynomial of degree ≤ 4 in its arguments whose divisors are at
- * least (EPS·scale)², so with arguments below this bound no intermediate overflows and
- * no NaN or ±Infinity reaches a zero test, a square root or atan2 (law L1). Beyond it the
- * numbers are not representable for geometry in this field: Inexact (ADR-0003).
- */
-const FLOAT_ARG_LIMIT = 2 ** 200;
 
 /**
  * Whether every number of a value is finite and below `limit` in magnitude (FloatField

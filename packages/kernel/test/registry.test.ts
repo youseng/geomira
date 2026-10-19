@@ -50,6 +50,23 @@ describe('createRegistry', () => {
       'mul',
       'div',
       'neg',
+      'circle',
+      'circumcircle',
+      'cline',
+      'diameter_circle',
+      'ninepoint_circle',
+      'center',
+      'on',
+      'other',
+      'tangent',
+      'polar',
+      'radical_axis',
+      'incenter',
+      'excenter',
+      'incircle',
+      'excircle',
+      'bisector',
+      'ext_bisector',
     ]);
     for (const t of REGISTRY.tools) {
       expect(t.id).toBe(t.name);

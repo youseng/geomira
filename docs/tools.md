@@ -135,6 +135,92 @@ The orthocenter, where the altitudes meet.
 - Examples:
   - `orthocenter((0, 0), (4, 0), (1, 3))` → point (1, 1)
 
+### center
+
+The centre of a circle.
+
+- Signatures: `center(round)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases: none
+- Examples:
+  - `center(circle((0, 0), (4, 0), (1, 3)))` → point (2, 1)
+
+### on
+
+Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range); on(c, u, v): the stereographic parameter (u : v) from the anchor of c (rational; (u : 0) is the anchor); on(c, θ): the point at angle θ (degrees) from the centre.
+
+- Signatures: `on(linear, number)`, `on(round, number, number)`, `on(round, number)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - a glider on an Undefined object → Undefined
+  - on(l, t) on a segment or ray clamps t to the range
+  - a segment or ray range mod p → Inexact
+  - on(c, u, v) on a circle without anchor → Undefined
+  - on(c, 0, 0) → Undefined
+  - on(c, u, 0) → the anchor
+  - on(c, θ) over Q or mod p → Inexact unless r, cos θ and sin θ are representable
+- Examples:
+  - `on(segment((0, 0), (4, 2)), 1/4)` → point (1, 1/2)
+  - `on(circle((0, 0), (5, 0)), 1, 2)` → point (-3, 4)
+  - `on(circle((0, 0), (5, 0)), 90)` → point (0, 5)
+  - `on(circle((0, 0), (5, 0)), 30)` → point (4.33012701892, 2.5)
+
+### other
+
+other(a, b, P): the second intersection of a line and a circle, or of two circles, given one common point P (Vieta; exact).
+
+- Signatures: `other(linear, round, point)`, `other(round, linear, point)`, `other(round, round, point)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - P not on both objects → Undefined
+  - P within the band of an object → Undefined (ambiguous)
+  - tangency at P → P (the double point)
+  - concentric circles → Undefined
+  - the other point outside a segment or ray → Undefined
+  - the other point within the band of a segment end → Undefined (ambiguous)
+  - a segment or ray range mod p → Inexact
+- Examples:
+  - `other(line((3, 4), (-4, -3)), circle((0, 0), (3, 4)), (3, 4))` → point (-4, -3)
+  - `other(circle((0, 0), (3, 4)), circle((6, 0), (3, 4)), (3, 4))` → point (3, -4)
+
+### incenter
+
+The incenter of ABC (where the internal bisectors meet).
+
+- Signatures: `incenter(point, point, point)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - coincident vertices → Undefined
+  - collinear vertices → Undefined
+  - a side length not rational (over Q) → Inexact
+- Examples:
+  - `incenter((5, 12), (0, 0), (14, 0))` → point (6, 4)
+  - `incenter((0, 0), (4, 0), (1, 3))` → point (1.45981848652, 1.05217763377)
+
+### excenter
+
+excenter(A, B, C): the excenter opposite A.
+
+- Signatures: `excenter(point, point, point)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - coincident vertices → Undefined
+  - collinear vertices → Undefined
+  - a side length not rational (over Q) → Inexact
+- Examples:
+  - `excenter((5, 12), (0, 0), (14, 0))` → point (8, -12)
+  - `excenter((0, 0), (4, 0), (1, 3))` → point (5.70245917364, 4.1101000264)
+
 ## Lines
 
 ### line
@@ -216,6 +302,194 @@ The perpendicular bisector of AB (chiral: a quarter turn of B − A).
   - perp_bisector(A, A) → Undefined (coincident points)
 - Examples:
   - `perp_bisector((0, 0), (2, 1))` → line (1, 1/2) + t·(-1, 2), t ∈ [−∞, ∞], chiral
+
+### tangent
+
+tangent(P, c): the tangent to c at P (P on c); chiral (a quarter turn of P − O).
+
+- Signatures: `tangent(point, round)`
+- Result: line
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - P not on c → Undefined
+  - P within the band of c → Undefined (ambiguous)
+- Examples:
+  - `tangent((3, 4), circle((0, 0), (5, 0)))` → line (3, 4) + t·(-4, 3), t ∈ [−∞, ∞], chiral
+
+### polar
+
+polar(P, c): the polar of P with respect to c; chiral (a quarter turn of P − O).
+
+- Signatures: `polar(point, round)`
+- Result: line
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - P = the centre → Undefined
+  - P on c → the tangent at P
+- Examples:
+  - `polar((10, 5), circle((0, 0), (5, 0)))` → line (2, 1) + t·(-5, 10), t ∈ [−∞, ∞], chiral
+
+### radical_axis
+
+radical_axis(c1, c2): the points with equal power to both circles; chiral (a quarter turn of O₂ − O₁).
+
+- Signatures: `radical_axis(round, round)`
+- Result: line
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - concentric circles → Undefined (equal circles included)
+  - tangent circles → the common tangent at the touch point
+- Examples:
+  - `radical_axis(circle((0, 0), (5, 0)), circle((6, 0), 3))` → line (13/3, 0) + t·(0, 6), t ∈ [−∞, ∞], chiral
+
+### bisector
+
+bisector(A, B, C): the internal bisector of ∠ABC, through B (achiral).
+
+- Signatures: `bisector(point, point, point)`
+- Result: line
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - A = B or C = B → Undefined
+  - within the band of a straight angle → Undefined (ambiguous)
+  - an arm length not rational (over Q) → Inexact
+  - a straight angle → the perpendicular at B
+  - a zero angle → the line BA
+- Examples:
+  - `bisector((5, 12), (0, 0), (14, 0))` → line (0, 0) + t·(81/5, 54/5), t ∈ [−∞, ∞]
+  - `bisector((0, 0), (4, 0), (1, 3))` → line (4, 0) + t·(-5.82842712475, 2.41421356237), t ∈ [−∞, ∞]
+
+### ext_bisector
+
+ext_bisector(A, B, C): the external bisector of ∠ABC, through B (chiral).
+
+- Signatures: `ext_bisector(point, point, point)`
+- Result: line
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - A = B or C = B → Undefined
+  - within the band of a straight angle → Undefined (ambiguous)
+  - an arm length not rational (over Q) → Inexact
+  - a straight angle → the line BA
+  - a zero angle → the perpendicular at B
+- Examples:
+  - `ext_bisector((5, 12), (0, 0), (14, 0))` → line (0, 0) + t·(-54/5, 81/5), t ∈ [−∞, ∞], chiral
+  - `ext_bisector((0, 0), (4, 0), (1, 3))` → line (4, 0) + t·(-2.41421356237, -5.82842712475), t ∈ [−∞, ∞], chiral
+
+## Circles
+
+### circle
+
+circle(O, A): centre O through A (anchor A); circle(O, r): centre O, radius r (no anchor); circle(A, B, C): the circle through A, B, C (anchor A).
+
+- Signatures: `circle(point, point)`, `circle(point, number)`, `circle(point, point, point)`
+- Result: circle
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - circle(O, O) → Undefined (coincident points)
+  - circle(O, r) with r ≤ 0 → Undefined
+  - circle(O, r) with r within the band of 0 → Undefined (ambiguous)
+  - circle(O, r) mod p: the sign of r is not checked
+  - circle(A, B, C) with coincident points → Undefined
+  - circle(A, B, C) with collinear points → Undefined (use cline)
+- Examples:
+  - `circle((1, 2), (4, 6))` → circle centre (1, 2), r² = 25, anchor (4, 6)
+  - `circle((1, 2), 5/2)` → circle centre (1, 2), r² = 25/4
+  - `circle((0, 0), (4, 0), (1, 3))` → circle centre (2, 1), r² = 5, anchor (0, 0)
+
+### circumcircle
+
+The circle through A, B, C (the same as circle(A, B, C)); anchor A.
+
+- Signatures: `circumcircle(point, point, point)`
+- Result: circle
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - coincident vertices → Undefined
+  - collinear vertices → Undefined (use cline)
+- Examples:
+  - `circumcircle((0, 0), (4, 0), (1, 3))` → circle centre (2, 1), r² = 5, anchor (0, 0)
+
+### cline
+
+The circle through A, B, C (anchor A), or the line AB when A, B, C are collinear.
+
+- Signatures: `cline(point, point, point)`
+- Result: circle, line
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - coincident points → Undefined
+  - collinear points → the line through them
+- Examples:
+  - `cline((0, 0), (4, 0), (1, 3))` → circle centre (2, 1), r² = 5, anchor (0, 0)
+  - `cline((0, 0), (1, 1), (3, 3))` → line (0, 0) + t·(1, 1), t ∈ [−∞, ∞]
+
+### diameter_circle
+
+The circle with diameter AB; anchor A.
+
+- Signatures: `diameter_circle(point, point)`
+- Result: circle
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - diameter_circle(A, A) → Undefined (coincident points)
+- Examples:
+  - `diameter_circle((1, 2), (4, 6))` → circle centre (5/2, 4), r² = 25/4, anchor (1, 2)
+
+### ninepoint_circle
+
+The nine-point circle of ABC (through the midpoints of the sides); anchor: the midpoint of BC.
+
+- Signatures: `ninepoint_circle(point, point, point)`
+- Result: circle
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - coincident vertices → Undefined
+  - collinear vertices → Undefined
+- Examples:
+  - `ninepoint_circle((0, 0), (4, 0), (1, 3))` → circle centre (3/2, 1), r² = 5/4, anchor (5/2, 3/2)
+
+### incircle
+
+The incircle of ABC; anchor: its touch point on BC.
+
+- Signatures: `incircle(point, point, point)`
+- Result: circle
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - coincident vertices → Undefined
+  - collinear vertices → Undefined
+  - a side length not rational (over Q) → Inexact
+- Examples:
+  - `incircle((5, 12), (0, 0), (14, 0))` → circle centre (6, 4), r² = 16, anchor (6, 0)
+  - `incircle((0, 0), (4, 0), (1, 3))` → circle centre (1.45981848652, 1.05217763377), r² = 1.10707777301, anchor (2.20382042638, 1.79617957362)
+
+### excircle
+
+excircle(A, B, C): the excircle opposite A; anchor: its touch point on BC.
+
+- Signatures: `excircle(point, point, point)`
+- Result: circle
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - coincident vertices → Undefined
+  - collinear vertices → Undefined
+  - a side length not rational (over Q) → Inexact
+- Examples:
+  - `excircle((5, 12), (0, 0), (14, 0))` → circle centre (8, -12), r² = 144, anchor (8, 0)
+  - `excircle((0, 0), (4, 0), (1, 3))` → circle centre (5.70245917364, 4.1101000264), r² = 16.892922227, anchor (2.79617957362, 1.20382042638)
 
 ## Measures
 

@@ -1,5 +1,371 @@
 # STATUS
 
+## Run 3a: ACCEPTED (2026-10-19)
+
+Circles and gliders (SPEC §4, §6.2, §6.3), no selectors. Base check first: Run 2 was
+ACCEPTED (tag `run-2` = `main` = 6e10d9b), `pnpm install && pnpm verify` was green locally
+on it, and ci, deploy and nightly were green in CI on that commit
+(https://github.com/youseng/geomira/actions/runs/39244164101), so there was no red base to
+repair.
+
+Every criterion holds: verify green locally, in a clean clone and in CI (ci run
+https://github.com/youseng/geomira/actions/runs/39258413806 on 43aa3f9, the interim
+STATUS commit); every SPEC §6.3 case for the new tools is a named test; L1 (incl. 2,000
+circle-degenerate documents), L3 with the band exclusion, glider round trips, cline
+switching and 16 theorems pass; the exactness table below is generated. Kernel coverage
+99.78% lines (gate 90%); kernel mutation score 99.21% locally and in CI (reported, gated
+from v1.1).
+
+## Done (each item → the test file that proves it)
+
+1. **Circle values** (SPEC §4): `Circle { c, r2, arc: null, anchor? }`, every circle tool
+   sets its anchor as SPEC §4 lists (circle(O, A): A; circle(A, B, C), circumcircle, cline:
+   A; diameter_circle: A; ninepoint_circle: the midpoint of BC; incircle / excircle: the
+   touch point on BC; circle(O, r): none). → `helpers/circle-properties*.ts` (anchors
+   checked per tool), `theorems-circles-2.test.ts` (touch points on BC).
+2. **Tools**, each with one `compute<T>`, registry entry, degenerate cases, a property test,
+   `export: 'numeric'`, generated docs (docs/tools.md): circle (3 signatures),
+   circumcircle, cline, diameter_circle, ninepoint_circle, center, on, other, tangent,
+   polar, radical_axis, incenter, excenter, incircle, excircle, bisector, ext_bisector.
+   → `degenerate.test.ts` (now 100 cases; the Run 3a part is in
+   `helpers/degenerate-circles.ts` and `helpers/degenerate-gliders.ts`; the meta-test
+   checks the table equals the registry), `tools.property.test.ts` (meta-test: every tool
+   covered; Run 3a properties in `helpers/circle-properties.ts`, `-2.ts`),
+   `tools-circles.direct.test.ts` (compute total on malformed circles and lines),
+   `docs.test.ts`. Every SPEC §6.3 case for these tools is a named case: coincident
+   defining points, collinear circumcircle (use cline), concentric circles (radical_axis,
+   other), tangency → the double point (other), glider on a degenerate object, bisector /
+   ext_bisector of a straight and of a zero angle.
+3. **Gliders** (SPEC §6.2): `on(l, t)` clamped to the range (Inexact mod p for segments and
+   rays); `on(c, u, v)` stereographic from the anchor, rational, the anchor at v = 0;
+   `on(c, θ)` by angle (the form for circle(O, r)); the drag map cursor → parameter and the
+   exact inverse in `@geomira/kernel/glider`. → `glider.test.ts` (round trips parameter →
+   point → parameter exact over Q and mod p incl. the anchor, within rounding over floats;
+   the drag map; a cursor going round the circle never makes the glider jump).
+4. **cline switching circle ↔ line without NaN** → `cline.test.ts`.
+5. **L3 oracle with the exclusion band** for every new tool → `laws/l3-oracle.test.ts`
+   (frozen file, lines added: a circle argument and argument plans from
+   `helpers/l3-plans.ts`, see "Changed frozen tests"). Counts below; every tool has ≥ 50
+   exact comparisons (tangent 2400, other 2100, incircle 1053, …).
+6. **L1 totality** (the Run 1 note on ADR-0002): the frozen L1 now fuzzes the new tools too,
+   and `laws/l1-circles.test.ts` adds 2,000 documents built to hit circle degeneracies
+   exactly and nearly (coincident points, parallel lines, concentric and tangent circles,
+   P nearly on c, (0 : 0), straight angles, residuals of ±1e-17) over Float, Rational and
+   ModP: 0 throws, 0 non-finite, every listed degeneracy reached. Every division and
+   square root in the new computes is guarded (`degenerateCircle`, the (0 : 0) test, the
+   excenter's sign check, …).
+7. **16 theorems** (≥ 12 asked), each over FloatField and exactly over RationalField (the
+   side-length tools on Heronian triangles) → `theorems-circles.test.ts`,
+   `theorems-circles-2.test.ts`: nine-point circle through nine points; reflections of H in
+   BC and in the midpoint of BC on the circumcircle; Simson line; Miquel; radical axes
+   concurrent; power of a point; polar reciprocity; other() consistency (line–circle and
+   circle–circle, both involutions); tangency as the double point; the radical axis through
+   both common points; incenter–excenter lemma; Feuerbach (|NI| = R/2 − r and
+   |NI_A| = R/2 + r_A); Euler OI² = R² − 2Rr; incircle and excircle touch the side lines;
+   the excenter on one internal and two external bisectors; the angle bisector theorem.
+   Sanity check: with two deliberate bugs (one coordinate of other()'s reflection, the
+   excenter's weight) 19 tests failed.
+8. **Chirality** of the new line tools against mirrored figures (tangent, polar,
+   radical_axis, ext_bisector chiral; bisector and cline's line achiral; the straight-angle
+   cases swapped) → `chirality-circles.test.ts`.
+9. **Explicit radii in the scale** (SPEC §3.1) → `context-radii.test.ts`.
+10. **Generated exactness table** (`pnpm docs:exactness`, below) → `scripts/exactness/table.test.ts`.
+11. ADR-0004 (circles, gliders, incidence); packages/kernel/README.md; docs/test-count.txt
+    raised from 517 to 681.
+
+### Exactness of each tool (output of `pnpm docs:exactness`, generated from the registry)
+
+"Exact run" is discovered by running each tool's examples over RationalField. The
+side-length tools (incenter, excenter, incircle, excircle, bisector, ext_bisector) are
+exact exactly when the side lengths are rational (their Heronian example) and Inexact
+otherwise (their generic example); that is expected (SPEC §3.4). The angle form of `on`
+is Inexact except at rational special angles. Mod p, everything needing √ or trig is
+Inexact.
+
+| Tool             | Family     | Exact run (RationalField) | Exact examples | Otherwise                                                  |
+| ---------------- | ---------- | ------------------------- | -------------- | ---------------------------------------------------------- |
+| point            | points     | can succeed               | 1/1            |                                                            |
+| param            | points     | can succeed               | 1/1            |                                                            |
+| midpoint         | points     | can succeed               | 1/1            |                                                            |
+| divide           | points     | can succeed               | 1/1            |                                                            |
+| foot             | points     | can succeed               | 2/2            |                                                            |
+| intersect        | points     | can succeed               | 1/1            |                                                            |
+| circumcenter     | points     | can succeed               | 1/1            |                                                            |
+| centroid         | points     | can succeed               | 1/1            |                                                            |
+| orthocenter      | points     | can succeed               | 1/1            |                                                            |
+| line             | lines      | can succeed               | 1/1            |                                                            |
+| segment          | lines      | can succeed               | 1/1            |                                                            |
+| ray              | lines      | can succeed               | 1/1            |                                                            |
+| parallel         | lines      | can succeed               | 1/1            |                                                            |
+| perp             | lines      | can succeed               | 1/1            |                                                            |
+| perp_bisector    | lines      | can succeed               | 1/1            |                                                            |
+| dist             | measures   | can succeed               | 2/2            |                                                            |
+| ratio            | measures   | can succeed               | 1/1            |                                                            |
+| angle            | measures   | can succeed               | 1/2            | inexact: atan2(12, 9) is not a rational number of degrees  |
+| dangle           | measures   | can succeed               | 1/2            | inexact: atan2(-12, 9) is not a rational number of degrees |
+| area             | measures   | can succeed               | 2/2            |                                                            |
+| polygon          | display    | can succeed               | 1/1            |                                                            |
+| add              | arithmetic | can succeed               | 1/1            |                                                            |
+| sub              | arithmetic | can succeed               | 1/1            |                                                            |
+| mul              | arithmetic | can succeed               | 1/1            |                                                            |
+| div              | arithmetic | can succeed               | 1/1            |                                                            |
+| neg              | arithmetic | can succeed               | 1/1            |                                                            |
+| circle           | circles    | can succeed               | 3/3            |                                                            |
+| circumcircle     | circles    | can succeed               | 1/1            |                                                            |
+| cline            | circles    | can succeed               | 2/2            |                                                            |
+| diameter_circle  | circles    | can succeed               | 1/1            |                                                            |
+| ninepoint_circle | circles    | can succeed               | 1/1            |                                                            |
+| center           | points     | can succeed               | 1/1            |                                                            |
+| on               | points     | can succeed               | 3/4            | inexact: cos(30°) is not rational                          |
+| other            | points     | can succeed               | 2/2            |                                                            |
+| tangent          | lines      | can succeed               | 1/1            |                                                            |
+| polar            | lines      | can succeed               | 1/1            |                                                            |
+| radical_axis     | lines      | can succeed               | 1/1            |                                                            |
+| incenter         | points     | can succeed               | 1/2            | inexact: √(18) is not rational                             |
+| excenter         | points     | can succeed               | 1/2            | inexact: √(18) is not rational                             |
+| incircle         | circles    | can succeed               | 1/2            | inexact: √(18) is not rational                             |
+| excircle         | circles    | can succeed               | 1/2            | inexact: √(18) is not rational                             |
+| bisector         | lines      | can succeed               | 1/2            | inexact: √(18) is not rational                             |
+| ext_bisector     | lines      | can succeed               | 1/2            | inexact: √(18) is not rational                             |
+
+## Not done
+
+Nothing in Run 3a's scope. Not started (later runs): branch selectors and branchable tools
+(intersect with circles, tangent_from, tangent_point), transformations, claims, language,
+scene, editor, export. `on(obj)` without a parameter is left to the language run, which
+desugars it to an explicit parameter (ADR-0004 item 9).
+
+## Known bugs
+
+None known.
+
+## Uncertain
+
+- SPEC §7 says "P must lie on both objects within BAND". ADR-0004 item 1 reads it as a
+  banded decision: on within EPS·scale, ambiguous (Undefined) inside the band, not on
+  beyond. A gap between EPS and BAND is therefore Undefined("ambiguous"), never "on".
+- `on(c, θ)` is accepted on every circle (not only circle(O, r)); `on(c, u, v)` needs an
+  anchor. The angle is measured from the +x axis (SPEC fixes no reference direction).
+- `circle(O, r)` with r < 0 is Undefined over ordered fields; mod p the sign is not checked
+  (as `param`).
+- Explicit radii count as a diameter 2·|r| combined with the free points by max; SPEC says
+  only "bounding box of free points and explicit radii".
+- The bisector of a straight angle is chiral and its external bisector achiral: the flags
+  follow SPEC §4's rule "every 90° turn toggles the flag" applied to the actual directions.
+- Float theorem tests skip and count ill-conditioned figures (at most 2 of 200 per
+  theorem, all nearly flat triangles), mirroring SPEC §3.1's ILL-CONDITIONED class
+  (ADR-0004 item 20); some float checks compare magnitudes relative to their size
+  (far-away centres of flat triangles). Exact runs skip only degenerate draws.
+- Mathematical facts used (I am confident of each): the nine-point circle passes through
+  the midpoints of the sides, the feet of the altitudes and the midpoints of AH, BH, CH and
+  is centred at the midpoint of OH; the reflections of H in a side and in the midpoint of
+  a side lie on the circumcircle (the latter is the antipode of the opposite vertex); the
+  Simson line; Miquel's theorem; the radical axes of three circles (centres not collinear)
+  concur; the power of a point; polar reciprocity (La Hire); the incenter–excenter lemma;
+  Feuerbach's theorem; Euler's OI² = R² − 2Rr; the angle bisector theorem; Thales; a
+  triangle inscribed in a circle at points w² (|w| = 1, w rational) has rational chords
+  2·|sin(φ₁ − φ₂)|·R.
+
+## Changed frozen tests
+
+No line of a file frozen at `run-2` was modified or removed (`add-only: frozen tests
+compared with run-2, 0 violation(s)`). Lines were ADDED to these frozen files (allowed by
+the guard; recorded in ADR-0004 item 19):
+
+- `packages/kernel/test/registry.test.ts`: the 17 new tool names appended to the expected
+  registry list.
+- `packages/kernel/test/exports.test.ts`: the `./glider` subpath and its import.
+- `packages/kernel/test/degenerate.test.ts`: two imports and `...CIRCLE_CASES,
+...GLIDER_CASES` in the table.
+- `packages/kernel/test/tools.property.test.ts`: two imports and `...CIRCLE_PROPERTIES,
+...CIRCLE_PROPERTIES_2` in the list.
+- `packages/kernel/test/laws/l3-oracle.test.ts`: one import, a `planned` field and its use
+  at the top of `arg()`, a circle argument for the `round` capability, and the call to
+  `planArgs` in `sampleTool`. Without the plans L3 could not compare tangent, other or the
+  incircle family (random inputs never lie on a circle; random triangles never have
+  rational sides). Existing tools' samples are unchanged (the plans draw nothing for them).
+
+## Acceptance command output
+
+### Clean clone (commit 629034c; the STATUS commit adds only docs)
+
+```
+$ git clone … && pnpm install --frozen-lockfile        # Done in 1.6s using pnpm v10.28.0
+$ pnpm verify
+All matched files use Prettier code style!
+✔ no dependency violations found (124 modules, 576 dependencies cruised)
+ok   tolerance: 198 files scanned, 0 violation(s)
+ok   file-length: 198 files scanned, 0 violation(s)
+ok   test-count: 681 tests, floor 681, 0 violation(s)
+ok   disabled-tests: 198 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-2, 0 violation(s)
+ok   forbidden-words: 198 files scanned, 0 violation(s)
+L3 point: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L3 param: 402 defined + 1998 Undefined agree, 0 not exact, 0 excluded (band); mod p 402
+L3 midpoint: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+theorem (float) other() consistency: 198 hold, 0 degenerate, 2 ill-conditioned
+L3 divide: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+theorem (rational) other() consistency: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) tangency: 198 hold, 0 degenerate, 2 ill-conditioned
+theorem (rational) tangency: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) the radical axis of two intersecting circles passes through both common points: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) the radical axis of two intersecting circles passes through both common points: 200 hold, 0 degenerate, 0 ill-conditioned
+L3 foot: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+theorem (float) incenter–excenter lemma: 199 hold, 0 degenerate, 1 ill-conditioned
+theorem (heronian) incenter–excenter lemma: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) Feuerbach: 198 hold, 0 degenerate, 2 ill-conditioned
+theorem (heronian) Feuerbach: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) Euler: 198 hold, 0 degenerate, 2 ill-conditioned
+theorem (heronian) Euler: 200 hold, 0 degenerate, 0 ill-conditioned
+L3 intersect: 1577 defined + 792 Undefined agree, 0 not exact, 31 excluded (band); mod p 968
+theorem (float) the incircle and the excircle opposite A touch the three side lines, at their anchors on BC: 199 hold, 0 degenerate, 1 ill-conditioned
+theorem (heronian) the incircle and the excircle opposite A touch the three side lines, at their anchors on BC: 200 hold, 0 degenerate, 0 ill-conditioned
+L3 circumcenter: 2155 defined + 221 Undefined agree, 0 not exact, 24 excluded (band); mod p 2155
+theorem (float) the excenter opposite A lies on the internal bisector at A and the external bisectors at B and C: 199 hold, 0 degenerate, 1 ill-conditioned
+theorem (heronian) the excenter opposite A lies on the internal bisector at A and the external bisectors at B and C: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) the angle bisector theorem: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (heronian) the angle bisector theorem: 200 hold, 0 degenerate, 0 ill-conditioned
+L3 centroid: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L3 orthocenter: 2140 defined + 225 Undefined agree, 0 not exact, 35 excluded (band); mod p 2140
+L3 line: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L3 segment: 2397 defined + 3 Undefined agree, 0 not exact, 0 excluded (band); mod p 2397
+L3 ray: 2398 defined + 2 Undefined agree, 0 not exact, 0 excluded (band); mod p 2398
+L3 parallel: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L2 FloatField: 1200 incremental evaluations equal to full ones
+L3 perp: 2399 defined + 1 Undefined agree, 0 not exact, 0 excluded (band); mod p 2399
+L3 perp_bisector: 2399 defined + 1 Undefined agree, 0 not exact, 0 excluded (band); mod p 2399
+L3 dist: 922 defined + 1 Undefined agree, 1477 not exact, 0 excluded (band); mod p 0
+L3 ratio: 665 defined + 3 Undefined agree, 1732 not exact, 0 excluded (band); mod p 0
+L2 RationalField: 1200 incremental evaluations equal to full ones
+L3 angle: 403 defined + 7 Undefined agree, 1953 not exact, 37 excluded (band); mod p 0
+L2 ModPField: 1200 incremental evaluations equal to full ones
+L3 dangle: 397 defined + 3 Undefined agree, 1963 not exact, 37 excluded (band); mod p 0
+L3 area: 2387 defined + 4 Undefined agree, 0 not exact, 9 excluded (band); mod p 0
+theorem (float) the nine-point circle passes through the midpoints, the feet of the altitudes and the midpoints of AH, BH, CH: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) the nine-point circle passes through the midpoints, the feet of the altitudes and the midpoints of AH, BH, CH: 200 hold, 0 degenerate, 0 ill-conditioned
+L3 polygon: 2387 defined + 13 Undefined agree, 0 not exact, 0 excluded (band); mod p 2387
+L3 add: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+theorem (float) the reflections of H in BC and in the midpoint of BC lie on the circumcircle (the latter opposite A): 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) the reflections of H in BC and in the midpoint of BC lie on the circumcircle (the latter opposite A): 200 hold, 0 degenerate, 0 ill-conditioned
+L3 sub: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+theorem (float) Simson: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) Simson: 200 hold, 0 degenerate, 0 ill-conditioned
+L3 mul: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+theorem (float) Miquel: 200 hold, 0 degenerate, 0 ill-conditioned
+L3 div: 2335 defined + 65 Undefined agree, 0 not exact, 0 excluded (band); mod p 2335
+theorem (rational) Miquel: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) the three radical axes of three circles are concurrent: 200 hold, 0 degenerate, 0 ill-conditioned
+L3 neg: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+theorem (rational) the three radical axes of three circles are concurrent: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) the power of a point: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) the power of a point: 200 hold, 0 degenerate, 0 ill-conditioned
+L3 circle: 1909 defined + 480 Undefined agree, 0 not exact, 11 excluded (band); mod p 1909
+theorem (float) polar reciprocity: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) polar reciprocity: 200 hold, 0 degenerate, 0 ill-conditioned
+L3 circumcircle: 2164 defined + 211 Undefined agree, 0 not exact, 25 excluded (band); mod p 2164
+L3 cline: 2360 defined + 12 Undefined agree, 0 not exact, 28 excluded (band); mod p 2388
+invariants: 3171 edits applied, 1629 refused, all valid
+L3 diameter_circle: 2397 defined + 3 Undefined agree, 0 not exact, 0 excluded (band); mod p 2397
+L3 ninepoint_circle: 2130 defined + 248 Undefined agree, 0 not exact, 22 excluded (band); mod p 2130
+L3 center: 2063 defined + 317 Undefined agree, 0 not exact, 20 excluded (band); mod p 2063
+L3 on: 1434 defined + 255 Undefined agree, 694 not exact, 17 excluded (band); mod p 1149
+L3 other: 2100 defined + 300 Undefined agree, 0 not exact, 0 excluded (band); mod p 1673
+L3 tangent: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L1 FloatField: 2000 documents, 52801 objects, 24142 Undefined, 340 Inexact, 0 throws, 0 non-finite; reached: parallel lines 10, coincident lines 154, coincident points 6243, collinear points 161, ambiguous 64, division by zero 117, outside the 8
+L3 polar: 2104 defined + 287 Undefined agree, 0 not exact, 9 excluded (band); mod p 2104
+L1 circles FloatField: 2000 documents, 65371 objects, 33394 Undefined, 1560 Inexact, 0 throws, 0 non-finite; reached: coincident points 3744, collinear points 22, parallel lines 436, concentric circles 406, needs P on 319, ambiguous 117, no anchor 30, (0 : 0) 201, radius 728, polar is the line at infinity 238, no other intersection 25, is undefined 22236
+L3 radical_axis: 1865 defined + 510 Undefined agree, 0 not exact, 25 excluded (band); mod p 1865
+L3 incenter: 1048 defined + 242 Undefined agree, 1098 not exact, 12 excluded (band); mod p 0
+L3 excenter: 1065 defined + 243 Undefined agree, 1082 not exact, 10 excluded (band); mod p 0
+L3 incircle: 1053 defined + 253 Undefined agree, 1079 not exact, 15 excluded (band); mod p 0
+L3 excircle: 1066 defined + 257 Undefined agree, 1067 not exact, 10 excluded (band); mod p 0
+L3 bisector: 1276 defined + 81 Undefined agree, 1035 not exact, 8 excluded (band); mod p 0
+L3 ext_bisector: 1308 defined + 70 Undefined agree, 1011 not exact, 11 excluded (band); mod p 0
+L1 RationalField: 2000 documents, 52801 objects, 18768 Undefined, 7712 Inexact, 0 throws, 0 non-finite; reached: parallel lines 9, coincident lines 128, coincident points 4442, collinear points 127, ambiguous 0, division by zero 63, outside the 8
+L1 ModPField: 2000 documents, 52801 objects, 17542 Undefined, 9755 Inexact, 0 throws, 0 non-finite; reached: parallel lines 9, coincident lines 125, coincident points 4428, collinear points 127, ambiguous 0, division by zero 28, outside the 0
+L1 circles RationalField: 2000 documents, 65371 objects, 29671 Undefined, 4655 Inexact, 0 throws, 0 non-finite; reached: coincident points 2695, collinear points 65, parallel lines 605, concentric circles 571, needs P on 490, ambiguous 0, no anchor 68, (0 : 0) 9, radius 199, polar is the line at infinity 338, no other intersection 32, is undefined 19658
+L1 circles ModPField: 2000 documents, 65371 objects, 28824 Undefined, 5769 Inexact, 0 throws, 0 non-finite; reached: coincident points 2673, collinear points 62, parallel lines 593, concentric circles 587, needs P on 522, ambiguous 0, no anchor 133, (0 : 0) 9, radius 35, polar is the line at infinity 351, no other intersection 0, is undefined 19222
+ Test Files  59 passed (59)
+      Tests  681 passed (681)
+ kernel/src        |   99.63 |    98.33 |     100 |   99.68 |
+ kernel/src/tools  |   99.38 |    98.71 |     100 |   99.75 |
+Statements   : 99.64% ( 1688/1694 )
+Branches     : 98.78% ( 1302/1318 )
+Lines        : 99.78% ( 1387/1390 )
+verify exit=0
+$ pnpm build
+✓ built in 1.08s
+build exit=0
+```
+
+"defined" = both fields defined and equal within 1e-9 relative; "Undefined agree" = both
+Undefined with the same reason; "not exact" = the exact run is Inexact; "excluded (band)" =
+a float decision saw a non-zero quantity within BAND of zero; "mod p" = mod-p results equal
+to the reduction of the exact ones. "theorem … hold / degenerate / ill-conditioned" counts
+the figures of each theorem test.
+
+### Mutation testing of kernel geometry (`pnpm mutation:kernel`, local)
+
+```
+File            |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+All files       |  99.21 |   99.32 |      882 |         0 |          6 |        1 |     1248 |
+ tools          |  99.32 |   99.43 |      875 |         0 |          5 |        1 |     1214 |
+  args.ts       |  95.45 |   95.45 |       21 |         0 |          1 |        0 |       50 |
+  arithmetic.ts | 100.00 |  100.00 |       43 |         0 |          0 |        0 |       62 |
+  circles.ts    |  99.17 |   99.17 |      120 |         0 |          1 |        0 |      161 |
+  display.ts    | 100.00 |  100.00 |       32 |         0 |          0 |        0 |       25 |
+  incircle.ts   | 100.00 |  100.00 |       86 |         0 |          0 |        0 |      129 |
+  index.ts      | 100.00 |  100.00 |        1 |         0 |          0 |        0 |        0 |
+  intersect.ts  |  98.18 |   98.18 |       54 |         0 |          1 |        0 |       57 |
+  lines.ts      | 100.00 |  100.00 |       78 |         0 |          0 |        0 |      109 |
+  measures.ts   |  99.01 |  100.00 |      100 |         0 |          0 |        1 |      160 |
+  on.ts         | 100.00 |  100.00 |       47 |         0 |          0 |        0 |       65 |
+  other.ts      | 100.00 |  100.00 |       49 |         0 |          0 |        0 |       74 |
+  points.ts     |  98.37 |   98.37 |      121 |         0 |          2 |        0 |      159 |
+  tangents.ts   | 100.00 |  100.00 |       70 |         0 |          0 |        0 |       81 |
+  triangle.ts   | 100.00 |  100.00 |       53 |         0 |          0 |        0 |       82 |
+```
+
+(local: a full run, then an incremental run on 629034c.) The first full run scored
+98.88%; its new survivors were arity checks of the new tools (reachable only by calling
+compute with an extra argument), circle(O, r)'s zero radius without an exact value (mod
+p), the excenter's flat-triangle guard and the bisector band in one component; the tests
+for them are in 629034c (99.21%). The 6 remaining survivors are equivalent: Run 2's five
+(geom.ts `abs`'s `case -1`, `pointsOf`'s length check, the segment/ray label of
+`rangeName`, `param`'s range mod p, the flag of `foot`'s internal line) and one in
+circles.ts (`s === 'none'` → true in `centreRadius`: a zero radius has sign 0 in every
+ordered field, so only mod p reaches that test). The NoCoverage mutant is Run 2's (an
+error-message string in measures.ts). A first attempt was discarded: I had stashed
+untracked files while it ran, so its type checker saw a missing module.
+Mutation scores are reported, gated from v1.1 (SPEC §17 L15).
+
+### CI on GitHub
+
+| Workflow | Run                                                         | Result                                                                                                                                                         |
+| -------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ci       | https://github.com/youseng/geomira/actions/runs/39258413806 | success on 43aa3f9 (push): verify, build, Playwright                                                                                                           |
+| ci       | https://github.com/youseng/geomira/actions/runs/39258448213 | success on 43aa3f9 (pull_request, PR #4)                                                                                                                       |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39258413747 | success on 43aa3f9 (build job; deploy job skipped off the default branch)                                                                                      |
+| nightly  | https://github.com/youseng/geomira/actions/runs/39258455195 | success on 43aa3f9 (dispatched): test; mutation-num; mutation-kernel "kernel mutation score: 99.21% (882 detected, 7 undetected; target 75%, gated from v1.1)" |
+| ci       | https://github.com/youseng/geomira/actions/runs/39251375178 | success on 39393da (push, the code commits before the test-gap commit)                                                                                         |
+
+## Requests
+
+- None. No dependency was added.
+- The `run-3a` tag is for the maintainer to place on the commit that records acceptance
+  (the add-only guard then freezes this run's test files).
+
+## Notes for later runs
+
+- Points on circles without selectors: `on(c, u, v)` (exact) and `other(a, b, P)` (exact).
+  Branch selection adds intersect for curves; incidence.ts already implements the "P on
+  both objects" decision the `other(P)` selector needs.
+- The editor uses `dragParameter` / `gliderParameter` from `@geomira/kernel/glider`.
+- A new incidence-based tool needs an L3 plan (helpers/l3-plans.ts) with float-exact
+  incidences, or L3 excludes all its samples.
+
+---
+
 ## Run 2: ACCEPTED (2026-10-19)
 
 Kernel core (SPEC §4, §5, §6.1, §9; the line-based tools). Base check first: Run 1 was

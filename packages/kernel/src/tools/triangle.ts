@@ -9,7 +9,7 @@ import { isZeroNormalized, two, vAdd, vCross, vDot, vRot90, vScale, vSub } from 
 import { pointOf, undef, type Point, type Undefined, type Value, type Vec } from '../value';
 import { badArgs, pointsOf } from './args';
 
-interface Triangle<T> {
+export interface Triangle<T> {
   readonly a: Point<T>;
   readonly b: Point<T>;
   readonly c: Point<T>;
@@ -21,11 +21,35 @@ interface Triangle<T> {
 }
 
 /**
+ * The shape of three points: 'coincident' when two of them coincide (a zero length),
+ * 'collinear' when the sine of the angle at A is zero, otherwise the triangle.
+ */
+export function triangleShape<T>(
+  F: Field<T>,
+  a: Point<T>,
+  b: Point<T>,
+  c: Point<T>,
+  ctx: EvalContext,
+): Triangle<T> | 'coincident' | 'collinear' {
+  const u = vSub(F, b, a);
+  const v = vSub(F, c, a);
+  const sides = [u, v, vSub(F, c, b)];
+  if (sides.some((s) => F.isZero(s.x, 'length', ctx) && F.isZero(s.y, 'length', ctx))) {
+    return 'coincident';
+  }
+  const cross = vCross(F, u, v);
+  if (isZeroNormalized(F, cross, F.mul(vDot(F, u, u), vDot(F, v, v)), 'dimensionless', ctx)) {
+    return 'collinear';
+  }
+  return { a, b, c, u, v, cross };
+}
+
+/**
  * The triangle of three point arguments. Degenerate cases: two coincident vertices →
  * Undefined("coincident points"); collinear vertices (the sine of the angle at A is zero)
  * → Undefined("collinear points").
  */
-function triangle<T>(
+export function triangle<T>(
   F: Field<T>,
   args: readonly Value<T>[],
   ctx: EvalContext,
@@ -33,32 +57,32 @@ function triangle<T>(
 ): Triangle<T> | Undefined {
   const [a, b, c] = pointsOf(args, 3) ?? [];
   if (a === undefined || b === undefined || c === undefined) return badArgs(tool);
-  const u = vSub(F, b, a);
-  const v = vSub(F, c, a);
-  const sides = [u, v, vSub(F, c, b)];
-  if (sides.some((s) => F.isZero(s.x, 'length', ctx) && F.isZero(s.y, 'length', ctx))) {
-    return undef(`coincident points: ${tool} needs three distinct vertices`);
-  }
-  const cross = vCross(F, u, v);
-  if (isZeroNormalized(F, cross, F.mul(vDot(F, u, u), vDot(F, v, v)), 'dimensionless', ctx)) {
-    return undef(`collinear points: ${tool} needs a non-degenerate triangle`);
-  }
-  return { a, b, c, u, v, cross };
+  const t = triangleShape(F, a, b, c, ctx);
+  if (t === 'coincident') return undef(`coincident points: ${tool} needs three distinct vertices`);
+  if (t === 'collinear') return undef(`collinear points: ${tool} needs a non-degenerate triangle`);
+  return t;
 }
 
 /**
  * O = A + x with 2·x·u = |u|², 2·x·v = |v|² (u = B − A, v = C − A):
- * x = (|u|²·v.y − |v|²·u.y, |v|²·u.x − |u|²·v.x) / (2·cross(u, v)). Degenerate cases:
- * coincident vertices → Undefined; collinear vertices → Undefined (use cline).
+ * x = (|u|²·v.y − |v|²·u.y, |v|²·u.x − |u|²·v.x) / (2·cross(u, v)). Degenerate: none
+ * (cross ≠ 0 is part of Triangle).
  */
-function circumcenter<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
-  const t = triangle(F, args, ctx, 'circumcenter');
-  if ('kind' in t) return t;
+export function circumcenterOf<T>(F: Field<T>, t: Triangle<T>): Point<T> {
   const [uu, vv] = [vDot(F, t.u, t.u), vDot(F, t.v, t.v)];
   const den = F.mul(two(F), t.cross);
   const x = F.div(F.sub(F.mul(t.v.y, uu), F.mul(t.u.y, vv)), den);
   const y = F.div(F.sub(F.mul(t.u.x, vv), F.mul(t.v.x, uu)), den);
   return pointOf(F.add(t.a.x, x), F.add(t.a.y, y));
+}
+
+/**
+ * The circumcenter (circumcenterOf). Degenerate cases: coincident vertices → Undefined;
+ * collinear vertices → Undefined (use cline).
+ */
+function circumcenter<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
+  const t = triangle(F, args, ctx, 'circumcenter');
+  return 'kind' in t ? t : circumcenterOf(F, t);
 }
 
 /** Degenerate: none; a flat or repeated triangle still has its vertex mean. */

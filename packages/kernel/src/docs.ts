@@ -37,6 +37,7 @@ function argExpr(a: ExampleArg): Expr {
   if (typeof a === 'string') return number(a);
   if ('through' in a) return call(a.as, [pointExpr(a.through[0]), pointExpr(a.through[1])]);
   if ('polygon' in a) return call('polygon', a.polygon.map(pointExpr));
+  if ('call' in a) return call(a.call, a.args.map(argExpr));
   return pointExpr(a);
 }
 
@@ -67,6 +68,7 @@ function argText(a: ExampleArg): string {
   if (typeof a === 'string') return a;
   if ('through' in a) return `${a.as}(${argText(a.through[0])}, ${argText(a.through[1])})`;
   if ('polygon' in a) return `polygon(${a.polygon.map(argText).join(', ')})`;
+  if ('call' in a) return `${a.call}(${a.args.map(argText).join(', ')})`;
   return `(${a[0]}, ${a[1]})`;
 }
 
@@ -80,8 +82,10 @@ export function formatValue<T>(v: Value<T>, show: (x: T) => string): string {
       const range = `[${v.lo === null ? '−∞' : show(v.lo)}, ${v.hi === null ? '∞' : show(v.hi)}]`;
       return `line ${pair(v.p)} + t·${pair(v.d)}, t ∈ ${range}${v.chiral ? ', chiral' : ''}`;
     }
-    case 'circle':
-      return `circle centre ${pair(v.c)}, r² = ${show(v.r2)}`;
+    case 'circle': {
+      const anchor = v.anchor === undefined ? '' : `, anchor ${pair(v.anchor)}`;
+      return `circle centre ${pair(v.c)}, r² = ${show(v.r2)}${anchor}`;
+    }
     case 'number':
       return `number ${show(v.v)}`;
     case 'polygon':

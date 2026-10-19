@@ -14,26 +14,28 @@ function rangeName<T>(l: Line<T>): string {
   return l.lo !== null && l.hi !== null ? 'segment' : 'ray';
 }
 
-/** Why parameter t is not in l's range [lo, hi], or undefined when it is. */
-function outOfRange<T>(
+/**
+ * Why parameter t of `what` ("intersection", "other intersection") is not in l's range
+ * [lo, hi], or undefined when it is.
+ */
+export function outOfRange<T>(
   F: Field<T>,
   l: Line<T>,
   t: T,
   ctx: EvalContext,
+  what = 'intersection',
 ): Undefined | Inexact | undefined {
   const gaps = [l.lo === null ? null : F.sub(t, l.lo), l.hi === null ? null : F.sub(l.hi, t)];
   for (const gap of gaps) {
     if (gap === null) continue;
     const s = F.sign(gap, 'dimensionless', ctx);
-    if (s === -1) return undef(`no intersection: it lies outside the ${rangeName(l)}`);
+    if (s === -1) return undef(`no ${what}: it lies outside the ${rangeName(l)}`);
     if (s === 'ambiguous') {
-      return undef(
-        `ambiguous: the intersection is within the band of an end of the ${rangeName(l)}`,
-      );
+      return undef(`ambiguous: the ${what} is within the band of an end of the ${rangeName(l)}`);
     }
     if (s === 'none') {
       return inexact(
-        `whether the intersection lies on the ${rangeName(l)} needs an order, which ${F.name} lacks`,
+        `whether the ${what} lies on the ${rangeName(l)} needs an order, which ${F.name} lacks`,
       );
     }
   }
