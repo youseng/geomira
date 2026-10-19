@@ -6,11 +6,13 @@ export default defineConfig({
     // Packages join `include` and `thresholds` in the run that builds them.
     coverage: {
       provider: 'v8',
-      include: ['packages/num/src/**/*.ts'],
+      include: ['packages/num/src/**/*.ts', 'packages/kernel/src/**/*.ts'],
       reporter: ['text', 'json-summary', 'html'],
       reportsDirectory: 'coverage',
       thresholds: {
         'packages/num/src/**/*.ts': { lines: 95, branches: 95 },
+        // Run 2 acceptance: kernel ≥ 90% lines (branches gated too, so gaps stay visible).
+        'packages/kernel/src/**/*.ts': { lines: 90, branches: 85 },
       },
     },
     projects: [

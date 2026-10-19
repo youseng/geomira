@@ -12,3 +12,5 @@ docs/SPEC.md
 CLAUDE.md
 reports/
 .stryker-tmp/
+# Generated from the tool registry (pnpm docs:tools); a test checks it byte for byte.
+docs/tools.md

@@ -94,7 +94,11 @@ importers:
 
   packages/export: {}
 
-  packages/kernel: {}
+  packages/kernel:
+    dependencies:
+      '@geomira/num':
+        specifier: workspace:*
+        version: link:../num
 
   packages/lang: {}
 
