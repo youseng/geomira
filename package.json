@@ -12,9 +12,11 @@
     "format": "prettier --write .",
     "depcruise": "depcruise packages apps/web/src --config .dependency-cruiser.cjs",
     "rules": "tsx scripts/check-rules.ts",
+    "docs:tools": "tsx scripts/gen-tool-docs.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "mutation:num": "stryker run stryker.num.json",
+    "mutation:kernel": "stryker run stryker.kernel.json",
     "verify": "pnpm typecheck && pnpm lint && pnpm depcruise && pnpm rules && pnpm test:coverage",
     "build": "pnpm --filter @geomira/web build",
     "e2e": "pnpm --filter @geomira/web e2e"

@@ -1,5 +1,249 @@
 # STATUS
 
+## Run 2: ACCEPTED (2026-10-19)
+
+Kernel core (SPEC §4, §5, §6.1, §9; the line-based tools). Base check first: Run 1 was
+ACCEPTED, `pnpm install && pnpm verify` was green locally on dc215a6 (= `run-1`, `main`),
+and ci, deploy and nightly were green in CI on that commit
+(https://github.com/youseng/geomira/actions/runs/39233995711), so there was no red base
+to repair.
+
+Every criterion holds: verify green locally, in a clean clone and in CI (ci run
+https://github.com/youseng/geomira/actions/runs/39241926737 on 1cf0ead); L1–L3 counts
+below; kernel coverage 99.9% lines (gate 90%); mutation testing of kernel geometry wired
+into nightly.yml, 98.82% in CI (target 75%; reported, gated from v1.1). All workflows in
+the table under "CI on GitHub".
+
+## Done (each item → the test file that proves it)
+
+1. **value.ts** (SPEC §4): `Value<T>` generic over the field: Point, Line (`p`, `d`, `lo`,
+   `hi`, `chiral`; unbounded ends are `null`, ADR-0003), Circle (arc, anchor), Num (with
+   `exact`), Polygon, Transform (similarity), Undefined, Inexact; capabilities point,
+   curve, linear, round, number, transform, polygon; reserved kinds IdealPoint, Conic,
+   Locus documented only. → `packages/kernel/test/value.test.ts`; unknown kinds are
+   rejected by every tool, also through `evaluate` (E2) → `registry.test.ts`.
+2. **document.ts, invariants.ts, edit.ts, layers.ts** (SPEC §5): the document type,
+   `checkInvariants`/`assertInvariants` for I1–I8, immutable helpers `addObject`,
+   `removeCascade` (+ `dependents`: objects, claims, assumptions, cleared rules),
+   `renameObject` (images follow), `redefineObject` (cycle check, stable topological
+   reorder), `setStyle` (`[noimage]` removes images), `setObjectLayers`, `addLayer`,
+   `updateLayer`, `removeLayer`. → `invariants.test.ts` (each invariant violated on a
+   crafted document), `edit.test.ts`, `layers.test.ts`, `names.test.ts`, `expr.test.ts`;
+   property: `document.property.test.ts` (400 random sequences of 12 helper calls, valid
+   and invalid, from fuzzed documents and from a document with a derived layer: 3,158 edits
+   applied, 1,642 refused, invariants hold after every edit, inputs never mutated).
+3. **registry.ts** (SPEC §6.1): `createRegistry(extra)` returns a frozen value (no
+   singleton); overloads resolved by capability; a rejected call reads
+   "foot does not accept (point, number); signatures: foot(point, linear) ·
+   foot(point, point, point)". → `registry.test.ts`.
+4. **evaluate.ts, context.ts** (SPEC §9, §3.1): `evaluate(doc, registry, F, ctx)` over
+   Float, Rational and ModP, total; `evaluateFrom` re-evaluates changed objects and their
+   dependents only (falls back to a full evaluate for another field, registry or scale);
+   `evalContextFor(doc)`: scale = diameter of the free points (≥ 1). →
+   `evaluate.test.ts`, `context.test.ts`, laws below.
+5. **Tools**, each with one `compute<T>`, registry entry, degenerate cases, a property or
+   theorem test, `export: 'numeric'` and generated docs: point, param, midpoint, divide,
+   foot (both signatures), intersect (line-like × line-like), parallel, perp,
+   perp_bisector, circumcenter, centroid, orthocenter, line, segment, ray, polygon, area,
+   dist, dangle, angle, ratio, add, sub, mul, div, neg. → `degenerate.test.ts` (45 tests,
+   one per declared case, the table must equal the registry's lists),
+   `tools.property.test.ts` (35 tests, every tool covered, checked by a meta-test),
+   `tools.direct.test.ts` (compute is total on any argument list), `docs.test.ts`.
+   The chirality flag (line, segment, ray achiral; perp toggles; parallel keeps;
+   perp_bisector chiral) is checked against actually mirrored figures, over Q and floats.
+   → `chirality.test.ts`.
+6. **Laws.** L1 → `laws/l1-total.test.ts`; L2 → `laws/l2-determinism.test.ts`; L3 (with
+   the band exclusion and a mod-p differential check) → `laws/l3-oracle.test.ts`. Counts
+   under "Acceptance command output".
+7. **Theorems** on 200 random triangles each, over FloatField and over RationalField
+   (exact): O, G, H collinear; OG : GH = 1 : 2; the altitudes concurrent (at the
+   orthocenter); each median divided 2 : 1 by the centroid. O, G, H come from three
+   independent formulas (H is not A + B + C − 2O). → `theorems.test.ts`. Sanity check:
+   with the orthocenter's sign flipped, 6 of the 8 tests fail.
+8. **Generated docs**: docs/tools.md from the registry (`pnpm docs:tools`); the "exact
+   run" column is discovered by running each tool's examples over RationalField. →
+   `docs.test.ts` (fails when the file is stale).
+9. **Coverage gate** for packages/kernel (90% lines, 85% branches) in `pnpm verify`;
+   **mutation testing** of kernel geometry (`geom.ts`, `tools/`): `stryker.kernel.json`,
+   `vitest.kernel.config.ts`, `pnpm mutation:kernel`, nightly.yml job `mutation-kernel`
+   (a matrix with `mutation-num`). The first run (CI, c26fb17) scored 90.93%; its
+   survivors pointed at real gaps (exact Undefined reasons, arity checks reached only
+   with line or polygon arguments, polygon vertex numbering, intersect with only the
+   first line degenerate, param at v = min, dangle's mod-p reason), closed by tests in
+   f520cce/14e4095: 98.82% in CI on 1cf0ead.
+10. ADR-0003 (kernel representation choices); packages/kernel/README.md;
+    docs/test-count.txt raised from 309 to 517.
+
+## Not done
+
+Nothing in Run 2's scope. Not started (later runs): circles, transforms, selectors and
+branchable tools, claims, language, scene, editor, export. The `run-2` tag is for the
+maintainer to place on the commit that records acceptance.
+
+## Known bugs
+
+None known. Fixed in this run, each with its regression test in the same commit:
+
+- Found by L1 on its first run: a construction with coordinates near 1e200 (for example
+  `divide(A, B, 1e200)` then `dist`) overflowed |d|² to ∞ and `FloatField.sqrt(∞)` threw,
+  so `evaluate` was not total. FloatField arguments beyond 2^200 now give Inexact
+  (ADR-0003 item 19). → `evaluate.test.ts` "regression (found by L1)".
+- `div(1, (1e17 + 1) − 1e17 − 1)`: the exact value of the divisor is 0 while the float
+  value is −1, so `Rational.div` would have thrown. `div` now also checks the exact
+  value. → `degenerate.test.ts` (div).
+- A value of an unknown kind reached `numbersOf`'s `assertNever` in the evaluator's range
+  check. → `registry.test.ts` (E2).
+
+## Uncertain
+
+- "arithmetic" in the Run 2 tool list is read as `+ − × ÷` and unary minus (add, sub,
+  mul, div, neg). SPEC §6.2 also lists sqrt/sin/cos/tan on numbers; they are not built
+  here and belong to the run that lists them.
+- SPEC §11.2 allows a trailing `*` only after a point name, but derived layers (§8.2)
+  also image lines and circles (`l*`). The kernel accepts `source name + suffix` for any
+  kind (I4); the language run has to decide how `l*` is lexed.
+- L3's "inputs within BAND of a degeneracy" is implemented as: some zero test or sign
+  decision of the float run saw a non-zero quantity with |x| < BAND·scale^k. Exact zeros
+  are compared rather than excluded (stricter). At most 1.5% of a tool's samples are
+  excluded.
+- L3 compares numbers with a relative tolerance of 1e-9·max(1, |exact|, scale). All
+  comparisons pass with this tolerance; SPEC does not fix one.
+- Angle-type degeneracies (parallel lines, collinear vertices, the `dangle` decision) are
+  decided on sin θ (ADR-0003 item 21) instead of the raw cross product against EPS·scale².
+  This is my reading of SPEC §3.1's "dimensionless otherwise".
+- Mod p, ordered decisions (segment and ray ranges, unsigned area, undirected and
+  directed angles) are Inexact; `param`'s range is not checked mod p (ADR-0003 item 16).
+  The claims run may refine this when it builds the mod-p rung.
+- The FloatField argument bound 2^200 relies on every v1 formula being of degree ≤ 4 with
+  divisors ≥ (EPS·scale)². Tools added later with higher-degree formulas must re-check it.
+- Mathematical facts used (I am confident of each): the Euler line with OG : GH = 1 : 2;
+  the altitudes meet at the orthocenter; the centroid divides each median 2 : 1; for a
+  triangle, ∡BAC + ∡CBA + ∡ACB ≡ 0 (mod 180°) for directed angles.
+
+## Changed frozen tests
+
+None. Every test file frozen at `run-1` is unchanged (`add-only: frozen tests compared
+with run-1, 0 violation(s)`); packages/kernel/test/index.test.ts still passes because the
+kernel API lives in subpath modules (ADR-0002).
+
+## Acceptance command output
+
+### Clean clone (commit 14e4095; 1cf0ead adds only docs/STATUS.md)
+
+```
+$ git clone … && pnpm install --frozen-lockfile        # Done in 1.9s using pnpm v10.28.0
+$ pnpm verify
+> pnpm typecheck && pnpm lint && pnpm depcruise && pnpm rules && pnpm test:coverage
+All matched files use Prettier code style!
+✔ no dependency violations found (101 modules, 404 dependencies cruised)
+ok   tolerance: 171 files scanned, 0 violation(s)
+ok   file-length: 171 files scanned, 0 violation(s)
+ok   test-count: 517 tests, floor 517, 0 violation(s)
+ok   disabled-tests: 171 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-1, 0 violation(s)
+ok   forbidden-words: 171 files scanned, 0 violation(s)
+L1 FloatField: 2000 documents, 53437 objects, 20145 Undefined, 476 Inexact, 0 throws, 0 non-finite; reached: parallel lines 22, coincident lines 359, coincident points 4337, collinear points 60, ambiguous 40, division by zero 176, outside the 30
+L1 RationalField: 2000 documents, 53437 objects, 16548 Undefined, 5456 Inexact, 0 throws, 0 non-finite; reached: parallel lines 29, coincident lines 409, coincident points 3116, collinear points 55, ambiguous 0, division by zero 69, outside the 40
+L1 ModPField: 2000 documents, 53437 objects, 14680 Undefined, 8891 Inexact, 0 throws, 0 non-finite; reached: parallel lines 29, coincident lines 405, coincident points 3092, collinear points 55, ambiguous 0, division by zero 35, outside the 0
+L2 FloatField: 1200 incremental evaluations equal to full ones
+L2 RationalField: 1200 incremental evaluations equal to full ones
+L2 ModPField: 1200 incremental evaluations equal to full ones
+L3 point: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L3 param: 402 defined + 1998 Undefined agree, 0 not exact, 0 excluded (band); mod p 402
+L3 midpoint: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L3 divide: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L3 foot: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L3 intersect: 1577 defined + 792 Undefined agree, 0 not exact, 31 excluded (band); mod p 968
+L3 circumcenter: 2155 defined + 221 Undefined agree, 0 not exact, 24 excluded (band); mod p 2155
+L3 centroid: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L3 orthocenter: 2140 defined + 225 Undefined agree, 0 not exact, 35 excluded (band); mod p 2140
+L3 line: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L3 segment: 2397 defined + 3 Undefined agree, 0 not exact, 0 excluded (band); mod p 2397
+L3 ray: 2398 defined + 2 Undefined agree, 0 not exact, 0 excluded (band); mod p 2398
+L3 parallel: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L3 perp: 2399 defined + 1 Undefined agree, 0 not exact, 0 excluded (band); mod p 2399
+L3 perp_bisector: 2399 defined + 1 Undefined agree, 0 not exact, 0 excluded (band); mod p 2399
+L3 dist: 922 defined + 1 Undefined agree, 1477 not exact, 0 excluded (band); mod p 0
+L3 ratio: 665 defined + 3 Undefined agree, 1732 not exact, 0 excluded (band); mod p 0
+L3 angle: 403 defined + 7 Undefined agree, 1953 not exact, 37 excluded (band); mod p 0
+L3 dangle: 397 defined + 3 Undefined agree, 1963 not exact, 37 excluded (band); mod p 0
+L3 area: 2387 defined + 4 Undefined agree, 0 not exact, 9 excluded (band); mod p 0
+L3 polygon: 2387 defined + 13 Undefined agree, 0 not exact, 0 excluded (band); mod p 2387
+L3 add: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L3 sub: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L3 mul: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+L3 div: 2335 defined + 65 Undefined agree, 0 not exact, 0 excluded (band); mod p 2335
+L3 neg: 2400 defined + 0 Undefined agree, 0 not exact, 0 excluded (band); mod p 2400
+invariants: 3158 edits applied, 1642 refused, all valid
+ Test Files  50 passed (50)
+      Tests  517 passed (517)
+ kernel/src        |     100 |    98.76 |     100 |     100 |
+ kernel/src/tools  |   99.62 |    98.41 |     100 |   99.55 |
+Statements   : 99.92% ( 1344/1345 )
+Branches     : 98.98% ( 977/987 )
+Lines        : 99.9% ( 1106/1107 )
+verify exit=0
+$ pnpm build
+✓ built in 1.22s
+build exit=0
+```
+
+"defined" = both fields defined and equal within 1e-9 relative; "Undefined agree" = both
+Undefined with the same reason; "not exact" = the exact run is Inexact (no comparison);
+"excluded (band)" = a float decision saw a non-zero quantity within BAND of zero; "mod
+p" = mod-p results equal to the reduction of the exact ones. Every tool has ≥ 50 defined
+comparisons (asserted).
+
+### Mutation testing of kernel geometry (`pnpm mutation:kernel`)
+
+```
+                | % Mutation score |          |           |            |          |          |
+File            |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+All files       |  98.62 |   99.01 |      497 |         3 |          5 |        2 |      720 |
+ tools          |  98.80 |   99.20 |      490 |         3 |          4 |        2 |      686 |
+ geom.ts        |  87.50 |   87.50 |        7 |         0 |          1 |        0 |       34 |
+```
+
+(local, 14e4095 tests; CI on 1cf0ead: "kernel mutation score: 98.82% (501 detected, 6
+undetected; target 75%, gated from v1.1)".) The remaining survivors, analysed one by one,
+are equivalent: in `abs`, dropping `case -1` falls through to √(x²) = |x|; `pts.length ===
+n` → `true` in `pointsOf` still ends in badArgs through the destructuring; no v1 line
+has `lo = null` with `hi` set (segment/ray label); mod p every `param` check is skipped
+either way; the `chiral` flag of the line `foot` builds internally is never observed;
+the `assertNever` message of an impossible sign. "errors" are mutants rejected by the
+TypeScript checker.
+
+### CI on GitHub
+
+| Workflow | Run                                                         | Result                                                                          |
+| -------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| ci       | https://github.com/youseng/geomira/actions/runs/39241926737 | success on 1cf0ead (push): verify, build, Playwright 2/2                        |
+| ci       | https://github.com/youseng/geomira/actions/runs/39241931201 | success on 1cf0ead (pull_request, PR #3)                                        |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39241926639 | success on 1cf0ead (build job; deploy job skipped off the default branch)       |
+| nightly  | https://github.com/youseng/geomira/actions/runs/39242037616 | success on 1cf0ead (dispatched): test; mutation-num; mutation-kernel 98.82%     |
+| nightly  | https://github.com/youseng/geomira/actions/runs/39240829013 | success on c26fb17 (first kernel run, full: 90.93%, before the test-gap commit) |
+
+The CI run on f520cce failed (`max-lines`: degenerate.test.ts had 417 lines); b5782f1
+split the file. Runs on other intermediate commits were cancelled by the next push
+(ci.yml `cancel-in-progress`).
+
+## Requests
+
+- None. No dependency was added (`@geomira/num` is a workspace dependency of the kernel).
+
+## Notes for later runs
+
+- Import the kernel through its subpaths (`@geomira/kernel/value`, `/evaluate`, …); see
+  packages/kernel/README.md and ADR-0003.
+- A new tool needs: a ToolSpec in packages/kernel/src/tools/ (added to tools/index.ts),
+  its degenerate cases in degenerate.test.ts (the table must equal the registry), a
+  property test (meta-checked), examples, and `pnpm docs:tools`. L1 and L3 fuzz it
+  automatically through the registry's signatures.
+- Branch selection must add `candidates` and evaluated selectors to ToolSpec by ADR
+  (ADR-0003 item 10); until then a call with selectors is Undefined.
+
+---
+
 ## Run 1: ACCEPTED (2026-10-19)
 
 packages/num (SPEC §3). Base check first: Run 0 was ACCEPTED, `pnpm install && pnpm verify`

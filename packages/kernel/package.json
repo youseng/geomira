@@ -5,7 +5,22 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./value": "./src/value.ts",
+    "./expr": "./src/expr.ts",
+    "./names": "./src/names.ts",
+    "./document": "./src/document.ts",
+    "./invariants": "./src/invariants.ts",
+    "./edit": "./src/edit.ts",
+    "./layers": "./src/layers.ts",
+    "./tool": "./src/tool.ts",
+    "./registry": "./src/registry.ts",
+    "./context": "./src/context.ts",
+    "./evaluate": "./src/evaluate.ts",
+    "./docs": "./src/docs.ts"
+  },
+  "dependencies": {
+    "@geomira/num": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

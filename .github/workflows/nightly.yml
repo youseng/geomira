@@ -1,7 +1,8 @@
 name: nightly
 
 # The long-running tier: the test suite with NIGHTLY=1, and incremental mutation testing
-# (Stryker) of the packages that have a mutation config (SPEC §17 L15; num since Run 1).
+# (Stryker) of the packages that have a mutation config (SPEC §17 L15; num since Run 1,
+# kernel geometry since Run 2).
 # Mutation scores are reported, not gated, until v1.1. Also runs when this file or a
 # mutation config changes, so edits to the nightly jobs are exercised before the next
 # scheduled run.
@@ -40,9 +41,16 @@ jobs:
       - name: Test suite (NIGHTLY=1)
         run: pnpm test
 
-  mutation-num:
+  # One job per package with a mutation config (L15): num since Run 1, kernel geometry
+  # (packages/kernel/src/geom.ts and tools/) since Run 2.
+  mutation:
+    name: mutation-${{ matrix.pkg }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        pkg: [num, kernel]
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -57,34 +65,38 @@ jobs:
       - name: Restore incremental mutation result
         uses: actions/cache/restore@v6
         with:
-          path: reports/mutation/num/stryker-incremental.json
-          key: stryker-num-${{ github.sha }}
-          restore-keys: stryker-num-
-      - name: Mutation testing (packages/num)
-        run: pnpm mutation:num
+          path: reports/mutation/${{ matrix.pkg }}/stryker-incremental.json
+          key: stryker-${{ matrix.pkg }}-${{ github.sha }}
+          restore-keys: stryker-${{ matrix.pkg }}-
+      - name: Mutation testing (packages/${{ matrix.pkg }})
+        run: pnpm mutation:${{ matrix.pkg }}
       - name: Save incremental mutation result
         if: always()
         uses: actions/cache/save@v6
         with:
-          path: reports/mutation/num/stryker-incremental.json
-          key: stryker-num-${{ github.sha }}-${{ github.run_id }}
+          path: reports/mutation/${{ matrix.pkg }}/stryker-incremental.json
+          key: stryker-${{ matrix.pkg }}-${{ github.sha }}-${{ github.run_id }}
       - name: Mutation score summary
         if: always()
+        env:
+          PKG: ${{ matrix.pkg }}
         run: |
           node -e '
-            const r = require("./reports/mutation/num/mutation.json");
+            const pkg = process.env.PKG;
+            const r = require(`./reports/mutation/${pkg}/mutation.json`);
             let detected = 0, undetected = 0;
             for (const f of Object.values(r.files)) for (const m of f.mutants) {
               if (["Killed", "Timeout"].includes(m.status)) detected++;
               if (["Survived", "NoCoverage"].includes(m.status)) undetected++;
             }
             const score = (100 * detected / (detected + undetected)).toFixed(2);
-            console.log(`num mutation score: ${score}% (${detected} detected, ${undetected} undetected; target 80%, gated from v1.1)`);
+            const target = pkg === "num" ? 80 : 75;
+            console.log(`${pkg} mutation score: ${score}% (${detected} detected, ${undetected} undetected; target ${target}%, gated from v1.1)`);
           ' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Upload mutation report
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: mutation-report-num
-          path: reports/mutation/num/
+          name: mutation-report-${{ matrix.pkg }}
+          path: reports/mutation/${{ matrix.pkg }}/
           retention-days: 30
