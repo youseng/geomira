@@ -1,10 +1,11 @@
 /**
- * The v1 tools of Runs 2 and 3a, in registry order (read only by registry.ts; the generated
+ * The v1 tools of Runs 2, 3a and 3b, in registry order (read only by registry.ts; the generated
  * docs group them by family).
  */
 import type { ToolSpec } from '../tool';
 import { ARITHMETIC_TOOLS } from './arithmetic';
-import { CIRCLE_TOOLS } from './circles';
+import { CIRCLE_MEASURE_TOOLS } from './circle-measures';
+import { CIRCLE_TOOLS, NINEPOINT_CENTER_TOOL } from './circles';
 import { DISPLAY_TOOLS } from './display';
 import { FUNCTION_TOOLS } from './functions';
 import { INCIRCLE_TOOLS } from './incircle';
@@ -31,4 +32,6 @@ export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze([
   ...TANGENT_TOOLS,
   ...INCIRCLE_TOOLS,
   ...FUNCTION_TOOLS,
+  NINEPOINT_CENTER_TOOL,
+  ...CIRCLE_MEASURE_TOOLS,
 ]);

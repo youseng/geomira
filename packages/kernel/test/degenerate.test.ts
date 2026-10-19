@@ -27,6 +27,7 @@ import {
 import { CIRCLE_CASES } from './helpers/degenerate-circles';
 import { GLIDER_CASES } from './helpers/degenerate-gliders';
 import { FUNCTION_CASES } from './helpers/degenerate-functions';
+import { GAP_CASES } from './helpers/degenerate-gaps';
 
 const CASES: Record<string, Record<string, () => void>> = {
   point: {},
@@ -243,6 +244,7 @@ const CASES: Record<string, Record<string, () => void>> = {
   ...CIRCLE_CASES,
   ...GLIDER_CASES,
   ...FUNCTION_CASES,
+  ...GAP_CASES,
 };
 
 describe('degenerate cases (ToolSpec.degenerate), each a test', () => {

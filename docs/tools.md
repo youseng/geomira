@@ -221,6 +221,20 @@ excenter(A, B, C): the excenter opposite A.
   - `excenter((5, 12), (0, 0), (14, 0))` → point (8, -12)
   - `excenter((0, 0), (4, 0), (1, 3))` → point (5.70245917364, 4.1101000264)
 
+### ninepoint_center
+
+The centre of the nine-point circle of ABC: the midpoint of the circumcenter and the orthocenter.
+
+- Signatures: `ninepoint_center(point, point, point)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - coincident vertices → Undefined
+  - collinear vertices → Undefined
+- Examples:
+  - `ninepoint_center((0, 0), (4, 0), (1, 3))` → point (3/2, 1)
+
 ## Lines
 
 ### line
@@ -570,6 +584,34 @@ The (unsigned) area of a polygon, or of the polygon through the given points.
 - Examples:
   - `area((0, 0), (3, 0), (3, 4))` → number 6
   - `area(polygon((0, 0), (3, 0), (3, 4), (0, 4)))` → number 12
+
+### power
+
+power(P, c) = |PO|² − r²: negative inside c, zero on c, positive outside (exact).
+
+- Signatures: `power(point, round)`
+- Result: number
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - P on c → 0
+  - P = the centre → −r²
+- Examples:
+  - `power((7, 1), circle((0, 0), (3, 4)))` → number 25
+
+### radius
+
+radius(c) = √r²: exact over Q when r² is the square of a rational.
+
+- Signatures: `radius(round)`
+- Result: number
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - r² not the square of a rational → Inexact over Q (always Inexact mod p)
+- Examples:
+  - `radius(circle((0, 0), (3, 4)))` → number 5
+  - `radius(circle((0, 0), (1, 1)))` → number 1.41421356237
 
 ## Display
 
