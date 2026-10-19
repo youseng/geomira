@@ -1,5 +1,146 @@
 # STATUS
 
+## Run 2: NOT ACCEPTED (pending CI on the final commit)
+
+Kernel core (SPEC §4, §5, §6.1, §9; the line-based tools). Base check first: Run 1 was
+ACCEPTED, `pnpm install && pnpm verify` was green locally on dc215a6 (= `run-1`, `main`),
+and ci, deploy and nightly were green in CI on that commit
+(https://github.com/youseng/geomira/actions/runs/39233995711), so there was no red base
+to repair.
+
+Every criterion holds locally: verify green (also in a clean clone); L1–L3 counts below;
+kernel coverage 99.9% lines (gate 90%); mutation testing of kernel geometry wired into
+nightly.yml (local score 98.62%, target 75%, reported, gated from v1.1). CI: CI_PLACEHOLDER
+
+## Done (each item → the test file that proves it)
+
+1. **value.ts** (SPEC §4): `Value<T>` generic over the field: Point, Line (`p`, `d`, `lo`,
+   `hi`, `chiral`; unbounded ends are `null`, ADR-0003), Circle (arc, anchor), Num (with
+   `exact`), Polygon, Transform (similarity), Undefined, Inexact; capabilities point,
+   curve, linear, round, number, transform, polygon; reserved kinds IdealPoint, Conic,
+   Locus documented only. → `packages/kernel/test/value.test.ts`; unknown kinds are
+   rejected by every tool, also through `evaluate` (E2) → `registry.test.ts`.
+2. **document.ts, invariants.ts, edit.ts, layers.ts** (SPEC §5): the document type,
+   `checkInvariants`/`assertInvariants` for I1–I8, immutable helpers `addObject`,
+   `removeCascade` (+ `dependents`: objects, claims, assumptions, cleared rules),
+   `renameObject` (images follow), `redefineObject` (cycle check, stable topological
+   reorder), `setStyle` (`[noimage]` removes images), `setObjectLayers`, `addLayer`,
+   `updateLayer`, `removeLayer`. → `invariants.test.ts` (each invariant violated on a
+   crafted document), `edit.test.ts`, `layers.test.ts`, `names.test.ts`, `expr.test.ts`;
+   property: `document.property.test.ts` (400 random sequences of 12 helper calls, valid
+   and invalid, from fuzzed documents and from a document with a derived layer: 3,158 edits
+   applied, 1,642 refused, invariants hold after every edit, inputs never mutated).
+3. **registry.ts** (SPEC §6.1): `createRegistry(extra)` returns a frozen value (no
+   singleton); overloads resolved by capability; a rejected call reads
+   "foot does not accept (point, number); signatures: foot(point, linear) ·
+   foot(point, point, point)". → `registry.test.ts`.
+4. **evaluate.ts, context.ts** (SPEC §9, §3.1): `evaluate(doc, registry, F, ctx)` over
+   Float, Rational and ModP, total; `evaluateFrom` re-evaluates changed objects and their
+   dependents only (falls back to a full evaluate for another field, registry or scale);
+   `evalContextFor(doc)`: scale = diameter of the free points (≥ 1). →
+   `evaluate.test.ts`, `context.test.ts`, laws below.
+5. **Tools**, each with one `compute<T>`, registry entry, degenerate cases, a property or
+   theorem test, `export: 'numeric'` and generated docs: point, param, midpoint, divide,
+   foot (both signatures), intersect (line-like × line-like), parallel, perp,
+   perp_bisector, circumcenter, centroid, orthocenter, line, segment, ray, polygon, area,
+   dist, dangle, angle, ratio, add, sub, mul, div, neg. → `degenerate.test.ts` (45 tests,
+   one per declared case, the table must equal the registry's lists),
+   `tools.property.test.ts` (35 tests, every tool covered, checked by a meta-test),
+   `tools.direct.test.ts` (compute is total on any argument list), `docs.test.ts`.
+   The chirality flag (line, segment, ray achiral; perp toggles; parallel keeps;
+   perp_bisector chiral) is checked against actually mirrored figures, over Q and floats.
+   → `chirality.test.ts`.
+6. **Laws.** L1 → `laws/l1-total.test.ts`; L2 → `laws/l2-determinism.test.ts`; L3 (with
+   the band exclusion and a mod-p differential check) → `laws/l3-oracle.test.ts`. Counts
+   under "Acceptance command output".
+7. **Theorems** on 200 random triangles each, over FloatField and over RationalField
+   (exact): O, G, H collinear; OG : GH = 1 : 2; the altitudes concurrent (at the
+   orthocenter); each median divided 2 : 1 by the centroid. O, G, H come from three
+   independent formulas (H is not A + B + C − 2O). → `theorems.test.ts`. Sanity check:
+   with the orthocenter's sign flipped, 6 of the 8 tests fail.
+8. **Generated docs**: docs/tools.md from the registry (`pnpm docs:tools`); the "exact
+   run" column is discovered by running each tool's examples over RationalField. →
+   `docs.test.ts` (fails when the file is stale).
+9. **Coverage gate** for packages/kernel (90% lines, 85% branches) in `pnpm verify`;
+   **mutation testing** of kernel geometry (`geom.ts`, `tools/`): `stryker.kernel.json`,
+   `vitest.kernel.config.ts`, `pnpm mutation:kernel`, nightly.yml job `mutation-kernel`
+   (a matrix with `mutation-num`).
+10. ADR-0003 (kernel representation choices); packages/kernel/README.md;
+    docs/test-count.txt raised from 309 to 517.
+
+## Not done
+
+Nothing in Run 2's scope. Not started (later runs): circles, transforms, selectors and
+branchable tools, claims, language, scene, editor, export. The `run-2` tag is for the
+maintainer to place on the commit that records acceptance.
+
+## Known bugs
+
+None known. Fixed in this run, each with its regression test in the same commit:
+
+- Found by L1 on its first run: a construction with coordinates near 1e200 (for example
+  `divide(A, B, 1e200)` then `dist`) overflowed |d|² to ∞ and `FloatField.sqrt(∞)` threw,
+  so `evaluate` was not total. FloatField arguments beyond 2^200 now give Inexact
+  (ADR-0003 item 19). → `evaluate.test.ts` "regression (found by L1)".
+- `div(1, (1e17 + 1) − 1e17 − 1)`: the exact value of the divisor is 0 while the float
+  value is −1, so `Rational.div` would have thrown. `div` now also checks the exact
+  value. → `degenerate.test.ts` (div).
+- A value of an unknown kind reached `numbersOf`'s `assertNever` in the evaluator's range
+  check. → `registry.test.ts` (E2).
+
+## Uncertain
+
+- "arithmetic" in the Run 2 tool list is read as `+ − × ÷` and unary minus (add, sub,
+  mul, div, neg). SPEC §6.2 also lists sqrt/sin/cos/tan on numbers; they are not built
+  here and belong to the run that lists them.
+- SPEC §11.2 allows a trailing `*` only after a point name, but derived layers (§8.2)
+  also image lines and circles (`l*`). The kernel accepts `source name + suffix` for any
+  kind (I4); the language run has to decide how `l*` is lexed.
+- L3's "inputs within BAND of a degeneracy" is implemented as: some zero test or sign
+  decision of the float run saw a non-zero quantity with |x| < BAND·scale^k. Exact zeros
+  are compared rather than excluded (stricter). At most 1.5% of a tool's samples are
+  excluded.
+- L3 compares numbers with a relative tolerance of 1e-9·max(1, |exact|, scale). All
+  comparisons pass with this tolerance; SPEC does not fix one.
+- Angle-type degeneracies (parallel lines, collinear vertices, the `dangle` decision) are
+  decided on sin θ (ADR-0003 item 21) instead of the raw cross product against EPS·scale².
+  This is my reading of SPEC §3.1's "dimensionless otherwise".
+- Mod p, ordered decisions (segment and ray ranges, unsigned area, undirected and
+  directed angles) are Inexact; `param`'s range is not checked mod p (ADR-0003 item 16).
+  The claims run may refine this when it builds the mod-p rung.
+- The FloatField argument bound 2^200 relies on every v1 formula being of degree ≤ 4 with
+  divisors ≥ (EPS·scale)². Tools added later with higher-degree formulas must re-check it.
+- Mathematical facts used (I am confident of each): the Euler line with OG : GH = 1 : 2;
+  the altitudes meet at the orthocenter; the centroid divides each median 2 : 1; for a
+  triangle, ∡BAC + ∡CBA + ∡ACB ≡ 0 (mod 180°) for directed angles.
+
+## Changed frozen tests
+
+None. Every test file frozen at `run-1` is unchanged (`add-only: frozen tests compared
+with run-1, 0 violation(s)`); packages/kernel/test/index.test.ts still passes because the
+kernel API lives in subpath modules (ADR-0002).
+
+## Acceptance command output
+
+ACCEPTANCE_PLACEHOLDER
+
+## Requests
+
+- None. No dependency was added (`@geomira/num` is a workspace dependency of the kernel).
+
+## Notes for later runs
+
+- Import the kernel through its subpaths (`@geomira/kernel/value`, `/evaluate`, …); see
+  packages/kernel/README.md and ADR-0003.
+- A new tool needs: a ToolSpec in packages/kernel/src/tools/ (added to tools/index.ts),
+  its degenerate cases in degenerate.test.ts (the table must equal the registry), a
+  property test (meta-checked), examples, and `pnpm docs:tools`. L1 and L3 fuzz it
+  automatically through the registry's signatures.
+- Branch selection must add `candidates` and evaluated selectors to ToolSpec by ADR
+  (ADR-0003 item 10); until then a call with selectors is Undefined.
+
+---
+
 ## Run 1: ACCEPTED (2026-10-19)
 
 packages/num (SPEC §3). Base check first: Run 0 was ACCEPTED, `pnpm install && pnpm verify`
