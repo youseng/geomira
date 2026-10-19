@@ -10,7 +10,10 @@
  *     the other point is computed WITHOUT square roots (Vieta / reflection, exact in every
  *     field, as the other() tool); if it lies within the band of P it is the double point.
  *   - Low-level: along(±) and orient(±) keep the candidates labelled with their sign, and
- *     the double point (label 0) under both signs.
+ *     the double point (label 0) under both signs. A label names a BRANCH of the pair (the
+ *     further of the carrier line's two intersections, the positive side of the line of
+ *     centres…), not a rank among survivors: if that branch was removed (off a segment, by
+ *     a filter), nothing satisfies the selector; the other branch is never substituted.
  * Rules: a deciding quantity within the band → Undefined("ambiguous: …"); zero survivors →
  * Undefined("no … satisfies …"); two survivors → Undefined("ambiguous: add a selector");
  * a sign-based decision mod p (no order) → Inexact.
@@ -84,8 +87,9 @@ function viaOther<T>(
   s: EvaluatedSelector<T>,
   ctx: EvalContext,
 ): Result<T> {
-  const P = s.args[0];
-  if (P?.kind !== 'point' || pair.vieta === undefined) return undef(`${s.text} needs a point`);
+  const [P, vieta] = [s.args[0], pair.vieta];
+  if (P?.kind !== 'point') return undef(`${s.text} needs a point`);
+  if (vieta === undefined) return undef(`${s.text} does not apply to ${pair.shape.describe}`);
   const n = pair.count();
   if (typeof n !== 'number') return n;
   for (const c of pair.curves) {
@@ -96,7 +100,7 @@ function viaOther<T>(
         : requireOnCircle(F, P, c.obj, ctx, what);
     if (bad !== undefined) return bad;
   }
-  const X = pair.vieta(P);
+  const X = vieta(P);
   const r = pair.range(X);
   if (r !== 'in') return r;
   return [
