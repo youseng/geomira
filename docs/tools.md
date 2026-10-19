@@ -649,3 +649,63 @@ a ÷ b on numbers (exact when both are exact).
 - Degenerate cases: none
 - Examples:
   - `neg(2/3)` → number -2/3
+
+### sqrt
+
+√x, the non-negative square root (exact on squares of rationals).
+
+- Signatures: `sqrt(number)`
+- Result: number
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - x < 0 → Undefined (sqrt of a negative number)
+  - x within the band of 0 counts as 0 → 0
+  - x not the square of a rational → Inexact (over Q; mod p unless x is an exact square)
+- Examples:
+  - `sqrt(9/4)` → number 3/2
+  - `sqrt(2)` → number 1.41421356237
+
+### sin
+
+sin θ, θ in degrees (exact where rational).
+
+- Signatures: `sin(number)`
+- Result: number
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - off the angles where it is rational → Inexact (over Q; mod p unless the angle is exact)
+- Examples:
+  - `sin(30)` → number 1/2
+  - `sin(45)` → number 0.707106781187
+
+### cos
+
+cos θ, θ in degrees (exact where rational).
+
+- Signatures: `cos(number)`
+- Result: number
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - off the angles where it is rational → Inexact (over Q; mod p unless the angle is exact)
+- Examples:
+  - `cos(60)` → number 1/2
+  - `cos(45)` → number 0.707106781187
+
+### tan
+
+tan θ, θ in degrees (exact where rational: multiples of 45°).
+
+- Signatures: `tan(number)`
+- Result: number
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - θ ≡ 90° (mod 180°) → Undefined
+  - cos θ within the band of 0 counts as 0 → Undefined
+  - tan θ not rational → Inexact (over Q; mod p unless θ is an exact multiple of 45°)
+- Examples:
+  - `tan(45)` → number 1
+  - `tan(30)` → number 0.57735026919

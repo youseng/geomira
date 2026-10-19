@@ -28,7 +28,8 @@ point, param, midpoint, divide, foot, intersect, circumcenter, centroid, orthoce
 segment, ray, parallel, perp, perp_bisector, dist, ratio, angle, dangle, area, polygon, add,
 sub, mul, div, neg (Run 2); circle, circumcircle, cline, diameter_circle, ninepoint_circle,
 center, on, other, tangent, polar, radical_axis, incenter, excenter, incircle, excircle,
-bisector, ext_bisector (Run 3a). Their signatures, degenerate cases and exactness are in
+bisector, ext_bisector, sqrt, sin, cos, tan (Run 3a; the functions on numbers by
+ADR-0005). Their signatures, degenerate cases and exactness are in
 [docs/tools.md](../../docs/tools.md), generated from the registry; `pnpm docs:exactness`
 prints the exactness table.
 
@@ -40,7 +41,8 @@ prints the exactness table.
 - Theorems over Float and Rational (Run 3a: 16 circle theorems, the side-length tools
   exactly on Heronian triangles), the chirality flag against mirrored figures, glider
   round trips and the drag map, cline switching, L1 for circle degeneracies
-  (laws/l1-circles.test.ts), one property test per tool, one test per declared degenerate
+  (laws/l1-circles.test.ts) and for sqrt/sin/cos/tan (laws/l1-functions.test.ts), one
+  property test per tool, one test per declared degenerate
   case, invariants under random helper sequences.
 - Coverage: `pnpm test:coverage` (part of `pnpm verify`) fails below 90% lines or 85%
   branches. Mutation testing of the geometry (`geom.ts`, `tools/`): `pnpm mutation:kernel`,

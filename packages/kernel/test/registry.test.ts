@@ -67,6 +67,10 @@ describe('createRegistry', () => {
       'excircle',
       'bisector',
       'ext_bisector',
+      'sqrt',
+      'sin',
+      'cos',
+      'tan',
     ]);
     for (const t of REGISTRY.tools) {
       expect(t.id).toBe(t.name);

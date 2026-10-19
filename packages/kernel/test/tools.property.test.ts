@@ -13,6 +13,7 @@ import { REGISTRY, num, type Builder } from './helpers/doc';
 import { asNum, forFigures, numIs, samePoints, type Figure, type Pts } from './helpers/figure';
 import { CIRCLE_PROPERTIES } from './helpers/circle-properties';
 import { CIRCLE_PROPERTIES_2 } from './helpers/circle-properties-2';
+import { FUNCTION_PROPERTIES } from './helpers/function-properties';
 
 interface Property {
   readonly tools: readonly string[];
@@ -270,6 +271,7 @@ const PROPERTIES: readonly Property[] = [
   },
   ...CIRCLE_PROPERTIES,
   ...CIRCLE_PROPERTIES_2,
+  ...FUNCTION_PROPERTIES,
   {
     tools: ['add', 'sub', 'mul', 'div', 'neg'],
     name: 'arithmetic: a − b = a + (−b), (a·b)/b = a, exact values carried',
