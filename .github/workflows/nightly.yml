@@ -1,8 +1,10 @@
 name: nightly
 
-# The long-running test tier: the test suite with NIGHTLY=1 (later runs add the long
-# fuzzing and mutation-testing jobs). Also runs when this file changes, so edits to the
-# nightly job are exercised before the next scheduled run.
+# The long-running tier: the test suite with NIGHTLY=1, and incremental mutation testing
+# (Stryker) of the packages that have a mutation config (SPEC §17 L15; num since Run 1).
+# Mutation scores are reported, not gated, until v1.1. Also runs when this file or a
+# mutation config changes, so edits to the nightly jobs are exercised before the next
+# scheduled run.
 
 on:
   schedule:
@@ -11,6 +13,8 @@ on:
   push:
     paths:
       - .github/workflows/nightly.yml
+      - stryker.*.json
+      - vitest.*.config.ts
 
 permissions:
   contents: read
@@ -35,3 +39,52 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Test suite (NIGHTLY=1)
         run: pnpm test
+
+  mutation-num:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      # Incremental mode: the previous run's result lets Stryker re-test only mutants whose
+      # code or covering tests changed. Each run saves a new entry; the newest is restored.
+      - name: Restore incremental mutation result
+        uses: actions/cache/restore@v6
+        with:
+          path: reports/mutation/num/stryker-incremental.json
+          key: stryker-num-${{ github.sha }}
+          restore-keys: stryker-num-
+      - name: Mutation testing (packages/num)
+        run: pnpm mutation:num
+      - name: Save incremental mutation result
+        if: always()
+        uses: actions/cache/save@v6
+        with:
+          path: reports/mutation/num/stryker-incremental.json
+          key: stryker-num-${{ github.sha }}-${{ github.run_id }}
+      - name: Mutation score summary
+        if: always()
+        run: |
+          node -e '
+            const r = require("./reports/mutation/num/mutation.json");
+            let detected = 0, undetected = 0;
+            for (const f of Object.values(r.files)) for (const m of f.mutants) {
+              if (["Killed", "Timeout"].includes(m.status)) detected++;
+              if (["Survived", "NoCoverage"].includes(m.status)) undetected++;
+            }
+            const score = (100 * detected / (detected + undetected)).toFixed(2);
+            console.log(`num mutation score: ${score}% (${detected} detected, ${undetected} undetected; target 80%, gated from v1.1)`);
+          ' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-report-num
+          path: reports/mutation/num/
+          retention-days: 30

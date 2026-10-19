@@ -2,6 +2,17 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    // `pnpm test:coverage` (part of `pnpm verify`) enforces the per-package coverage gates.
+    // Packages join `include` and `thresholds` in the run that builds them.
+    coverage: {
+      provider: 'v8',
+      include: ['packages/num/src/**/*.ts'],
+      reporter: ['text', 'json-summary', 'html'],
+      reportsDirectory: 'coverage',
+      thresholds: {
+        'packages/num/src/**/*.ts': { lines: 95, branches: 95 },
+      },
+    },
     projects: [
       {
         test: {
