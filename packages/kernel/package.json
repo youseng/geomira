@@ -17,7 +17,8 @@
     "./registry": "./src/registry.ts",
     "./context": "./src/context.ts",
     "./evaluate": "./src/evaluate.ts",
-    "./docs": "./src/docs.ts"
+    "./docs": "./src/docs.ts",
+    "./glider": "./src/glider.ts"
   },
   "dependencies": {
     "@geomira/num": "workspace:*"

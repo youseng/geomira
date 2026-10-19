@@ -8,6 +8,7 @@ import * as document from '../src/document';
 import * as edit from '../src/edit';
 import * as evaluate from '../src/evaluate';
 import * as expr from '../src/expr';
+import * as glider from '../src/glider';
 import * as invariants from '../src/invariants';
 import * as layers from '../src/layers';
 import * as names from '../src/names';
@@ -80,6 +81,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     module: docs,
     names: ['exactness', 'exampleDocument', 'formatValue', 'renderToolDocs', 'runExample'],
   },
+  './glider': { module: glider, names: ['dragParameter', 'gliderParameter', 'gliderPoint'] },
 };
 
 describe('@geomira/kernel subpath surface', () => {

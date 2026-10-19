@@ -20,6 +20,7 @@ import type { Signature, ToolSpec } from '../../src/tool';
 import { capabilityKinds, numbersOf, type Value } from '../../src/value';
 import { Builder, REGISTRY, contextOf } from '../helpers/doc';
 import { LAW_TIMEOUT, bandWatch, lawCount } from '../helpers/laws';
+import { planArgs, randomCircle } from '../helpers/l3-plans';
 
 const SAMPLES = lawCount(2400);
 const MIN_DEFINED = lawCount(50);
@@ -55,6 +56,8 @@ class Sampler {
   private readonly hubIndex: number;
   private readonly dirs: readonly (readonly [number, number])[];
   private last: readonly [Rational, Rational] | undefined;
+  /** Arguments planned for the next call (helpers/l3-plans.ts), used before any draw. */
+  planned: Expr[] = [];
 
   constructor(
     private readonly rng: Rng,
@@ -105,10 +108,20 @@ class Sampler {
   }
 
   arg(cap: Signature['params'][number]): Expr {
+    const planned = this.planned.shift();
+    if (planned !== undefined) return planned;
     const kinds = capabilityKinds(cap);
     if (kinds.includes('point')) return this.point();
     if (kinds.includes('line')) return this.linear();
     if (kinds.includes('number')) return this.number();
+    if (kinds.includes('circle')) {
+      return randomCircle(
+        this.b,
+        this.rng,
+        () => this.point(),
+        () => this.number(),
+      );
+    }
     const pts = [
       this.point(),
       this.point(),
@@ -183,6 +196,7 @@ function sampleTool(tool: ToolSpec, t: number, tally: Tally): void {
     const sig = tool.signatures[rng.nextInt(tool.signatures.length)];
     if (sig === undefined) continue;
     const caps = [...sig.params, ...(sig.rest === undefined ? [] : [sig.rest])];
+    s.planned = planArgs(s.b, rng, tool.name, caps) ?? [];
     const x = s.b.add(
       'x',
       call(
