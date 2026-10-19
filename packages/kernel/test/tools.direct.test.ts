@@ -44,6 +44,7 @@ describe('compute with arguments it does not accept', () => {
         [n, n, n, n],
         [l],
         [p, g, p],
+        [n, l],
       ];
       for (const tool of REGISTRY.tools) {
         for (const args of bogus) {
