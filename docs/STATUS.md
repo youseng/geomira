@@ -8,11 +8,13 @@ The first acceptance of Run 3a missed one item of its prompt: SPEC §6.2 lists s
 (degrees) on numbers, and only `+ − × ÷` and negation existed. "Not done" below wrongly said
 "Nothing in Run 3a's scope". This completion adds the four tools (Done, items 12–13). Base
 check first: `pnpm install && pnpm verify` was green on `main` = f57d247 (681 tests), so there
-was no red base. Verify is green locally, in a clean clone and in CI on f873e55 (ci
+was no red base. Verify was green locally, in a clean clone and in CI on f873e55 (ci
 https://github.com/youseng/geomira/actions/runs/39270898956, deploy
-https://github.com/youseng/geomira/actions/runs/39270898955). Kernel coverage 99.72% lines;
-kernel mutation score 99.47% locally (0 survivors in the new code). The test-count floor is
-raised from 681 to 715.
+https://github.com/youseng/geomira/actions/runs/39270898955). On review the maintainer chose
+the continuous sqrt (ADR-0005, "Revision"; 382985f): verify is green locally and in a clean
+clone on 382985f, CI below. Kernel coverage 99.72% lines; kernel mutation score 99.47%
+(full run on f873e55), and 0 survivors in functions.ts after the revision (focused run). The
+test-count floor is raised from 681 to 718.
 
 ### First acceptance
 
@@ -91,16 +93,17 @@ from v1.1).
     (packages/kernel/src/tools/functions.ts), a registry entry, `export: 'numeric'` and
     generated docs (docs/tools.md). The argument is classified before num is called: an
     exact argument (`Num.exact`) is decided exactly in every field, and a rational result
-    keeps its exact value; otherwise the field's banded sign decides, and a value within
-    the band of 0 counts as 0 (sqrt → 0; tan at a cosine in the band → Undefined). sqrt
-    of a negative → Undefined("sqrt of a negative number"); tan at 90° (mod 180°) →
+    keeps its exact value; otherwise the field's banded sign decides: sqrt is continuous
+    (x ≥ 0 → √x as computed, −BAND < x < 0 → 0, x ≤ −BAND → Undefined("sqrt of a
+    negative number")), and tan at a cosine within the band of 0 → Undefined, as at
+    90° (mod 180°) →
     Undefined("tan is undefined at 90° (mod 180°)"). Over Q: sqrt is exact on squares of
     rationals and Inexact otherwise; sin/cos are exact at the angles num's tables cover;
     tan is exact at the multiples of 45° (sin 2θ / (1 + cos 2θ) from the same tables,
     where sin θ or cos θ is not rational). →
     - degenerate cases: `degenerate.test.ts` (table in `helpers/degenerate-functions.ts`:
-      negatives, exact and measured; in-band zeros of both signs, on both sides of EPS;
-      just outside the band; exact arguments decided exactly; 90° exactly and within the
+      negatives, exact and measured; in-band arguments of both signs, on both sides of
+      EPS (negatives → 0, positives → their root); just outside the band; exact arguments decided exactly; 90° exactly and within the
       band; Inexact over Q and mod p);
     - properties: `tools.property.test.ts` (`helpers/function-properties.ts`: √(area²) =
       area exactly; sin/cos/tan of a constructed right angle and 45° angle, exact over Q;
@@ -118,7 +121,12 @@ from v1.1).
     - `functions.test.ts`: exact tables (sin/cos/tan at every multiple of 15° in
       [−720°, 720°], sqrt of n/d), and through `withSqrtLog` / `withDivisorLog` num is
       never asked for √ of a negative or a division by zero;
-    - `scripts/exactness/table.test.ts`: the regenerated exactness table.
+    - `scripts/exactness/table.test.ts`: the regenerated exactness table;
+    - `sqrt-continuity.test.ts` (the revision): on seeded arguments, a grid and the
+      doubles next to −BAND, 0, EPS and BAND in [−2·BAND, 10·BAND], at scales 1 and 1000,
+      sqrt of a measured number is defined exactly on (−BAND, ∞), non-decreasing and
+      ½-Hölder (|√⁺y − √⁺x| ≤ √|y − x|) on adjacent and 2,000 random pairs, so it never
+      jumps. It fails (3/3) on the first rule, which stepped by √BAND at x = BAND.
       Sanity check: three deliberate bugs (in-band negatives Undefined, tan = cos/sin, a
       wrong double angle) failed 1–3, 25 and 6 tests; the first was caught only by L1, so
       the degenerate case gained an argument between EPS and BAND, which now catches it too.
@@ -228,12 +236,13 @@ None known.
   Feuerbach's theorem; Euler's OI² = R² − 2Rr; the angle bisector theorem; Thales; a
   triangle inscribed in a circle at points w² (|w| = 1, w rational) has rational chords
   2·|sin(φ₁ − φ₂)|·R.
-- Completion (ADR-0005): "a value within the band of 0 counts as 0" is applied literally to
-  arguments WITHOUT an exact value: in FloatField sqrt is 0 on (−BAND, BAND) and √x from
-  BAND on, so at x = BAND it steps from 0 to √BAND ≈ 3.2·10⁻⁴ (numbers are dimensionless).
-  The continuous alternative (√x for a positive x inside the band, 0 only for negatives)
-  needs the side of 0 inside the band; it is the maintainer's call (ADR-0005,
-  alternatives).
+- Completion (ADR-0005, revised on review): for arguments WITHOUT an exact value, sqrt is
+  √max(x, 0) on (−BAND, ∞) and Undefined from −BAND down; the only discontinuity is that
+  domain edge. A discriminant that is 0 up to a positive rounding residue r therefore
+  gives √r (≤ √BAND ≈ 3.2·10⁻⁴), not exactly 0: branch selection (a later run) must decide
+  tangency on the discriminant, not on its root. Inside the band the side of 0 is read
+  from `F.toNumber`, which is x itself in FloatField (the exact fields reach that branch
+  only for an exact 0).
 - Completion: an argument WITH an exact value (a literal, `param`, exact arithmetic) is
   decided exactly, also in FloatField, so `sqrt(1/100000000)` is 1/10000 there, not 0. For
   tan the float run also refuses a θ whose float cosine is in the band even when the exact θ
@@ -277,34 +286,36 @@ file either (`git diff --numstat` shows additions only). Lines ADDED:
 - `packages/kernel/test/tools.property.test.ts` (frozen): one import and
   `...FUNCTION_PROPERTIES`.
 - `scripts/exactness/table.test.ts` (Run 3a): one test for the four tools' rows.
+- The revision changed only files added by this PR (`helpers/degenerate-functions.ts`,
+  `laws/l1-functions.test.ts`, `functions.test.ts`) and added `sqrt-continuity.test.ts`.
 - Helpers (not frozen; additions only): `helpers/l3-plans.ts` (an import and the line
   that hands the four tools to `helpers/l3-plans-functions.ts`), `helpers/fuzz.ts`
   (`parallelPair`, `outsidePair` and the two lines calling them; Done, item 13).
 
 ## Acceptance command output
 
-### Completion: clean clone of f873e55 (`pnpm install --frozen-lockfile && pnpm verify`)
+### Completion: clean clone of 382985f (`pnpm install --frozen-lockfile && pnpm verify`)
 
 ```
 All matched files use Prettier code style!
-✔ no dependency violations found (132 modules, 637 dependencies cruised)
-ok   tolerance: 207 files scanned, 0 violation(s)
-ok   file-length: 207 files scanned, 0 violation(s)
-ok   test-count: 715 tests, floor 681, 0 violation(s)
-ok   disabled-tests: 207 files scanned, 0 violation(s)
+✔ no dependency violations found (133 modules, 642 dependencies cruised)
+ok   tolerance: 208 files scanned, 0 violation(s)
+ok   file-length: 208 files scanned, 0 violation(s)
+ok   test-count: 718 tests, floor 715, 0 violation(s)
+ok   disabled-tests: 208 files scanned, 0 violation(s)
 ok   add-only: frozen tests compared with run-2, 0 violation(s)
-ok   forbidden-words: 207 files scanned, 0 violation(s)
-L1 functions FloatField: 2000 documents, 86399 objects, 23142 sqrt/sin/cos/tan calls, 4222 Undefined, 746 Inexact, 0 throws, 0 non-finite; reached: negative 769, 90° 662, in-band zeros 614, near 90° defined 313
+ok   forbidden-words: 208 files scanned, 0 violation(s)
+L1 functions FloatField: 2000 documents, 86399 objects, 23142 sqrt/sin/cos/tan calls, 4194 Undefined, 746 Inexact, 0 throws, 0 non-finite; reached: negative 769, 90° 661, in-band negatives → 0 335, in-band positives → √x 286, near 90° defined 314
 L2 FloatField: 1200 incremental evaluations equal to full ones
-L1 functions RationalField: 2000 documents, 86399 objects, 23142 sqrt/sin/cos/tan calls, 2356 Undefined, 27460 Inexact, 0 throws, 0 non-finite; reached: negative 675, 90° 217, in-band zeros 0, near 90° defined 0
+L1 functions RationalField: 2000 documents, 86399 objects, 23142 sqrt/sin/cos/tan calls, 2356 Undefined, 27460 Inexact, 0 throws, 0 non-finite; reached: negative 675, 90° 217, in-band negatives → 0 0, in-band positives → √x 0, near 90° defined 0
 L2 RationalField: 1200 incremental evaluations equal to full ones
 L2 ModPField: 1200 incremental evaluations equal to full ones
-L1 functions ModPField: 2000 documents, 86399 objects, 23142 sqrt/sin/cos/tan calls, 1520 Undefined, 35126 Inexact, 0 throws, 0 non-finite; reached: negative 489, 90° 132, in-band zeros 0, near 90° defined 0
+L1 functions ModPField: 2000 documents, 86399 objects, 23142 sqrt/sin/cos/tan calls, 1520 Undefined, 35126 Inexact, 0 throws, 0 non-finite; reached: negative 489, 90° 132, in-band negatives → 0 0, in-band positives → √x 0, near 90° defined 0
 theorem (float) Heron: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (heronian) Heron: 200 hold, 0 degenerate, 0 ill-conditioned
-invariants: 3161 edits applied, 1639 refused, all valid
 theorem (float) Pythagoras through the foot of an altitude: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (float) the law of sines: 199 hold, 0 degenerate, 1 ill-conditioned
+invariants: 3161 edits applied, 1639 refused, all valid
 theorem (float) the law of cosines: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (float) tan A + tan B + tan C = tan A·tan B·tan C (no right angle): 200 hold, 0 degenerate, 0 ill-conditioned
 L3 sqrt: 756 defined + 991 Undefined agree, 653 not exact, 0 excluded (band); mod p 208
@@ -317,13 +328,13 @@ L1 RationalField: 2000 documents, 57692 objects, 21025 Undefined, 10829 Inexact,
 L1 ModPField: 2000 documents, 57692 objects, 18775 Undefined, 14523 Inexact, 0 throws, 0 non-finite; reached: parallel lines 354, coincident lines 264, coincident points 4008, collinear points 100, ambiguous 0, division by zero 24, outside the 0
 L1 circles RationalField: 2000 documents, 65393 objects, 29245 Undefined, 5365 Inexact, 0 throws, 0 non-finite; reached: coincident points 2625, collinear points 58, parallel lines 628, concentric circles 546, needs P on 437, ambiguous 0, no anchor 69, (0 : 0) 5, radius 194, polar is the line at infinity 305, no other intersection 33, is undefined 19231
 L1 circles ModPField: 2000 documents, 65393 objects, 28528 Undefined, 6374 Inexact, 0 throws, 0 non-finite; reached: coincident points 2608, collinear points 57, parallel lines 615, concentric circles 571, needs P on 463, ambiguous 0, no anchor 133, (0 : 0) 5, radius 23, polar is the line at infinity 315, no other intersection 0, is undefined 18865
- Test Files  62 passed (62)
-      Tests  715 passed (715)
+ Test Files  63 passed (63)
+      Tests  718 passed (718)
  kernel/src        |   99.63 |    98.33 |     100 |   99.68 |
  kernel/src/tools  |   99.27 |    98.46 |     100 |   99.56 |
-  functions.ts     |   98.41 |    96.15 |     100 |      98 | 76
+  functions.ts     |   98.41 |    96.29 |     100 |      98 | 80
 Statements   : 99.6% ( 1750/1757 )
-Branches     : 98.68% ( 1352/1370 )
+Branches     : 98.68% ( 1354/1372 )
 Lines        : 99.72% ( 1436/1440 )
 verify exit=0
 ```
@@ -333,7 +344,7 @@ exact" counts the samples whose exact run is Inexact (√ of a non-square, trig 
 special angles). The 0 band exclusions mean no planned measured argument fell inside the
 band; the band rules themselves are checked call by call by L1 functions.
 
-### Completion: mutation testing of kernel geometry (`pnpm mutation:kernel`, local, full run)
+### Completion: mutation testing of kernel geometry (`pnpm mutation:kernel`, local, full run on f873e55)
 
 ```
 File            |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
@@ -363,6 +374,19 @@ same one). The 3 survivors are Run 3a's and Run 2's documented equivalent mutant
 (circles.ts `centreRadius` `s === 'none'`, points.ts `param`'s range mod p, the flag of
 `foot`'s internal line). The first attempt's dry run failed (L1 at the reduced law scale
 no longer reached "parallel lines"), which led to Done, item 13.
+
+### Completion, revision: mutation testing of functions.ts (`stryker run stryker.kernel.json --mutate packages/kernel/src/tools/functions.ts`, local)
+
+```
+File          |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+All files     |  98.21 |  100.00 |       55 |         0 |          0 |        1 |       80 |
+ functions.ts |  98.21 |  100.00 |       55 |         0 |          0 |        1 |       80 |
+```
+
+The first focused run had 1 survivor: removing sqrt's `case 'none'` let mod p fall
+through to the in-band branch, which a positive representative could not tell apart; a
+case with a negative symmetric representative (functions.test.ts) kills it. The
+NoCoverage mutant is the unreachable `assertNever` message.
 
 ### First acceptance: clean clone (commit 629034c; the STATUS commit adds only docs)
 
@@ -521,6 +545,10 @@ Mutation scores are reported, gated from v1.1 (SPEC §17 L15).
 | Workflow | Run                                                         | Result                                                                                                                                                         |
 | -------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ci       | https://github.com/youseng/geomira/actions/runs/39270898956 | completion: success on f873e55 (push): verify, build, Playwright                                                                                               |
+| ci       | https://github.com/youseng/geomira/actions/runs/39278464186 | revision: queued on 382985f (push) when this STATUS was committed; result recorded in the next commit                                                          |
+| ci       | https://github.com/youseng/geomira/actions/runs/39276556007 | completion: success on b7b3c01 (push)                                                                                                                          |
+| ci       | https://github.com/youseng/geomira/actions/runs/39276607688 | completion: success on b7b3c01 (pull_request, PR #5)                                                                                                           |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39276555958 | completion: success on b7b3c01 (build job)                                                                                                                     |
 | deploy   | https://github.com/youseng/geomira/actions/runs/39270898955 | completion: success on f873e55 (build job; deploy job skipped off the default branch)                                                                          |
 | ci       | https://github.com/youseng/geomira/actions/runs/39258413806 | success on 43aa3f9 (push): verify, build, Playwright                                                                                                           |
 | ci       | https://github.com/youseng/geomira/actions/runs/39258448213 | success on 43aa3f9 (pull_request, PR #4)                                                                                                                       |
@@ -534,9 +562,7 @@ Mutation scores are reported, gated from v1.1 (SPEC §17 L15).
 - The `run-3a` tag is for the maintainer to place on the commit that records acceptance
   (the add-only guard then freezes this run's test files). With the completion, that is
   the merge of its PR, not f57d247.
-- Decision for the maintainer (ADR-0005, "Uncertain"): keep sqrt's literal "within the
-  band counts as 0" for measured arguments (a step of √BAND at x = BAND), or switch to √x
-  for positive in-band values (continuous).
+- Resolved: the maintainer chose the continuous sqrt (ADR-0005, "Revision").
 
 ## Notes for later runs
 
