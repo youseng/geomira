@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "*.config.ts",
+    "scripts",
+    "packages/*/test",
+    "apps/web/test",
+    "apps/web/e2e",
+    "apps/web/*.config.ts"
+  ],
+  "exclude": ["scripts/check-rules/fixtures"]
+}

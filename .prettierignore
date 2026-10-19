@@ -1,0 +1,12 @@
+pnpm-lock.yaml
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+# Fixtures are byte-exact inputs for the check-rules tests.
+scripts/check-rules/fixtures/
+tests/fixtures/
+# Maintainer-owned prose.
+docs/SPEC.md
+CLAUDE.md

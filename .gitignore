@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+*.tsbuildinfo
+.vite/
+*.log
+# TeX / Asymptote build products (tex.yml)
+tests/fixtures/out/

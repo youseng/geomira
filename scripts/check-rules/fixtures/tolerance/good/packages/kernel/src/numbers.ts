@@ -1,0 +1,10 @@
+export const HALF = 0.5;
+export const THOUSANDTH = 0.001;
+export const BIG = 1e3;
+export const BIGGER = 1E+6;
+export const NEAR_TEN = 10.0001;
+export const GROUPED = 1_000;
+export const HEX = 0x1e;
+export const VERSION = '2.0.0001';
+export const id1e = 2;
+export const DIFF = id1e-9;
