@@ -88,7 +88,11 @@ tool to be registered; the audit found three tools that earlier runs missed.
       compared as a length, ties within the band → Undefined); with one candidate they keep
       it;
     - low-level selectors keep the candidates with their label, and the double point under
-      both signs.
+      both signs. A label names a BRANCH of the pair (along(+): the further of the two
+      intersections of the carrier line; orient(+): the one on the positive side), not a
+      rank among the survivors: when that branch was removed (off a segment, by a filter)
+      the result is "no … satisfies along(+)", never the other branch, so moving a figure
+      never silently switches branches.
       A reference that is meaningless (Q on l, B = C, A = B, a non-circle for inside) →
       Undefined; a deciding quantity of a candidate or a reference within the band →
       Undefined("ambiguous: …"); mod p, any order-based decision → Inexact. After all
@@ -133,13 +137,16 @@ registry)` and `callDiagnostics(call, kindsOfRef, registry, show)` decide STATIC
 
 16. In the band the count is one, so the call needs no selector and the result is the
     double point (SPEC §6.3), for exact and for rounded tangency alike. The price is a step
-    at the EDGE of the band: just outside it the two candidates are mid ∓ √(g(2r − g))
-    with g = BAND·scale, so the selected point moves by at most that half chord,
-    ≤ √(2·BAND·r·scale) for line ∩ circle (≈ 4.5·10⁻⁴·scale for r ≤ scale; similar for the other pairs). This is the same order as the
-    motion of the exact intersection points when the line moves by BAND·scale near
-    tangency (the problem's own conditioning), and it is bounded. Law L11's test states
-    this bound explicitly; everywhere else the selected point moves continuously, and it
-    never takes the other branch: through tangency it goes two → double point → Undefined.
+    at the EDGE of the band: just outside it the two candidates are mid ∓ h, h the exact
+    half chord at the gap g = BAND·scale, so the selected point moves by h there:
+    √(g(2r − g)) ≤ √(2rg) for line ∩ circle and for tangents from a point (to first
+    order), and for two circles √(2r₁r₂g/(r₁ + r₂)) at external and √(2r₁r₂g/|r₁ − r₂|)
+    at internal tangency (larger for nearly equal radii, i.e. nearly concentric circles).
+    This h is exactly how far the exact intersection points move while the configuration
+    crosses the band (they start together at tangency): the step is the problem's own
+    conditioning over a band-wide motion, and it is bounded. Law L11's test checks this
+    bound per pair; everywhere else the selected point moves continuously, and it never
+    takes the other branch: through tangency it goes two → double point → Undefined.
 
 ### Float range
 

@@ -257,7 +257,11 @@ export function lineCirclePair<T>(
       const list = midOff(F, n, foot, F.div(diff, dd), l.d, false);
       return isInexact(list) ? list : onRange(F, l, list, ctx);
     },
-    vieta: (P) => vSub(F, vScale(F, foot, F.add(F.one, F.one)), P),
+    // As other.ts (same operations, so other(P) and other() agree bit for bit).
+    vieta: (P) => {
+      const tc = paramOn(F, l, c.c);
+      return vAdd(F, l.p, vScale(F, l.d, F.sub(F.add(tc, tc), paramOn(F, l, P))));
+    },
     range: (X) => {
       const r = rangeStatus(F, l, paramOn(F, l, X), ctx, 'other intersection');
       return r === 'out' ? outsideReason(l, 'other intersection') : r;
