@@ -70,15 +70,11 @@ function check<T>(F: Field<T>, finite: (x: T) => boolean): Tally {
       expect(v, `${F.name} doc ${String(i)} ${o.name}`).toBeDefined();
       if (v === undefined) continue;
       t.objects += 1;
-      const branchy = o.def.kind === 'call' && REGISTRY.get(o.def.tool)?.candidates !== undefined;
-      if (branchy) t.branch += 1;
-      if (
-        branchy &&
-        o.def.kind === 'call' &&
-        o.def.selectors.length === 0 &&
-        (v.kind === 'point' || v.kind === 'line')
-      )
-        t.doubles += 1;
+      const def = o.def.kind === 'call' ? o.def : undefined;
+      if (def !== undefined && REGISTRY.get(def.tool)?.candidates !== undefined) {
+        t.branch += 1;
+        if (def.selectors.length === 0 && (v.kind === 'point' || v.kind === 'line')) t.doubles += 1;
+      }
       if (v.kind === 'undefined' || v.kind === 'inexact') {
         expect(v.reason.length).toBeGreaterThan(0);
         t[v.kind] += 1;
