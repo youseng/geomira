@@ -31,7 +31,7 @@ const RIGHT = 'undefined: tan is undefined at 90° (mod 180°)';
 
 export const FUNCTION_CASES: Record<string, Record<string, () => void>> = {
   sqrt: {
-    'x < 0 → Undefined (sqrt of a negative number)': () => {
+    'x ≤ −BAND, or an exact x < 0 → Undefined (sqrt of a negative number)': () => {
       for (const F of FIELDS) {
         expect(reason(at(F, 'sqrt', num(-4)))).toBe(NEGATIVE);
         expect(reason(at(F, 'sqrt', num('-2/3')))).toBe(NEGATIVE);
@@ -42,18 +42,23 @@ export const FUNCTION_CASES: Record<string, Record<string, () => void>> = {
         expect(reason(at(F, 'sqrt', call('neg', [area(1, 3)])))).toBe(NEGATIVE);
         expect(reason(at(F, 'sqrt', call('neg', [area('1/1000', '1/1000')])))).toBe(NEGATIVE);
       }
+      // Measured, just beyond the band (−2^-22 ≈ −2.4e-7): negative in FloatField too.
+      expect(reason(at(FloatField, 'sqrt', call('neg', [area(2 ** -11, 2 ** -10)])))).toBe(
+        NEGATIVE,
+      );
       // Without an exact value mod p has no order: the measure is already Inexact there.
       expect(at(ModPField, 'sqrt', call('neg', [area(1, 3)])).kind).toBe('inexact');
     },
-    'x within the band of 0 counts as 0 → 0': () => {
-      // Inside the band (BAND = 1e-7), either sign, → 0: 2^-42 ≈ 2.3e-13 and 2^-30 ≈ 9.3e-10
-      // are within EPS (sign 0); 2^-26 ≈ 1.5e-8 is between EPS and BAND (sign 'ambiguous').
-      for (const x of [
-        area(2 ** -20, 2 ** -21),
-        area(2 ** -15, 2 ** -14),
-        area(2 ** -13, 2 ** -12),
-      ]) {
-        expect(plain(FloatField, at(FloatField, 'sqrt', x))).toBe(0);
+    '−BAND < x < 0 counts as 0 → 0 (x ≥ 0 → √x: continuous)': () => {
+      // Inside the band (BAND = 1e-7): 2^-42 ≈ 2.3e-13 and 2^-30 ≈ 9.3e-10 are within EPS
+      // (sign 0); 2^-26 ≈ 1.5e-8 is between EPS and BAND (sign 'ambiguous'). A negative
+      // counts as 0; a positive keeps its root, so sqrt has no step at the band.
+      for (const [x, root] of [
+        [area(2 ** -20, 2 ** -21), 2 ** -21],
+        [area(2 ** -15, 2 ** -14), 2 ** -15],
+        [area(2 ** -13, 2 ** -12), 2 ** -13],
+      ] as const) {
+        expect(plain(FloatField, at(FloatField, 'sqrt', x))).toBe(root);
         expect(plain(FloatField, at(FloatField, 'sqrt', call('neg', [x])))).toBe(0);
       }
       // Just outside the band (2^-22 ≈ 2.4e-7): the root itself.

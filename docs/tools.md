@@ -659,8 +659,8 @@ a ÷ b on numbers (exact when both are exact).
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Degenerate cases:
-  - x < 0 → Undefined (sqrt of a negative number)
-  - x within the band of 0 counts as 0 → 0
+  - x ≤ −BAND, or an exact x < 0 → Undefined (sqrt of a negative number)
+  - −BAND < x < 0 counts as 0 → 0 (x ≥ 0 → √x: continuous)
   - x not the square of a rational → Inexact (over Q; mod p unless x is an exact square)
 - Examples:
   - `sqrt(9/4)` → number 3/2

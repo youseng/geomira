@@ -4,10 +4,11 @@
  * and nearly (helpers/fuzz-functions.ts), in FloatField, RationalField and ModPField. num
  * throws on √ of a negative and on division by 0, so a missed classification shows up here.
  * In FloatField the classification itself is checked call by call against the argument:
- *   - sqrt: an exact argument is decided exactly; otherwise |x| < BAND → 0, x ≤ −BAND →
- *     Undefined, x ≥ BAND → √x;
+ *   - sqrt: an exact argument is decided exactly; otherwise x > 0 → √x (also inside the
+ *     band), −BAND < x ≤ 0 → 0, x ≤ −BAND → Undefined;
  *   - tan: Undefined at 90° (mod 180°) exactly when |cos θ| < BAND in FloatField.
- * The in-band zeros, the negatives and the near-90° values must all be reached.
+ * The in-band negatives and positives, the negatives and the near-90° values must all be
+ * reached.
  */
 import { isInexact, type Field } from '@geomira/num/field';
 import { FloatField } from '@geomira/num/float-field';
@@ -37,8 +38,10 @@ interface Tally {
   inexact: number;
   negative: number;
   right: number;
-  /** FloatField: sqrt of a non-zero measured number inside the band, counted as 0. */
+  /** FloatField: sqrt of a negative measured number inside the band, counted as 0. */
   bandZero: number;
+  /** FloatField: sqrt of a positive measured number inside the band: its root. */
+  bandRoot: number;
   /** FloatField: tan defined although |cos θ| < 1e-3 (just outside the band). */
   nearRight: number;
 }
@@ -52,6 +55,7 @@ function tally0(): Tally {
     negative: 0,
     right: 0,
     bandZero: 0,
+    bandRoot: 0,
     nearRight: 0,
   };
 }
@@ -74,11 +78,13 @@ function checkSqrt(x: Value<number>, y: Value<number>, t: Tally): void {
     expect(y.kind === 'undefined', 'exact sign decides').toBe(sign(x.exact) < 0);
     return;
   }
-  if (Math.abs(x.v) < BAND) {
+  if (x.v > 0) {
+    expect(y).toEqual({ kind: 'number', v: Math.sqrt(x.v) });
+    if (x.v < BAND) t.bandRoot += 1;
+  } else if (x.v > -BAND) {
     expect(y).toEqual({ kind: 'number', v: 0 });
-    if (x.v !== 0) t.bandZero += 1;
-  } else if (x.v < 0) expect(y).toEqual({ kind: 'undefined', reason: NEGATIVE });
-  else expect(y).toEqual({ kind: 'number', v: Math.sqrt(x.v) });
+    if (x.v < 0) t.bandZero += 1;
+  } else expect(y).toEqual({ kind: 'undefined', reason: NEGATIVE });
 }
 
 /** The FloatField classification of one tan call. */
@@ -134,7 +140,7 @@ function check<T>(
     `L1 functions ${F.name}: ${String(DOCS)} documents, ${String(t.objects)} objects, ` +
       `${String(t.calls)} sqrt/sin/cos/tan calls, ${String(t.undefined)} Undefined, ` +
       `${String(t.inexact)} Inexact, 0 throws, 0 non-finite; reached: negative ${String(t.negative)}, ` +
-      `90° ${String(t.right)}, in-band zeros ${String(t.bandZero)}, near 90° defined ${String(t.nearRight)}\n`,
+      `90° ${String(t.right)}, in-band negatives → 0 ${String(t.bandZero)}, in-band positives → √x ${String(t.bandRoot)}, near 90° defined ${String(t.nearRight)}\n`,
   );
   return t;
 }
@@ -153,7 +159,7 @@ describe(
           checkCalls(ev, calls, t);
         },
       );
-      for (const k of ['negative', 'right', 'bandZero', 'nearRight'] as const)
+      for (const k of ['negative', 'right', 'bandZero', 'bandRoot', 'nearRight'] as const)
         expect(t[k], k).toBeGreaterThan(0);
     });
     it('RationalField: never throws', () => {

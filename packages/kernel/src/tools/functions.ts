@@ -4,8 +4,9 @@
  * sees an out-of-domain value (√ of a negative, tan's division by cos 90° = 0):
  *   - an argument with an exact value (Num.exact, ADR-0003) is decided exactly, in every
  *     field, and a rational result carries its exact value;
- *   - otherwise the field decides, with the banded sign of tolerance.ts in FloatField: a
- *     value within the band of 0 counts as 0.
+ *   - otherwise the field decides, with the banded sign of tolerance.ts in FloatField:
+ *     sqrt is continuous (a negative within the band of 0 counts as 0), and tan refuses a
+ *     cosine within the band of 0.
  */
 import { assertNever } from '@geomira/num/assert';
 import { isInexact, type Field, type Inexact } from '@geomira/num/field';
@@ -54,9 +55,12 @@ function sqrtOfExact<T>(F: Field<T>, x: Q.Rational): Value<T> {
 }
 
 /**
- * sqrt(x). Degenerate cases: x < 0 → Undefined("sqrt of a negative number"); in FloatField
- * x within the band of 0 (|x| < BAND, either sign) counts as 0 → 0; x not the square of a
- * rational → Inexact over Q; mod p → Inexact unless x is an exact square.
+ * sqrt(x), continuous on (−BAND, ∞) in FloatField. Degenerate cases: x ≤ −BAND →
+ * Undefined("sqrt of a negative number") (over Q: any x < 0); −BAND < x < 0 counts as 0 →
+ * 0; x ≥ 0 → √x as computed, also inside the band; x not the square of a rational →
+ * Inexact over Q; mod p → Inexact unless x is an exact square. Inside the band the side
+ * of 0 is read from F.toNumber, which is x itself in FloatField; the exact fields reach
+ * that branch only for an exact 0 (their sign is never 'ambiguous').
  */
 function sqrt<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const a = argOf(args);
@@ -69,7 +73,7 @@ function sqrt<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Valu
       return lift(F.sqrt(a.v));
     case 0:
     case 'ambiguous':
-      return numOf(F.zero);
+      return F.toNumber(a.v) > 0 ? lift(F.sqrt(a.v)) : numOf(F.zero);
     case -1:
       return undef(NEGATIVE);
     default:
@@ -170,8 +174,8 @@ export const FUNCTION_TOOLS: readonly ToolSpec[] = [
     sqrt,
     '√x, the non-negative square root (exact on squares of rationals).',
     [
-      'x < 0 → Undefined (sqrt of a negative number)',
-      'x within the band of 0 counts as 0 → 0',
+      'x ≤ −BAND, or an exact x < 0 → Undefined (sqrt of a negative number)',
+      '−BAND < x < 0 counts as 0 → 0 (x ≥ 0 → √x: continuous)',
       'x not the square of a rational → Inexact (over Q; mod p unless x is an exact square)',
     ],
     ['9/4', '2'],

@@ -173,5 +173,11 @@ describe('sqrt, sin, cos, tan on tables of arguments', () => {
       kind: 'inexact',
       reason: 'square roots are not evaluable mod p',
     });
+    // Also when the symmetric representative is negative: mod p has no order, so it is
+    // neither "negative" (Undefined) nor "a negative within the band" (0).
+    expect(sqrt.compute(ModPField, [numOf(ModPField.neg(4n))], ctx)).toEqual({
+      kind: 'inexact',
+      reason: 'square roots are not evaluable mod p',
+    });
   });
 });

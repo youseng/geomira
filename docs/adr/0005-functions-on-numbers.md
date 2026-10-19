@@ -1,6 +1,7 @@
 # ADR-0005: sqrt, sin, cos, tan on numbers (Run 3a completion)
 
-Status: accepted (Run 3a completion). Extends ADR-0002 (numeric preconditions) and ADR-0003
+Status: accepted (Run 3a completion; sqrt's band rule revised to the continuous form at
+the maintainer's request before merge, see "Revision"). Extends ADR-0002 (numeric preconditions) and ADR-0003
 (items 2, 17 and 19); supersedes nothing.
 
 ## Context
@@ -12,6 +13,10 @@ exact on perfect squares and Inexact otherwise; sin/cos/tan are exact only at th
 num's trigonometric tables cover; sqrt of a negative and tan at 90° (mod 180°) are
 Undefined with a reason; the argument is classified with tolerance.ts first ("a value
 within the band of 0 counts as 0"), so num is never called with an out-of-domain value.
+On review the maintainer fixed sqrt's rule for arguments without an exact value: x ≥ 0 →
+√x as computed; −band < x < 0 → 0; x ≤ −band → Undefined("sqrt of a negative number"),
+with a property test that sqrt is non-decreasing and has no jump across [−2·band,
+10·band].
 
 SPEC §3.3 fixes `Field.sqrt/sin/cos` but leaves open how the kernel classifies arguments,
 whether the exact value a number carries (`Num.exact`, ADR-0003 item 2) is used, and how
@@ -33,11 +38,15 @@ tan is computed (Field has no tan).
    than 90° mod 180°). A literal `sqrt(1/100000000)` is therefore 1/10000 in FloatField,
    not 0: an exact number has no float uncertainty, so the band does not apply to it.
 3. **Otherwise the field decides, with its own banded sign** (FloatField: tolerance.ts via
-   `F.sign` / `F.isZero`; RationalField: exact; ModPField: `'none'`), and **a value within
-   the band of 0 counts as 0**:
-   - sqrt: sign 1 → `F.sqrt(x)`; sign 0 or `'ambiguous'` (|x| < BAND, either sign) → 0;
-     sign −1 (x ≤ −BAND) → Undefined("sqrt of a negative number"); `'none'` (mod p, no
-     order and no domain) → `F.sqrt(x)`, which num answers with Inexact.
+   `F.sign` / `F.isZero`; RationalField: exact; ModPField: `'none'`):
+   - sqrt is **continuous**: sign 1 → `F.sqrt(x)`; sign −1 (x ≤ −BAND) →
+     Undefined("sqrt of a negative number"); sign 0 or `'ambiguous'` (|x| < BAND) → `F.sqrt(x)`
+     if x > 0, else 0 (a negative within the band counts as 0); `'none'` (mod p, no order
+     and no domain) → `F.sqrt(x)`, which num answers with Inexact. Inside the band the side
+     of 0 is read from `F.toNumber(x)`, which is x itself in FloatField; RationalField's sign
+     is exact (it is 0 only for an exact 0, never `'ambiguous'`), so there the branch only
+     sees 0. The result is √max(x, 0) on (−BAND, ∞): non-decreasing and ½-Hölder
+     (|√⁺y − √⁺x| ≤ √|y − x|), so it never jumps.
    - tan: cos θ zero or `'ambiguous'` (|cos θ| < BAND) → Undefined("tan is undefined at
      90° (mod 180°)"). With an exact θ that is not 90° (mod 180°) but whose cosine is in
      the band in FloatField, the float run is still Undefined: it would otherwise divide
@@ -63,22 +72,34 @@ tan is computed (Field has no tan).
 
 - num is never asked for √ of a negative or for a division by zero (tested with
   `withSqrtLog`/`withDivisorLog` and by law L1, where num would throw).
-- For a measured (non-exact) argument, FloatField's sqrt is 0 on (−BAND, BAND) and √x from
-  BAND on: at x = BAND it steps from 0 to √BAND ≈ 3.2·10⁻⁴ (dimensionless). This is the
-  "counts as 0" rule, the analogue of "tangency → the double point" (a discriminant that
-  is 0 up to rounding gives one root). Recorded under "Uncertain" in STATUS.md.
+- For a measured (non-exact) argument, FloatField's sqrt has no step anywhere on its
+  domain: a rounding residue −1e-16 of a quantity that is 0 gives 0, a small positive x
+  gives its root. The only discontinuity is the domain edge x = −BAND, where the value 0
+  becomes Undefined (a genuine degeneracy). Tested by sqrt-continuity.test.ts and, call
+  by call, by laws/l1-functions.test.ts.
+- A positive x inside the band is not snapped to 0, so a discriminant that is 0 up to a
+  positive rounding residue r gives √r (at most √BAND ≈ 3.2·10⁻⁴), not exactly 0; branch
+  selection (a later run) must decide tangency on the discriminant itself, not on the
+  root.
 - The exact rungs see these tools as any other: the mod-p rung is never used for closures
   with sqrt or trigonometry (SPEC §10.5, L17, the claims run), even though an exact
   argument gives a value mod p here.
 
+## Revision (before merge)
+
+Decision 3's sqrt rule replaced "|x| < BAND → 0" by the continuous rule above, at the
+maintainer's request; exact arguments are unchanged. Added: sqrt-continuity.test.ts
+(seeded arguments, a grid and the doubles next to −BAND, 0, EPS and BAND; defined exactly
+on (−BAND, ∞), non-decreasing, ½-Hölder on adjacent and random pairs). Only test files
+added in this PR changed; frozen test files are untouched.
+
 ## Alternatives considered
 
-- Ignoring `Num.exact` and letting each field decide: a literal `sqrt(2/100000000)` would be
-  0 in FloatField while its exact root is about 1.4·10⁻⁴; the float value of an exact
-  number would be silently wrong by far more than its rounding.
-- For a positive x inside the band, √x instead of 0 (continuous): needs the side of 0
-  inside the band, a decision the band exists to avoid, and departs from the requested
-  rule. Kept as an option for the maintainer (STATUS.md "Uncertain").
+- Ignoring `Num.exact` and letting each field decide: an exact −1e-30 would be 0 in
+  FloatField but Undefined over Q, and `sqrt(9/4)` would lose its exact value 3/2.
+- The first version of this ADR applied "within the band counts as 0" to both signs: sqrt
+  was 0 on (−BAND, BAND) and stepped from 0 to √BAND ≈ 3.2·10⁻⁴ at x = BAND. Replaced on
+  review by the continuous rule ("Revision"); the property test fails on it.
 - In-band → Undefined("ambiguous"), as for selectors: √ of a rounding residue −1e-16 of a
   quantity that is 0 would be Undefined, which the requested rule excludes.
 - tan = sin/cos only: tan 45° = 1 would be Inexact over Q although it is rational.
