@@ -1,12 +1,19 @@
 # STATUS
 
-## Run 3a: NOT ACCEPTED (pending CI on the STATUS commit)
+## Run 3a: ACCEPTED (2026-10-19)
 
 Circles and gliders (SPEC §4, §6.2, §6.3), no selectors. Base check first: Run 2 was
 ACCEPTED (tag `run-2` = `main` = 6e10d9b), `pnpm install && pnpm verify` was green locally
 on it, and ci, deploy and nightly were green in CI on that commit
 (https://github.com/youseng/geomira/actions/runs/39244164101), so there was no red base to
 repair.
+
+Every criterion holds: verify green locally, in a clean clone and in CI (ci run
+https://github.com/youseng/geomira/actions/runs/39258413806 on 43aa3f9, the interim
+STATUS commit); every SPEC §6.3 case for the new tools is a named test; L1 (incl. 2,000
+circle-degenerate documents), L3 with the band exclusion, glider round trips, cline
+switching and 16 theorems pass; the exactness table below is generated. Kernel coverage
+99.78% lines (gate 90%); kernel mutation score 99.21% locally (reported, gated from v1.1).
 
 ## Done (each item → the test file that proves it)
 
@@ -333,15 +340,19 @@ Mutation scores are reported, gated from v1.1 (SPEC §17 L15).
 
 ### CI on GitHub
 
-| Workflow | Run                                                         | Result                                                                    |
-| -------- | ----------------------------------------------------------- | ------------------------------------------------------------------------- |
-| ci       | https://github.com/youseng/geomira/actions/runs/39251375178 | success on 39393da (push): verify, build, Playwright                      |
-| deploy   | https://github.com/youseng/geomira/actions/runs/39251375137 | success on 39393da (build job; deploy job skipped off the default branch) |
+| Workflow | Run                                                         | Result                                                                                                                                                                  |
+| -------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ci       | https://github.com/youseng/geomira/actions/runs/39258413806 | success on 43aa3f9 (push): verify, build, Playwright                                                                                                                    |
+| ci       | https://github.com/youseng/geomira/actions/runs/39258448213 | success on 43aa3f9 (pull_request, PR #4)                                                                                                                                |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39258413747 | success on 43aa3f9 (build job; deploy job skipped off the default branch)                                                                                               |
+| nightly  | https://github.com/youseng/geomira/actions/runs/39258455195 | dispatched on 43aa3f9: test and mutation-num success; mutation-kernel was still running when this was written (a full run over 2,137 mutants; informational until v1.1) |
+| ci       | https://github.com/youseng/geomira/actions/runs/39251375178 | success on 39393da (push, the code commits before the test-gap commit)                                                                                                  |
 
 ## Requests
 
 - None. No dependency was added.
-- The `run-3a` tag is for the maintainer to place on the commit that records acceptance.
+- The `run-3a` tag is for the maintainer to place on the commit that records acceptance
+  (the add-only guard then freezes this run's test files).
 
 ## Notes for later runs
 
