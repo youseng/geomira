@@ -31,4 +31,14 @@ describe('the generated exactness table', () => {
     expect(row('on')?.otherwise).toBe('inexact: cos(30°) is not rational');
     expect(row('angle')?.otherwise).toMatch(/^inexact: atan2/);
   });
+
+  it('discovers exactness of sqrt, sin, cos, tan: exact where rational (ADR-0005)', () => {
+    const row = (name: string) => exactnessRows(registry).find((r) => r.tool === name);
+    for (const t of ['sqrt', 'sin', 'cos', 'tan'])
+      expect(row(t)).toMatchObject({ exactRun: 'can succeed', exactExamples: 1, examples: 2 });
+    expect(row('sqrt')?.otherwise).toBe('inexact: √(2) is not rational');
+    expect(row('sin')?.otherwise).toBe('inexact: sin(45°) is not rational');
+    expect(row('cos')?.otherwise).toBe('inexact: cos(45°) is not rational');
+    expect(row('tan')?.otherwise).toBe('inexact: cos(30°) is not rational');
+  });
 });

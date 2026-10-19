@@ -16,6 +16,7 @@ import type { Rng } from '@geomira/num/rng';
 import { call, lit, type Expr } from '../../src/expr';
 import type { Capability } from '../../src/value';
 import type { Builder } from './doc';
+import { FUNCTION_TOOLS, functionPlan } from './l3-plans-functions';
 
 type XY = readonly [Rational, Rational];
 
@@ -119,6 +120,7 @@ export function planArgs(
   caps: readonly Capability[],
 ): Expr[] | undefined {
   if (HERONIAN.includes(tool)) return rng.nextFloat() < 0.5 ? heronian(b, rng) : undefined;
+  if (FUNCTION_TOOLS.includes(tool)) return functionPlan(b, rng, tool);
   if (tool !== 'tangent' && tool !== 'other') return undefined;
   const p: XY = [dyadic(rng), dyadic(rng)];
   const P = pointAt(b, p);

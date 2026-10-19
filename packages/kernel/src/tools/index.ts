@@ -6,6 +6,7 @@ import type { ToolSpec } from '../tool';
 import { ARITHMETIC_TOOLS } from './arithmetic';
 import { CIRCLE_TOOLS } from './circles';
 import { DISPLAY_TOOLS } from './display';
+import { FUNCTION_TOOLS } from './functions';
 import { INCIRCLE_TOOLS } from './incircle';
 import { INTERSECT_TOOLS } from './intersect';
 import { LINE_TOOLS } from './lines';
@@ -29,4 +30,5 @@ export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze([
   ...OTHER_TOOLS,
   ...TANGENT_TOOLS,
   ...INCIRCLE_TOOLS,
+  ...FUNCTION_TOOLS,
 ]);

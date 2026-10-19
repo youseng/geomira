@@ -129,6 +129,48 @@ class Fuzzer {
     return { expr: e.ref, depth: e.depth };
   }
 
+  /**
+   * Degenerate mode: a line parallel to a pool line through a pool point, and its
+   * intersection with that line: exactly parallel lines (or coincident ones when the point
+   * is on the line). Without it, parallel lines are reached only by chance, and adding
+   * tools to the registry (which reshuffles the random calls) can make L1 miss them.
+   */
+  parallelPair(): void {
+    const ok = (k: ValueKind) =>
+      this.entries.filter((e) => e.kind === k && e.depth < this.opts.maxDepth - 1);
+    const [lines, points] = [ok('line'), ok('point')];
+    if (lines.length === 0 || points.length === 0) return;
+    const [l, P] = [pick(this.rng, lines), pick(this.rng, points)];
+    const depth = Math.max(l.depth, P.depth) + 1;
+    this.add('line', call('parallel', [P.ref, l.ref]), depth);
+    const m = this.entries[this.entries.length - 1];
+    if (m !== undefined) this.add('point', call('intersect', [m.ref, l.ref]), depth + 1);
+  }
+
+  /**
+   * Degenerate mode: a segment or ray PQ met by the perpendicular at divide(P, Q, t) with
+   * t outside [0, 1] for a segment (t < 0 for a ray): the lines meet outside the range,
+   * or exactly at an end when t is 0 or 1.
+   */
+  outsidePair(): void {
+    const points = this.entries.filter(
+      (e) => e.kind === 'point' && e.depth < this.opts.maxDepth - 1,
+    );
+    if (points.length < 2) return;
+    const [P, Q] = [pick(this.rng, points), pick(this.rng, points)];
+    const kind = pick(this.rng, ['segment', 'ray']);
+    const t = rational(
+      BigInt(pick(this.rng, [-3, -1, 0, 1, 2, 5])),
+      BigInt(this.rng.nextInt(3) + 1),
+    );
+    const depth = Math.max(P.depth, Q.depth) + 1;
+    this.add('line', call(kind, [P.ref, Q.ref]), depth);
+    const s = this.entries[this.entries.length - 1];
+    const foot = call('divide', [P.ref, Q.ref, lit(t)]);
+    const m = call('perp', [foot, call('line', [P.ref, Q.ref])]);
+    if (s !== undefined) this.add('point', call('intersect', [s.ref, m]), depth + 2);
+  }
+
   toolCall(): void {
     const tool = pick(this.rng, this.registry.tools);
     const sig: Signature = pick(this.rng, tool.signatures);
@@ -157,6 +199,8 @@ export function fuzzDocument(rng: Rng, registry: Registry, opts: FuzzOptions): D
   const f = new Fuzzer(rng, registry, opts);
   for (let i = 0; i < opts.points; i += 1) f.freePoint();
   for (let i = 0; i < opts.calls; i += 1) {
+    if (opts.degenerate && rng.nextFloat() < 0.03) f.parallelPair();
+    if (opts.degenerate && rng.nextFloat() < 0.03) f.outsidePair();
     if (opts.degenerate && f.free.length > 0 && rng.nextFloat() < 0.1) f.freePoint();
     else f.toolCall();
   }
