@@ -101,6 +101,15 @@ rely on it, or change it with an ADR.
     (this ADR records the argument).
 20. A value whose kind is outside the union (a future or test-only kind, E2) is passed
     through untouched by the evaluator's range checks; tools reject it by capability.
+21. **Angle-type zero tests are normalised.** Parallel lines (intersect), collinear
+    vertices (circumcenter, orthocenter) and the collinear case of `dangle` are decided on
+    sin θ = cross(u, v) / (|u|·|v|) as a dimensionless quantity (vs EPS, or BAND for the
+    `dangle` decision), not on the raw cross product as an area (vs EPS·scale²). The raw
+    test would call two short perpendicular segments (length 1e-5·scale) parallel. In
+    exact fields the normalising √ is usually not representable; there the zero and sign
+    tests are exact, so the raw cross product is tested instead (`isZeroNormalized`,
+    `signNormalized` in geom.ts). Point coincidence stays a length test (each component vs
+    EPS·scale).
 
 ## Consequences
 

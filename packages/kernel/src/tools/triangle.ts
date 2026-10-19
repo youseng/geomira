@@ -48,7 +48,8 @@ function triangle<T>(
 
 /**
  * O = A + x with 2·x·u = |u|², 2·x·v = |v|² (u = B − A, v = C − A):
- * x = (|u|²·v.y − |v|²·u.y, |v|²·u.x − |u|²·v.x) / (2·cross(u, v)).
+ * x = (|u|²·v.y − |v|²·u.y, |v|²·u.x − |u|²·v.x) / (2·cross(u, v)). Degenerate cases:
+ * coincident vertices → Undefined; collinear vertices → Undefined (use cline).
  */
 function circumcenter<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const t = triangle(F, args, ctx, 'circumcenter');
@@ -71,7 +72,8 @@ function centroid<T>(F: Field<T>, args: readonly Value<T>[]): Value<T> {
 
 /**
  * H = A + h with h·(C − B) = 0 and (h + A − B)·(C − A) = 0 (the altitudes from A and B):
- * h = k·rot90(C − B) / cross(C − B, C − A) with k = (B − A)·(C − A).
+ * h = k·rot90(C − B) / cross(C − B, C − A) with k = (B − A)·(C − A). Degenerate cases:
+ * coincident vertices → Undefined; collinear vertices → Undefined.
  */
 function orthocenter<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const t = triangle(F, args, ctx, 'orthocenter');

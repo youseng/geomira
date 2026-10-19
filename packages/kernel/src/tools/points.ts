@@ -8,6 +8,7 @@ import { half, vAdd, vDot, vLerp, vScale, vSub } from '../geom';
 import { numOf, pointOf, undef, type Line, type Value } from '../value';
 import { badArgs, coincident, degenerateLine, lineAt, numAt, pointAt, pointsOf } from './args';
 
+/** point(x, y). Degenerate: none (any two numbers make a point). */
 function point<T>(_F: Field<T>, args: readonly Value<T>[]): Value<T> {
   const x = numAt(args, 0);
   const y = numAt(args, 1);
@@ -50,6 +51,7 @@ function param<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Val
   return numOf(v.v, v.exact);
 }
 
+/** (A + B) / 2. Degenerate: midpoint(A, A) = A (no Undefined case). */
 function midpoint<T>(F: Field<T>, args: readonly Value<T>[]): Value<T> {
   const [a, b] = pointsOf(args, 2) ?? [];
   if (a === undefined || b === undefined) return badArgs('midpoint');
@@ -57,6 +59,7 @@ function midpoint<T>(F: Field<T>, args: readonly Value<T>[]): Value<T> {
   return pointOf(m.x, m.y);
 }
 
+/** A + t·(B − A). Degenerate: divide(A, A, t) = A (no Undefined case). */
 function divide<T>(F: Field<T>, args: readonly Value<T>[]): Value<T> {
   const [a, b, t] = [pointAt(args, 0), pointAt(args, 1), numAt(args, 2)];
   if (a === undefined || b === undefined || t === undefined || args.length !== 3) {
@@ -66,7 +69,10 @@ function divide<T>(F: Field<T>, args: readonly Value<T>[]): Value<T> {
   return pointOf(m.x, m.y);
 }
 
-/** The foot of P on the carrier line of l (segments and rays are extended). */
+/**
+ * The foot of P on the carrier line of l (segments and rays are extended). Degenerate: a
+ * line with no direction → Undefined; P on l → P.
+ */
 function footOn<T>(F: Field<T>, P: Value<T>, l: Line<T>, ctx: EvalContext): Value<T> {
   if (P.kind !== 'point') return badArgs('foot');
   const bad = degenerateLine(F, l, ctx);
@@ -76,6 +82,7 @@ function footOn<T>(F: Field<T>, P: Value<T>, l: Line<T>, ctx: EvalContext): Valu
   return pointOf(f.x, f.y);
 }
 
+/** foot(P, l) or foot(P, A, B). Degenerate: A = B → Undefined (coincident points). */
 function foot<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const [P, l] = [args[0], lineAt(args, 1)];
   if (P !== undefined && l !== undefined && args.length === 2) return footOn(F, P, l, ctx);

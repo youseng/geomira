@@ -26,6 +26,29 @@ interface Tally {
   objects: number;
   undefined: number;
   inexact: number;
+  /** How often each degenerate situation was reached (root Undefined reasons). */
+  reasons: Record<string, number>;
+}
+
+/** The degenerate situations the fuzzer must reach (Run 2 note on ADR-0002). */
+const REASONS = [
+  'parallel lines',
+  'coincident lines',
+  'coincident points',
+  'collinear points',
+  'ambiguous',
+  'division by zero',
+  'outside the',
+];
+
+function tally0(): Tally {
+  return {
+    docs: 0,
+    objects: 0,
+    undefined: 0,
+    inexact: 0,
+    reasons: Object.fromEntries(REASONS.map((r) => [r, 0])),
+  };
 }
 
 function check<T>(F: Field<T>, finite: (x: T) => boolean, tally: Tally): void {
@@ -42,6 +65,10 @@ function check<T>(F: Field<T>, finite: (x: T) => boolean, tally: Tally): void {
       if (v === undefined) continue;
       tally.objects += 1;
       if (v.kind === 'undefined') tally.undefined += 1;
+      for (const r of REASONS) {
+        if (v.kind === 'undefined' && v.reason.includes(r))
+          tally.reasons[r] = (tally.reasons[r] ?? 0) + 1;
+      }
       if (v.kind === 'inexact') tally.inexact += 1;
       if (v.kind === 'undefined' || v.kind === 'inexact')
         expect(v.reason.length).toBeGreaterThan(0);
@@ -54,7 +81,10 @@ function check<T>(F: Field<T>, finite: (x: T) => boolean, tally: Tally): void {
 function report(name: string, t: Tally): void {
   process.stdout.write(
     `L1 ${name}: ${String(t.docs)} documents, ${String(t.objects)} objects, ` +
-      `${String(t.undefined)} Undefined, ${String(t.inexact)} Inexact, 0 throws, 0 non-finite\n`,
+      `${String(t.undefined)} Undefined, ${String(t.inexact)} Inexact, 0 throws, 0 non-finite; ` +
+      `reached: ${Object.entries(t.reasons)
+        .map(([k, n]) => `${k} ${String(n)}`)
+        .join(', ')}\n`,
   );
 }
 
@@ -63,22 +93,22 @@ describe(
   { timeout: LAW_TIMEOUT },
   () => {
     it('FloatField: never throws, every number finite', () => {
-      const t: Tally = { docs: 0, objects: 0, undefined: 0, inexact: 0 };
+      const t = tally0();
       check(FloatField, (x) => Number.isFinite(x), t);
       report('FloatField', t);
       expect(t.docs).toBeGreaterThanOrEqual(DOCS);
-      expect(t.undefined).toBeGreaterThan(0);
+      for (const r of REASONS) expect(t.reasons[r], r).toBeGreaterThan(0);
     });
 
     it('RationalField: never throws', () => {
-      const t: Tally = { docs: 0, objects: 0, undefined: 0, inexact: 0 };
+      const t = tally0();
       check(RationalField, () => true, t);
       report('RationalField', t);
       expect(t.inexact).toBeGreaterThan(0);
     });
 
     it('ModPField: never throws', () => {
-      const t: Tally = { docs: 0, objects: 0, undefined: 0, inexact: 0 };
+      const t = tally0();
       check(ModPField, () => true, t);
       report('ModPField', t);
       expect(t.inexact).toBeGreaterThan(0);

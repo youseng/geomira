@@ -25,7 +25,11 @@ function num<T>(x: T | Inexact): Value<T> {
   return isInexact(x) ? x : numOf(x);
 }
 
-/** dist(A, B) = |B − A|; dist(P, l) = distance from P to the carrier line of l. */
+/**
+ * dist(A, B) = |B − A|; dist(P, l) = distance from P to the carrier line of l. Degenerate
+ * cases: A = B → 0; P on l → 0; a line with no direction → Undefined; √ not representable →
+ * Inexact (always mod p).
+ */
 function dist<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const [P, l] = [pointAt(args, 0), lineAt(args, 1)];
   if (P !== undefined && l !== undefined && args.length === 2) {
@@ -40,7 +44,10 @@ function dist<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Valu
   return num(F.sqrt(vDot(F, d, d)));
 }
 
-/** ratio(A, B, C, D) = AB / CD. */
+/**
+ * ratio(A, B, C, D) = AB / CD. Degenerate cases: C = D → Undefined (coincident points);
+ * A = B → 0; √ not representable → Inexact.
+ */
 function ratio<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const [a, b, c, d] = pointsOf(args, 4) ?? [];
   if (a === undefined || b === undefined || c === undefined || d === undefined) {
@@ -70,7 +77,11 @@ function arms<T>(
   );
 }
 
-/** angle(A, B, C): the undirected angle ABC in [0°, 180°]. */
+/**
+ * angle(A, B, C): the undirected angle ABC in [0°, 180°]. Degenerate cases: A = B or C = B
+ * → Undefined; collinear → 0° or 180°; mod p (no order) or atan2 off the special angles
+ * over Q → Inexact.
+ */
 function angle<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const uv = arms(F, args, ctx, 'angle');
   if ('kind' in uv) return uv;
@@ -122,6 +133,7 @@ function areaOf<T>(F: Field<T>, pts: readonly Vec<T>[], ctx: EvalContext): Value
   return isInexact(a) ? a : numOf(F.mul(a, half(F)));
 }
 
+/** area(polygon) or area(P1, P2, P3, …). Degenerate: collinear → 0; mod p → Inexact. */
 function area<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const poly = polygonAt(args, 0);
   if (poly !== undefined && args.length === 1) return areaOf(F, poly.pts, ctx);

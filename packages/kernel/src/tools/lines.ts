@@ -11,6 +11,10 @@ import { badArgs, coincident, lineAt, pointAt, pointsOf } from './args';
 
 type Range = 'line' | 'segment' | 'ray';
 
+/**
+ * The line, segment or ray from A through B (achiral direction B − A). Degenerate: A = B
+ * (a zero length) → Undefined (coincident points).
+ */
 function through<T>(
   F: Field<T>,
   args: readonly Value<T>[],
@@ -49,18 +53,21 @@ function lineFrom<T>(
   return { kind: 'line', p: { x: P.x, y: P.y }, d, lo: null, hi: null, chiral };
 }
 
+/** The line through P with l's direction and flag. Degenerate: none (P on l → l's carrier). */
 function parallel<T>(_F: Field<T>, args: readonly Value<T>[]): Value<T> {
   const [P, l] = [pointAt(args, 0), lineAt(args, 1)];
   if (P === undefined || l === undefined || args.length !== 2) return badArgs('parallel');
   return lineFrom(P, l.d, l.chiral);
 }
 
+/** The line through P with l's direction turned 90° (flag toggled). Degenerate: none. */
 function perp<T>(F: Field<T>, args: readonly Value<T>[]): Value<T> {
   const [P, l] = [pointAt(args, 0), lineAt(args, 1)];
   if (P === undefined || l === undefined || args.length !== 2) return badArgs('perp');
   return lineFrom(P, vRot90(F, l.d), !l.chiral);
 }
 
+/** Through the midpoint of AB, direction rot90(B − A), chiral. Degenerate: A = B → Undefined. */
 function perpBisector<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const [a, b] = pointsOf(args, 2) ?? [];
   if (a === undefined || b === undefined) return badArgs('perp_bisector');
