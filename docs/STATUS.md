@@ -13,7 +13,8 @@ https://github.com/youseng/geomira/actions/runs/39258413806 on 43aa3f9, the inte
 STATUS commit); every SPEC §6.3 case for the new tools is a named test; L1 (incl. 2,000
 circle-degenerate documents), L3 with the band exclusion, glider round trips, cline
 switching and 16 theorems pass; the exactness table below is generated. Kernel coverage
-99.78% lines (gate 90%); kernel mutation score 99.21% locally (reported, gated from v1.1).
+99.78% lines (gate 90%); kernel mutation score 99.21% locally and in CI (reported, gated
+from v1.1).
 
 ## Done (each item → the test file that proves it)
 
@@ -340,13 +341,13 @@ Mutation scores are reported, gated from v1.1 (SPEC §17 L15).
 
 ### CI on GitHub
 
-| Workflow | Run                                                         | Result                                                                                                                                                                  |
-| -------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ci       | https://github.com/youseng/geomira/actions/runs/39258413806 | success on 43aa3f9 (push): verify, build, Playwright                                                                                                                    |
-| ci       | https://github.com/youseng/geomira/actions/runs/39258448213 | success on 43aa3f9 (pull_request, PR #4)                                                                                                                                |
-| deploy   | https://github.com/youseng/geomira/actions/runs/39258413747 | success on 43aa3f9 (build job; deploy job skipped off the default branch)                                                                                               |
-| nightly  | https://github.com/youseng/geomira/actions/runs/39258455195 | dispatched on 43aa3f9: test and mutation-num success; mutation-kernel was still running when this was written (a full run over 2,137 mutants; informational until v1.1) |
-| ci       | https://github.com/youseng/geomira/actions/runs/39251375178 | success on 39393da (push, the code commits before the test-gap commit)                                                                                                  |
+| Workflow | Run                                                         | Result                                                                                                                                                         |
+| -------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ci       | https://github.com/youseng/geomira/actions/runs/39258413806 | success on 43aa3f9 (push): verify, build, Playwright                                                                                                           |
+| ci       | https://github.com/youseng/geomira/actions/runs/39258448213 | success on 43aa3f9 (pull_request, PR #4)                                                                                                                       |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39258413747 | success on 43aa3f9 (build job; deploy job skipped off the default branch)                                                                                      |
+| nightly  | https://github.com/youseng/geomira/actions/runs/39258455195 | success on 43aa3f9 (dispatched): test; mutation-num; mutation-kernel "kernel mutation score: 99.21% (882 detected, 7 undetected; target 75%, gated from v1.1)" |
+| ci       | https://github.com/youseng/geomira/actions/runs/39251375178 | success on 39393da (push, the code commits before the test-gap commit)                                                                                         |
 
 ## Requests
 
