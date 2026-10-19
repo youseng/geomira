@@ -14,9 +14,10 @@ export function lawCount(n: number): number {
 }
 
 /**
- * FloatField that records whether any zero test or sign decision saw a quantity within
- * the BAND of zero (|x| < BAND·scale^k): such inputs are "within BAND of a degeneracy"
- * and are excluded from the exact-oracle comparison (law L3).
+ * FloatField that records whether any zero test or sign decision saw a non-zero quantity
+ * within the BAND of zero (0 < |x| < BAND·scale^k): such inputs are "within BAND of a
+ * degeneracy" and are excluded from the exact-oracle comparison (law L3). Exact zeros are
+ * compared, not excluded (see isZero below).
  */
 export interface BandWatch {
   readonly field: Field<number>;
@@ -32,11 +33,14 @@ export function bandWatch(F: Field<number>): BandWatch {
   const field: Field<number> = {
     ...F,
     isZero: (x, dim, ctx) => {
-      near(x, dim, ctx);
+      // An exactly zero component (the y of an axis-parallel vector (5, 0)) is not near a
+      // degeneracy. Ignoring it can only make L3 stricter: a float 0 produced by rounding
+      // where the exact value is not 0 shows up as a disagreement, never as a pass.
+      if (x !== 0) near(x, dim, ctx);
       return F.isZero(x, dim, ctx);
     },
     sign: (x, dim, ctx) => {
-      near(x, dim, ctx);
+      if (x !== 0) near(x, dim, ctx);
       return F.sign(x, dim, ctx);
     },
   };
