@@ -1,11 +1,13 @@
 # STATUS
 
-## Run 0: NOT ACCEPTED
+## Run 0: ACCEPTED (2026-10-19)
 
 Scaffold and guardrails. Everything is in place and green locally, in a clean clone and in
-CI (ci, tex, deploy and nightly all succeeded on commit 76fb8bd); the one open criterion
-is the GitHub Pages deployment itself, which only runs on the default branch (see
-"Not done").
+CI (ci, tex, deploy and nightly all succeeded on commit 76fb8bd). The last open criterion,
+the GitHub Pages deployment, is now met: after PR #1 was merged, deploy.yml ran on `main`
+(commit 50ee23d) and both its `build` and `deploy` jobs succeeded:
+https://github.com/youseng/geomira/actions/runs/39219324273
+Live site: https://youseng.github.io/geomira/ (serves the "Geomira" shell).
 
 Starting point: no previous run, no `run-*` tag, no docs/adr/, no package.json, so there
 was no `pnpm verify` to run and no red base to repair. This run creates both.
@@ -52,16 +54,13 @@ was no `pnpm verify` to run and no red base to repair. This run creates both.
 7. docs/STATUS.md (this file), docs/adr/0001-baseline.md, docs/test-count.txt (73).
 8. Clean clone in a temp directory: `git clone` → `pnpm install --frozen-lockfile` →
    `pnpm verify` → `pnpm build` → `pnpm e2e`, all exit 0 (output below).
+9. GitHub Pages deployment from the default branch (deploy.yml run 39219324273 on
+   `main`, commit 50ee23d: `build` and `deploy` jobs both succeeded).
 
 ## Not done
 
-- **GitHub Pages deployment not yet exercised.** The deploy workflow is green on this
-  branch, but only its `build` job ran (build with base `/geomira/`, base-path check,
-  Playwright under the base path, Pages artifact upload). The `deploy` job runs only on
-  the default branch and was skipped. Whether Pages is enabled for the repository could
-  not be checked from this session. Run 0 becomes ACCEPTED once the deploy job is green
-  on the default branch (see Requests).
-- `run-0` tag not created (it marks an ACCEPTED run; see Requests).
+Nothing for Run 0. The `run-0` tag is placed on the `main` commit that records this
+acceptance; from then on the add-only guard freezes every test file present at that tag.
 
 ## Known bugs
 
@@ -173,29 +172,29 @@ test-count.test.ts and add-only.test.ts (all cases listed under Done).
 "TeX and Asymptote fixtures compiled.", exit 0. With the expected coordinate changed to
 `(9,9)` the script exits 1.
 
-### CI on GitHub (commit 76fb8bd, branch claude/run-0-scaffold-guardrails-crjyx4)
+### CI on GitHub
 
-In tex.yml the compile job ran inside `ghcr.io/youseng/geomira-tex`, wrote
-hello-tikz.pdf, and Asymptote printed `(2,0)` ("TeX and Asymptote fixtures compiled.").
-The commit that adds this STATUS.md re-runs ci and deploy; tex and nightly have path
-filters (TeX inputs, their own workflow file) and run again only when those change or
-on their schedule / manual dispatch.
+On the branch (commit 76fb8bd, claude/run-0-scaffold-guardrails-crjyx4), tex.yml's
+compile job ran inside `ghcr.io/youseng/geomira-tex`, wrote hello-tikz.pdf, and
+Asymptote printed `(2,0)` ("TeX and Asymptote fixtures compiled."). tex and nightly have
+path filters (TeX inputs, their own workflow file) and run again only when those change
+or on their schedule / manual dispatch.
 
-| Workflow | Run                                                         | Result                                                         |
-| -------- | ----------------------------------------------------------- | -------------------------------------------------------------- |
-| ci       | https://github.com/youseng/geomira/actions/runs/39218199380 | success (verify, build, Playwright)                            |
-| tex      | https://github.com/youseng/geomira/actions/runs/39218199382 | success (image built and pushed to GHCR; fixtures compiled)    |
-| deploy   | https://github.com/youseng/geomira/actions/runs/39218199443 | success (build job; deploy job skipped off the default branch) |
-| nightly  | https://github.com/youseng/geomira/actions/runs/39218199640 | success                                                        |
+| Workflow      | Run                                                         | Result                                                          |
+| ------------- | ----------------------------------------------------------- | --------------------------------------------------------------- |
+| ci            | https://github.com/youseng/geomira/actions/runs/39218199380 | success (verify, build, Playwright)                             |
+| tex           | https://github.com/youseng/geomira/actions/runs/39218199382 | success (image built and pushed to GHCR; fixtures compiled)     |
+| deploy        | https://github.com/youseng/geomira/actions/runs/39218199443 | success (build job; deploy job skipped off the default branch)  |
+| nightly       | https://github.com/youseng/geomira/actions/runs/39218199640 | success                                                         |
+| deploy (main) | https://github.com/youseng/geomira/actions/runs/39219324273 | success (merge of PR #1, commit 50ee23d; build and deploy jobs) |
 
 ## Requests
 
-- **Enable GitHub Pages** (Settings → Pages → Source: GitHub Actions), merge this branch,
-  and check that the `deploy` job of deploy.yml is green on the default branch; then
-  Run 0 can be marked ACCEPTED.
-- **Tag `run-0`** on the accepted commit on the default branch:
-  `git tag run-0 <sha>` then `git push origin run-0`. From then on the add-only guard
-  freezes every test file present at that tag. CI checks out full history (`fetch-depth: 0`) for this.
+- None open. (Done: GitHub Pages enabled, branch merged as PR #1, deploy green on
+  `main`.)
+
+## Notes for later runs
+
 - Dependencies: none beyond the allowed runtime set (react, react-dom). Dev tooling only:
   TypeScript, ESLint + plugins, Prettier, dependency-cruiser, Vitest, Vite,
   @vitejs/plugin-react, Playwright, tsx, @types/\*, globals.
@@ -205,4 +204,6 @@ on their schedule / manual dispatch.
   rules).
 - The tex image is based on `public.ecr.aws/docker/library/debian:trixie-slim` (the
   official Debian image via ECR Public) to avoid Docker Hub rate limits; GHCR package
-  `geomira-tex` is created by the first tex.yml run.
+  `geomira-tex` was created by the first tex.yml run.
+- CI checks out full history (`fetch-depth: 0`) so the add-only guard can compare
+  against the `run-*` tags.
