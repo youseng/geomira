@@ -80,6 +80,9 @@ function withMaps(rng: Rng, doc: Document): Document {
   const T = () => ref(pick(rng, maps));
   if (maps.length > 0) {
     add(call('compose', [T(), call('homothety', [P(), num('1/100000')])]));
+    // Two valid ratios whose product (10⁻¹⁰) collapses in floats (defined over Q, mod p).
+    const tiny = () => call('homothety', [P(), num('1/100000')]);
+    add(call('compose', [tiny(), tiny()]));
     add(call('compose', [call('homothety', [P(), num('1/100000')]), T()]));
     add(call('inverse', [T()]));
     for (const o of d.objects.slice(0, 6)) add(call('apply', [T(), ref(o.id)]));
