@@ -39,8 +39,13 @@ describe('nightly mutation shards', () => {
   const universe = filesUnder('packages/kernel/src');
   const kernel = SHARDS.filter((s) => s.pkg === 'kernel');
 
-  it('the kernel is split into four shards', () => {
-    expect(kernel.map((s) => s.id)).toEqual(['kernel-1', 'kernel-2', 'kernel-3', 'kernel-4']);
+  it('the kernel is split into eight shards, each seeded from a four-way shard', () => {
+    expect(kernel.map((s) => s.id)).toEqual(
+      ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((x) => `kernel-${x}`),
+    );
+    expect(new Set(kernel.map((s) => s.parent))).toEqual(
+      new Set(['kernel-1', 'kernel-2', 'kernel-3', 'kernel-4']),
+    );
   });
 
   it("the kernel shards partition stryker.kernel.json's files, each file in exactly one", () => {
@@ -63,10 +68,12 @@ describe('nightly mutation shards', () => {
   });
 
   it('num and claims run their whole config; ids are unique', () => {
-    expect(SHARDS.filter((s) => s.pkg !== 'kernel').map((s) => [s.id, s.mutate])).toEqual([
-      ['num', []],
-      ['claims', []],
-    ]);
+    expect(SHARDS.filter((s) => s.pkg !== 'kernel').map((s) => [s.id, s.mutate, s.parent])).toEqual(
+      [
+        ['num', [], ''],
+        ['claims', [], ''],
+      ],
+    );
     expect(new Set(SHARDS.map((s) => s.id)).size).toBe(SHARDS.length);
   });
 

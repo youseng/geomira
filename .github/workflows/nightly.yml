@@ -6,7 +6,7 @@ name: nightly
 # Mutation scores are reported, not gated, until v1.1. Mutation runs only on schedule and
 # workflow_dispatch; a push that changes this file or a test config runs the test job only.
 #
-# Mutation is sharded (scripts/mutation-shards.ts): the kernel in four file groups, num and
+# Mutation is sharded (scripts/mutation-shards.ts): the kernel in eight file groups, num and
 # claims whole. Every shard has its own incremental file and cache key, saves them under
 # `if: always()`, and gives Stryker its own time limit below the job's, so a finished shard
 # keeps its progress even if another shard runs out of time.
@@ -97,7 +97,11 @@ jobs:
         with:
           path: ${{ env.REPORTS }}/stryker-incremental.json
           key: stryker-${{ matrix.id }}-${{ github.sha }}
-          restore-keys: stryker-${{ matrix.id }}-
+          # The shard's own newest cache; else its parent's (an earlier, coarser shard whose
+          # incremental file covers these files: scripts/mutation-shards.ts).
+          restore-keys: |
+            stryker-${{ matrix.id }}-
+            stryker-${{ matrix.parent || matrix.id }}-
       - name: Mutation testing (${{ matrix.id }})
         env:
           MUTATE: ${{ matrix.mutate }}
