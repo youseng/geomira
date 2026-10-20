@@ -64,6 +64,8 @@ function toExpr(n: ExprNode, env: ExprEnv, calls: CallSite[]): Expr | undefined 
       const id = env.resolve(n.name, n.span);
       return id === undefined ? undefined : ref(id);
     }
+    case 'str':
+      return { kind: 'str', value: n.value };
     case 'pair':
       return built('point', [n.x, n.y], n.span, env, calls);
     case 'binary':

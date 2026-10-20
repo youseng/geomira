@@ -39,6 +39,8 @@ export function staticKinds(
   switch (e.kind) {
     case 'lit':
       return ['number'];
+    case 'str':
+      return ['string'];
     case 'ref':
       return kindsOfRef(e.id);
     case 'call':

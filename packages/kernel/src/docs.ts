@@ -39,6 +39,7 @@ function argExpr(a: ExampleArg): Expr {
   if (typeof a === 'string') return number(a);
   if ('through' in a) return call(a.as, [pointExpr(a.through[0]), pointExpr(a.through[1])]);
   if ('polygon' in a) return call('polygon', a.polygon.map(pointExpr));
+  if ('text' in a) return { kind: 'str', value: a.text };
   if ('call' in a) return call(a.call, a.args.map(argExpr));
   return pointExpr(a);
 }
@@ -89,6 +90,7 @@ function argText(a: ExampleArg): string {
   if (typeof a === 'string') return a;
   if ('through' in a) return `${a.as}(${argText(a.through[0])}, ${argText(a.through[1])})`;
   if ('polygon' in a) return `polygon(${a.polygon.map(argText).join(', ')})`;
+  if ('text' in a) return exprText({ kind: 'str', value: a.text });
   if ('call' in a) return `${a.call}(${a.args.map(argText).join(', ')})`;
   return `(${a[0]}, ${a[1]})`;
 }
@@ -113,6 +115,16 @@ export function formatValue<T>(v: Value<T>, show: (x: T) => string): string {
       return `polygon ${v.pts.map(pair).join(' ')}`;
     case 'transform':
       return `similarity${v.t.anti ? ' (anti)' : ''}`;
+    case 'angle_mark': {
+      const what = v.right ? 'right-angle mark' : `angle mark (${String(v.arcs)} arc(s))`;
+      return `${what} at ${pair(v.b)} from ${pair(v.from)} to ${pair(v.to)}`;
+    }
+    case 'segment_mark':
+      return `segment mark (${String(v.ticks)} tick(s)) ${pair(v.p)} – ${pair(v.q)}`;
+    case 'text':
+      return `text "${v.text}" at ${pair(v.at)}`;
+    case 'string':
+      return `string "${v.s}"`;
     case 'undefined':
       return `Undefined (${v.reason})`;
     case 'inexact':

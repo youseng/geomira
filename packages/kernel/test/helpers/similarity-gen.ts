@@ -131,6 +131,26 @@ export function sameValues<T>(F: Field<T>, u: Value<T>, v: Value<T>): boolean {
         sameVec(F, { x: u.t.a.re, y: u.t.a.im }, { x: v.t.a.re, y: v.t.a.im }) &&
         sameVec(F, { x: u.t.b.re, y: u.t.b.im }, { x: v.t.b.re, y: v.t.b.im })
       );
+    case 'angle_mark':
+      return (
+        v.kind === 'angle_mark' &&
+        u.arcs === v.arcs &&
+        u.right === v.right &&
+        sameVec(F, u.b, v.b) &&
+        sameVec(F, u.from, v.from) &&
+        sameVec(F, u.to, v.to)
+      );
+    case 'segment_mark':
+      return (
+        v.kind === 'segment_mark' &&
+        u.ticks === v.ticks &&
+        sameVec(F, u.p, v.p) &&
+        sameVec(F, u.q, v.q)
+      );
+    case 'text':
+      return v.kind === 'text' && u.text === v.text && sameVec(F, u.at, v.at);
+    case 'string':
+      return v.kind === 'string' && u.s === v.s;
     case 'undefined':
     case 'inexact':
       return v.kind === u.kind && v.reason === u.reason;

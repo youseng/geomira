@@ -125,6 +125,8 @@ export function planArgs(
   tool: string,
   caps: readonly Capability[],
 ): Expr[] | undefined {
+  if (tool === 'text')
+    return [pointAt(b, [dyadic(rng), dyadic(rng)]), { kind: 'str', value: 'P_1' }];
   if (HERONIAN.includes(tool)) return rng.nextFloat() < 0.5 ? heronian(b, rng) : undefined;
   if (FUNCTION_TOOLS.includes(tool)) return functionPlan(b, rng, tool);
   if (TRANSFORM_TOOLS.includes(tool)) {

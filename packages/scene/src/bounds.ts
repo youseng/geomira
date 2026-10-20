@@ -1,7 +1,7 @@
 /**
  * The world bounds of a scene, for "fit to the figure": points, the finite ends of segments
  * and rays, a point of each full line, circles' bounding boxes (an arc counts as its
- * circle), polygon vertices. Null for a scene with no primitive. Sums that overflow are
+ * circle), polygon vertices, an angle mark's vertex, a segment mark's ends, a text's anchor. Null for a scene with no primitive. Sums that overflow are
  * skipped (a circle of radius 1e300 at 1e300 contributes nothing), so the result is finite.
  */
 import { assertNever } from '@geomira/num/assert';
@@ -24,6 +24,12 @@ function pointsOf(s: Shape): Vec2[] {
       ];
     case 'polygon':
       return [...s.pts];
+    case 'angle_mark':
+      return [s.b];
+    case 'segment_mark':
+      return [s.p, s.q];
+    case 'text':
+      return [s.at];
     default:
       return assertNever(s, 'shape');
   }

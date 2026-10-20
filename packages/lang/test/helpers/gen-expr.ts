@@ -14,6 +14,7 @@ import type { Signature, ToolSpec } from '@geomira/kernel/tool';
 import { capabilityKinds, type Capability, type ValueKind } from '@geomira/kernel/value';
 import type { Rng } from '@geomira/num/rng';
 import { chance, literal, pick } from './gen-atoms';
+import { text as freeText } from './gen-atoms';
 
 export interface ExprCtx {
   readonly doc: Document;
@@ -59,6 +60,7 @@ function producers(c: ExprCtx, cap: Capability): { tool: ToolSpec; sig: Signatur
 export function anyExpr(c: ExprCtx, cap: Capability, depth: number): Expr | undefined {
   const objs = objectsWith(c, cap);
   const r = c.rng.nextFloat();
+  if (cap === 'string') return { kind: 'str', value: freeText(c.rng, true) };
   if (cap === 'number' && (r < 0.45 || depth > 1)) return literal(c.rng);
   if (objs.length > 0 && (r < 0.75 || depth > 1)) return ref(pick(c.rng, objs));
   if (depth > 1) return undefined;

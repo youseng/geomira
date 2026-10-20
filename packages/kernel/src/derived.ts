@@ -21,8 +21,19 @@ import type { Registry } from './registry';
 import type { Signature } from './tool';
 import { capabilityKinds, type ValueKind } from './value';
 
-/** The kinds a map takes to the same kind (everything else has no image). */
-const IMAGED_KINDS: readonly ValueKind[] = ['point', 'line', 'circle', 'polygon'];
+/**
+ * The kinds a map takes to the same kind: figures and, since ADR-0011, the display values
+ * that have a position (marks and text). Everything else has no image.
+ */
+const IMAGED_KINDS: readonly ValueKind[] = [
+  'point',
+  'line',
+  'circle',
+  'polygon',
+  'angle_mark',
+  'segment_mark',
+  'text',
+];
 
 export type KindTable = ReadonlyMap<number, readonly ValueKind[] | undefined>;
 
@@ -51,6 +62,8 @@ export function exprKinds(
   switch (e.kind) {
     case 'lit':
       return ['number'];
+    case 'str':
+      return ['string'];
     case 'ref':
       return kinds.get(e.id);
     case 'call': {

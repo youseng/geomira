@@ -674,10 +674,10 @@ inverse(T): the inverse map (the preimage of Y is apply(inverse(T), Y)).
 
 ### apply
 
-apply(T, X): the image of a point, line, segment, ray, circle, arc or polygon. Ranges are kept, an anti-similarity reverses arcs, the chirality flag and the anchor of a circle are mapped with it (gliders on an image circle stay exact).
+apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mark or text. Ranges are kept, an anti-similarity reverses arcs, the chirality flag and the anchor of a circle are mapped with it (gliders on an image circle stay exact).
 
-- Signatures: `apply(transform, point)`, `apply(transform, curve)`, `apply(transform, polygon)`
-- Result: point, line, circle, polygon
+- Signatures: `apply(transform, point)`, `apply(transform, curve)`, `apply(transform, polygon)`, `apply(transform, annotation)`
+- Result: point, line, circle, polygon, angle_mark, segment_mark, text
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Degenerate cases:
@@ -685,6 +685,7 @@ apply(T, X): the image of a point, line, segment, ray, circle, arc or polygon. R
   - an Undefined T or X → Undefined
   - an anti-similarity reverses arcs; ranges and the chirality flag are kept
   - a circle without an anchor → an image without one
+  - an anti-similarity reverses an angle mark (its arms swap)
 - Examples:
   - `apply(rotate((0, 0), 90), polygon((1, 0), (2, 0), (2, 1)))` → polygon (0, 1) (0, 2) (-1, 2)
   - `apply(reflect(line((0, 0), (1, 0))), circle((1, 2), (1, 3)))` → circle centre (1, -2), r² = 1, anchor (1, -3)
@@ -812,6 +813,69 @@ The polygon with the given vertices, in order (at least three).
   - collinear vertices → a flat polygon
 - Examples:
   - `polygon((0, 0), (4, 0), (1, 3))` → polygon (0, 0) (4, 0) (1, 3)
+
+### mark_angle
+
+mark_angle(A, B, C[, n]): n arcs (1–3, default 1) marking the convex angle ABC at B. Stored counter-clockwise; a reflection reverses it.
+
+- Signatures: `mark_angle(point, point, point)`, `mark_angle(point, point, point, number)`
+- Result: angle_mark
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - A = B or C = B → Undefined (coincident points)
+  - a zero angle (A and C on one ray from B) → Undefined
+  - a straight angle → Undefined (its inner side is not determined)
+  - an angle within the band of 0° or 180° → Undefined (ambiguous)
+  - an arc count that is not an exact 1, 2 or 3 → Undefined
+  - mod p → Inexact (the inner side needs an order)
+- Examples:
+  - `mark_angle((4, 0), (0, 0), (1, 3))` → angle mark (1 arc(s)) at (0, 0) from (4, 0) to (1, 3)
+  - `mark_angle((1, 3), (0, 0), (4, 0), 2)` → angle mark (2 arc(s)) at (0, 0) from (4, 0) to (1, 3)
+
+### mark_right
+
+mark_right(A, B, C): the right-angle square at B. Only a right angle (decided with the band) gets the mark; construct the right angle, the mark does not assume it.
+
+- Signatures: `mark_right(point, point, point)`
+- Result: angle_mark
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - A = B or C = B → Undefined (coincident points)
+  - an angle that is not right → Undefined
+  - an angle within the band of 90° → Undefined (ambiguous)
+  - mod p → Inexact (the inner side needs an order)
+- Examples:
+  - `mark_right((3, 0), (0, 0), (0, 2))` → right-angle mark at (0, 0) from (3, 0) to (0, 2)
+
+### mark_segment
+
+mark_segment(A, B[, n]): n ticks (1–3, default 1) across the middle of segment AB.
+
+- Signatures: `mark_segment(point, point)`, `mark_segment(point, point, number)`
+- Result: segment_mark
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - A = B → Undefined (coincident points)
+  - a tick count that is not an exact 1, 2 or 3 → Undefined
+- Examples:
+  - `mark_segment((0, 0), (4, 2))` → segment mark (1 tick(s)) (0, 0) – (4, 2)
+  - `mark_segment((0, 0), (4, 2), 3)` → segment mark (3 tick(s)) (0, 0) – (4, 2)
+
+### text
+
+text(P, "…"): the string at P (label grammar: A_1, \omega, primes).
+
+- Signatures: `text(point, string)`
+- Result: text
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - an empty string → Undefined
+- Examples:
+  - `text((1, 2), "Let ABC be a triangle")` → text "Let ABC be a triangle" at (1, 2)
 
 ## Arithmetic
 

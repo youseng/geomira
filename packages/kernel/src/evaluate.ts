@@ -127,6 +127,8 @@ function evalExpr<T>(e: Expr, env: Env<T>): Value<T> {
       const v = env.F.fromRational(e.value);
       return isInexact(v) ? v : numOf(v, e.value);
     }
+    case 'str':
+      return { kind: 'string', s: e.value };
     case 'call':
       return evalCall(e, env);
     default:

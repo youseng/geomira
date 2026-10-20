@@ -78,17 +78,19 @@ export function zOf(style: Style): number {
 
 /**
  * The label of an object: the style's label text, else the name for points; none for other
- * kinds without a label text, and none for an empty text. The angle is in degrees (null =
- * automatic placement), normalised to [0, 360).
+ * kinds without a label text, and none for an empty text. A text object (ADR-0011) is
+ * labelled with its own string (`shown`), whatever its style's label, at distance 0 unless
+ * its style gives one. The angle is in degrees (null = automatic placement), normalised to
+ * [0, 360).
  */
-export function labelOf(name: string, style: Style, kind: ShapeKind): Label | null {
-  const text = style.label ?? (kind === 'point' ? name : '');
+export function labelOf(name: string, style: Style, kind: ShapeKind, shown?: string): Label | null {
+  const text = kind === 'text' ? (shown ?? '') : (style.label ?? (kind === 'point' ? name : ''));
   if (text === '') return null;
   const angle =
     style.labelAngle !== undefined && Number.isFinite(style.labelAngle)
       ? ((style.labelAngle % 360) + 360) % 360
       : null;
-  const fallback = kind === 'point' ? POINT_LABEL_DIST : CURVE_LABEL_DIST;
+  const fallback = kind === 'point' ? POINT_LABEL_DIST : kind === 'text' ? 0 : CURVE_LABEL_DIST;
   return {
     text,
     runs: parseLabel(text),

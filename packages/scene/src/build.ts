@@ -64,7 +64,7 @@ function candidate(
     shape: s.shape,
     style: drawStyle(style, kind, layer.opacity),
     layer: layer.id,
-    label: labelOf(o.name, style, kind),
+    label: labelOf(o.name, style, kind, s.shape.kind === 'text' ? s.shape.text : undefined),
   };
   return { o, value, shape: s.shape, primitive, key: drawKey(index, o, layer, kind, zOf(style)) };
 }

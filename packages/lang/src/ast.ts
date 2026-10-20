@@ -9,6 +9,8 @@ export type ExprNode =
   /** An exact number as written, sign included (`-3/4`, `60°`). */
   | { readonly kind: 'num'; readonly text: string; readonly span: Span }
   | { readonly kind: 'name'; readonly name: string; readonly span: Span }
+  /** A string literal, unescaped (ADR-0011: text's string). */
+  | { readonly kind: 'str'; readonly value: string; readonly span: Span }
   | {
       readonly kind: 'call';
       readonly tool: string;

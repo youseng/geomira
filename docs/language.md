@@ -67,7 +67,9 @@ primary       = number | name | call | "(" , expr , ")" | "(" , expr , "," , exp
                                                             (* (x, y) is point(x, y) *)
 call          = tool , "(" , [ args ] , ")" ;               (* tool: a registry name *)
 args          = arg , { "," , arg } , { "," , selector } | selector , { "," , selector } ;
-arg           = expr ;                                      (* on(obj) gets an explicit parameter *)
+arg           = expr | string ;                             (* on(obj) gets an explicit parameter;
+                                                               a string only as a whole argument:
+                                                               text(P, "…") (ADR-0011) *)
 selector      = ( "same_side" | "opposite_side" ) , "(" , expr , "," , expr , ")"
               | "on_arc" , "(" , expr , "," , expr , "," , [ "not" ] , expr , ")"
               | "between" , "(" , expr , "," , expr , ")"
@@ -267,7 +269,11 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `spiral` | transformations | `spiral(point, point, point, point)` · `spiral(point, point, point, point, point)` · `spiral(curve, point, point, point, point)` · `spiral(polygon, point, point, point, point)` | transform, point, line, circle, polygon | can succeed | — |
 | `compose` | transformations | `compose(transform, transform)` | transform | can succeed | — |
 | `inverse` | transformations | `inverse(transform)` | transform | can succeed | — |
-| `apply` | transformations | `apply(transform, point)` · `apply(transform, curve)` · `apply(transform, polygon)` | point, line, circle, polygon | can succeed | — |
+| `apply` | transformations | `apply(transform, point)` · `apply(transform, curve)` · `apply(transform, polygon)` · `apply(transform, annotation)` | point, line, circle, polygon, angle_mark, segment_mark, text | can succeed | — |
+| `mark_angle` | display | `mark_angle(point, point, point)` · `mark_angle(point, point, point, number)` | angle_mark | can succeed | — |
+| `mark_right` | display | `mark_right(point, point, point)` | angle_mark | can succeed | — |
+| `mark_segment` | display | `mark_segment(point, point)` · `mark_segment(point, point, number)` | segment_mark | can succeed | — |
+| `text` | display | `text(point, string)` | text | can succeed | — |
 
 ## Versions
 

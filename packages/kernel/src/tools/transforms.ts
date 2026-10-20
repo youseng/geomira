@@ -130,10 +130,15 @@ function spiralBuild<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext
   return similarity(false, a, cSub(F, c(C), cMul(F, a, c(A))));
 }
 
+/** What the image sugar (reflect(X, l), rotate(X, O, θ), …) takes: figures. */
 const IMAGED: readonly Capability[] = ['point', 'curve', 'polygon'];
 
-/** Geometric kinds a map takes to the same kind (the sugar's result kinds). */
+/** The figure kinds a map takes to the same kind (the sugar's result kinds). */
 const IMAGE_KINDS: readonly ValueKind[] = ['point', 'line', 'circle', 'polygon'];
+
+/** apply also maps marks and text (ADR-0011: derived layers image them). */
+const APPLIED: readonly Capability[] = [...IMAGED, 'annotation'];
+const APPLIED_KINDS: readonly ValueKind[] = [...IMAGE_KINDS, 'angle_mark', 'segment_mark', 'text'];
 
 const TRANSFORM_KIND: readonly ValueKind[] = ['transform'];
 
@@ -195,7 +200,7 @@ function mapTool(spec: {
 
 /** apply with the kind check of the sugar and apply (numbers and maps are not imaged). */
 function applyChecked<T>(F: Field<T>, s: Similarity<T>, X: Value<T>, tool: string): Value<T> {
-  return IMAGE_KINDS.includes(X.kind) ? applySimilarity(F, s, X) : badArgs(tool);
+  return APPLIED_KINDS.includes(X.kind) ? applySimilarity(F, s, X) : badArgs(tool);
 }
 
 /** The transform argument at i, checked to be invertible (hand-built values may not be). */
@@ -358,18 +363,20 @@ export const TRANSFORM_TOOLS: readonly ToolSpec[] = [
     id: 'apply',
     name: 'apply',
     family: 'transformations',
-    signatures: IMAGED.map((x) => ({ params: ['transform', x], output: capabilityKinds(x) })),
-    outputKinds: IMAGE_KINDS,
+    signatures: APPLIED.map((x) => ({ params: ['transform', x], output: capabilityKinds(x) })),
+    outputKinds: APPLIED_KINDS,
     compute: apply,
     degenerate: [
       'X a number or a transform → Undefined (not imaged)',
       'an Undefined T or X → Undefined',
       'an anti-similarity reverses arcs; ranges and the chirality flag are kept',
       'a circle without an anchor → an image without one',
+      'an anti-similarity reverses an angle mark (its arms swap)',
     ],
     export: 'numeric',
     doc:
-      'apply(T, X): the image of a point, line, segment, ray, circle, arc or polygon. Ranges ' +
+      'apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mark or ' +
+      'text. Ranges ' +
       'are kept, an anti-similarity reverses arcs, the chirality flag and the anchor of a ' +
       'circle are mapped with it (gliders on an image circle stay exact).',
     examples: [

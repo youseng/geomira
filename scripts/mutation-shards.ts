@@ -92,8 +92,8 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     parent: 'kernel-4',
   },
   { files: [`${K}/tools/lines.ts`], parent: 'kernel-h' },
-  { files: [`${K}/tools/transforms.ts:133-244`], parent: 'kernel-b' },
-  { files: [`${K}/tools/transforms.ts:245-${String(OPEN_END)}`], parent: 'kernel-b' },
+  { files: [`${K}/tools/transforms.ts:133-249`], parent: 'kernel-b' },
+  { files: [`${K}/tools/transforms.ts:250-${String(OPEN_END)}`], parent: 'kernel-b' },
 ];
 
 const toolsInGroups = [

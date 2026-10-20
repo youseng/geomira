@@ -27,6 +27,10 @@ export function plain<T>(F: Field<T>, v: Value<T>): unknown {
     case 'circle':
     case 'polygon':
     case 'transform':
+    case 'angle_mark':
+    case 'segment_mark':
+    case 'text':
+    case 'string':
     case 'undefined':
     case 'inexact':
       return v.kind;

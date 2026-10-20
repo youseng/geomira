@@ -27,7 +27,24 @@ export type Shape =
       readonly r: number;
       readonly arc: { readonly from: number; readonly to: number } | null;
     }
-  | { readonly kind: 'polygon'; readonly pts: readonly Vec2[] };
+  | { readonly kind: 'polygon'; readonly pts: readonly Vec2[] }
+  /**
+   * An angle mark (ADR-0011): `arcs` arcs, or the right-angle square, at vertex b over the
+   * counter-clockwise span from angle `from` to `to` (radians, 0 < to − from < π). Its size
+   * on screen is fixed in pixels (mark-paths.ts).
+   */
+  | {
+      readonly kind: 'angle_mark';
+      readonly b: Vec2;
+      readonly from: number;
+      readonly to: number;
+      readonly arcs: number;
+      readonly right: boolean;
+    }
+  /** `ticks` tick marks across the middle of the segment pq (ADR-0011). */
+  | { readonly kind: 'segment_mark'; readonly p: Vec2; readonly q: Vec2; readonly ticks: number }
+  /** A text anchored at `at`; the text itself is drawn as the item's label (ADR-0011). */
+  | { readonly kind: 'text'; readonly at: Vec2; readonly text: string };
 
 export type ShapeKind = Shape['kind'];
 
@@ -96,7 +113,7 @@ export interface DisplayItem {
   readonly name: string;
   readonly kind: ShapeKind;
   readonly style: DrawStyle;
-  /** Stroked paths (points: one dot). */
+  /** Stroked paths (points: one dot; a text: one dot of radius 0 at its anchor, its handle). */
   readonly paths: readonly Path[];
   /** A polygon's clipped interior (filled), or null. */
   readonly fill: readonly Vec2[] | null;

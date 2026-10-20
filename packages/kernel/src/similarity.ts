@@ -21,6 +21,7 @@ import type { Field } from '@geomira/num/field';
 import type { ToleranceContext } from '@geomira/num/tolerance';
 import {
   undef,
+  type AngleMark,
   type Arc,
   type Circle,
   type Line,
@@ -146,8 +147,19 @@ function mapCircle<T>(F: Field<T>, s: Similarity<T>, c: Circle<T>): Circle<T> {
 }
 
 /**
+ * The image of an angle mark: vertex and arm points mapped. A direct map keeps the
+ * counter-clockwise order of the arms; an anti map reverses it, so the arms swap (ADR-0011:
+ * a reflection reverses a mark's orientation), and the image is again counter-clockwise.
+ */
+function mapAngleMark<T>(F: Field<T>, s: Similarity<T>, m: AngleMark<T>): AngleMark<T> {
+  const [from, to] = [mapPoint(F, s, m.from), mapPoint(F, s, m.to)];
+  return { ...m, b: mapPoint(F, s, m.b), from: s.anti ? to : from, to: s.anti ? from : to };
+}
+
+/**
  * apply(s, X) for every kind (SPEC §8.1). Degenerate cases: a number or a transform has
- * no image → Undefined (numbers and maps are not imaged, ADR-0007); Undefined and Inexact
+ * no image → Undefined (numbers, maps and strings are not imaged, ADR-0007, ADR-0011); marks
+ * and text are mapped (ADR-0011); Undefined and Inexact
  * pass through unchanged (SPEC §6.3: transform of Undefined → Undefined).
  */
 export function applySimilarity<T>(F: Field<T>, s: Similarity<T>, v: Value<T>): Value<T> {
@@ -160,8 +172,15 @@ export function applySimilarity<T>(F: Field<T>, s: Similarity<T>, v: Value<T>): 
       return mapCircle(F, s, v);
     case 'polygon':
       return { kind: 'polygon', pts: v.pts.map((p) => mapPoint(F, s, p)) };
+    case 'angle_mark':
+      return mapAngleMark(F, s, v);
+    case 'segment_mark':
+      return { ...v, p: mapPoint(F, s, v.p), q: mapPoint(F, s, v.q) };
+    case 'text':
+      return { ...v, at: mapPoint(F, s, v.at) };
     case 'number':
     case 'transform':
+    case 'string':
       return undef(`apply does not map a ${v.kind}`);
     case 'undefined':
     case 'inexact':

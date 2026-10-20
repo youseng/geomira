@@ -62,7 +62,7 @@ export type ExportMapping = 'numeric';
 
 /**
  * An example argument, as exact text: a point `[x, y]`, a number `"2/3"`, a line-like
- * object through two points, a polygon, or any nested call (`circle(O, A)` as
+ * object through two points, a polygon, a string `{ text }`, or any nested call (`circle(O, A)` as
  * `{ call: 'circle', args: [O, A] }`).
  */
 export type ExampleArg =
@@ -73,6 +73,8 @@ export type ExampleArg =
       readonly as: 'line' | 'segment' | 'ray';
     }
   | { readonly polygon: readonly (readonly [string, string])[] }
+  /** A string literal (text's string, ADR-0011). */
+  | { readonly text: string }
   | { readonly call: string; readonly args: readonly ExampleArg[] };
 
 /** A selector of an example call (the kinds the examples use). */

@@ -12,14 +12,18 @@
  * and the ranges are the same set (a segment's ends may swap; a ray's open side must point
  * the same way); a circle when centres and radii agree and both are full circles or the
  * same arc; a polygon when its vertices agree up to a cyclic shift in either direction.
- * Values of different kinds, Undefined or Inexact values, and any quantity that overflows
- * never coincide (both are then drawn or reported). Stateless and total.
+ * Display values (ADR-0011): two angle marks coincide when their vertices coincide, their
+ * arms point the same ways (parallel by the normalised cross product, same sense) in the
+ * same order, and they have the same arcs and style; segment marks when their ends coincide
+ * (either order) with the same ticks; texts when their anchors coincide and the strings are
+ * equal. Values of different kinds, Undefined or Inexact values, and any quantity that
+ * overflows never coincide (both are then drawn or reported). Stateless and total.
  */
 import { FloatField } from '@geomira/num/float-field';
 import type { Dim, ToleranceContext } from '@geomira/num/tolerance';
 import { signNormalized } from '@geomira/kernel/geom';
 import { rootGap } from '@geomira/kernel/incidence';
-import type { Circle, Line, Value, Vec } from '@geomira/kernel/value';
+import type { AngleMark, Circle, Line, Value, Vec } from '@geomira/kernel/value';
 
 type V = Vec<number>;
 
@@ -119,6 +123,23 @@ function polygonsCoincide(a: readonly V[], b: readonly V[], ctx: ToleranceContex
   return false;
 }
 
+/** The rays b → p and b → q point the same way: parallel within the band, same sense. */
+function sameRay(b: V, p: V, q: V, ctx: ToleranceContext): boolean {
+  const [u, w] = [sub(p, b), sub(q, b)];
+  const n = dot(u, u) * dot(w, w);
+  return normalizedWithin(cross(u, w), n, 'dimensionless', ctx) && dot(u, w) > 0;
+}
+
+function angleMarksCoincide(a: AngleMark<number>, b: AngleMark<number>, ctx: ToleranceContext) {
+  return (
+    a.arcs === b.arcs &&
+    a.right === b.right &&
+    pointsCoincide(a.b, b.b, ctx) &&
+    sameRay(a.b, a.from, b.from, ctx) &&
+    sameRay(a.b, a.to, b.to, ctx)
+  );
+}
+
 /** Whether `image` coincides with `source` within BAND (see the module comment). */
 export function coincides(
   image: Value<number>,
@@ -132,5 +153,14 @@ export function coincides(
     return circlesCoincide(image, source, ctx);
   if (image.kind === 'polygon' && source.kind === 'polygon')
     return polygonsCoincide(image.pts, source.pts, ctx);
+  if (image.kind === 'angle_mark' && source.kind === 'angle_mark')
+    return angleMarksCoincide(image, source, ctx);
+  if (image.kind === 'segment_mark' && source.kind === 'segment_mark')
+    return (
+      image.ticks === source.ticks &&
+      polygonsCoincide([image.p, image.q], [source.p, source.q], ctx)
+    );
+  if (image.kind === 'text' && source.kind === 'text')
+    return image.text === source.text && pointsCoincide(image.at, source.at, ctx);
   return false;
 }

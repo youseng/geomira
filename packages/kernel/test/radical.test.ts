@@ -79,6 +79,10 @@ function draw<T>(F: Field<T>, cap: Capability, rng: Rng, exact: boolean): Value<
       };
     case 'polygon':
       return { kind: 'polygon', pts: [v(), v(), v()] };
+    case 'annotation':
+      return { kind: 'segment_mark', p: v(), q: v(), ticks: 1 };
+    case 'string':
+      return { kind: 'string', s: 'M_a' };
     default:
       throw new Error(`unknown capability ${String(cap)}`);
   }
