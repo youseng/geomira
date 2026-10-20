@@ -1,5 +1,364 @@
 # STATUS
 
+## Run 3b: ACCEPTED (2026-10-20)
+
+Candidates and selectors (SPEC §7). Base check first: Run 3a was ACCEPTED (tag `run-3a` =
+`main` = 8adccc9), `pnpm install && pnpm verify` was green locally on it (718 tests, add-only
+compared with `run-3a`), and ci and deploy were green in CI on that commit
+(https://github.com/youseng/geomira/actions/runs/39338015540,
+https://github.com/youseng/geomira/actions/runs/39338015541), so there was no red base.
+
+Every criterion holds: verify is green locally, in a clean clone (7e4c55c) and in CI (table
+under "CI on GitHub"); candidates for intersect(curve, curve), tangent_point and tangent_from;
+every selector of SPEC §7 with the band rules and the parse-level errors;
+`isOrientationDependent`; each selector checked on 500 random figures, the mirror tests,
+the band edges, law L11 for every branchable tool and other(), 13 theorems with selectors;
+and the registry audited against SPEC §6.2 item by item (table below). One reading needs
+the maintainer's confirmation (see "Uncertain", first item): SPEC §6.2 also lists the
+transformation tools, the display marks and `text`, and the `triangle` sugar, which belong
+to later runs (transformations, scene, language); they are NOT registered, because the run
+prompt and CLAUDE.md forbid starting later runs' work. Every other §6.2 tool is registered,
+including three that Runs 2 and 3a had missed (`ninepoint_center`, `power`, `radius`), added
+here first. Kernel coverage 99.33% lines.
+
+## Done (each item → the test file that proves it)
+
+1. **SPEC §6.2 audit: three tools that earlier runs missed** (8766c5d, before the run's own
+   work): `ninepoint_center` (the midpoint of OH), `power(P, c)` = |PO|² − r² (exact),
+   `radius(c)` = √r² (exact over Q exactly when r² is a rational square). Each with
+   implementation, registry entry, degenerate cases, a property test, `export: 'numeric'`
+   and generated docs. → `helpers/degenerate-gaps.ts` (in `degenerate.test.ts`),
+   `helpers/gap-properties.ts` (in `tools.property.test.ts`), L3 (`laws/l3-oracle.test.ts`).
+2. **Candidates** (SPEC §6.1, ADR-0006 items 1–9): `ToolSpec.candidates?<T>(F, args, ctx)`
+   (0–2 values in a fixed order, the double point as one, Inexact entries when the roots are
+   not representable); `compute<T>(F, args, ctx, selectors?)`; `Signature.branch`
+   (BranchShape). intersect gains line ∩ circle (either order) and circle ∩ circle;
+   `tangent_point(P, c, selectors)` and `tangent_from(P, c, selectors)` are new
+   (tangent_from: the chiral tangent at the chosen touch point). The count is decided on the
+   DISCRIMINANT measured as a length with the band (maintainer's note A): clearly negative →
+   Undefined ("no intersection: …", "P lies inside the circle"), within the band → ONE double
+   point, clearly positive → two candidates; exact over Q, an exact zero test mod p.
+   Positions mid ∓ off carry structural along/orient labels. → `candidates.test.ts`,
+   `helpers/degenerate-branch.ts` (in `degenerate.test.ts`: 14 new intersect cases, 6 per
+   tangent tool), `helpers/branch-properties.ts` (exact over Q).
+3. **Selectors exactly per SPEC §7** (`src/select.ts`): filters `same_side`,
+   `opposite_side`, `on_arc(B, C, [not] A)`, `between`, `inside`, `outside`; rankers `near`,
+   `far_from`, `other(P)` (P on both objects decided with the banded incidence of
+   incidence.ts; the other point by Vieta / reflection without square roots, exact in every
+   field and identical to the other() tool bit for bit); `along(±)` (line ∩ circle) and
+   `orient(±)` (circle ∩ circle, tangent choices). Band rules: a deciding quantity within
+   the band → Undefined("ambiguous: …"); zero survivors → "no … satisfies …"; two →
+   "ambiguous: add a selector"; ties → Undefined; mod p any order-based decision → Inexact.
+   → `selectors.predicates.test.ts`, `selectors.band.test.ts`,
+   `helpers/degenerate-branch.ts`.
+4. **Parse-level errors for bare indices and missing selectors** (`@geomira/kernel/selector-check`,
+   ADR-0006 item 14): decided statically from the kinds an expression can have, with a hint;
+   also selectors on a tool that takes none, misapplied along/orient/other, other twice.
+   There is no parser yet: the language run reports these diagnostics as parse errors at
+   the call's line and column. Evaluation agrees (a bare index evaluates to Undefined with
+   the same message). → `selector-check.test.ts`.
+5. **`isOrientationDependent(selector, line)`** per SPEC §7 (`@geomira/kernel/selector`),
+   checked on the chirality flags of actual lines and against mirrored figures. →
+   `selector.test.ts`, `selectors.mirror.test.ts`.
+6. **Each selector returns the candidate satisfying its predicate in 500 random figures**
+   (14 forms: same_side, opposite_side, on_arc, on_arc not, between, inside, outside, near,
+   far_from, other, along(±), orient(±); candidates from independent formulas; one, two and
+   zero survivors all occur for the filters). → `selectors.predicates.test.ts`.
+7. **Mirror tests** (300 figures, no selector flipped): gliders mirrored BY POSITION and
+   re-projected (asserted: t on line(A, B), −t on perp_bisector(A, B)); 3,795 equivariant
+   choices are the mirror image of the original, 3,600 orientation-dependent ones (orient,
+   along on perp_bisector / tangent / perp) the mirror of the other candidate; along on
+   line(A, B) and line(G, E) is equivariant; Undefined results mirror too. →
+   `selectors.mirror.test.ts`.
+8. **Ambiguity at the band edges**: every deciding quantity (reference and candidate sides,
+   on_arc, between ends, inside/outside, near/far_from ties, other(P)'s incidence, segment
+   ends) at ±0.5 EPS, ±0.5, ±0.9, ±1.1, ±2 BAND (scale 100): Undefined inside the band,
+   decided outside; and the discriminant's band for line ∩ circle, external and internal
+   tangency of circles and tangents from a point (double point / none / two). →
+   `selectors.band.test.ts`.
+9. **Continuity L11** for intersect (line ∩ circle on achiral and chiral lines, circle ∩
+   circle with external and internal tangency), tangent_point, tangent_from and other()
+   (the tool and the selector): 476 paths through tangency, exactly tangent (integer data)
+   and nearly tangent samples (±1e-12, ±EPS, ±BAND multiples): the value is the selected
+   branch (never the other one), the double point within the band, Undefined beyond;
+   |ΔV| ≤ 1.5·L·Δs away from tangency (38,522 steps), |ΔV| ≤ |ΔE| + h_band near it (9,350
+   steps; ADR-0006 item 16); other() moves through tangency with |ΔX| ≤ 2r·Δφ (3,720
+   steps). → `laws/l11-continuity.test.ts`.
+10. **13 theorem tests with selectors** (≥ 10 asked), each over FloatField and, where exact,
+    over Q (Heronian triangles for the side-length tools): the incenter–excenter lemma with
+    other(A); the arc midpoint (other, on_arc not A, opposite_side); the antipode
+    (far_from); Thales (other); equal tangents (other(B), orient); tangent–secant (along);
+    chord of contact = polar and tangent_from (orient); the common chord (orient);
+    intersecting chords (along); the butterfly theorem; Reim's theorem (other); tangent
+    lengths s − a and s (orient); and the incircle touch point as the double point of
+    intersect(line(B, C), incircle) without a selector. → `theorems-selectors.test.ts`.
+    Sanity check: four deliberate bugs in pairs.ts / tangent-from.ts (orientation label,
+    Vieta, the radical line, the chord of contact) failed 2, 8, 2 and 6 of them.
+11. **L1 for branching tools** (the note on ADR-0002): 2,000 documents per field aimed at
+    exactly and nearly tangent lines and circles, concentric and equal circles, P on /
+    nearly on / inside c and at the centre, coincident points, segments and rays, degenerate,
+    wrong-kind and Undefined selector references, misused selectors, bare indices: 0
+    throws, 0 non-finite in Float, Rational and ModP; every listed situation reached in
+    FloatField. The frozen L1 fuzzers fuzz the new tools too (registry-driven). →
+    `laws/l1-branch.test.ts` (`helpers/fuzz-branch.ts`).
+12. **L3 for branching tools**: the frozen L3 compares tangent_point / tangent_from (plan: P
+    exactly on c) and every intersect signature; `laws/l3-branch.test.ts` compares calls
+    WITH selectors on integer figures whose candidates are rational: 1,512 defined + 2,465
+    Undefined agree, 23 excluded (band), 243 mod-p comparisons (other(P)). →
+    `laws/l3-oracle.test.ts`, `laws/l3-branch.test.ts`.
+13. Selector sanity check: five deliberate bugs in select.ts / tangent-from.ts; four failed
+    10, 6, 4 and 8 tests, the fifth was equivalent (`g !== 1` where g can only be ±1).
+14. ADR-0006 (branch selection); packages/kernel/README.md; docs/tools.md regenerated
+    (examples with selectors, including irrational ones); the exactness table below;
+    docs/test-count.txt raised from 718 to 837.
+
+### Registry vs SPEC §6.2, item by item
+
+| SPEC §6.2 item                                                                                                                               | Registry                                                                         | Run   |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ----- |
+| `(x,y)` / `point(x,y)`                                                                                                                       | `point` (the `(x, y)` literal is language syntax)                                | 2     |
+| `on(obj[, param])`                                                                                                                           | `on` (the parameterless form is desugared by the language, ADR-0004 item 9)      | 3a    |
+| `param(min,max,v)`, `midpoint`, `divide(A,B,t)`                                                                                              | `param`, `midpoint`, `divide`                                                    | 2     |
+| `intersect(a,b, selectors)`                                                                                                                  | `intersect`: lines (Run 2); line ∩ circle, circle ∩ circle with selectors        | 2, 3b |
+| `other(a,b,P)`                                                                                                                               | `other`                                                                          | 3a    |
+| `foot(P,l)`, `foot(P,A,B)`                                                                                                                   | `foot` (both signatures)                                                         | 2     |
+| `center(c)`                                                                                                                                  | `center`                                                                         | 3a    |
+| `circumcenter`, `orthocenter`, `centroid`                                                                                                    | `circumcenter`, `orthocenter`, `centroid`                                        | 2     |
+| `ninepoint_center`                                                                                                                           | `ninepoint_center` (missed by Runs 2 and 3a)                                     | 3b    |
+| `incenter`, `excenter(A,B,C)`                                                                                                                | `incenter`, `excenter`                                                           | 3a    |
+| `tangent_point(P,c,selectors)`                                                                                                               | `tangent_point`                                                                  | 3b    |
+| `line`, `segment`, `ray`, `parallel`, `perp`, `perp_bisector`                                                                                | the same six                                                                     | 2     |
+| `bisector(A,B,C)`, `ext_bisector`                                                                                                            | `bisector`, `ext_bisector`                                                       | 3a    |
+| `tangent(P,c)`                                                                                                                               | `tangent`                                                                        | 3a    |
+| `tangent_from(P,c,selectors)`                                                                                                                | `tangent_from`                                                                   | 3b    |
+| `polar(P,c)`, `radical_axis(c1,c2)`                                                                                                          | `polar`, `radical_axis`                                                          | 3a    |
+| `circle(O,A)`, `circle(O,r)`, `circle(A,B,C)` = `circumcircle`                                                                               | `circle` (three signatures), `circumcircle`                                      | 3a    |
+| `cline(A,B,C)`, `diameter_circle`, `incircle`, `excircle`, `ninepoint_circle`                                                                | the same five                                                                    | 3a    |
+| `dist`, `dangle(A,B,C)`, `angle(A,B,C)`, `ratio(A,B,C,D)`, `area`                                                                            | the same five                                                                    | 2     |
+| `power(P,c)`, `radius(c)`                                                                                                                    | `power`, `radius` (missed by Run 3a)                                             | 3b    |
+| arithmetic and sqrt/sin/cos/tan (degrees) on numbers                                                                                         | `add`, `sub`, `mul`, `div`, `neg`; `sqrt`, `sin`, `cos`, `tan`                   | 2, 3a |
+| `polygon`                                                                                                                                    | `polygon`                                                                        | 2     |
+| `reflect(l)`, `reflect(P)`, `rotate(O,θ)`, `homothety(O,k)`, `translate(A,B)`, `spiral(A,B,C,D)`, `compose`, `inverse`, `apply`, image sugar | **not registered**: SPEC §8 transformations (with layers and views), a later run | later |
+| `mark_angle`, `mark_right`, `mark_segment`, `text`                                                                                           | **not registered**: display values the scene (SPEC §13) defines, a later run     | later |
+| `triangle A B C [type]` (sugar)                                                                                                              | **not a tool**: a language statement (SPEC §11.1), the language run              | later |
+| v1.1: `spiral_center`, `isogonal`, `symmedian`, `pole`, `radical_center`, `arc`                                                              | not v1 (Run 13)                                                                  | v1.1  |
+
+The registry holds 52 tools (`registry.test.ts` lists them); `docs/tools.md` documents
+each, generated from the registry.
+
+### Exactness of the Run 3b tools (output of `pnpm docs:exactness`, generated)
+
+The rows of the earlier tools are unchanged (see Run 3a below). intersect gained four
+examples with selectors (one with irrational candidates); branchable tools are exact
+exactly where their square roots are rational, and `other(P)` is always exact.
+
+| Tool             | Family   | Exact run (RationalField) | Exact examples | Otherwise                            |
+| ---------------- | -------- | ------------------------- | -------------- | ------------------------------------ |
+| intersect        | points   | can succeed               | 4/5            | inexact: √(2) is not rational        |
+| ninepoint_center | points   | can succeed               | 1/1            |                                      |
+| power            | measures | can succeed               | 1/1            |                                      |
+| radius           | measures | can succeed               | 1/2            | inexact: √(2) is not rational        |
+| tangent_point    | points   | can succeed               | 1/2            | inexact: √(275/1296) is not rational |
+| tangent_from     | lines    | can succeed               | 1/2            | inexact: √(275/1296) is not rational |
+
+## Not done
+
+Nothing in Run 3b's scope. Not started (later runs): transformations, layers and views
+(SPEC §8), claims, language (it will report the selector diagnostics as parse errors),
+scene (including the display marks and `text`), editor (including the GUI selector choice of
+SPEC §7, which will use `candidates`), export.
+
+## Known bugs
+
+None known. Found and fixed in this run, each with its test in the same commit:
+
+- The other(P) selector computed the Vieta point with a different operation order than the
+  other() tool, so the two differed in the last bit (found by L11, which compares them
+  exactly). pairs.ts now uses other.ts's operations and range decision. →
+  `laws/l11-continuity.test.ts` (4657487, 88543f0).
+
+## Uncertain
+
+- **The scope of "every SPEC §6.2 v1 tool registered".** SPEC §6.2 also lists the
+  transformation tools, the display marks and `text`, and the `triangle` sugar. They are
+  not registered: they belong to the transformations, scene and language runs, and the run
+  prompt says "Do not touch later runs' scope". I read the criterion as every §6.2 tool of
+  the runs up to 3b (all registered, the three missed ones added). If the maintainer meant
+  every tool of §6.2 literally, this run is NOT ACCEPTED until those are registered.
+- Tangency is decided on the discriminant measured as a LENGTH (r − h, r₁ + r₂ − d,
+  d − |r₁ − r₂|, |OP| − r), not as the raw r² − h² against BAND·scale²: the raw form would
+  call a line at 0.95r from the centre of a circle of radius 10⁻³·scale tangent. This keeps
+  note A's point (no square root of a rounding residue decides anything): the length is
+  (a² − b²)/(a + b), and over Q the sign is exact.
+- At the edge of the band the selected point steps from the double point to a candidate by
+  the exact half chord at gap BAND·scale (√(2·BAND·r·scale) ≈ 4.5·10⁻⁴·scale for a line and
+  a circle of radius ≤ scale; larger for nearly concentric internally tangent circles,
+  ADR-0006 item 16). L11 bounds it explicitly; it is the same as the motion of the exact
+  candidates across the band.
+- `other(P)` returns "the candidate other than P": P itself only as the double point (a
+  literal "farther of the survivors" would return P when the other point was filtered out).
+  other(·) twice in one call is refused.
+- along(±) / orient(±) name a BRANCH (labels of the pair), not a rank among survivors: on a
+  segment whose further intersection is off the segment, along(+) gives "no intersection
+  satisfies along(+)", not the other point (no silent change of branch while dragging).
+- `on_arc(B, C, [not] A)` is A's side of line BC (the arc BC that contains A for points of
+  one circle through B and C); `between(A, B)` is strictly between the perpendiculars to AB
+  at A and B (segment AB for points of line AB). Concyclicity is not checked.
+- `tangent_from` is chiral (the tangent at T, direction rot90(T − O)) and its selectors
+  judge the touch point T; SPEC lists tangent among the chiral lines.
+- along(±) on line ∩ line (one candidate) is refused as "does not apply", so it can never
+  mislead the orientation verdict (L16).
+- `compute`'s selectors are its last, optional parameter (SPEC §6.1 writes them before
+  ctx); ADR-0006 item 1.
+- Mod p "misses", "apart" and "inside" are not decidable (no order): a non-zero
+  discriminant counts two algebraic candidates, which are Inexact; an exact zero is the
+  double point.
+- The parse-level checks live in the kernel (`selector-check`) until the language exists;
+  a call needs a selector when it can have two candidates for SOME argument kinds (cline).
+- Mathematical facts used (I am confident of each): the incenter–excenter lemma; the
+  bisector at A meets the circumcircle at the midpoint of arc BC not containing A, which is
+  on the perpendicular bisector of BC; the antipode of A is the reflection of H in the
+  midpoint of BC; Thales; equal tangent lengths and OT ⟂ PT; the power of a point (secants,
+  tangents, intersecting chords); the chord of contact is the polar; the common chord is
+  perpendicular to the line of centres and lies on the radical axis; the butterfly theorem
+  (for both pairings of the chords' ends, by Desargues' involution theorem); Reim's theorem;
+  the tangent lengths from A are s − a (incircle) and s (excircle opposite A); the touch
+  points of the incircle and of the excircle opposite A on BC are symmetric about its
+  midpoint.
+
+## Changed frozen tests
+
+No line of a file frozen at `run-3a` was modified or removed (`add-only: frozen tests
+compared with run-3a, 0 violation(s)`). Lines were ADDED to these frozen files:
+
+- `packages/kernel/test/registry.test.ts`: `'ninepoint_center'`, `'power'`, `'radius'`,
+  `'tangent_point'`, `'tangent_from'` appended to the expected registry list.
+- `packages/kernel/test/exports.test.ts`: two imports and the `./selector` and
+  `./selector-check` surfaces.
+- `packages/kernel/test/degenerate.test.ts`: two imports, `...INTERSECT_CURVE_CASES` inside
+  the `intersect` entry, `...GAP_CASES` and `...TANGENT_CASES` in the table.
+- `packages/kernel/test/tools.property.test.ts`: two imports and `...GAP_PROPERTIES`,
+  `...BRANCH_PROPERTIES`.
+- `scripts/exactness/table.test.ts`: one test for the Run 3b rows.
+- Helpers (not frozen): `helpers/l3-plans.ts` (its incidence plan now also serves
+  tangent_point and tangent_from: the condition `tool !== 'tangent' && tool !== 'other'`
+  became a list `INCIDENCE`, plus one line that leaves half of their samples random).
+
+## Acceptance command output
+
+### Clean clone of 7e4c55c (`pnpm install --frozen-lockfile && pnpm verify`)
+
+```
+$ git clone … && git checkout 7e4c55c && pnpm install --frozen-lockfile   # Done in 1.5s using pnpm v10.28.0
+$ pnpm verify
+All matched files use Prettier code style!
+✔ no dependency violations found (156 modules, 818 dependencies cruised)
+ok   tolerance: 232 files scanned, 0 violation(s)
+ok   file-length: 232 files scanned, 0 violation(s)
+ok   test-count: 837 tests, floor 837, 0 violation(s)
+ok   disabled-tests: 232 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-3a, 0 violation(s)
+ok   forbidden-words: 232 files scanned, 0 violation(s)
+theorem (float) the incenter–excenter lemma with other(A): 199 hold, 0 degenerate, 1 ill-conditioned
+theorem (heronian) the incenter–excenter lemma with other(A): 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) the arc midpoint: 199 hold, 0 degenerate, 1 ill-conditioned
+theorem (heronian) the arc midpoint: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) the antipode intersect(line(A, O), Γ, far_from(A)) = 2O −: 199 hold, 0 degenerate, 1 ill-conditioned
+theorem (rational) the antipode intersect(line(A, O), Γ, far_from(A)) = 2O −: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) Thales: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) Thales: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) equal tangents: 199 hold, 0 degenerate, 1 ill-conditioned
+theorem (rational) equal tangents: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) tangent–secant: 199 hold, 0 degenerate, 1 ill-conditioned
+theorem (float) the chord of contact is the polar; tangent_from(P, c, orient: 199 hold, 0 degenerate, 1 ill-conditioned
+theorem (rational) the chord of contact is the polar; tangent_from(P, c, orient: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) the common chord (orient(±)) is perpendicular to the line o: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) the common chord (orient(±)) is perpendicular to the line o: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) intersecting chords: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) the butterfly theorem: 199 hold, 0 degenerate, 1 ill-conditioned
+theorem (float) Reim's theorem: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) Reim's theorem: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) tangent lengths from A: 199 hold, 0 degenerate, 1 ill-conditioned
+theorem (heronian) tangent lengths from A: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) intersect(line(B, C), incircle) with no selector is the doub: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (heronian) intersect(line(B, C), incircle) with no selector is the doub: 200 hold, 0 degenerate, 0 ill-conditioned
+mirror: 3795 equivariant and 3600 orientation-dependent choices mirrored, 405 Undefined agree, 600 gliders re-projected
+L11 branch: 476 paths through tangency, 38522 steps with |ΔV| ≤ 1.5·L·Δs, 9350 near-tangency steps with |ΔV| ≤ |ΔE| + h_band
+selector same_side: 396 one survivor, 72 two, 32 none; 0 draws not decisive
+selector opposite_side: 370 one survivor, 40 two, 90 none; 0 draws not decisive
+selector on_arc: 192 one survivor, 226 two, 82 none; 0 draws not decisive
+selector on_arc not: 177 one survivor, 82 two, 241 none; 0 draws not decisive
+selector between: 359 one survivor, 69 two, 72 none; 0 draws not decisive
+L11 other(): 3720 steps through tangency, |ΔX| ≤ 2r·Δφ, no Undefined
+selector inside: 316 one survivor, 15 two, 169 none; 0 draws not decisive
+selector outside: 329 one survivor, 151 two, 20 none; 0 draws not decisive
+selector near: 500 one survivor, 0 two, 0 none; 0 draws not decisive
+selector far_from: 500 one survivor, 0 two, 0 none; 0 draws not decisive
+selector other: 500 one survivor, 0 two, 0 none; 0 draws not decisive
+selector along(+): 500 one survivor, 0 two, 0 none; 0 draws not decisive
+selector along(-): 500 one survivor, 0 two, 0 none; 0 draws not decisive
+selector orient(+): 500 one survivor, 0 two, 0 none; 0 draws not decisive
+L3 branch: 1512 defined + 2465 Undefined agree, 0 not exact, 23 excluded (band); mod p 243; defined per shape/selector: {"near":174,"other":482,"cl":341,"between":145,"orient":312,"tangent_point":249,"inside":79,"cc":332,"far_from":159,"tangent_from":238,"along":215,"same_side":113,"lc":352,"on_arc":171,"outside":71,"opposite_side":55}
+selector orient(-): 500 one survivor, 0 two, 0 none; 0 draws not decisive
+L3 intersect: 444 defined + 1723 Undefined agree, 202 not exact, 31 excluded (band); mod p 257
+L3 ninepoint_center: 2137 defined + 234 Undefined agree, 0 not exact, 29 excluded (band); mod p 2137
+L3 power: 2100 defined + 284 Undefined agree, 0 not exact, 16 excluded (band); mod p 2100
+L3 radius: 588 defined + 314 Undefined agree, 1487 not exact, 11 excluded (band); mod p 0
+L3 tangent_point: 1201 defined + 1191 Undefined agree, 0 not exact, 8 excluded (band); mod p 1202
+L3 tangent_from: 1218 defined + 1173 Undefined agree, 0 not exact, 9 excluded (band); mod p 1222
+L1 branch FloatField: 2000 documents, 112976 objects (27943 branchable calls, 1034 defined without selectors: double points and lone intersections), 48767 Undefined, 92 Inexact, 0 throws, 0 non-finite; reached: the line misses the circle 265, the circles are apart 43, one circle lies inside the other 59, concentric circles 1613, P lies inside the circle 568, ambiguous: add a selector 183, satisfies 578, does not apply to 1923, may appear only once 253, bare index 1044, takes no selectors 1491, needs the point on 934, within the band of incidence 121, lies on the line 306, needs two distinct 205, is undefined 36023, coincident points 1154
+L1 branch RationalField: 2000 documents, 112976 objects (27943 branchable calls, 625 defined without selectors: double points and lone intersections), 47939 Undefined, 2414 Inexact, 0 throws, 0 non-finite; reached: the line misses the circle 744, the circles are apart 130, one circle lies inside the other 205, concentric circles 1578, P lies inside the circle 683, ambiguous: add a selector 333, satisfies 325, does not apply to 1878, may appear only once 241, bare index 1025, takes no selectors 1491, needs the point on 949, within the band of incidence 0, lies on the line 167, needs two distinct 103, is undefined 35339, coincident points 1130
+L1 branch ModPField: 2000 documents, 112976 objects (27943 branchable calls, 587 defined without selectors: double points and lone intersections), 43118 Undefined, 7852 Inexact, 0 throws, 0 non-finite; reached: the line misses the circle 0, the circles are apart 0, one circle lies inside the other 0, concentric circles 1569, P lies inside the circle 456, ambiguous: add a selector 596, satisfies 0, does not apply to 1866, may appear only once 234, bare index 1016, takes no selectors 1491, needs the point on 1164, within the band of incidence 0, lies on the line 0, needs two distinct 76, is undefined 32443, coincident points 1120
+ Test Files  73 passed (73)
+      Tests  837 passed (837)
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+Statements   : 99.33% ( 2247/2262 )
+Branches     : 98.12% ( 1776/1810 )
+Lines        : 99.56% ( 1835/1843 )
+verify exit=0
+```
+
+"selector …" lines: the predicate test (decisive figures with one, two and no survivors).
+"L3 branch": "defined per shape/selector" counts the defined exact comparisons in which each
+shape or selector took part.
+
+### Mutation testing of kernel geometry (`pnpm mutation:kernel`, local, full run on 7e4c55c)
+
+Running at the time of this commit (2,922 mutants, of which the TypeScript checker rejects
+part); its score is added by the next STATUS commit. Mutation scores are informational
+until v1.1 (SPEC §17 L15).
+
+### CI on GitHub
+
+| Workflow | Run                                                         | Result                                                                     |
+| -------- | ----------------------------------------------------------- | -------------------------------------------------------------------------- |
+| ci       | https://github.com/youseng/geomira/actions/runs/39345215160 | success on 7e4c55c (push, the last code commit): verify, build, Playwright |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39345215246 | success on 7e4c55c (build job; deploy job skipped off the default branch)  |
+| ci       | https://github.com/youseng/geomira/actions/runs/39344486107 | success on 482aea7 (push: the theorems)                                    |
+| ci       | https://github.com/youseng/geomira/actions/runs/39344064779 | success on 0a2b26a (push: laws L1 and L3 for branch selection)             |
+| ci       | https://github.com/youseng/geomira/actions/runs/39343627159 | success on 4657487 (push: predicates, mirror, band edges, L11)             |
+| ci       | https://github.com/youseng/geomira/actions/runs/39342405306 | success on 4fb7c83 (push: candidates and selectors)                        |
+| ci       | https://github.com/youseng/geomira/actions/runs/39345173909 | cancelled on 88543f0 (push; superseded by the push of 7e4c55c)             |
+
+## Requests
+
+- None. No dependency was added.
+- The `run-3b` tag is for the maintainer to place on the merge of this run's PR.
+- Please confirm the reading of "every SPEC §6.2 v1 tool registered" ("Uncertain", first
+  item).
+
+## Notes for later runs
+
+- The language run: report `callDiagnostics` / `selectorDiagnostics` as parse errors;
+  `on(obj)` without a parameter is still to be desugared (ADR-0004 item 9).
+- The editor's GUI choice (SPEC §7) uses `ToolSpec.candidates` and tries the selectors in
+  the order SPEC §7 lists, preferring other(P).
+- The claims run: `isOrientationDependent` (L16) and the selector kinds of a closure (L17:
+  any filter, ranker other than other(P), along or orient is sign-based).
+- A new branchable tool adds a Pair (tools/pairs.ts) and a BranchShape on its overloads.
+
+---
+
 ## Run 3a: ACCEPTED (2026-10-19; completed the same day, see "Completion")
 
 ### Completion: sqrt, sin, cos, tan (ADR-0005)

@@ -118,8 +118,8 @@ tool to be registered; the audit found three tools that earlier runs missed.
     and tangent choices only; elsewhere → Undefined("along(+) does not apply to …: use
     orient(±)"). On line ∩ line (one candidate) along would choose nothing and could only
     mislead the orientation verdict (L16), so it is refused too.
-14. **Parse-level checks** (`@geomira/kernel/selector-check`): `selectorDiagnostics(doc,
-registry)` and `callDiagnostics(call, kindsOfRef, registry, show)` decide STATICALLY,
+14. **Parse-level checks** (`@geomira/kernel/selector-check`): `selectorDiagnostics` (a
+    document) and `callDiagnostics` (one call, while parsing) decide STATICALLY,
     from the kinds an expression can have (a literal: number; a call: its tool's
     outputKinds; a reference: its object's), and report with a hint: a bare index (a
     trailing number on a branchable tool whose other arguments resolve), a call that can
