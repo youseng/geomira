@@ -7,6 +7,8 @@ name: tex
 
 on:
   push:
+    branches: ['**']
+    tags-ignore: ['**']
     paths:
       - .github/tex/**
       - .github/workflows/tex.yml
