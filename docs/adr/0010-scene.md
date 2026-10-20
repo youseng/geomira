@@ -153,6 +153,11 @@ tiny figures and views (note C).
 
 - The editor run builds selection and tools on `hitTest` (hits, virtual hits) and stores label
   drags as `labelAngle` / `labelDist`, z changes as `z`; all are in the text.
+- The printer now prints runs of adjacent images in their canonical order (lang's
+  `sortImageRuns`), so the TEXT does not depend on that order either: a Run 6 bug found by the
+  NIGHTLY=1 run of P1's fixed-point test (print∘parse∘print ≠ print when edits had left a run
+  out of canonical order and its images had style lines), fixed with a regression test
+  (packages/lang/test/print-image-order.test.ts).
 - The export run consumes `Scene` (world coordinates) and `clipLine` / `clipCircle`.
 - `mark_angle`, `mark_right`, `mark_segment` and `text` (SPEC §6.2 display tools, listed by
   Run 3b as "display values the scene defines, a later run") are not built here: Run 7's
