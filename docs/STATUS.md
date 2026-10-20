@@ -8,18 +8,28 @@ with `run-5`), and ci and deploy were green in CI on that commit
 (https://github.com/youseng/geomira/actions/runs/39402748358,
 https://github.com/youseng/geomira/actions/runs/39402748577), so there was no red base.
 
-Every criterion holds: verify is green locally, in a clean clone of a311a47 and in CI
-(https://github.com/youseng/geomira/actions/runs/39410957649 on a311a47, the final code commit;
-table under "CI on GitHub"); laws P1–P3 hold with the counts below; garbage fuzz never throws
+Every criterion holds: verify is green locally, in a clean clone of f733d67 and in CI
+(https://github.com/youseng/geomira/actions/runs/39415415869 on f733d67, the final code commit; table under "CI on GitHub"); laws P1–P3 hold with the counts below; garbage fuzz never throws
 (2,800 texts per CI run; parse, print and parseInto); L1 holds on parsed documents in three
 fields; docs/language.md is generated and checked; the eight examples HOLD locally through
-runJob. lang coverage 98.24% lines, 92.26% branches (gated like kernel and claims: 90 / 85).
+runJob. lang coverage 98.28% lines, 92.59% branches (gated like kernel and claims: 90 / 85).
 Mutation (informational until v1.1, note F; lang has no mutation config, SPEC §17 L15 lists num,
 kernel geometry, claims): latest completed scores, all on 5663cf9
 (https://github.com/youseng/geomira/actions/runs/39402748331): num 89.06% (627 detected, 77
 undetected), claims 73.12% (1080 detected, 397 undetected; its first complete run); the kernel's
 run on that commit was still in progress when this was written (latest completed: 99.17%,
 c6ac36c, Run 3b). Not waited for.
+
+**Revision before merge (maintainer's review):** parseInto no longer keeps an object's old style
+when the new text states none for it. The text is the entire state: parseInto keeps the ids of
+persisting names, and styles are exactly what the text says (a deleted `style X […]` line or
+attribute group gives the default style; an unchanged style line gives the unchanged style;
+printing never brings a deleted style back). ADR-0009 decision 22 and its Alternatives are
+updated; the code is commit f733d67 (parseInto is now parse plus ids; the `styled` bookkeeping
+and `parseDetailed` are removed). Tests added: deleting a style line resets the style and
+print(parseInto(…)) has no style line for that object (an image's `style C* [hidden]` and a user
+object's `style A […]`); P3 checks that parseInto's styles equal parse(text)'s on 200 edited
+texts. Only test files new in this run changed; no frozen test was touched.
 
 ## Done (each item → the test file that proves it)
 
@@ -47,7 +57,9 @@ c6ac36c, Run 3b). Not waited for.
 4. **Printer**: deterministic, exact numbers as written (`LitExpr.text`), comments kept
    (`Meta.comments`), `@version` always, fewest parentheses that keep the tree. →
    `test/print.test.ts`, `packages/kernel/test/lit-text.test.ts`.
-5. **parseInto** (ids and styles of persisting names) → `test/parse-into.test.ts`,
+5. **parseInto** (ids of persisting names; styles, like everything else, exactly as the text says:
+   a deleted style line gives the default style and is never printed back) →
+   `test/parse-into.test.ts`,
    `test/laws/p3.test.ts`. **Migrations** with a fixture test (a fictional version-0 file loads
    as its version-1 form) → `test/migrate.test.ts`, `test/fixtures/migration/`.
 6. **Note B items**: `on(obj)` desugared to an explicit parameter (line t = 1/3; circle with a
@@ -70,19 +82,19 @@ c6ac36c, Run 3b). Not waited for.
    below). No contest problems. → `test/examples.test.ts`.
 10. packages/claims exports `./check` (`claimProblem`, `argProblem`: the check prepare already
     ran, moved) → `packages/claims/test/check.test.ts`; lang joins the coverage gate; the
-    test-count floor is raised from 1301 to 1451.
+    test-count floor is raised from 1301 to 1454.
 
 ### Law counts (one CI run; NIGHTLY=1 runs ten times as many)
 
-| law                                  | inputs                                                                                                                             | result |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| P1 parse(print(doc)) = doc up to ids | 400 generated documents: 7,973 objects, 1,685 images, 149 derived layers, 307 views, 921 claims, 1,369 assumptions, 2,549 comments | holds  |
-| P1 fixed point                       | 100 documents: the parsed document is valid and prints to the same text                                                            | holds  |
-| P2 print∘parse idempotent            | 150 printed + 300 mutated documents, 1,000 token soups, 500 arbitrary strings                                                      | holds  |
-| P3 parseInto keeps ids and styles    | 200 documents (same text: same document, ids and nextId), 200 edited texts, 150 texts without styles                               | holds  |
-| note A (products vs managed names)   | 400 documents of random arithmetic next to `l*`, `w*`                                                                              | holds  |
-| garbage fuzz (never throws)          | 1,500 token soups, 1,000 arbitrary strings, 300 mutated files: parse, print, parseInto; results valid and synced                   | holds  |
-| L1 on parsed documents               | 150 × 2 parsed documents (clean and mutated), Float, Rational, ModP: 4,663 float values, none NaN or ±Infinity                     | holds  |
+| law                                           | inputs                                                                                                                                                                                              | result |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| P1 parse(print(doc)) = doc up to ids          | 400 generated documents: 7,973 objects, 1,685 images, 149 derived layers, 307 views, 921 claims, 1,369 assumptions, 2,549 comments                                                                  | holds  |
+| P1 fixed point                                | 100 documents: the parsed document is valid and prints to the same text                                                                                                                             | holds  |
+| P2 print∘parse idempotent                     | 150 printed + 300 mutated documents, 1,000 token soups, 500 arbitrary strings                                                                                                                       | holds  |
+| P3 parseInto keeps ids; styles are the text's | 200 documents (same text: same document, ids and nextId), 200 edited texts (ids kept), 200 edited texts (styles equal parse(text)'s), 150 texts without styles (all default, no style line printed) | holds  |
+| note A (products vs managed names)            | 400 documents of random arithmetic next to `l*`, `w*`                                                                                                                                               | holds  |
+| garbage fuzz (never throws)                   | 1,500 token soups, 1,000 arbitrary strings, 300 mutated files: parse, print, parseInto; results valid and synced                                                                                    | holds  |
+| L1 on parsed documents                        | 150 × 2 parsed documents (clean and mutated), Float, Rational, ModP: 4,663 float values, none NaN or ±Infinity                                                                                      | holds  |
 
 ### Examples (local test, N = 40, `pnpm vitest run packages/lang/test/examples.test.ts`)
 
@@ -122,13 +134,15 @@ re-run green before the first commit.
 - **Readings to confirm** (all in ADR-0009): P1 holds up to ids AND up to the order of images
   inside a run of consecutive images (the text does not record it; parse places images
   canonically, ADR-0007); comments and literal spellings are stored in the document
-  (`Meta.comments`, `LitExpr.text`: two optional fields beyond SPEC §5's lists); parseInto keeps
-  the old style of an object only when the text states no style for it at all; a statement with
+  (`Meta.comments`, `LitExpr.text`: two optional fields beyond SPEC §5's lists); a statement with
   an error is left out whole; a derived layer whose rule cannot be made stays a plain layer; the
   defaults of `on(obj)` (t = 1/3, (2 : 1), 90°) and the `triangle` types (acute, scalene,
   obtuse_at_V; no right or isosceles: equalities are constructed).
 - **SPEC §10.1's "∠A + ∠B = 90°"** (a vertex letter alone) is not accepted: it names an angle only
   when the figure has one triangle; the error's hint asks for ∠BAC. Please confirm.
+- **"SPEC Part B decision 3"**, cited in the review for "the text is the entire state", is not
+  in this repository's docs/SPEC.md (it has no Part B); ADR-0009 cites SPEC §5 ("the ENTIRE
+  state") and the review instead. If Part B exists elsewhere, it may belong in docs/.
 - **Claims and assumptions may name objects defined later in the text** (they are built after
   all objects; I5 only needs existence); definitions may not (I2).
 - **Parse time**: 500 chained objects parse in about 25 ms; with a derived layer, 327 objects in
@@ -158,25 +172,25 @@ untouched; the API is in subpaths (ADR-0002).
 
 ## Acceptance command output
 
-### Clean clone of a311a47 (`pnpm install --frozen-lockfile && pnpm verify`)
+### Clean clone of f733d67 (`pnpm install --frozen-lockfile && pnpm verify`)
 
 ```
-$ git clone … && git checkout a311a47 && pnpm install --frozen-lockfile   # Done in 1.8s using pnpm v10.28.0
+$ git clone … && git checkout f733d67 && pnpm install --frozen-lockfile   # Done in 1.8s using pnpm v10.28.0
 $ pnpm verify
 All matched files use Prettier code style!
 ✔ no dependency violations found (291 modules, 1665 dependencies cruised)
 ok   tolerance: 385 files scanned, 0 violation(s)
 ok   file-length: 385 files scanned, 0 violation(s)
-ok   test-count: 1451 tests, floor 1451, 0 violation(s)
+ok   test-count: 1454 tests, floor 1454, 0 violation(s)
 ok   disabled-tests: 385 files scanned, 0 violation(s)
 ok   add-only: frozen tests compared with run-5, 0 violation(s)
 ok   forbidden-words: 385 files scanned, 0 violation(s)
  Test Files  123 passed (123)
-      Tests  1451 passed (1451)
- lang/src          |   97.26 |    92.26 |   99.72 |   98.24 |
-Statements   : 97.65% ( 6073/6219 )
-Branches     : 93.46% ( 4850/5189 )
-Lines        : 98.73% ( 5060/5125 )
+      Tests  1454 passed (1454)
+ lang/src          |   97.28 |    92.59 |   99.72 |   98.28 |
+Statements   : 97.66% ( 6052/6197 )
+Branches     : 93.58% ( 4831/5162 )
+Lines        : 98.74% ( 5043/5107 )
 verify exit=0
 ```
 
@@ -204,8 +218,11 @@ L1 on parsed documents: 4663 float values checked
 
 | Workflow | Run                                                         | Result                                                                |
 | -------- | ----------------------------------------------------------- | --------------------------------------------------------------------- |
-| ci       | https://github.com/youseng/geomira/actions/runs/39410957649 | success on a311a47 (push: the final code commit)                      |
-| deploy   | https://github.com/youseng/geomira/actions/runs/39410957605 | success on a311a47                                                    |
+| ci       | https://github.com/youseng/geomira/actions/runs/39415415869 | success on f733d67 (push: the final code commit)                      |
+| ci       | https://github.com/youseng/geomira/actions/runs/39415421825 | success on f733d67 (pull_request)                                     |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39415415782 | success on f733d67                                                    |
+| ci       | https://github.com/youseng/geomira/actions/runs/39410957649 | success on a311a47 (before the parseInto revision)                    |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39410957605 | success on a311a47 (before the parseInto revision)                    |
 | ci       | https://github.com/youseng/geomira/actions/runs/39410281495 | success on 184c509 (the language commit, before the error-path tests) |
 | tex      | https://github.com/youseng/geomira/actions/runs/39410281531 | success on 184c509 (examples/ triggers it)                            |
 
@@ -221,7 +238,8 @@ The commit that adds this STATUS (documentation only) gets its own ci run, liste
 ## Notes for later runs
 
 - The editor run: `parse` for diagnostics, `parseInto(doc, text, registry)` for the two-way text
-  panel (ids and GUI styles survive), `print` for the canonical text; `canonicalDocument` /
+  panel (ids survive; styles are what the text says, so a GUI style is in the printed text and
+  lasts as long as the text keeps it), `print` for the canonical text; `canonicalDocument` /
   `sameUpToIds` compare documents up to ids.
 - A new claim or assumption kind needs a notation entry (notation.test.ts fails otherwise); a new
   file version needs a migration in MIGRATIONS (the chain test checks it).
