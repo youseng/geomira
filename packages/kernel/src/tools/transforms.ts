@@ -21,6 +21,7 @@ import {
 } from '../similarity';
 import type { EvalContext, ExampleArg, Signature, ToolExample, ToolSpec } from '../tool';
 import {
+  capabilityKinds,
   undef,
   type Capability,
   type Num,
@@ -141,6 +142,13 @@ const IMAGED: readonly Capability[] = ['point', 'curve', 'polygon'];
 /** Geometric kinds a map takes to the same kind (the sugar's result kinds). */
 const IMAGE_KINDS: readonly ValueKind[] = ['point', 'line', 'circle', 'polygon'];
 
+const TRANSFORM_KIND: readonly ValueKind[] = ['transform'];
+
+/** An overload taking X (of capability `x`) first: its result has X's kinds. */
+function imageSignature(x: Capability, params: readonly Capability[]): Signature {
+  return { params: [x, ...params], output: capabilityKinds(x) };
+}
+
 /** A transform value that passed the validity check, or the problem. */
 function finish<T>(F: Field<T>, s: Built<T>, ctx: EvalContext, tool: string): Value<T> {
   if ('kind' in s) return s;
@@ -160,8 +168,8 @@ function mapTool(spec: {
   readonly examples: readonly ToolExample[];
 }): ToolSpec {
   const signatures: Signature[] = [
-    ...spec.bases.map((params) => ({ params })),
-    ...spec.bases.flatMap((params) => IMAGED.map((x) => ({ params: [x, ...params] }))),
+    ...spec.bases.map((params) => ({ params, output: TRANSFORM_KIND })),
+    ...spec.bases.flatMap((params) => IMAGED.map((x) => imageSignature(x, params))),
   ];
   const arities = new Set(spec.bases.map((b) => b.length));
   return {
@@ -311,7 +319,7 @@ export const TRANSFORM_TOOLS: readonly ToolSpec[] = [
     id: 'compose',
     name: 'compose',
     family: 'transformations',
-    signatures: [{ params: ['transform', 'transform'] }],
+    signatures: [{ params: ['transform', 'transform'], output: TRANSFORM_KIND }],
     outputKinds: ['transform'],
     compute: compose,
     degenerate: [
@@ -334,7 +342,7 @@ export const TRANSFORM_TOOLS: readonly ToolSpec[] = [
     id: 'inverse',
     name: 'inverse',
     family: 'transformations',
-    signatures: [{ params: ['transform'] }],
+    signatures: [{ params: ['transform'], output: TRANSFORM_KIND }],
     outputKinds: ['transform'],
     compute: inverse,
     degenerate: [
@@ -349,7 +357,7 @@ export const TRANSFORM_TOOLS: readonly ToolSpec[] = [
     id: 'apply',
     name: 'apply',
     family: 'transformations',
-    signatures: IMAGED.map((x) => ({ params: ['transform', x] })),
+    signatures: IMAGED.map((x) => ({ params: ['transform', x], output: capabilityKinds(x) })),
     outputKinds: IMAGE_KINDS,
     compute: apply,
     degenerate: [
