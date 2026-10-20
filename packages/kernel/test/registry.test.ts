@@ -71,6 +71,11 @@ describe('createRegistry', () => {
       'sin',
       'cos',
       'tan',
+      'ninepoint_center',
+      'power',
+      'radius',
+      'tangent_point',
+      'tangent_from',
     ]);
     for (const t of REGISTRY.tools) {
       expect(t.id).toBe(t.name);

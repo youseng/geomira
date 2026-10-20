@@ -1,89 +1,109 @@
 /**
- * intersect(a, b) for two line-like objects (SPEC §6.2, §6.3). A segment or ray keeps its
- * range: the intersection must lie on both (ADR-0003). Parallelism is decided on the sine
- * of the angle between the directions, so short valid segments are never called parallel.
+ * intersect(a, b, selectors) (SPEC §6.2, §7): the common point of two curves.
+ *   - line ∩ line (Run 2): at most one point; a segment or ray keeps its range (ADR-0003
+ *     item 15); parallelism is decided on the sine of the angle between the directions.
+ *   - line ∩ circle and circle ∩ circle (Run 3b, ADR-0006): branchable, 0–2 candidates
+ *     decided on the discriminant with the band (tools/pairs.ts), chosen by the selectors
+ *     (select.ts): along(±) on line ∩ circle, orient(±) on circle ∩ circle, other(P) exact.
  */
-import type { Field, Inexact } from '@geomira/num/field';
-import { inexact } from '@geomira/num/field';
-import type { EvalContext, ToolSpec } from '../tool';
-import { isZeroNormalized, vAdd, vCross, vDot, vScale, vSub } from '../geom';
-import { pointOf, undef, type Line, type Undefined, type Value } from '../value';
-import { badArgs, degenerateLine, lineAt } from './args';
+import type { Field } from '@geomira/num/field';
+import { choose, candidateValues } from '../select';
+import type { EvaluatedSelector } from '../selector';
+import type { EvalContext, ExampleArg, ToolSpec } from '../tool';
+import type { Undefined, Value } from '../value';
+import { badArgs, circleAt, lineAt } from './args';
+import {
+  CIRCLE_CIRCLE,
+  LINE_CIRCLE,
+  LINE_LINE,
+  circleCirclePair,
+  lineCirclePair,
+  lineLinePair,
+  type Pair,
+} from './pairs';
 
-function rangeName<T>(l: Line<T>): string {
-  return l.lo !== null && l.hi !== null ? 'segment' : 'ray';
-}
-
-/**
- * Why parameter t of `what` ("intersection", "other intersection") is not in l's range
- * [lo, hi], or undefined when it is.
- */
-export function outOfRange<T>(
+function pairOf<T>(
   F: Field<T>,
-  l: Line<T>,
-  t: T,
+  args: readonly Value<T>[],
   ctx: EvalContext,
-  what = 'intersection',
-): Undefined | Inexact | undefined {
-  const gaps = [l.lo === null ? null : F.sub(t, l.lo), l.hi === null ? null : F.sub(l.hi, t)];
-  for (const gap of gaps) {
-    if (gap === null) continue;
-    const s = F.sign(gap, 'dimensionless', ctx);
-    if (s === -1) return undef(`no ${what}: it lies outside the ${rangeName(l)}`);
-    if (s === 'ambiguous') {
-      return undef(`ambiguous: the ${what} is within the band of an end of the ${rangeName(l)}`);
-    }
-    if (s === 'none') {
-      return inexact(
-        `whether the ${what} lies on the ${rangeName(l)} needs an order, which ${F.name} lacks`,
-      );
-    }
-  }
-  return undefined;
+): Pair<T> | Undefined | 'bad' {
+  if (args.length !== 2) return 'bad';
+  const [l0, l1, c0, c1] = [lineAt(args, 0), lineAt(args, 1), circleAt(args, 0), circleAt(args, 1)];
+  if (l0 !== undefined && l1 !== undefined) return lineLinePair(F, l0, l1, ctx);
+  if (l0 !== undefined && c1 !== undefined) return lineCirclePair(F, l0, c1, ctx, true);
+  if (c0 !== undefined && l1 !== undefined) return lineCirclePair(F, l1, c0, ctx, false);
+  if (c0 !== undefined && c1 !== undefined) return circleCirclePair(F, c0, c1, ctx);
+  return 'bad';
 }
 
 /**
- * Degenerate cases: parallel lines → Undefined; coincident lines → Undefined; the
- * intersection outside a segment or ray → Undefined; within the band of an end →
- * Undefined (ambiguous); a range check mod p → Inexact.
+ * Degenerate cases: as ToolSpec.degenerate below (the pair's and the selection rules').
  */
-function intersect<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
-  const [a, b] = [lineAt(args, 0), lineAt(args, 1)];
-  if (a === undefined || b === undefined || args.length !== 2) return badArgs('intersect');
-  const bad = degenerateLine(F, a, ctx) ?? degenerateLine(F, b, ctx);
-  if (bad !== undefined) return bad;
-  const den = vCross(F, a.d, b.d);
-  const w = vSub(F, b.p, a.p);
-  const [aa, bb] = [vDot(F, a.d, a.d), vDot(F, b.d, b.d)];
-  if (isZeroNormalized(F, den, F.mul(aa, bb), 'dimensionless', ctx)) {
-    const on = isZeroNormalized(F, vCross(F, w, a.d), aa, 'length', ctx);
-    return undef(on ? 'coincident lines' : 'parallel lines');
-  }
-  const t = F.div(vCross(F, w, b.d), den);
-  const s = F.div(vCross(F, w, a.d), den);
-  const range = outOfRange(F, a, t, ctx) ?? outOfRange(F, b, s, ctx);
-  if (range !== undefined) return range;
-  const x = vAdd(F, a.p, vScale(F, a.d, t));
-  return pointOf(x.x, x.y);
+function intersect<T>(
+  F: Field<T>,
+  args: readonly Value<T>[],
+  ctx: EvalContext,
+  selectors: readonly EvaluatedSelector<T>[] = [],
+): Value<T> {
+  const p = pairOf(F, args, ctx);
+  if (p === 'bad') return badArgs('intersect');
+  return 'kind' in p ? p : choose(F, p, selectors, ctx);
 }
+
+function candidates<T>(
+  F: Field<T>,
+  args: readonly Value<T>[],
+  ctx: EvalContext,
+): readonly Value<T>[] {
+  const p = pairOf(F, args, ctx);
+  return p === 'bad' || 'kind' in p ? [] : candidateValues(p);
+}
+
+const C5: ExampleArg = {
+  call: 'circle',
+  args: [
+    ['0', '0'],
+    ['5', '0'],
+  ],
+};
 
 export const INTERSECT_TOOLS: readonly ToolSpec[] = [
   {
     id: 'intersect',
     name: 'intersect',
     family: 'points',
-    signatures: [{ params: ['linear', 'linear'] }],
+    signatures: [
+      { params: ['linear', 'linear'], branch: LINE_LINE },
+      { params: ['linear', 'round'], branch: LINE_CIRCLE },
+      { params: ['round', 'linear'], branch: LINE_CIRCLE },
+      { params: ['round', 'round'], branch: CIRCLE_CIRCLE },
+    ],
     outputKinds: ['point'],
     compute: intersect,
+    candidates,
     degenerate: [
       'parallel lines → Undefined',
       'coincident lines → Undefined',
       'the intersection outside a segment or ray → Undefined',
       'the intersection within the band of a segment end → Undefined (ambiguous)',
       'a segment or ray range mod p → Inexact',
+      'line ∩ circle: the line misses the circle → Undefined',
+      'line ∩ circle: tangency (the gap within the band) → the double point',
+      'circle ∩ circle: apart or one inside the other → Undefined',
+      'circle ∩ circle: tangency (a gap within the band) → the double point',
+      'concentric circles → Undefined',
+      'two candidates and no selector → Undefined (ambiguous: add a selector)',
+      'a deciding quantity of a selector within the band → Undefined (ambiguous)',
+      'no candidate satisfies the selectors → Undefined',
+      'two candidates satisfy the selectors → Undefined (ambiguous: add a selector)',
+      'along(±), orient(±) or other(P) where it does not apply → Undefined',
+      'other(P) with P not on both objects → Undefined (within the band: ambiguous)',
+      'a candidate outside a segment or ray is not a candidate',
+      'square roots not representable → Inexact over Q and mod p (other(P) is exact)',
+      'a sign-based selector mod p → Inexact',
     ],
     export: 'numeric',
-    doc: 'The intersection point of two lines, segments or rays (on both ranges).',
+    doc: 'intersect(a, b, selectors): the common point of two lines, a line and a circle, or two circles; a curve pair with two candidates needs selectors (along(±) on line ∩ circle, orient(±) on circle ∩ circle, other(P), near(P), same_side(Q, l), …).',
     examples: [
       {
         args: [
@@ -102,6 +122,64 @@ export const INTERSECT_TOOLS: readonly ToolSpec[] = [
             as: 'segment',
           },
         ],
+      },
+      {
+        args: [
+          {
+            through: [
+              ['-4', '-3'],
+              ['4', '3'],
+            ],
+            as: 'line',
+          },
+          C5,
+        ],
+        selectors: [{ kind: 'along', sign: 1 }],
+      },
+      {
+        args: [
+          C5,
+          {
+            call: 'circle',
+            args: [
+              ['6', '0'],
+              ['3', '4'],
+            ],
+          },
+        ],
+        selectors: [{ kind: 'orient', sign: 1 }],
+      },
+      {
+        args: [
+          {
+            through: [
+              ['3', '4'],
+              ['0', '0'],
+            ],
+            as: 'line',
+          },
+          C5,
+        ],
+        selectors: [{ kind: 'other', p: ['3', '4'] }],
+      },
+      {
+        args: [
+          {
+            through: [
+              ['0', '0'],
+              ['1', '0'],
+            ],
+            as: 'line',
+          },
+          {
+            call: 'circle',
+            args: [
+              ['0', '0'],
+              ['1', '1'],
+            ],
+          },
+        ],
+        selectors: [{ kind: 'along', sign: 1 }],
       },
     ],
   },

@@ -2,7 +2,8 @@
  * Argument plans for law L3 (Run 3a). Random inputs never satisfy an incidence (P on c),
  * and the side lengths of a random triangle are never rational, so without plans the
  * exact oracle could not compare tangent, other or the incircle family at all.
- *   - Incidence tools (tangent, other): a dyadic point P and curves through P built so
+ *   - Incidence tools (tangent, other; Run 3b: tangent_point and tangent_from, whose
+ *     double point P on c is then compared): a dyadic point P and curves through P built so
  *     that the float run decides "P on c" on an EXACT zero (dyadic coordinates with few
  *     bits make every product exact). A rounding residual would put the sample in the
  *     band and exclude it, so this is what lets L3 compare these tools.
@@ -108,6 +109,9 @@ function heronian(b: Builder, rng: Rng): Expr[] {
 
 const HERONIAN = ['incenter', 'excenter', 'incircle', 'excircle', 'bisector', 'ext_bisector'];
 
+/** Tools planned with P exactly on their curves. */
+const INCIDENCE = ['tangent', 'other', 'tangent_point', 'tangent_from'];
+
 /**
  * The planned arguments of `tool` for the capabilities `caps`, or undefined to let the
  * sampler draw them (every tool not planned here, and half the samples of the
@@ -121,7 +125,10 @@ export function planArgs(
 ): Expr[] | undefined {
   if (HERONIAN.includes(tool)) return rng.nextFloat() < 0.5 ? heronian(b, rng) : undefined;
   if (FUNCTION_TOOLS.includes(tool)) return functionPlan(b, rng, tool);
-  if (tool !== 'tangent' && tool !== 'other') return undefined;
+  if (!INCIDENCE.includes(tool)) return undefined;
+  // tangent_point / tangent_from (Run 3b): half the samples random (P inside or outside:
+  // Undefined in both fields), half with P exactly on c (the double point, defined).
+  if (tool.startsWith('tangent_') && rng.nextFloat() < 0.5) return undefined;
   const p: XY = [dyadic(rng), dyadic(rng)];
   const P = pointAt(b, p);
   return caps.map((c) => (c === 'point' ? P : curveThrough(b, rng, P, p, c === 'round')));

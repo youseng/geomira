@@ -27,6 +27,8 @@ import {
 import { CIRCLE_CASES } from './helpers/degenerate-circles';
 import { GLIDER_CASES } from './helpers/degenerate-gliders';
 import { FUNCTION_CASES } from './helpers/degenerate-functions';
+import { GAP_CASES } from './helpers/degenerate-gaps';
+import { INTERSECT_CURVE_CASES, TANGENT_CASES } from './helpers/degenerate-branch';
 
 const CASES: Record<string, Record<string, () => void>> = {
   point: {},
@@ -152,6 +154,7 @@ const CASES: Record<string, Record<string, () => void>> = {
         at(ModPField, 'intersect', line(pt(0, 0), pt(1, 0)), line(pt(2, -1), pt(2, 1))).kind,
       ).toBe('point');
     },
+    ...INTERSECT_CURVE_CASES,
   },
   circumcenter: {
     'coincident vertices → Undefined': () => {
@@ -243,6 +246,8 @@ const CASES: Record<string, Record<string, () => void>> = {
   ...CIRCLE_CASES,
   ...GLIDER_CASES,
   ...FUNCTION_CASES,
+  ...GAP_CASES,
+  ...TANGENT_CASES,
 };
 
 describe('degenerate cases (ToolSpec.degenerate), each a test', () => {

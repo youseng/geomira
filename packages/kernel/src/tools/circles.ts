@@ -10,7 +10,7 @@ import * as Q from '@geomira/num/rational';
 import type { Field } from '@geomira/num/field';
 import type { EvalContext, ExampleArg, ToolSpec } from '../tool';
 import { half, vAdd, vCross, vDot, vScale, vSub } from '../geom';
-import { pointOf, undef, type Circle, type Value, type Vec } from '../value';
+import { pointOf, undef, type Circle, type Undefined, type Value, type Vec } from '../value';
 import { badArgs, circleAt, coincident, numAt, pointAt, pointsOf } from './args';
 import { circumcenterOf, triangle, triangleShape } from './triangle';
 
@@ -110,8 +110,13 @@ function diameterCircle<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalCont
  * midpoint of BC. Degenerate cases: coincident vertices → Undefined; collinear vertices →
  * Undefined.
  */
-function ninepointCircle<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
-  const t = triangle(F, args, ctx, 'ninepoint_circle');
+function ninepointOf<T>(
+  F: Field<T>,
+  args: readonly Value<T>[],
+  ctx: EvalContext,
+  tool: string,
+): Circle<T> | Undefined {
+  const t = triangle(F, args, ctx, tool);
   if ('kind' in t) return t;
   const mid = (p: Vec<T>, q: Vec<T>) => {
     const m = vScale(F, vAdd(F, p, q), half(F));
@@ -125,12 +130,47 @@ function ninepointCircle<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalCon
   return circleThrough(F, circumcenterOf(F, medial), ma);
 }
 
+function ninepointCircle<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
+  return ninepointOf(F, args, ctx, 'ninepoint_circle');
+}
+
+/**
+ * The centre of the nine-point circle (the midpoint of OH). Degenerate cases: coincident
+ * vertices → Undefined; collinear vertices → Undefined.
+ */
+function ninepointCenter<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
+  const c = ninepointOf(F, args, ctx, 'ninepoint_center');
+  return c.kind === 'circle' ? pointOf(c.c.x, c.c.y) : c;
+}
+
 /** center(c): the centre of c. Degenerate: none. */
 function center<T>(_F: Field<T>, args: readonly Value<T>[]): Value<T> {
   const c = circleAt(args, 0);
   if (c === undefined || args.length !== 1) return badArgs('center');
   return pointOf(c.c.x, c.c.y);
 }
+
+/** ninepoint_center, appended to the registry after the Run 3a tools (Run 3b audit). */
+export const NINEPOINT_CENTER_TOOL: ToolSpec = {
+  id: 'ninepoint_center',
+  name: 'ninepoint_center',
+  family: 'points',
+  signatures: [{ params: ['point', 'point', 'point'] }],
+  outputKinds: ['point'],
+  compute: ninepointCenter,
+  degenerate: ['coincident vertices → Undefined', 'collinear vertices → Undefined'],
+  export: 'numeric',
+  doc: 'The centre of the nine-point circle of ABC: the midpoint of the circumcenter and the orthocenter.',
+  examples: [
+    {
+      args: [
+        ['0', '0'],
+        ['4', '0'],
+        ['1', '3'],
+      ],
+    },
+  ],
+};
 
 const O: readonly [string, string] = ['1', '2'];
 const A: readonly [string, string] = ['4', '6'];

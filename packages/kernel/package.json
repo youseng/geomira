@@ -18,7 +18,9 @@
     "./context": "./src/context.ts",
     "./evaluate": "./src/evaluate.ts",
     "./docs": "./src/docs.ts",
-    "./glider": "./src/glider.ts"
+    "./glider": "./src/glider.ts",
+    "./selector": "./src/selector.ts",
+    "./selector-check": "./src/selector-check.ts"
   },
   "dependencies": {
     "@geomira/num": "workspace:*"

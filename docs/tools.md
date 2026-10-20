@@ -79,9 +79,9 @@ foot(P, l) or foot(P, A, B): the orthogonal projection of P on the line.
 
 ### intersect
 
-The intersection point of two lines, segments or rays (on both ranges).
+intersect(a, b, selectors): the common point of two lines, a line and a circle, or two circles; a curve pair with two candidates needs selectors (along(±) on line ∩ circle, orient(±) on circle ∩ circle, other(P), near(P), same_side(Q, l), …).
 
-- Signatures: `intersect(linear, linear)`
+- Signatures: `intersect(linear, linear)`, `intersect(linear, round)`, `intersect(round, linear)`, `intersect(round, round)`
 - Result: point
 - Exact run (RationalField): can succeed
 - Export: numeric
@@ -91,8 +91,26 @@ The intersection point of two lines, segments or rays (on both ranges).
   - the intersection outside a segment or ray → Undefined
   - the intersection within the band of a segment end → Undefined (ambiguous)
   - a segment or ray range mod p → Inexact
+  - line ∩ circle: the line misses the circle → Undefined
+  - line ∩ circle: tangency (the gap within the band) → the double point
+  - circle ∩ circle: apart or one inside the other → Undefined
+  - circle ∩ circle: tangency (a gap within the band) → the double point
+  - concentric circles → Undefined
+  - two candidates and no selector → Undefined (ambiguous: add a selector)
+  - a deciding quantity of a selector within the band → Undefined (ambiguous)
+  - no candidate satisfies the selectors → Undefined
+  - two candidates satisfy the selectors → Undefined (ambiguous: add a selector)
+  - along(±), orient(±) or other(P) where it does not apply → Undefined
+  - other(P) with P not on both objects → Undefined (within the band: ambiguous)
+  - a candidate outside a segment or ray is not a candidate
+  - square roots not representable → Inexact over Q and mod p (other(P) is exact)
+  - a sign-based selector mod p → Inexact
 - Examples:
   - `intersect(line((0, 0), (2, 2)), segment((0, 2), (2, 0)))` → point (1, 1)
+  - `intersect(line((-4, -3), (4, 3)), circle((0, 0), (5, 0)), along(+))` → point (4, 3)
+  - `intersect(circle((0, 0), (5, 0)), circle((6, 0), (3, 4)), orient(+))` → point (3, 4)
+  - `intersect(line((3, 4), (0, 0)), circle((0, 0), (5, 0)), other(point(3, 4)))` → point (-3, -4)
+  - `intersect(line((0, 0), (1, 0)), circle((0, 0), (1, 1)), along(+))` → point (1.41421356237, 0)
 
 ### circumcenter
 
@@ -220,6 +238,39 @@ excenter(A, B, C): the excenter opposite A.
 - Examples:
   - `excenter((5, 12), (0, 0), (14, 0))` → point (8, -12)
   - `excenter((0, 0), (4, 0), (1, 3))` → point (5.70245917364, 4.1101000264)
+
+### ninepoint_center
+
+The centre of the nine-point circle of ABC: the midpoint of the circumcenter and the orthocenter.
+
+- Signatures: `ninepoint_center(point, point, point)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - coincident vertices → Undefined
+  - collinear vertices → Undefined
+- Examples:
+  - `ninepoint_center((0, 0), (4, 0), (1, 3))` → point (3/2, 1)
+
+### tangent_point
+
+tangent_point(P, c, selectors): a point where a tangent from P touches c; two candidates (orient(+): cross(O − P, T − P) > 0), one double point when P is on c.
+
+- Signatures: `tangent_point(point, round)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - P inside c (or P = the centre) → Undefined
+  - P on c (the gap |OP| − r within the band) → the double point
+  - two candidates and no selector → Undefined (ambiguous: add a selector)
+  - along(±) → Undefined (use orient(±))
+  - other(T) with T not a touch point → Undefined
+  - square roots not representable → Inexact over Q and mod p (other(T) is exact)
+- Examples:
+  - `tangent_point((5, 5), circle((0, 0), (5, 0)), orient(+))` → point (5, 0)
+  - `tangent_point((6, 0), circle((0, 0), (5, 0)), orient(+))` → point (4.16666666667, -2.76385399196)
 
 ## Lines
 
@@ -380,6 +431,25 @@ ext_bisector(A, B, C): the external bisector of ∠ABC, through B (chiral).
 - Examples:
   - `ext_bisector((5, 12), (0, 0), (14, 0))` → line (0, 0) + t·(-54/5, 81/5), t ∈ [−∞, ∞], chiral
   - `ext_bisector((0, 0), (4, 0), (1, 3))` → line (4, 0) + t·(-2.41421356237, -5.82842712475), t ∈ [−∞, ∞], chiral
+
+### tangent_from
+
+tangent_from(P, c, selectors): a tangent from P to c, the line through its touch point T with direction rot90(T − O) (chiral); selectors judge T.
+
+- Signatures: `tangent_from(point, round)`
+- Result: line
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - P inside c (or P = the centre) → Undefined
+  - P on c (the gap |OP| − r within the band) → the double point
+  - two candidates and no selector → Undefined (ambiguous: add a selector)
+  - along(±) → Undefined (use orient(±))
+  - other(T) with T not a touch point → Undefined
+  - square roots not representable → Inexact over Q and mod p (other(T) is exact)
+- Examples:
+  - `tangent_from((5, 5), circle((0, 0), (5, 0)), orient(-))` → line (0, 5) + t·(-5, 0), t ∈ [−∞, ∞], chiral
+  - `tangent_from((6, 0), circle((0, 0), (5, 0)), orient(-))` → line (4.16666666667, 2.76385399196) + t·(-2.76385399196, 4.16666666667), t ∈ [−∞, ∞], chiral
 
 ## Circles
 
@@ -570,6 +640,34 @@ The (unsigned) area of a polygon, or of the polygon through the given points.
 - Examples:
   - `area((0, 0), (3, 0), (3, 4))` → number 6
   - `area(polygon((0, 0), (3, 0), (3, 4), (0, 4)))` → number 12
+
+### power
+
+power(P, c) = |PO|² − r²: negative inside c, zero on c, positive outside (exact).
+
+- Signatures: `power(point, round)`
+- Result: number
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - P on c → 0
+  - P = the centre → −r²
+- Examples:
+  - `power((7, 1), circle((0, 0), (3, 4)))` → number 25
+
+### radius
+
+radius(c) = √r²: exact over Q when r² is the square of a rational.
+
+- Signatures: `radius(round)`
+- Result: number
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - r² not the square of a rational → Inexact over Q (always Inexact mod p)
+- Examples:
+  - `radius(circle((0, 0), (3, 4)))` → number 5
+  - `radius(circle((0, 0), (1, 1)))` → number 1.41421356237
 
 ## Display
 
