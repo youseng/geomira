@@ -1,21 +1,19 @@
 /**
  * `parseInto(doc, text, registry)` (SPEC §11.3, law P3): parses `text` as the new state of
- * `doc`, keeping the ids of persisting names and their styles. An object keeps its id when
- * the new text has an object of the same name (and both are user objects, or both images);
- * a layer when the name persists; a named claim when its name persists, an unnamed claim
- * or an assumption when an identical one (same kind, same arguments) persists. New things
- * get fresh ids above the old nextId, so ids are never reused. An object whose style the
- * text does not state at all (no attributes, no `style` or `label` line) keeps its old
- * style, except an old [noimage] that would change the derived layers (the text's images
- * stay). Total, like parse.
+ * `doc` and keeps the ids of persisting names. The text is the entire state: everything
+ * else, styles included, is exactly what the text says (a style line that is gone means the
+ * default style; an unchanged style line gives the unchanged style). An object keeps its id
+ * when the new text has an object of the same name (both user objects, or both images); a
+ * layer when its name persists; a named claim when its name persists, an unnamed claim or
+ * an assumption when an identical one (same kind, same arguments) persists. New things get
+ * fresh ids above the old nextId, so ids are never reused. Total, like parse; the result
+ * differs from parse(text) only in its ids.
  */
-import type { Document, Style } from '@geomira/kernel/document';
+import type { Document } from '@geomira/kernel/document';
 import { MAIN_LAYER_ID } from '@geomira/kernel/document';
-import { syncDerived } from '@geomira/kernel/derived';
 import { exprEquals, type Expr } from '@geomira/kernel/expr';
-import { checkInvariants } from '@geomira/kernel/invariants';
 import type { Registry } from '@geomira/kernel/registry';
-import { parseDetailed, type ParseOptions, type ParseResult } from './parse';
+import { parse, type ParseOptions, type ParseResult } from './parse';
 import { mapExpr, remapIds } from './remap';
 
 interface Matching {
@@ -79,36 +77,6 @@ function sameArgs(a: readonly Expr[], b: readonly Expr[]): boolean {
   );
 }
 
-function withoutNoimage(s: Style): Style {
-  return {
-    ...(s.color === undefined ? {} : { color: s.color }),
-    ...(s.width === undefined ? {} : { width: s.width }),
-    ...(s.dash === undefined ? {} : { dash: s.dash }),
-    ...(s.hidden === undefined ? {} : { hidden: s.hidden }),
-    ...(s.label === undefined ? {} : { label: s.label }),
-  };
-}
-
-/** Old styles for objects whose style the text does not state. */
-function keepStyles(
-  old: Document,
-  doc: Document,
-  styled: ReadonlySet<string>,
-  withImaging: boolean,
-): Document {
-  const objects = doc.objects.map((o) => {
-    const p = old.objects.find((x) => x.id === o.id);
-    if (p === undefined || styled.has(o.name)) return o;
-    if (withImaging) return { ...o, style: p.style };
-    const rest = withoutNoimage(p.style);
-    return {
-      ...o,
-      style: o.style.noimage === undefined ? rest : { ...rest, noimage: o.style.noimage },
-    };
-  });
-  return { ...doc, objects };
-}
-
 function nextIdOf(old: Document, m: Matching): number {
   const nums = [
     ...m.obj.values(),
@@ -125,7 +93,7 @@ export function parseInto(
   registry: Registry,
   options: ParseOptions = {},
 ): ParseResult {
-  const p = parseDetailed(text, registry, options);
+  const p = parse(text, registry, options);
   const m = match(old, p.doc);
   const renamed = remapIds(p.doc, {
     object: (id) => m.obj.get(id) ?? id,
@@ -133,14 +101,5 @@ export function parseInto(
     claim: (id) => m.cl.get(id) ?? id,
     assumption: (id) => m.as.get(id) ?? id,
   });
-  const base = { ...renamed, nextId: nextIdOf(old, m) };
-  const full = keepStyles(old, base, p.styled, true);
-  const synced = syncDerived(full, registry);
-  const ok =
-    synced.ok &&
-    synced.removed.objects.length === 0 &&
-    synced.added.length === 0 &&
-    checkInvariants(synced.doc).length === 0;
-  const doc = ok ? synced.doc : keepStyles(old, base, p.styled, false);
-  return { doc, diagnostics: p.diagnostics };
+  return { doc: { ...renamed, nextId: nextIdOf(old, m) }, diagnostics: p.diagnostics };
 }

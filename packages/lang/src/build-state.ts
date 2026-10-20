@@ -44,8 +44,6 @@ export interface State {
   readonly staticKinds: Map<number, readonly ValueKind[] | undefined>;
   readonly kinds: Map<number, readonly ValueKind[] | undefined>;
   readonly styles: Map<string, PendingStyle>;
-  /** Names the text gave any style to (parseInto keeps the old style of the others). */
-  readonly styled: Set<string>;
   /** Layer name → id. */
   readonly layerIds: Map<string, string>;
   readonly rules: PendingRule[];
@@ -65,7 +63,6 @@ export function newState(registry: Registry): State {
     staticKinds: new Map(),
     kinds: new Map(),
     styles: new Map(),
-    styled: new Set(),
     layerIds: new Map([['main', 'main']]),
     rules: [],
     book: newBook(),

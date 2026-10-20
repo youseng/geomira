@@ -84,7 +84,6 @@ function applyStyles(st: State, ids: readonly number[]): boolean {
     const p = o === undefined ? undefined : st.styles.get(o.name);
     if (o === undefined || p === undefined) continue;
     p.used = true;
-    st.styled.add(o.name);
     imaging ||= p.style.noimage !== undefined;
     const style = { ...o.style, ...p.style };
     st.doc = { ...st.doc, objects: st.doc.objects.map((x) => (x.id === id ? { ...x, style } : x)) };

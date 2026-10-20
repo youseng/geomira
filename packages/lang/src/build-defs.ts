@@ -100,11 +100,9 @@ function attrsOf(
     else layers.push(id);
   }
   if (st.diags.length > n) return undefined;
-  if (Object.keys(style).length > 0) st.styled.add(name);
   const pending = st.styles.get(name);
   if (pending !== undefined) {
     pending.used = true;
-    st.styled.add(name);
     style = { ...style, ...pending.style };
   }
   return { style, layers: layers.length === 0 ? [MAIN_LAYER_ID] : layers };

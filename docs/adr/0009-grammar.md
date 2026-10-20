@@ -1,6 +1,6 @@
 # ADR-0009: The language: grammar, names with `*`, printing, parseInto, migrations (Run 6)
 
-Status: accepted (Run 6). Extends SPEC §11 (statements, names, laws, versioning), ADR-0003
+Status: accepted (Run 6; decision 22 revised before merge at the maintainer's request). Extends SPEC §11 (statements, names, laws, versioning), ADR-0003
 (items 2 and 5: literals and claims as data), ADR-0004 (item 9: `on(obj)`), ADR-0006 (item 14:
 parse-level selector checks), ADR-0007 (items 9 and 10: managed names, placement of images) and
 ADR-0008 (decision 2 and its consequences: the notation of the claim kinds, `assumptionProblem`).
@@ -259,11 +259,17 @@ measure       = segment | angle | number | expr ;
 22. **P3**: `parseInto(old, text)` keeps the id of every object whose name persists (user object
     for user object, image for image), of layers by name, named claims by name, unnamed claims
     and assumptions when an identical one persists; new things get ids above old.nextId (never
-    reused). An object whose style the text does not state at all (no attribute, no `style` or
-    `label` line) keeps its old style, except an old `[noimage]` that would change the derived
-    layers. Tested: parseInto(doc, print(doc)) = doc with ids and nextId (images in canonical run
-    order); random edits keep persisting ids and give valid, synced documents; a text with every
-    style removed keeps every style.
+    reused). Everything else is exactly what the text says: the text is the entire state (SPEC
+    §5; the maintainer's review of Run 6). Styles in particular come only from the text: an
+    unchanged style line gives the unchanged style, and a deleted `style X […]` line (or a
+    deleted attribute group) leaves X with the default style, so printing never brings a deleted
+    style back. parseInto(old, text) therefore differs from parse(text) only in its ids. Tested:
+    parseInto(doc, print(doc)) = doc with ids and nextId (images in canonical run order); random
+    edits keep persisting ids and give valid, synced documents whose styles equal those of
+    parse(text); deleting a style line resets the style and print(parseInto(…)) has no style
+    line for that object; a text with every style removed gives every object the default style.
+    (Revision before merge: the first version kept an object's old style when the text stated
+    none for it; the maintainer rejected that, see Alternatives.)
 
 ### Versions (SPEC §11.4)
 
@@ -284,8 +290,9 @@ measure       = segment | angle | number | expr ;
 
 ## Consequences
 
-- The editor run gets a two-way text panel: `parse` for diagnostics, `parseInto` to keep ids and
-  GUI styles, `print` for the canonical text; comments and literal spellings survive GUI edits.
+- The editor run gets a two-way text panel: `parse` for diagnostics, `parseInto` to keep ids,
+  `print` for the canonical text; a style set in the GUI is part of the document, so it is in
+  the printed text, and it lasts exactly as long as the text keeps it.
 - Kernel edits that rebuild objects keep `LitExpr.text` (they copy expressions); a deleted
   object's comment moves to the end of the printed text.
 - A new tool needs nothing in the language (names come from the registry); a new claim or
@@ -308,3 +315,7 @@ measure       = segment | angle | number | expr ;
 - A stricter "two rules with the same source and suffix" check in the language: the kernel
   refuses only rules whose names actually collide; the language reports exactly that.
 - Single-letter "did you mean" suggestions: every one-letter name is one edit from every other.
+- parseInto keeping an object's old style when the new text states none for it (the first
+  version of this run): deleting `style X [hidden]` from the text would not unhide X, and the
+  next print would bring the deleted line back. That contradicts "the text is the entire state"
+  and makes some document states impossible to reach by editing text. Rejected on review.

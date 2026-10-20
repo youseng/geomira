@@ -21,20 +21,11 @@ export interface ParseResult {
   readonly diagnostics: readonly Diagnostic[];
 }
 
-export interface DetailedParse extends ParseResult {
-  /** Names whose style the text states (parseInto keeps the old style of the others). */
-  readonly styled: ReadonlySet<string>;
-}
-
 function byPosition(a: Diagnostic, b: Diagnostic): number {
   return a.line - b.line || a.column - b.column;
 }
 
-export function parseDetailed(
-  text: string,
-  registry: Registry,
-  options: ParseOptions = {},
-): DetailedParse {
+export function parse(text: string, registry: Registry, options: ParseOptions = {}): ParseResult {
   const m = migrateText(text, options.migrations ?? MIGRATIONS);
   const src = m.ok ? m.text : text;
   const diagnostics: Diagnostic[] = [];
@@ -49,10 +40,5 @@ export function parseDetailed(
     m.ok ? {} : { problem: { reason: m.reason, hint: m.hint } },
   );
   diagnostics.push(...built.diagnostics);
-  return { doc: built.doc, diagnostics: diagnostics.sort(byPosition), styled: built.styled };
-}
-
-export function parse(text: string, registry: Registry, options: ParseOptions = {}): ParseResult {
-  const r = parseDetailed(text, registry, options);
-  return { doc: r.doc, diagnostics: r.diagnostics };
+  return { doc: built.doc, diagnostics: diagnostics.sort(byPosition) };
 }

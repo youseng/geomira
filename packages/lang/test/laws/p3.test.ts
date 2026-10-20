@@ -1,8 +1,10 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import type { Document, Style } from '@geomira/kernel/document';
 import { checkInvariants } from '@geomira/kernel/invariants';
 import { syncProblems } from '@geomira/kernel/derived';
 import { sortImageRuns } from '../../src/canonical';
+import { parse } from '../../src/parse';
 import { parseInto } from '../../src/parse-into';
 import { print } from '../../src/print';
 import { docArb } from '../helpers/gen-doc';
@@ -20,7 +22,7 @@ function unstyled(text: string): string {
     .join('\n');
 }
 
-describe('law P3: parseInto keeps ids and styles of persisting names (SPEC §11.3, L4)', () => {
+describe("law P3: parseInto keeps the ids of persisting names; styles are exactly the text's (SPEC §11.3, L4)", () => {
   it(
     'parseInto(doc, print(doc)) is doc itself, ids and nextId included (images in canonical run order)',
     () => {
@@ -65,27 +67,51 @@ describe('law P3: parseInto keeps ids and styles of persisting names (SPEC §11.
   );
 
   it(
-    'a text that states no style keeps every persisting style',
+    'styles are exactly what the new text says (edited texts): the same as parsing the text alone',
     () => {
-      let kept = 0;
+      fc.assert(
+        fc.property(docArb(registry), editsArb, (doc, edits) => {
+          const text = mutate(print(doc), edits);
+          const into = parseInto(doc, text, registry).doc;
+          const alone = parse(text, registry).doc;
+          const styles = (d: Document): Map<string, Style> =>
+            new Map(d.objects.map((o) => [o.name, o.style]));
+          expect(styles(into)).toEqual(styles(alone));
+        }),
+        { numRuns: runs(200), seed: 34 },
+      );
+    },
+    LAW_TIMEOUT,
+  );
+
+  it(
+    'a text that states no style gives every object the default style; printing brings no style back',
+    () => {
+      let reset = 0;
       fc.assert(
         fc.property(docArb(registry), (doc) => {
-          const r = parseInto(doc, unstyled(print(doc)), registry);
+          const text = unstyled(print(doc));
+          const r = parseInto(doc, text, registry);
           for (const o of r.doc.objects) {
+            const stated = parse(text, registry).doc.objects.find((x) => x.name === o.name)?.style;
+            expect(o.style).toEqual(stated);
             const old = doc.objects.find((x) => x.id === o.id);
             if (
-              old === undefined ||
-              old.style.noimage !== undefined ||
-              (o.managedBy !== undefined && o.style.noimage !== undefined)
+              old !== undefined &&
+              Object.keys(old.style).length > 0 &&
+              Object.keys(o.style).length === 0
             )
-              continue;
-            expect(o.style).toEqual(old.style);
-            kept += Object.keys(old.style).length > 0 ? 1 : 0;
+              reset += 1;
           }
+          expect(
+            print(r.doc)
+              .split('\n')
+              .filter((l) => l.startsWith('style ')),
+          ).toEqual([]);
         }),
         { numRuns: runs(150), seed: 33 },
       );
-      expect(kept).toBeGreaterThan(0);
+      expect(reset).toBeGreaterThan(0);
     },
     LAW_TIMEOUT,
   );

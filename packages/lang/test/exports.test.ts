@@ -14,7 +14,7 @@ import * as print from '../src/print';
 
 /** The public modules of @geomira/lang (ADR-0002, ADR-0009) and the runtime names each exports. */
 const SURFACE: Record<string, { module: object; names: string[] }> = {
-  './parse': { module: parse, names: ['parse', 'parseDetailed'] },
+  './parse': { module: parse, names: ['parse'] },
   './print': { module: print, names: ['print'] },
   './parse-into': { module: parseInto, names: ['parseInto'] },
   './diagnostic': {

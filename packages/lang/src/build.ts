@@ -18,8 +18,6 @@ import { error, warning, type Diagnostic } from './diagnostic';
 export interface Built {
   readonly doc: State['doc'];
   readonly diagnostics: readonly Diagnostic[];
-  /** Names whose style the text states (attributes, `style` or `label` lines). */
-  readonly styled: ReadonlySet<string>;
 }
 
 export interface VersionCheck {
@@ -205,5 +203,5 @@ export function buildDocument(
       ),
     );
   }
-  return { doc: st.doc, diagnostics: st.diags, styled: st.styled };
+  return { doc: st.doc, diagnostics: st.diags };
 }
