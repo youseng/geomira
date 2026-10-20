@@ -58,4 +58,12 @@ describe('the generated exactness table', () => {
     expect(row('power')).toMatchObject({ exactRun: 'can succeed', otherwise: '' });
     expect(row('radius')).toMatchObject({ exactRun: 'can succeed', exactExamples: 1, examples: 2 });
   });
+
+  it('discovers exactness of the Run 4 maps: exact, except rotations off the multiples of 90°', () => {
+    const row = (name: string) => exactnessRows(registry).find((r) => r.tool === name);
+    for (const t of ['reflect', 'homothety', 'translate', 'spiral', 'compose', 'inverse', 'apply'])
+      expect(row(t)).toMatchObject({ exactRun: 'can succeed', otherwise: '' });
+    expect(row('rotate')).toMatchObject({ exactRun: 'can succeed', exactExamples: 2, examples: 3 });
+    expect(row('rotate')?.otherwise).toBe('inexact: sin(60°) is not rational');
+  });
 });

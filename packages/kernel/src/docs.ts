@@ -122,6 +122,16 @@ export function formatValue<T>(v: Value<T>, show: (x: T) => string): string {
   }
 }
 
+/**
+ * formatValue, with a map's coefficients: "similarity z ↦ (a)·z + (b)", z̄ for an anti map
+ * (the reference shows what a transformation example computes).
+ */
+function formatDocValue<T>(v: Value<T>, show: (x: T) => string): string {
+  if (v.kind !== 'transform') return formatValue(v, show);
+  const c = (z: { readonly re: T; readonly im: T }): string => `(${show(z.re)}, ${show(z.im)})`;
+  return `${formatValue(v, show)} z ↦ ${c(v.t.a)}·${v.t.anti ? 'z̄' : 'z'} + ${c(v.t.b)}`;
+}
+
 const showFloat = (x: number): string => String(Number.parseFloat(x.toPrecision(12)));
 const showRational = (x: Rational): string => formatRational(x);
 
@@ -160,8 +170,8 @@ function toolSection(registry: Registry, t: ToolSpec): string[] {
     const q = runExample(registry, t, e, RationalField);
     const shown =
       q.kind === 'inexact'
-        ? formatValue(runExample(registry, t, e, FloatField), showFloat)
-        : formatValue(q, showRational);
+        ? formatDocValue(runExample(registry, t, e, FloatField), showFloat)
+        : formatDocValue(q, showRational);
     lines.push(`  - \`${callText}\` → ${shown}`);
   }
   lines.push('');

@@ -23,6 +23,12 @@ ADR-0003.
 | `@geomira/kernel/glider`         | gliders: `gliderPoint`, `gliderParameter` (exact inverse), `dragParameter` (the drag map)                  |
 | `@geomira/kernel/selector`       | branch selectors as values; `isOrientationDependent` (SPEC §7, law L16); `formatSelector`, `formatExpr`    |
 | `@geomira/kernel/selector-check` | the parse-level checks of SPEC §7: bare indices, missing selectors, misapplied selectors (static kinds)    |
+| `@geomira/kernel/similarity`     | similarities (SPEC §8.1): `applySimilarity` on every kind, `composeSimilarities`, `inverseSimilarity`      |
+| `@geomira/kernel/derived`        | derived layers: which objects are imaged (`objectKinds`), `syncDerived`, `syncProblems` (law L13)          |
+| `@geomira/kernel/derived-edit`   | rule edits: `addDerivedLayer`, `updateRule`, `removeRule` (cycles refused)                                 |
+| `@geomira/kernel/doc-edit`       | `DocEdit` and `applyDocEdit`: every edit, keeping derived layers in sync; reserved names; `moveObject`     |
+| `@geomira/kernel/views`          | views (SPEC §8.3): `addView`, `applyView`, `removeView`                                                    |
+| `@geomira/kernel/drag`           | `dragThrough` (SPEC §8.4): the edit that drags an image, or why it cannot be dragged                       |
 
 ## Tools (Run 2)
 
@@ -33,7 +39,9 @@ center, on, other, tangent, polar, radical_axis, incenter, excenter, incircle, e
 bisector, ext_bisector, sqrt, sin, cos, tan (Run 3a; the functions on numbers by
 ADR-0005); ninepoint_center, power, radius, tangent_point, tangent_from, and intersect of
 lines and circles with branch selectors (Run 3b, ADR-0006: candidates decided on the
-discriminant with the band, filters, rankers, other(P) by Vieta, along / orient). Their
+discriminant with the band, filters, rankers, other(P) by Vieta, along / orient); reflect,
+rotate, homothety, translate, spiral, compose, inverse, apply and the image sugar (Run 4,
+ADR-0007: one field-generic similarity core; derived layers, views and drag-through). Their
 signatures, degenerate cases and exactness are in
 [docs/tools.md](../../docs/tools.md), generated from the registry; `pnpm docs:exactness`
 prints the exactness table.
@@ -54,6 +62,12 @@ prints the exactness table.
   other candidate), every deciding quantity at the band edges, law L11 (continuity through
   tangency), L1 and L3 for branchable calls (laws/l1-branch, laws/l3-branch), 13 theorems
   that need selectors, the parse-level checks.
+- Transformations and derived layers (Run 4): law L13 (apply∘inverse = id, associativity,
+  apply(compose) = apply∘apply in three fields; fuzzed incidence preservation; arcs),
+  branch choices under direct and anti maps, the derived-layer rules, views, drag-through,
+  the acceptance scenario, L1 for degenerate maps (laws/l1-transforms) and kernel-level
+  model-based fuzzing with fast-check `fc.commands` (laws/l13-model: L1, L7 and L13 after
+  every edit; 500 runs, 20,000 with `NIGHTLY=1`).
 - Coverage: `pnpm test:coverage` (part of `pnpm verify`) fails below 90% lines or 85%
-  branches. Mutation testing of the geometry (`geom.ts`, `tools/`): `pnpm mutation:kernel`,
-  nightly in CI (reports in `reports/mutation/kernel/`).
+  branches. Mutation testing of the geometry (`geom.ts`, `similarity.ts`, `tools/`):
+  `pnpm mutation:kernel`, nightly in CI (reports in `reports/mutation/kernel/`).

@@ -6,7 +6,11 @@
   "vitest": { "configFile": "vitest.kernel.config.ts" },
   "checkers": ["typescript"],
   "tsconfigFile": "packages/kernel/tsconfig.json",
-  "mutate": ["packages/kernel/src/geom.ts", "packages/kernel/src/tools/**/*.ts"],
+  "mutate": [
+    "packages/kernel/src/geom.ts",
+    "packages/kernel/src/similarity.ts",
+    "packages/kernel/src/tools/**/*.ts"
+  ],
   "coverageAnalysis": "perTest",
   "incremental": true,
   "incrementalFile": "reports/mutation/kernel/stryker-incremental.json",

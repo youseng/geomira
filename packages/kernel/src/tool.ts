@@ -34,12 +34,18 @@ export interface BranchShape {
 /**
  * One overload: a capability per parameter; `rest` accepts any number of further
  * arguments of one capability (polygon(A, B, C, …)); `branch` marks an overload of a
- * branchable tool.
+ * branchable tool; `output` narrows the result kinds of the overload.
  */
 export interface Signature {
   readonly params: readonly Capability[];
   readonly rest?: Capability;
   readonly branch?: BranchShape;
+  /**
+   * The kinds this overload's result can have, when narrower than the tool's outputKinds
+   * (Run 4: reflect(l) is a transform, reflect(X, l) has X's kind). Read by the static
+   * kinds of derived layers (derived.ts).
+   */
+  readonly output?: readonly ValueKind[];
 }
 
 /** How exporters draw a tool's result (ADR-0003: every Run 2 tool is 'numeric'). */

@@ -1,5 +1,262 @@
 # STATUS
 
+## Run 4: ACCEPTED (2026-10-20)
+
+Transformations and layers (SPEC §8). Base check first: Run 3b was ACCEPTED (tag `run-3b` =
+`main` = 78991aa), `pnpm install && pnpm verify` was green locally on it (841 tests, add-only
+compared with `run-3b`), and ci and deploy were green in CI on that commit
+(https://github.com/youseng/geomira/actions/runs/39361489930,
+https://github.com/youseng/geomira/actions/runs/39361490125), so there was no red base.
+
+Every criterion holds: verify is green locally, in a clean clone of 8fa07d1 and in CI (table
+under "CI on GitHub"); L13 (similarity laws in three fields, fuzzed incidence preservation,
+sync after every edit) and the model-based fuzzing (fc.commands: 500 runs in CI, 20,000 with
+`NIGHTLY=1`, both green) pass with the counts below; the scenario passes; ADR-0007 records the
+derived layers, the clarification of SPEC §8.2 (note A), how Phase 2 inversion plugs in and
+the range `outside` flag it will need. Kernel coverage 99.46% lines, 97.26% branches.
+Mutation (informational until v1.1, note E): num 89.56% (609 detected, 71 undetected;
+incremental, nightly on 8fa07d1, https://github.com/youseng/geomira/actions/runs/39383624457);
+kernel: the latest completed score is 99.17% (incremental, c6ac36c, Run 3b). The incremental
+kernel run on 8fa07d1, whose scope now includes similarity.ts and tools/transforms.ts, was
+still running when this was written (same URL) and was not waited for.
+
+## Done (each item → the test file that proves it)
+
+1. **Similarity transforms, one compute each** (`src/similarity.ts`, `src/tools/transforms.ts`):
+   `reflect(l)`, `reflect(P)`, `rotate(O, θ)`, `homothety(O, k)`, `translate(A, B)`,
+   `spiral(A, B, C, D)` (A → C, B → D), `compose(T1, T2)` (T2 first), `inverse(T)`,
+   `apply(T, X)`, and the image sugar `reflect(X, ·)`, `rotate(X, O, θ)`, `homothety(X, O, k)`,
+   `translate(X, A, B)`, `spiral(X, A, B, C, D)` (overloads with X first, told apart by
+   arity). apply maps every kind: ranges kept, arcs reversed by anti maps, chirality kept,
+   the anchor mapped. Every Transform value is invertible (scale factor not zero within EPS).
+   Registry entries, degenerate cases (20, each a test), property tests (8), `export:
+'numeric'`, docs/tools.md regenerated (a map's coefficients shown). →
+   `helpers/degenerate-transforms.ts` (in `degenerate.test.ts`),
+   `helpers/transform-properties.ts` (in `tools.property.test.ts`), `transforms-gaps.test.ts`.
+2. **L3 oracle for the maps**: argument plans (`helpers/l3-plans-transforms.ts`: transform
+   arguments from exact maps, rotations mostly at multiples of 90°, 30% of the base-map
+   samples from the sampler's own draws) let the frozen L3 compare all eight tools: Float =
+   Q, and mod p = the reduction of Q. → `laws/l3-oracle.test.ts`.
+3. **Laws** (SPEC §8.1): apply∘inverse = id (both ways), compose associative,
+   apply(compose(S, T)) = apply(S)∘apply(T), the tools agree with the core: 3,000 draws per
+   field (Float, Q, mod p; half anti; points, lines/segments/rays of either flag, circles with
+   and without anchors and arcs, polygons). Incidence preserved, fuzzed on registry-driven
+   documents: every point–curve pair keeps its exact incidence status over Q and mod p (both
+   directions), floats stay within 1e-9; a point on an arc maps onto the image arc (catches a
+   missing arc reversal, which the algebraic laws cannot see). → `laws/l13-transforms.test.ts`,
+   `laws/l13-incidence.test.ts`.
+4. **Branch choices under maps (note C)**: along(±) on apply(T, l) ∩ apply(T, c) picks the image
+   of the source choice for every map; rebuilt from the images of the defining points it keeps
+   the choice under direct maps and under anti maps on achiral lines, and swaps it on chiral
+   lines (perp); orient(±) swaps under anti maps; other(P) never swaps. 24 cases × 400 figures
+   (rotate, spiral, reflect, reflect∘homothety). → `selectors.transform.test.ts`.
+5. **Derived layers per SPEC §8.2** (`src/derived.ts`, `src/derived-edit.ts`,
+   `src/doc-edit.ts`, ADR-0007): suffix `*` (configurable, one or more `*`), `[noimage]`,
+   `exclude`, every other geometric source object imaged (the map's own defining points too:
+   under spiral(A, B, C, D), A* = C and B* = D; Undefined images exist); numbers, measures and
+   maps get no image (note A, ADR-0007 decision 9); reserved managed names ("C* is the image of
+   C in layer ref"), managed objects follow their rule only; placement after source and
+   transform (I4), new sources append their image, redefining / moving the map re-validates;
+   chaining (A**, names follow through renames and suffix changes); cycles of rules and maps
+   built from their own images refused; deleting the rule deletes its managed objects with
+   their dependents; two rules giving one name refused; `apply(T, circle)` maps the anchor: a
+   glider on an image circle is exact over Q and lies on it. → `derived.test.ts` (20 tests),
+   `transforms-gaps.test.ts` (syncProblems / syncDerived on hand-broken documents).
+6. **Views** (add, apply, remove; I7 under layer removal). → `views.test.ts`.
+7. **dragThrough(doc, managedId, cursor, values) → edit | not-draggable**: free points get
+   T⁻¹(cursor), gliders the nearest parameter, chains invert every map; not draggable when a
+   map depends on the source (the scenario's A*, a rotation about E for E**), an Undefined map,
+   a constructed source, a cursor at the centre of a glider's circle. → `drag.test.ts`,
+   `scenario-derived.test.ts`.
+8. **Kernel-level model-based fuzzing** with fast-check `fc.commands`: add (to any layer and to
+   a rule's source), remove cascade, rename (also to reserved names), redefine, REDEFINE T,
+   MOVE T later, move, toggle noimage, set layers, layer edits, derived layers (add, change
+   transform / source / suffix / exclusions, remove the rule), views, drags (free points and
+   drag-through, checked to land on the cursor). After EVERY command: L1 (three fields, no
+   non-finite float), L7 (I1–I8), L13 (syncProblems empty and, over Q, every image equal to
+   apply(T, X) of the current values). 500 runs in CI (fixed seed 20261020), 20,000 with
+   `NIGHTLY=1` (the nightly test job). Sanity check: two deliberate bugs in derived.ts (stale
+   images never removed; chain images not filled) both failed it. →
+   `laws/l13-model.test.ts` (`helpers/model-commands.ts`, `helpers/model-defs.ts`).
+9. **L1 for maps and derived layers (note B)**: 1,500 documents per field with injected
+   degenerate maps (reflection in line(A, A), homothety k = 0 and 1e-12, rotation about an
+   Undefined centre, spirals with coincident points, compositions that collapse in floats),
+   their images, inverses and a derived layer of the document: 0 throws, 0 non-finite; every
+   degenerate situation reached. → `laws/l1-transforms.test.ts`.
+10. **The scenario (item 7)**: triangle ABC, circumcircle ω, orthocentre H, `t =
+reflect(line(A, B))`, `ref = image(t, main)`: images A*, B*, C*, l*, ω*, H* (no t*); A*,
+    B* and l* coincide with their sources exactly over Q (and in floats); adding D to main
+    appends D*; midpoint(C*, H*) built in ref (= (3, −17/4) exactly); dragging C* to
+    (2.5, −7.25) moves C to (2.5, 7.25) and C* to the cursor; A* is not draggable (t depends
+    on A); a user object or rename to `C*` is refused with "C* is the image of C in layer ref".
+    → `scenario-derived.test.ts`.
+11. ADR-0007; packages/kernel/README.md; docs/tools.md regenerated; the exactness rows below
+    (→ `scripts/exactness/table.test.ts`); similarity.ts joins the kernel mutation scope;
+    docs/test-count.txt raised from 841 to 964.
+
+### Exactness of the Run 4 tools (output of `pnpm docs:exactness`, generated)
+
+| Tool      | Family          | Exact run (RationalField) | Exact examples | Otherwise                         |
+| --------- | --------------- | ------------------------- | -------------- | --------------------------------- |
+| reflect   | transformations | can succeed               | 4/4            |                                   |
+| rotate    | transformations | can succeed               | 2/3            | inexact: sin(60°) is not rational |
+| homothety | transformations | can succeed               | 3/3            |                                   |
+| translate | transformations | can succeed               | 2/2            |                                   |
+| spiral    | transformations | can succeed               | 2/2            |                                   |
+| compose   | transformations | can succeed               | 1/1            |                                   |
+| inverse   | transformations | can succeed               | 1/1            |                                   |
+| apply     | transformations | can succeed               | 2/2            |                                   |
+
+## Not done
+
+Nothing in Run 4's scope. Not started (later runs): the language (lexing lowercase managed
+names such as `l*`, printing `@layer … = image(…)`, reporting `reservedName` as a
+diagnostic), the scene (hiding images that coincide with their visible sources: the scenario
+names A*, B*, l*), the editor (applyEdit with history on top of applyDocEdit, coalesced drags
+using dragThrough), claims, export, the views UI (v1.1).
+
+## Known bugs
+
+None known. Found and fixed in this run, each with its test in the same commit:
+
+- `renameObject` (Run 2) renamed the direct images of a source but not images of images in a
+  chained derived layer (A** kept its old name, violating I4). → `rename-chain.test.ts`
+  (7f264f7).
+
+## Uncertain
+
+- **Sync is not part of I4** (ADR-0007 decision 6). SPEC §5 I4 says each managed object
+  "matches its rule exactly"; I read completeness ("every source object has its image") as law
+  L13's sync, checked by `syncProblems` after every edit, because Run 2's frozen tests assert
+  I1–I8 on hand-built rule documents without every image. If the maintainer wants
+  completeness inside `assertInvariants`, those frozen tests need an ADR-justified change.
+- **Numbers, measures and maps are not imaged** (note A, ADR-0007 decision 9), as the run
+  prompt asked; recorded as a clarification of SPEC §8.2. Objects whose kinds are unknown (an
+  unknown tool, arguments no overload takes) ARE imaged (their images are Undefined).
+- **The scale factor of a map is zero when both components are within EPS (dimensionless)**,
+  as `div` decides a zero divisor (ADR-0003 item 17), not with the band: homothety(O, 1e-8) is
+  a valid map in floats. A composition of valid maps can collapse in floats (10⁻⁵ · 10⁻⁵):
+  Undefined there, defined over Q and mod p (L3 excludes such samples only if they touch the
+  band; none did).
+- **Placement**: a missing image goes right after the later of its source and its map (not
+  at the end of the document); `move` keeps I2 through the stable topological order, so an
+  object cannot move before what it is built from (the move then lands later than asked).
+- **Drag-through of a free point** stores T⁻¹(cursor) as the exact decimals of the doubles;
+  the editor's rounding at drag end (SPEC §12) is the editor run's.
+- `Signature.output` (new, optional) narrows an overload's result kinds; only the map tools
+  declare it. The language run may want the same narrowing for its static checks.
+- Mathematical facts used (I am confident of each): reflection in the line p + t·d is
+  z ↦ p + (d/d̄)·conj(z − p); the composition and inverse formulas of ADR-0007 decision 1;
+  by Niven's theorem, cos θ and sin θ are both rational for θ a rational number of degrees
+  only at the multiples of 90°; similarities preserve incidence and map circles to circles
+  (centre to centre, radius times |a|); an anti-similarity reverses orientation (so arcs and
+  orient(±)); inversion maps a segment through its centre to the complement of a bounded
+  interval of the line (ADR-0007 decision 17, Phase 2, documented only).
+
+## Changed frozen tests
+
+No line of a file frozen at `run-3b` was modified or removed (`add-only: frozen tests
+compared with run-3b, 0 violation(s)`). Lines were ADDED to these frozen files:
+
+- `packages/kernel/test/registry.test.ts`: the eight new tool names appended to the list.
+- `packages/kernel/test/degenerate.test.ts`: one import, `...TRANSFORM_CASES` in the table.
+- `packages/kernel/test/tools.property.test.ts`: one import, `...TRANSFORM_PROPERTIES`.
+- `packages/kernel/test/exports.test.ts`: imports and the surfaces of `./similarity`,
+  `./derived`, `./derived-edit`, `./doc-edit`, `./views`, `./drag`; one frozen-constant check.
+- `scripts/exactness/table.test.ts`: one test for the Run 4 rows.
+- Helpers (not frozen): `helpers/l3-plans.ts` (the maps' plan, five lines).
+
+## Acceptance command output
+
+### Clean clone of 8fa07d1 (`pnpm install --frozen-lockfile && pnpm verify`)
+
+```
+$ git clone … && git checkout 8fa07d1 && pnpm install --frozen-lockfile   # Done in 1.8s using pnpm v10.28.0
+$ pnpm verify
+All matched files use Prettier code style!
+✔ no dependency violations found (182 modules, 1047 dependencies cruised)
+ok   tolerance: 259 files scanned, 0 violation(s)
+ok   file-length: 259 files scanned, 0 violation(s)
+ok   test-count: 964 tests, floor 964, 0 violation(s)
+ok   disabled-tests: 259 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-3b, 0 violation(s)
+ok   forbidden-words: 259 files scanned, 0 violation(s)
+L13 incidence RationalField: 617 incident and 1489 apart pairs preserved
+L13 incidence ModPField: 727 incident and 1781 apart pairs preserved
+L13 incidence FloatField: 651 exactly incident pairs stay incident
+L3 reflect: 2387 defined + 6 Undefined agree, 0 not exact, 7 excluded (band); mod p 2394
+L3 rotate: 2117 defined + 0 Undefined agree, 283 not exact, 0 excluded (band); mod p 2117
+L3 homothety: 2165 defined + 235 Undefined agree, 0 not exact, 0 excluded (band); mod p 2165
+L1 transforms FloatField: 1500 documents, 70244 objects (27025 images), 0 throws; reached {"is undefined":29845,"coincident points: line(A, B)":1431,"the map collapses the plane":1489,"spiral(A, B, C, D) needs":693,"homothety: the ratio k is 0":446,"apply does not accept":303}
+L3 translate: 2398 defined + 2 Undefined agree, 0 not exact, 0 excluded (band); mod p 2398
+L3 spiral: 2399 defined + 1 Undefined agree, 0 not exact, 0 excluded (band); mod p 2399
+L3 compose: 2146 defined + 122 Undefined agree, 132 not exact, 0 excluded (band); mod p 2146
+L3 inverse: 2287 defined + 50 Undefined agree, 63 not exact, 0 excluded (band); mod p 2287
+L3 apply: 2291 defined + 64 Undefined agree, 45 not exact, 0 excluded (band); mod p 2291
+L13 model: 500 runs (seed 20261020); {"tried":{"add":3546,"addDerived":1099,"rename":387,"setLayers":358,"removeRule":353,"redefine":340,"addLayer":335,"move":356,"moveTLater":352,"removeLayer":343,"redefineT":351,"noimage":360,"drag":357,"view":343,"updateRule":325,"remove":365,"updateLayer":365},"applied":{"add":3542,"addDerived":361,"setLayers":166,"removeRule":63,"redefine":123,"addLayer":321,"moveTLater":79,"removeLayer":73,"rename":216,"drag":245,"remove":294,"move":269,"updateLayer":365,"noimage":300,"view":102,"updateRule":44,"redefineT":33},"chains":309,"maxObjects":61,"maxImages":43,"dragsThrough":7,"notDraggable":45,"dragsAtCursor":6}
+L1 transforms RationalField: 1500 documents, 70244 objects (27025 images), 0 throws; reached {"is undefined":25207,"spiral(A, B, C, D) needs":613,"coincident points: line(A, B)":1204,"homothety: the ratio k is 0":208,"apply does not accept":208}
+invariants: 3196 edits applied, 1604 refused, all valid
+L1 transforms ModPField: 1500 documents, 70244 objects (27025 images), 0 throws; reached {"is undefined":24804,"spiral(A, B, C, D) needs":613,"coincident points: line(A, B)":1203,"homothety: the ratio k is 0":206,"apply does not accept":189}
+L13 FloatField: 3000 draws (1481 anti), kinds {"point":727,"line":749,"polygon":752,"circle":772}
+L13 RationalField: 3000 draws (1534 anti), kinds {"line":718,"polygon":742,"point":789,"circle":751}
+L13 ModPField: 3000 draws (1469 anti), kinds {"point":786,"line":728,"polygon":754,"circle":732}
+ Test Files  85 passed (85)
+      Tests  964 passed (964)
+Statements   : 99.02% ( 2743/2770 )
+Branches     : 97.26% ( 2168/2229 )
+Lines        : 99.46% ( 2233/2245 )
+verify exit=0
+```
+
+"L13 model": `tried` counts every command drawn, `applied` the successful edits (the rest
+were refused, which is part of the test: refusals must leave a valid synced document);
+`chains` counts states with a rule whose source is a derived layer.
+
+### Nightly scale (NIGHTLY=1, 20,000 runs of the model-based fuzzer)
+
+```
+$ NIGHTLY=1 npx vitest run packages/kernel/test/laws/l13-model.test.ts   # local, 8fa07d1 (77 s)
+L13 model: 20000 runs (seed 20261020); {"tried":{"add":142623,"addDerived":42650,"rename":14269,"setLayers":14194,"removeRule":14153,"redefine":14221,"addLayer":14068,"move":14197,"moveTLater":14282,"removeLayer":14296,"redefineT":14079,"noimage":14242,"drag":14311,"view":14351,"updateRule":14397,"remove":14088,"updateLayer":14188},"applied":{"add":142561,"addDerived":12870,"setLayers":7157,"removeRule":2605,"redefine":5906,"addLayer":13306,"moveTLater":2744,"removeLayer":3387,"rename":8106,"drag":10348,"remove":11084,"move":11197,"updateLayer":14188,"noimage":12078,"view":5132,"updateRule":2193,"redefineT":979},"chains":12273,"maxObjects":65,"maxImages":45,"dragsThrough":188,"notDraggable":1540,"dragsAtCursor":174}
+      Tests  1 passed (1)
+```
+
+### CI on GitHub
+
+| Workflow                 | Run                                                         | Result                                                                                                                                                                 |
+| ------------------------ | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ci                       | https://github.com/youseng/geomira/actions/runs/39383618616 | success on 8fa07d1 (push: the final code commit)                                                                                                                       |
+| deploy                   | https://github.com/youseng/geomira/actions/runs/39383618563 | success on 8fa07d1                                                                                                                                                     |
+| nightly test (NIGHTLY=1) | https://github.com/youseng/geomira/actions/runs/39383624457 | success on 8fa07d1 (job `test`: 20,000 runs of the model-based fuzzer); mutation-num success; mutation-kernel running                                                  |
+| ci                       | https://github.com/youseng/geomira/actions/runs/39383268412 | success on 42448b5 (ADR-0007, floor 964)                                                                                                                               |
+| ci                       | https://github.com/youseng/geomira/actions/runs/39382995930 | success on 5808d6d (model-based fuzzing)                                                                                                                               |
+| nightly                  | https://github.com/youseng/geomira/actions/runs/39382995811 | failure on 5808d6d: job `test` (NIGHTLY=1) success; mutation-kernel's dry run failed (laws at 25%: l1-transforms reached the float collapse 0 times); fixed in 8fa07d1 |
+| ci                       | https://github.com/youseng/geomira/actions/runs/39380349388 | success on 91f4fb5 (transformations)                                                                                                                                   |
+
+The commit that adds this STATUS (documentation only) gets its own ci run, listed in the PR.
+
+## Requests
+
+- Dev-only dependency added (allowed runtime dependencies unchanged): **fast-check 4.10.2**
+  (tests only), for the run's explicit `fc.commands` requirement (ADR-0007 decision 15).
+  Please confirm, or say if a hand-written command generator is preferred.
+- The `run-4` tag is for the maintainer to place on the merge of this run's PR.
+- Please confirm the two readings under "Uncertain" (sync outside I4; unknown kinds imaged).
+
+## Notes for later runs
+
+- The language run: lex lowercase managed names (`l*`, `ω*`), print and parse
+  `@layer name = image(T, source) [suffix=…] [exclude=…]` into `addDerivedLayer`, report
+  `reservedName` / rule errors as diagnostics, and desugar `reflect(X, l)` etc. as written
+  (they are overloads of the same tools).
+- The editor run: build applyEdit on `applyDocEdit` (DocEdit) and use `dragThrough` when the
+  dragged object is managed; the removal and `added` lists come with every edit.
+- The scene run: hide a managed image whose value coincides with its source while the source
+  is drawn (SPEC §13); the scenario's A*, B*, l* are the test case.
+- A tool whose overloads have narrower results than its outputKinds should declare
+  `Signature.output`, so derived layers image exactly the geometric objects.
+
+---
+
 ## Run 3b: ACCEPTED (2026-10-20)
 
 Candidates and selectors (SPEC §7). Base check first: Run 3a was ACCEPTED (tag `run-3a` =

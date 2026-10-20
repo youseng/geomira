@@ -20,7 +20,13 @@
     "./docs": "./src/docs.ts",
     "./glider": "./src/glider.ts",
     "./selector": "./src/selector.ts",
-    "./selector-check": "./src/selector-check.ts"
+    "./selector-check": "./src/selector-check.ts",
+    "./similarity": "./src/similarity.ts",
+    "./derived": "./src/derived.ts",
+    "./derived-edit": "./src/derived-edit.ts",
+    "./doc-edit": "./src/doc-edit.ts",
+    "./views": "./src/views.ts",
+    "./drag": "./src/drag.ts"
   },
   "dependencies": {
     "@geomira/num": "workspace:*"

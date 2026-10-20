@@ -1,5 +1,5 @@
 /**
- * The v1 tools of Runs 2, 3a and 3b, in registry order (read only by registry.ts; the generated
+ * The v1 tools of Runs 2, 3a, 3b and 4, in registry order (read only by registry.ts; the generated
  * docs group them by family).
  */
 import type { ToolSpec } from '../tool';
@@ -17,6 +17,7 @@ import { OTHER_TOOLS } from './other';
 import { POINT_TOOLS } from './points';
 import { TANGENT_FROM_TOOLS } from './tangent-from';
 import { TANGENT_TOOLS } from './tangents';
+import { TRANSFORM_TOOLS } from './transforms';
 import { TRIANGLE_TOOLS } from './triangle';
 
 export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze([
@@ -36,4 +37,5 @@ export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze([
   NINEPOINT_CENTER_TOOL,
   ...CIRCLE_MEASURE_TOOLS,
   ...TANGENT_FROM_TOOLS,
+  ...TRANSFORM_TOOLS,
 ]);
