@@ -64,22 +64,45 @@ export function formatRational(r: Rational): string {
   return r.den === 1n ? String(r.num) : `${String(r.num)}/${String(r.den)}`;
 }
 
+/**
+ * a.num/a.den + sign·b.num/b.den in normal form, with the gcds taken on the small factors
+ * (Knuth, TAOCP vol. 2, §4.5.1): d₁ = gcd(a.den, b.den), t = a.num·(b.den/d₁) ±
+ * b.num·(a.den/d₁), d₂ = gcd(t, d₁); the sum is (t/d₂) / ((a.den/d₁)·(b.den/d₂)). The result
+ * equals the normalised plain formula (normal forms are unique), only cheaper.
+ */
+function addSigned(a: Rational, b: Rational, minus: boolean): Rational {
+  const d1 = gcd(a.den, b.den);
+  const [ad, bd] = [a.den / d1, b.den / d1];
+  const t = minus ? a.num * bd - b.num * ad : a.num * bd + b.num * ad;
+  if (t === 0n) return ZERO;
+  const d2 = d1 === 1n ? 1n : gcd(t, d1);
+  return { num: t / d2, den: ad * (b.den / d2) };
+}
+
 export function add(a: Rational, b: Rational): Rational {
-  return rational(a.num * b.den + b.num * a.den, a.den * b.den);
+  return addSigned(a, b, false);
 }
 
 export function sub(a: Rational, b: Rational): Rational {
-  return rational(a.num * b.den - b.num * a.den, a.den * b.den);
+  return addSigned(a, b, true);
 }
 
+/**
+ * The product in normal form with cross-cancellation (TAOCP §4.5.1): g₁ = gcd(a.num, b.den),
+ * g₂ = gcd(b.num, a.den); (a.num/g₁)(b.num/g₂) / ((a.den/g₂)(b.den/g₁)) is already reduced.
+ */
 export function mul(a: Rational, b: Rational): Rational {
-  return rational(a.num * b.num, a.den * b.den);
+  if (a.num === 0n || b.num === 0n) return ZERO;
+  const g1 = gcd(a.num, b.den);
+  const g2 = gcd(b.num, a.den);
+  return { num: (a.num / g1) * (b.num / g2), den: (a.den / g2) * (b.den / g1) };
 }
 
 /** a / b. Degenerate: b = 0 → RangeError. */
 export function div(a: Rational, b: Rational): Rational {
   if (b.num === 0n) throw new RangeError('division by zero');
-  return rational(a.num * b.den, a.den * b.num);
+  const inv: Rational = b.num < 0n ? { num: -b.den, den: -b.num } : { num: b.den, den: b.num };
+  return mul(a, inv);
 }
 
 export function neg(a: Rational): Rational {
