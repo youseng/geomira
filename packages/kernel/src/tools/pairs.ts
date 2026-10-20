@@ -9,7 +9,8 @@
  *     not representable), each with its STRUCTURAL low-level label (along: mid + off is
  *     further along d; orient: the sign of the orientation), a double point labelled 0;
  *     candidates outside a segment or ray are not candidates;
- *   - vieta(P): the other common point given one, without square roots (exact; other(P)).
+ *   - other: for other(P), the two curves P must lie on and the other common point given
+ *     one, without square roots (exact; absent for line ∩ line, which meets once).
  * select.ts applies the selectors.
  */
 import { isInexact, type Field, type Inexact } from '@geomira/num/field';
@@ -61,21 +62,26 @@ export interface Curve<T> {
   readonly name: string;
 }
 
+export interface Other<T> {
+  readonly curves: readonly [Curve<T>, Curve<T>];
+  /**
+   * The other common point given P on both curves (exact), or why it is not on the ranges
+   * of a segment or ray.
+   */
+  point(P: Vec<T>): Vec<T> | Undefined | Inexact;
+}
+
 export interface Pair<T> {
   readonly shape: BranchShape;
   /** What a candidate is called in messages: "intersection", "touch point", "tangent". */
   readonly noun: string;
-  readonly curves: readonly [Curve<T>, Curve<T>];
   readonly low: Low<T>;
-  /** A segment or ray takes part: list() must run before counting survivors. */
-  readonly ranged: boolean;
+  /** A segment or ray takes part in a two-candidate pair: list() must run before counting. */
+  readonly ranged?: boolean;
   count(): 1 | 2 | Undefined | Inexact;
   list(n: 1 | 2): readonly Cand<T>[] | Undefined | Inexact;
-  /**
-   * The other common point given P on both curves (exact), or why it is not on the ranges
-   * of a segment or ray; absent for line ∩ line.
-   */
-  readonly vieta?: (P: Vec<T>) => Vec<T> | Undefined | Inexact;
+  /** other(P): the curves P must lie on, in the call's order, and the other point. */
+  readonly other?: Other<T>;
   output(X: Vec<T>): Value<T>;
 }
 
@@ -153,12 +159,7 @@ export function lineLinePair<T>(
   return {
     shape: LINE_LINE,
     noun: 'intersection',
-    curves: [
-      { obj: a, name: 'the first line' },
-      { obj: b, name: 'the second line' },
-    ],
     low: { kind: 'none' },
-    ranged: false,
     count: () => 1,
     list: () => {
       const X = lineLine(F, a, b, ctx);
@@ -211,7 +212,6 @@ function onRange<T>(
   list: readonly Cand<T>[],
   ctx: EvalContext,
 ): readonly Cand<T>[] | Undefined | Inexact {
-  if (l.lo === null && l.hi === null) return list;
   const kept: Cand<T>[] = [];
   for (const c of list) {
     const r = rangeStatus(F, l, paramOn(F, l, c.at), ctx, 'intersection');
@@ -248,7 +248,6 @@ export function lineCirclePair<T>(
   return {
     shape: LINE_CIRCLE,
     noun: 'intersection',
-    curves: lineFirst ? curves : [curves[1], curves[0]],
     low: { kind: 'along', d: l.d },
     ranged: l.lo !== null || l.hi !== null,
     count: () =>
@@ -257,14 +256,17 @@ export function lineCirclePair<T>(
       const list = midOff(F, n, foot, F.div(diff, dd), l.d, false);
       return isInexact(list) ? list : onRange(F, l, list, ctx);
     },
-    // As other.ts (same operations and range decision, so other(P) and other() agree bit
-    // for bit).
-    vieta: (P) => {
-      const tc = paramOn(F, l, c.c);
-      const t = F.sub(F.add(tc, tc), paramOn(F, l, P));
-      const r = rangeStatus(F, l, t, ctx, 'other intersection');
-      if (r === 'out') return outsideReason(l, 'other intersection');
-      return r === 'in' ? vAdd(F, l.p, vScale(F, l.d, t)) : r;
+    other: {
+      curves: lineFirst ? curves : [curves[1], curves[0]],
+      // As other.ts (same operations and range decision, so other(P) and other() agree bit
+      // for bit).
+      point: (P) => {
+        const tc = paramOn(F, l, c.c);
+        const t = F.sub(F.add(tc, tc), paramOn(F, l, P));
+        const r = rangeStatus(F, l, t, ctx, 'other intersection');
+        if (r === 'out') return outsideReason(l, 'other intersection');
+        return r === 'in' ? vAdd(F, l.p, vScale(F, l.d, t)) : r;
+      },
     },
     output: asPoint,
   };
@@ -329,19 +331,20 @@ export function circleCirclePair<T>(
   return {
     shape: CIRCLE_CIRCLE,
     noun: 'intersection',
-    curves: [
-      { obj: c1, name: 'the first circle' },
-      { obj: c2, name: 'the second circle' },
-    ],
     low: { kind: 'orient', from: c1.c, to: c2.c },
-    ranged: false,
     count: () => ('kind' in counted ? counted : counted.n),
     // Called only after count() gave n (so `counted` is not Undefined; D = 0 is never used).
     list: (n) => {
       const D = 'kind' in counted ? F.zero : counted.D;
       return midOff(F, n, mid, F.div(D, F.mul(F.add(s, s), F.add(s, s))), vRot90(F, w), false);
     },
-    vieta: (P) => reflectIn(F, c1.c, w, P),
+    other: {
+      curves: [
+        { obj: c1, name: 'the first circle' },
+        { obj: c2, name: 'the second circle' },
+      ],
+      point: (P) => reflectIn(F, c1.c, w, P),
+    },
     output: asPoint,
   };
 }

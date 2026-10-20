@@ -75,18 +75,19 @@ function tangentPair<T>(
   return {
     shape: SHAPES[tool],
     noun: tool === 'tangent_point' ? 'touch point' : 'tangent',
-    curves: [
-      { obj: c, name: 'the circle' },
-      { obj: polar, name: 'the polar of P (the chord of contact)' },
-    ],
     low: { kind: 'orient', from: P, to: c.c },
-    ranged: false,
     count: () => countFromGap(F, circleGap(F, P, c), ctx, inside),
     list: (n) => {
       const rad = F.div(F.mul(c.r2, F.sub(ww, c.r2)), F.mul(ww, ww));
       return midOff(F, n, mid, rad, vRot90(F, w), true);
     },
-    vieta: (X) => reflectIn(F, c.c, w, X),
+    other: {
+      curves: [
+        { obj: c, name: 'the circle' },
+        { obj: polar, name: 'the polar of P (the chord of contact)' },
+      ],
+      point: (X) => reflectIn(F, c.c, w, X),
+    },
     output: (X) => output(F, c, tool, X),
   };
 }

@@ -54,7 +54,7 @@ export function outOfRange<T>(
   l: Line<T>,
   t: T,
   ctx: EvalContext,
-  what = 'intersection',
+  what: string,
 ): Undefined | Inexact | undefined {
   const s = rangeStatus(F, l, t, ctx, what);
   if (s === 'in') return undefined;

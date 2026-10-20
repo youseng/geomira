@@ -57,7 +57,7 @@ function misused<T>(pair: Pair<T>, sels: readonly EvaluatedSelector<T>[]): Undef
       const use = shape.low === 'none' ? '' : `: use ${shape.low}(±)`;
       return undef(`${s.text} does not apply to ${shape.describe}${use}`);
     }
-    if (k === 'other' && (!shape.other || pair.vieta === undefined)) {
+    if (k === 'other' && (!shape.other || pair.other === undefined)) {
       return undef(`${s.text} does not apply to ${shape.describe}: they meet only once`);
     }
   }
@@ -78,7 +78,7 @@ function coincide<T>(F: Field<T>, X: Vec<T>, P: Vec<T>, ctx: EvalContext): boole
 
 /**
  * The candidates other than P (first other(P) of the call): P on both curves, the other
- * point by vieta, range-checked; the double point when it is within the band of P or the
+ * point by the pair's Vieta map, range-checked; the double point when it is within the band of P or the
  * pair counts one candidate.
  */
 function viaOther<T>(
@@ -87,12 +87,12 @@ function viaOther<T>(
   s: EvaluatedSelector<T>,
   ctx: EvalContext,
 ): Result<T> {
-  const [P, vieta] = [s.args[0], pair.vieta];
+  const [P, other] = [s.args[0], pair.other];
   if (P?.kind !== 'point') return undef(`${s.text} needs a point`);
-  if (vieta === undefined) return undef(`${s.text} does not apply to ${pair.shape.describe}`);
+  if (other === undefined) return undef(`${s.text} does not apply to ${pair.shape.describe}`);
   const n = pair.count();
   if (typeof n !== 'number') return n;
-  for (const c of pair.curves) {
+  for (const c of other.curves) {
     const what = `${s.text} needs the point on ${c.name}`;
     const bad =
       c.obj.kind === 'line'
@@ -100,7 +100,7 @@ function viaOther<T>(
         : requireOnCircle(F, P, c.obj, ctx, what);
     if (bad !== undefined) return bad;
   }
-  const X = vieta(P);
+  const X = other.point(P);
   if ('kind' in X) return X;
   return [
     n === 1 || coincide(F, X, P, ctx) ? { at: X, side: 0 } : { at: X, side: 'measure', from: P },
@@ -111,7 +111,7 @@ function viaOther<T>(
 function bySquareRoots<T>(pair: Pair<T>, selectors: number): Result<T> {
   const n = pair.count();
   if (typeof n !== 'number') return n;
-  if (n === 2 && selectors === 0 && !pair.ranged) return undef(addSelector(pair));
+  if (n === 2 && selectors === 0 && pair.ranged !== true) return undef(addSelector(pair));
   return pair.list(n);
 }
 
