@@ -46,6 +46,15 @@ export interface Signature {
    * kinds of derived layers (derived.ts).
    */
   readonly output?: readonly ValueKind[];
+  /**
+   * The overload's VALUE needs a square root or a trigonometric function (√, sin, cos,
+   * atan2), even of an exact argument (sqrt(9/4), rotate(O, 90)). Square roots taken only
+   * to normalise a decision do not count (exact fields fall back to the exact test). Read
+   * by packages/claims: a closure with such an overload never uses the mod-p rung (SPEC
+   * §10.5, law L17; ADR-0008). The candidates of a two-candidate branch overload need roots
+   * too, unless the call selects with other(P); that rule reads BranchShape instead.
+   */
+  readonly radical?: boolean;
 }
 
 /** How exporters draw a tool's result (ADR-0003: every Run 2 tool is 'numeric'). */

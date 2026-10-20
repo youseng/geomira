@@ -52,7 +52,7 @@ export const GLIDER_TOOLS: readonly ToolSpec[] = [
     signatures: [
       { params: ['linear', 'number'] },
       { params: ['round', 'number', 'number'] },
-      { params: ['round', 'number'] },
+      { params: ['round', 'number'], radical: true },
     ],
     outputKinds: ['point'],
     compute: on,

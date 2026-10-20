@@ -28,6 +28,8 @@ ADR-0003.
 | `@geomira/kernel/derived-edit`   | rule edits: `addDerivedLayer`, `updateRule`, `removeRule` (cycles refused)                                 |
 | `@geomira/kernel/doc-edit`       | `DocEdit` and `applyDocEdit`: every edit, keeping derived layers in sync; reserved names; `moveObject`     |
 | `@geomira/kernel/views`          | views (SPEC §8.3): `addView`, `applyView`, `removeView`                                                    |
+| `@geomira/kernel/geom`           | field-generic vector algebra and normalised zero / sign tests (public since Run 5, ADR-0008)               |
+| `@geomira/kernel/incidence`      | banded incidence: `rootGap`, `circleGap`, `requireOnCircle`, `requireOnLine` (public since Run 5)          |
 | `@geomira/kernel/drag`           | `dragThrough` (SPEC §8.4): the edit that drags an image, or why it cannot be dragged                       |
 
 ## Tools (Run 2)

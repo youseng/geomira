@@ -138,8 +138,10 @@ const IMAGE_KINDS: readonly ValueKind[] = ['point', 'line', 'circle', 'polygon']
 const TRANSFORM_KIND: readonly ValueKind[] = ['transform'];
 
 /** An overload taking X (of capability `x`) first: its result has X's kinds. */
-function imageSignature(x: Capability, params: readonly Capability[]): Signature {
-  return { params: [x, ...params], output: capabilityKinds(x) };
+function imageSignature(x: Capability, params: readonly Capability[], radical: boolean): Signature {
+  return radical
+    ? { params: [x, ...params], output: capabilityKinds(x), radical }
+    : { params: [x, ...params], output: capabilityKinds(x) };
 }
 
 /** A transform value that passed the validity check, or the problem. */
@@ -159,10 +161,15 @@ function mapTool(spec: {
   readonly degenerate: readonly string[];
   readonly doc: string;
   readonly examples: readonly ToolExample[];
+  /** The map needs cos θ and sin θ (rotate): every overload is radical (ADR-0008). */
+  readonly radical?: boolean;
 }): ToolSpec {
+  const radical = spec.radical === true;
+  const base = (params: readonly Capability[]): Signature =>
+    radical ? { params, output: TRANSFORM_KIND, radical } : { params, output: TRANSFORM_KIND };
   const signatures: Signature[] = [
-    ...spec.bases.map((params) => ({ params, output: TRANSFORM_KIND })),
-    ...spec.bases.flatMap((params) => IMAGED.map((x) => imageSignature(x, params))),
+    ...spec.bases.map(base),
+    ...spec.bases.flatMap((params) => IMAGED.map((x) => imageSignature(x, params, radical))),
   ];
   const arities = new Set(spec.bases.map((b) => b.length));
   return {
@@ -259,6 +266,7 @@ export const TRANSFORM_TOOLS: readonly ToolSpec[] = [
     name: 'rotate',
     bases: [['point', 'number']],
     build: rotateBuild,
+    radical: true,
     degenerate: [
       'θ a multiple of 360° → the identity',
       'θ not a multiple of 90° → Inexact over Q and mod p',

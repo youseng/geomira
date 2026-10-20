@@ -61,7 +61,7 @@ export const CIRCLE_MEASURE_TOOLS: readonly ToolSpec[] = [
     id: 'radius',
     name: 'radius',
     family: 'measures',
-    signatures: [{ params: ['round'] }],
+    signatures: [{ params: ['round'], radical: true }],
     outputKinds: ['number'],
     compute: radius,
     degenerate: ['r² not the square of a rational → Inexact over Q (always Inexact mod p)'],

@@ -18,6 +18,7 @@
     "test:coverage": "vitest run --coverage",
     "mutation:num": "stryker run stryker.num.json",
     "mutation:kernel": "stryker run stryker.kernel.json",
+    "mutation:claims": "stryker run stryker.claims.json",
     "verify": "pnpm typecheck && pnpm lint && pnpm depcruise && pnpm rules && pnpm test:coverage",
     "build": "pnpm --filter @geomira/web build",
     "e2e": "pnpm --filter @geomira/web e2e"

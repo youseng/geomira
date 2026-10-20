@@ -1,5 +1,334 @@
 # STATUS
 
+## Run 5: ACCEPTED (2026-10-20)
+
+packages/claims (SPEC §10, §16). Base check first: Run 4 was ACCEPTED (tag `run-4` = `main` =
+0fcb67e), `pnpm install && pnpm verify` was green locally on it (964 tests, add-only compared
+with `run-4`), and ci and deploy were green in CI on that commit
+(https://github.com/youseng/geomira/actions/runs/39385870831,
+https://github.com/youseng/geomira/actions/runs/39385870880), so there was no red base.
+
+Every criterion holds: verify is green locally, in a clean clone of dc2ffd1 and in CI
+(https://github.com/youseng/geomira/actions/runs/39394066346, success on dc2ffd1, the final
+code commit; table under "CI on GitHub"); the corpora pass with the rungs below (48 true
+theorems HOLD for 20 seeds × 40 figures with every figure valid; 42 false claims FALSE; 23
+degenerate claims never true or false); L16 and L17 are green; the hypothesis test passes
+(HOLDS ACROSS with `assume acute(A, B, C)`, CONFIGURATION-DEPENDENT without); the budget
+test passes (best of three: 497 ms against 1.5 s); ADR-0008 lists every claim kind with its
+conditions, NDG data and residual. Claims coverage 97.81% lines, 87.09% branches (gated like
+the kernel: 90 / 85). Mutation (informational until v1.1, note F): num 89.06% (627 detected,
+77 undetected; incremental, dc2ffd1, https://github.com/youseng/geomira/actions/runs/39394066352);
+claims has no score yet: its first run (incremental mode, no previous file, so Stryker tests
+every mutant) and the kernel's incremental run were still running on dc2ffd1 when this was
+written (same URL) and were not waited for. Latest completed kernel score: 99.17% (c6ac36c,
+Run 3b).
+
+## Done (each item → the test file that proves it)
+
+1. **Claim kinds as data** (`src/kinds*.ts`, ADR-0008 decisions 1–4): collinear, concyclic,
+   concurrent, parallel, perpendicular, equal, on, tangent, length (AB = k·CD), ratio
+   (AB/CD = EF/GH), ratio_value (AB/CD = k), dangle (n∡ABC = ∡DEF), dangle_lines
+   (∡(l, m) = θ), and the undirected angle_eq, angle_sum, angle_diff. Each has
+   field-generic conditions, NDG items (a predicate vocabulary decided exactly in exact
+   fields and as banded lengths or sines in floats), order items where order matters
+   (on() honours segment, ray and arc ranges; the half-turn of undirected forms) and a
+   dimensionless float residual. POLYNOMIAL KINDS is data derived from the kinds. →
+   `kinds.test.ts` (truth over Q and mod p, residuals, totality on malformed arguments),
+   `ndg.test.ts`.
+2. **Directed angles in the complex form** Im(z₁ⁿ·conj z₂) = 0 against an atan2 reference
+   for n = 1, 2, 3: the residual equals \|sin(n·θ₁ − θ₂)\| on 400 random float figures per n,
+   exact constructions (Pythagorean rotations raised to the n-th power) hold over Q and mod p,
+   perturbed ones do not. → `dangle-reference.test.ts`.
+3. **evalClaim** (three-valued, current figure, no sampler): Undefined arguments and failing
+   NDG data are never true or false; exact over Q within a bit budget, else numeric with the
+   noise floor; deterministic. Includes a derived-layer claim (H* on ω under
+   reflect(line(B, C)): exact over Q). → `eval-claim.test.ts`, `decide.test.ts`,
+   `noise-floor.test.ts` (exactly three independent perturbations of size FLOOR_DELTA·scale;
+   a residual of 1e-10 is never FALSE; FLOOR_MIN; ILL-CONDITIONED).
+4. **Hypotheses** with band margins (acute, scalene, convex, inside, in_order, less, greater,
+   not_equal); equality assumptions refused ("construct it"); ordered-glider sampling for
+   in_order on one object. → `hypotheses.test.ts`, `sampler.test.ts`.
+5. **Samplers** LOCAL and GLOBAL per SPEC §10.4 (random similarity, σ = 0.02 / 0.3 of the
+   scale, gliders local or uniform, circle gliders uniform in angle, params uniform, coarse
+   dyadic grid for the exact rungs, exactly half of the tested global figures mirrored
+   without flipping selectors, rejection with a 50·N budget and "hard to satisfy" below 5%).
+   Only free inputs move; images in derived layers are recomputed. → `sampler.test.ts`,
+   `job.test.ts`.
+6. **Verdict rungs**: exact over Q with a 4096-bit budget (a budget field that falls through
+   cheaply); exact mod p only for statically eligible closures (POLYNOMIAL KIND, no sign-based
+   selector, no `radical` overload, no root candidates without other(P)), values from the
+   host's cryptographic source; numeric with the floor. New kernel field
+   `Signature.radical`, checked both ways. → `laws/l17-rungs.test.ts`,
+   `packages/kernel/test/radical.test.ts`, `units.test.ts`.
+7. **Local and global verdicts** with rung names, counts, seeds, example and counterexample
+   documents; the flip test (all k orientation-dependent selectors, then each alone) names
+   the selector that repairs every failure. → `job.test.ts`, `laws/l16-orientation.test.ts`.
+8. **Corpora (L12)**: tables below. → `laws/l12-true-a.test.ts`, `laws/l12-true-b.test.ts`,
+   `laws/l12-false.test.ts`, `laws/l12-degenerate.test.ts` (corpora in
+   `test/helpers/corpus*.ts`, built with the test builder `test/helpers/build.ts`).
+9. **L16**: orient(+) (and along(−) on a perp_bisector, a chiral line) is
+   ORIENTATION-DEPENDENT globally and names X's selector; with on_arc it HOLDS ACROSS
+   (3 seeds each); two orient selectors where only one is wrong name that one; 12 random
+   triangles of either orientation whose only failures come from an orient choice are
+   always ORIENTATION-DEPENDENT; 120 random scripts with only equivariant selectors (filters,
+   near, other(P), along on achiral lines) never are. → `laws/l16-orientation.test.ts`.
+10. **L17**: static exclusions (non-polynomial kinds; same_side, along, orient; sqrt(9/4),
+    rotate(·, 90), incenter; dangle_lines at 30° but not 45°; only the claim's closure
+    counts) and, with a 8-bit budget and a cryptographic source, every eligible corpus entry
+    uses the mod-p rung and agrees (HOLDS / FALSE), every excluded one never uses it. →
+    `laws/l17-rungs.test.ts`.
+11. **The hypothesis test** (orthocentre): `claim angle(B,H,C) + angle(B,A,C) = 180` HOLDS
+    ACROSS (exact over Q, 200/200, 100 mirrored) with `assume acute(A,B,C)` and is
+    CONFIGURATION-DEPENDENT without it; B = (0,0), C = (4,0), A = (−1,2) gives ∠BHC = ∠A
+    (angle_eq true exactly, the sum false exactly). → `job.test.ts`, `eval-claim.test.ts`,
+    `kinds.test.ts`.
+12. **runJob** generator: progress after every sample, `next('cancel')` / `return()`,
+    regimes, invalid jobs; budget test. → `job.test.ts`.
+13. num's rational add/sub/mul/div use Knuth's cross-cancellation (the exact rung spent half
+    its time in gcd); identical results. → `packages/num/test/rational-knuth.test.ts`.
+14. ADR-0008; packages/claims/README.md; the kernel README lists `./geom` and `./incidence`;
+    claims in the coverage gate and the nightly mutation matrix (`stryker.claims.json`,
+    `vitest.claims.config.ts`, incremental); docs/test-count.txt raised from 964 to 1301.
+
+### L12 true theorems (every row: HOLDS for each of 20 seeds, 40/40 figures valid, on the rung shown)
+
+| theorem                                                             | rung         | seeds × figures |
+| ------------------------------------------------------------------- | ------------ | --------------- |
+| Euler line: O, G, H collinear                                       | exact over Q | 20 × 40         |
+| Euler line: GH = 2·OG                                               | exact over Q | 20 × 40         |
+| centroid: AG = 2·GM_a                                               | exact over Q | 20 × 40         |
+| medians concurrent                                                  | exact over Q | 20 × 40         |
+| altitudes concurrent                                                | exact over Q | 20 × 40         |
+| perpendicular bisectors concurrent                                  | exact over Q | 20 × 40         |
+| internal bisectors concurrent                                       | numeric      | 20 × 40         |
+| nine-point circle through the foot of an altitude                   | exact over Q | 20 × 40         |
+| nine-point circle through the midpoint of AH                        | exact over Q | 20 × 40         |
+| reflection of H in BC on ω                                          | exact over Q | 20 × 40         |
+| reflection of H in M_a on ω                                         | exact over Q | 20 × 40         |
+| AH = 2·OM_a                                                         | exact over Q | 20 × 40         |
+| Simson line                                                         | exact over Q | 20 × 40         |
+| the Simson line bisects PH                                          | exact over Q | 20 × 40         |
+| Thales: a right angle on the diameter circle                        | exact over Q | 20 × 40         |
+| inscribed angles: ∡APB = ∡AQB                                       | exact over Q | 20 × 40         |
+| central angle: 2∡APB = ∡AOB                                         | exact over Q | 20 × 40         |
+| tangent–chord angle                                                 | exact over Q | 20 × 40         |
+| tangent ⟂ radius                                                    | exact over Q | 20 × 40         |
+| Miquel point                                                        | exact over Q | 20 × 40         |
+| radical axes concurrent                                             | exact over Q | 20 × 40         |
+| radical axis ⟂ line of centres                                      | exact over Q | 20 × 40         |
+| intersecting chords: SP·SQ = SR·SR′                                 | exact over Q | 20 × 40         |
+| midline ∥ BC                                                        | exact over Q | 20 × 40         |
+| midline = BC/2                                                      | exact over Q | 20 × 40         |
+| Varignon parallelogram                                              | exact over Q | 20 × 40         |
+| diagonals of a parallelogram bisect each other                      | exact over Q | 20 × 40         |
+| butterfly theorem                                                   | exact over Q | 20 × 40         |
+| Pascal (hexagon in ω)                                               | exact over Q | 20 × 40         |
+| Desargues                                                           | exact over Q | 20 × 40         |
+| Pappus                                                              | exact over Q | 20 × 40         |
+| Newton–Gauss line                                                   | exact over Q | 20 × 40         |
+| Monge: external centres of similitude collinear (radii 1, 2, 3)     | exact over Q | 20 × 40         |
+| La Hire: Q on the polar of D ⇒ D on the polar of Q                  | exact over Q | 20 × 40         |
+| median to the hypotenuse is half of it                              | exact over Q | 20 × 40         |
+| incircle tangent to BC (note B)                                     | numeric      | 20 × 40         |
+| Feuerbach: nine-point circle tangent to the incircle                | numeric      | 20 × 40         |
+| Feuerbach: nine-point circle tangent to an excircle                 | numeric      | 20 × 40         |
+| angle bisector theorem                                              | numeric      | 20 × 40         |
+| Napoleon triangle is equilateral                                    | numeric      | 20 × 40         |
+| equal tangents from an outside point                                | numeric      | 20 × 40         |
+| acute triangle: ∠BHC + ∠A = 180°                                    | exact over Q | 20 × 40         |
+| derived layer: H* on ω under reflect(line(B, C)) (note C)           | exact over Q | 20 × 40         |
+| derived layer: ω* passes through H                                  | exact over Q | 20 × 40         |
+| exactly tangent: the tangent at P touches ω (note B)                | exact over Q | 20 × 40         |
+| exactly tangent: BC touches the circle about O through M_a (note B) | exact over Q | 20 × 40         |
+| ∡(BC, altitude from A) = 90°                                        | exact over Q | 20 × 40         |
+| arc midpoint on the bisector (on_arc)                               | numeric      | 20 × 40         |
+
+### L12 false claims (FALSE for each of 5 seeds; rung of the current figure)
+
+| claim                                                                | rung (current figure) |
+| -------------------------------------------------------------------- | --------------------- |
+| O, G, I collinear                                                    | numeric               |
+| A, B, C, H concyclic                                                 | exact over Q          |
+| AO ⟂ BC                                                              | exact over Q          |
+| AG = 3·GM_a                                                          | exact over Q          |
+| M_aM_b ∥ BC                                                          | exact over Q          |
+| H on ω                                                               | exact over Q          |
+| O = H                                                                | exact over Q          |
+| two medians and an altitude concurrent                               | exact over Q          |
+| foot of an altitude on ω                                             | exact over Q          |
+| AH = 3·OM_a                                                          | exact over Q          |
+| incircle tangent to ω                                                | numeric               |
+| nine-point circle tangent to ω                                       | exact over Q          |
+| ∡APB = ∡AOB (missing factor 2)                                       | exact over Q          |
+| 2∡APB = ∡AQB                                                         | exact over Q          |
+| ∠BHC + ∠A = 90°                                                      | exact over Q          |
+| ∠BHC = ∠A in an acute triangle                                       | exact over Q          |
+| bisector theorem with the ratio inverted                             | numeric               |
+| Simson line of a point off ω                                         | exact over Q          |
+| Thales off the circle                                                | exact over Q          |
+| Miquel point on the wrong circle                                     | exact over Q          |
+| Pascal with a wrong pairing                                          | exact over Q          |
+| Desargues with a wrong pairing                                       | exact over Q          |
+| Newton–Gauss with a wrong midpoint                                   | exact over Q          |
+| Monge with an internal centre                                        | exact over Q          |
+| La Hire against another circle                                       | exact over Q          |
+| butterfly with MK = 2·ML                                             | exact over Q          |
+| incircle tangent to the A-excircle                                   | numeric               |
+| Napoleon: N_aN_b = N_aA                                              | numeric               |
+| GH = 3·OG                                                            | exact over Q          |
+| nearly tangent: BC and the circle about O through 1.001·M_a (note B) | exact over Q          |
+| radical axis ⟂ AC                                                    | exact over Q          |
+| two radical axes and AB concurrent                                   | exact over Q          |
+| midline = BC                                                         | exact over Q          |
+| Varignon with adjacent sides                                         | exact over Q          |
+| midpoints of AC and BC coincide                                      | exact over Q          |
+| intersecting chords with the wrong pairing                           | exact over Q          |
+| tangent–chord with the wrong chord                                   | exact over Q          |
+| equal tangents compared with DA                                      | numeric               |
+| nine-point centre on ω                                               | exact over Q          |
+| ∡(BC, AB) = 90°                                                      | exact over Q          |
+| derived layer: O* on ω                                               | exact over Q          |
+| two internal bisectors and an external one concurrent                | numeric               |
+
+### L12 degenerate claims (never true or false: INCONCLUSIVE in 5 local seeds and 1 global, 0 true and 0 false figures)
+
+collinear(A, A, B) · collinear(A, midpoint(B, B), B) · concyclic with a repeated point ·
+four collinear points · parallel(AB, BA) · concurrent with a repeated line · three parallel
+lines · AB = 1·CC · AB/CC = AC/BC · AA/BC = BB/AC · ∡AAB = ∡ABC · angle(A, B, B) =
+angle(A, B, C) · angle(A, A, C) + angle(A, B, C) = 90° · tangent(ω, ω′) for one circle ·
+a claim on the intersection of parallel lines · on a circumcircle of collinear points · on
+line(B, B) · perpendicular to line(A, A) · the intersection of a line with itself ·
+tangent(AB, BC) (two lines) · concyclic(H, A, A, B) · ∡(AB, AA) = 0 · a derived layer
+under an Undefined map. Reasons name the objects ("degenerate: midpoint(B, B) and B
+coincide", "X is undefined (parallel lines)").
+
+## Not done
+
+Nothing in Run 5's scope. Not started (later runs): the language (parsing the claim and
+`assume` notation into these kinds, `assumptionProblem` as parse errors), the editor's
+badges, the worker host and its time slicing (≤ 16 ms per slice, v1.1 from file://), export.
+
+## Known bugs
+
+None known. Found and fixed during the run, each with its test in the same commit: the
+exact rung did not count the claim's own algebra against the budget (a 1e-10 offset was
+decided exactly instead of falling through when asked to) → `eval-claim.test.ts`.
+
+## Uncertain
+
+- **Readings of SPEC to confirm** (all in ADR-0008, "Deviations and readings"): the job
+  carries the parsed Document and a claim id instead of docText (claims may not import
+  lang); `Signature.radical` is a new ToolSpec field; NDG `any` groups; hypotheses are
+  enforced in the LOCAL regime too; a failing figure counts as repaired by the flip test if
+  all-k OR one single flip makes it hold; on() honours segment, ray and arc ranges.
+- **The budget** is measured in Node under Vitest as the best of three runs (warm JIT; the
+  test files run in parallel workers): 497 ms here (596, 497, 513). SPEC states the budget
+  "in the worker"; the web worker exists from the web run on.
+- **Corpus N**: SPEC does not fix N for the corpora; 40 figures per local test (20 seeds for
+  the true theorems, 5 for the others). A verdict needs at least N/2 valid figures.
+- **The mod-p rung comes after exact over Q**, so in practice it is used only when the exact
+  rung exceeds its 4096-bit budget (large closures); L17 forces it with an 8-bit budget.
+- **Explicit radii scale with the random similarity** (they are lengths, as SPEC §3.1 counts
+  them in the scale); other number literals are left alone.
+- Mathematical facts used (classical theorems only; I am confident of each): Euler line and
+  GH = 2·OG; centroid 2 : 1; concurrence of medians, altitudes, perpendicular and internal
+  bisectors; nine-point circle (feet, midpoints of AH); reflections of H in a side and in
+  the side's midpoint lie on ω; AH = 2·OM_a; Simson line, which bisects PH; Thales; inscribed
+  and central angles (2∡APB ≡ ∡AOB mod 180°); tangent–chord angle ∡(tangent at A, AB) =
+  ∡APB; tangent ⟂ radius; Miquel; radical axes concurrent and ⟂ the line of centres;
+  intersecting chords; midline; Varignon; parallelogram diagonals; butterfly (chords through
+  the midpoint M of PQ; MK = ML on the line PQ); Pascal; Desargues; Pappus; Newton–Gauss;
+  Monge (external centres (r₂O₁ − r₁O₂)/(r₂ − r₁) collinear); La Hire; the median to the
+  hypotenuse; Feuerbach (the nine-point circle touches the incircle and the excircles);
+  the angle bisector theorem; Napoleon (both the outer and the inner triangle are
+  equilateral, so equal turns on all sides suffice); equal tangents; ∠BHC = 180° − ∠A in an
+  acute triangle and ∠BHC = ∠A when B or C is obtuse (checked numerically on the run's
+  example: 41.63° both); AX = BY when BCX and CAY are equilateral and both erected on the
+  same side (inward or outward); the midpoint of arc BC not containing A lies on the
+  internal bisector at A. No contest problem was used (docs/examples-source.md does not
+  exist yet).
+
+## Changed frozen tests
+
+No line of a file frozen at `run-4` was modified or removed (`add-only: frozen tests compared
+with run-4, 0 violation(s)`). Lines were ADDED to one frozen file:
+
+- `packages/kernel/test/exports.test.ts`: two imports and the surfaces of `./geom` and
+  `./incidence`.
+
+The frozen `packages/claims/test/index.test.ts` (the root entry exports only VERSION) is
+untouched; the API is in subpaths (ADR-0002).
+
+## Acceptance command output
+
+### Clean clone of dc2ffd1 (`pnpm install --frozen-lockfile && pnpm verify`)
+
+```
+$ git clone … && git checkout dc2ffd1 && pnpm install --frozen-lockfile   # Done in 1.7s using pnpm v10.28.0
+$ pnpm verify
+All matched files use Prettier code style!
+✔ no dependency violations found (231 modules, 1352 dependencies cruised)
+ok   tolerance: 312 files scanned, 0 violation(s)
+ok   file-length: 312 files scanned, 0 violation(s)
+ok   test-count: 1301 tests, floor 1301, 0 violation(s)
+ok   disabled-tests: 312 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-4, 0 violation(s)
+ok   forbidden-words: 312 files scanned, 0 violation(s)
+ Test Files  104 passed (104)
+      Tests  1301 passed (1301)
+ claims/src        |   95.24 |    87.09 |   99.37 |   97.81 |
+Statements   : 97.79% ( 4039/4130 )
+Branches     : 93.9% ( 3156/3361 )
+Lines        : 98.92% ( 3318/3354 )
+verify exit=0
+```
+
+### packages/claims (`npx vitest run packages/claims --reporter=verbose`, excerpts)
+
+```
+budget: local N = 200, 150 objects: 596, 497, 513 ms (best 497); HOLDS IN THIS CONFIGURATION (exact over Q, 200/200) · seed 1
+L16 random scripts: {"inconclusive":45,"configuration-dependent":69,"holds-across":6}
+      Tests  246 passed (246)
+```
+
+Verdict lines from the tests (seed in each):
+
+```
+HOLDS ACROSS THE DECLARED CONFIGURATION (exact over Q, 200/200; 377 samples rejected by hypotheses; 100 mirrored) · seed 11
+CONFIGURATION-DEPENDENT (82 of 200 fail; no orientation-dependent selector) · seed 11
+ORIENTATION-DEPENDENT (52 of 100 fail and hold with the selectors flipped; X's `orient(+)` encodes a side; use same_side(…) or on_arc(…), which keep their meaning when the figure is mirrored) · seed 3
+INCONCLUSIVE (0 of 60 figures valid; degenerate: B and M coincide ×60) · seed 11
+```
+
+### CI on GitHub
+
+| Workflow | Run                                                         | Result                                                                                                                                       |
+| -------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| ci       | https://github.com/youseng/geomira/actions/runs/39394066346 | success on dc2ffd1 (push: the final code commit)                                                                                             |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39394066332 | success on dc2ffd1                                                                                                                           |
+| nightly  | https://github.com/youseng/geomira/actions/runs/39394066352 | on dc2ffd1: job `test` (NIGHTLY=1) success; mutation-num success (89.06%); mutation-kernel and mutation-claims running when this was written |
+
+The commit that adds this STATUS (documentation only) gets its own ci run, listed in the PR.
+
+## Requests
+
+- Please confirm the readings under "Uncertain" (first item; ADR-0008).
+- The `run-5` tag is for the maintainer to place on the merge of this run's PR.
+- The claims mutation score will appear in the nightly summary (mutation-claims); this
+  run did not wait for it (note F).
+
+## Notes for later runs
+
+- The language run: parse `claim …` into these kind names (ADR-0008 decision 2 maps the
+  notation), report `assumptionProblem` and claim argument problems as parse errors, keep
+  `#` out of names (probes use it).
+- The editor and web runs: evalClaim for badges; runJob in a worker with
+  `entropy: cryptoSource(crypto.getRandomValues.bind(crypto))`; `next('cancel')` to stop;
+  the verdict's counterexample documents open as figures.
+- A tool whose value needs √ or trigonometry must set `radical` on its overloads.
+
+---
+
 ## Run 4: ACCEPTED (2026-10-20)
 
 Transformations and layers (SPEC §8). Base check first: Run 3b was ACCEPTED (tag `run-3b` =
