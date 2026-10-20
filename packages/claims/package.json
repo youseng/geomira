@@ -7,6 +7,10 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "dependencies": {
+    "@geomira/kernel": "workspace:*",
+    "@geomira/num": "workspace:*"
+  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
   }
