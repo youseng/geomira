@@ -5,7 +5,22 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./viewport": "./src/viewport.ts",
+    "./types": "./src/types.ts",
+    "./build": "./src/build.ts",
+    "./style": "./src/style.ts",
+    "./coincide": "./src/coincide.ts",
+    "./clip": "./src/clip.ts",
+    "./label-text": "./src/label-text.ts",
+    "./labels": "./src/labels.ts",
+    "./display": "./src/display.ts",
+    "./hit": "./src/hit.ts",
+    "./bounds": "./src/bounds.ts"
+  },
+  "dependencies": {
+    "@geomira/kernel": "workspace:*",
+    "@geomira/num": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

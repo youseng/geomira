@@ -1,6 +1,7 @@
 # ADR-0009: The language: grammar, names with `*`, printing, parseInto, migrations (Run 6)
 
-Status: accepted (Run 6; decision 22 revised before merge at the maintainer's request). Extends SPEC §11 (statements, names, laws, versioning), ADR-0003
+Status: accepted (Run 6; decision 22 revised before merge at the maintainer's request; the
+style keys z, label_angle and label_dist were added by ADR-0010 in Run 7). Extends SPEC §11 (statements, names, laws, versioning), ADR-0003
 (items 2 and 5: literals and claims as data), ADR-0004 (item 9: `on(obj)`), ADR-0006 (item 14:
 parse-level selector checks), ADR-0007 (items 9 and 10: managed names, placement of images) and
 ADR-0008 (decision 2 and its consequences: the notation of the claim kinds, `assumptionProblem`).
@@ -72,7 +73,8 @@ attrItem      = key , [ "=" , value , { "," , value } ] ;   (* a list (exclude, 
                                                                takes the rest of its group *)
 value         = float | number | name | "-" , name | string | stars ;
 style keys    : color=word|string, width=float, dash=solid|dashed|dotted, hidden[=true|false],
-                noimage[=true|false], label=string.
+                noimage[=true|false], label=string, z=float, label_angle=float (degrees),
+                label_dist=float (pixels, >= 0).
 
 (* ---- expressions ---- *)
 expr          = product , { ( "+" | "-" ) , product } ;

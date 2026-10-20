@@ -16,6 +16,7 @@ import {
   type View,
 } from '@geomira/kernel/document';
 import { DOCUMENT_VERSION } from '@geomira/kernel/document';
+import { sortImageRuns } from './canonical';
 import { anchorKey } from './comments';
 import { formatFloat, quote } from './lex-literals';
 import { printExpr, type Names } from './print-expr';
@@ -57,6 +58,9 @@ function styleItems(s: Style): string[] {
   if (s.hidden !== undefined) out.push(s.hidden ? 'hidden' : 'hidden=false');
   if (s.noimage !== undefined) out.push(s.noimage ? 'noimage' : 'noimage=false');
   if (s.label !== undefined) out.push(`label=${quote(s.label)}`);
+  if (s.z !== undefined) out.push(`z=${formatFloat(s.z)}`);
+  if (s.labelAngle !== undefined) out.push(`label_angle=${formatFloat(s.labelAngle)}`);
+  if (s.labelDist !== undefined) out.push(`label_dist=${formatFloat(s.labelDist)}`);
   return out;
 }
 
@@ -128,8 +132,15 @@ function objects(out: Out, doc: Document, names: Names): void {
   }
 }
 
-/** The text of a document (never throws; a document outside P1's domain still prints). */
-export function print(doc: Document): string {
+/**
+ * The text of a document (never throws; a document outside P1's domain still prints). Runs
+ * of adjacent images are printed in their canonical order (sortImageRuns), so the text does
+ * not depend on where edits left an image inside its run (ADR-0009 decision 20): images
+ * appear only through their `style X*` lines and comments, whose order would otherwise
+ * follow the edit history and break print∘parse∘print = print.
+ */
+export function print(given: Document): string {
+  const doc = sortImageRuns(given);
   const byId = new Map(doc.objects.map((o) => [o.id, o.name]));
   const names: Names = (id) => byId.get(id);
   const out: Out = {

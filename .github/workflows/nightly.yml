@@ -3,14 +3,24 @@ name: nightly
 # The long-running tier: the test suite with NIGHTLY=1, and incremental mutation testing
 # (Stryker) of the packages that have a mutation config (SPEC §17 L15; num since Run 1,
 # kernel geometry since Run 2, claims since Run 5).
-# Mutation scores are reported, not gated, until v1.1. Also runs when this file or a
-# mutation config changes, so edits to the nightly jobs are exercised before the next
-# scheduled run.
+# Mutation scores are reported, not gated, until v1.1. Mutation runs only on schedule and
+# workflow_dispatch; a push that changes this file or a test config runs the test job only.
+#
+# Mutation is sharded (scripts/mutation-shards.ts): the kernel in eleven shards, num and
+# claims whole. Every shard has its own incremental file and cache key, saves them under
+# `if: always()`, and gives Stryker its own time limit below the job's, so a finished shard
+# keeps its progress even if another shard runs out of time. A dispatch with `full` ignores
+# the caches, to measure full runs.
 
 on:
   schedule:
     - cron: '17 3 * * *'
   workflow_dispatch:
+    inputs:
+      full:
+        description: 'Ignore the incremental caches (measure full mutation runs)'
+        type: boolean
+        default: false
   push:
     branches: ['**']
     tags-ignore: ['**']
@@ -18,9 +28,15 @@ on:
       - .github/workflows/nightly.yml
       - stryker.*.json
       - vitest.*.config.ts
+      - scripts/mutation-shards.ts
+      - scripts/mutation-summary.ts
 
 permissions:
   contents: read
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -43,16 +59,12 @@ jobs:
       - name: Test suite (NIGHTLY=1)
         run: pnpm test
 
-  # One job per package with a mutation config (L15): num since Run 1, kernel geometry
-  # (packages/kernel/src/geom.ts and tools/) since Run 2, packages/claims since Run 5.
-  mutation:
-    name: mutation-${{ matrix.pkg }}
+  plan:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        pkg: [num, kernel, claims]
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.shards.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -62,43 +74,75 @@ jobs:
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
-      # Incremental mode: the previous run's result lets Stryker re-test only mutants whose
-      # code or covering tests changed. Each run saves a new entry; the newest is restored.
+      - id: shards
+        name: Mutation shards
+        run: echo "matrix=$(pnpm exec tsx scripts/mutation-shards.ts)" >> "$GITHUB_OUTPUT"
+
+  mutation:
+    name: mutation-${{ matrix.id }}
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      REPORTS: reports/mutation/${{ matrix.pkg }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      # Incremental mode: the previous result lets Stryker re-test only mutants whose code or
+      # covering tests changed. Each shard restores the newest entry of its own key.
       - name: Restore incremental mutation result
+        if: ${{ !inputs.full }}
         uses: actions/cache/restore@v6
         with:
-          path: reports/mutation/${{ matrix.pkg }}/stryker-incremental.json
-          key: stryker-${{ matrix.pkg }}-${{ github.sha }}
-          restore-keys: stryker-${{ matrix.pkg }}-
-      - name: Mutation testing (packages/${{ matrix.pkg }})
-        run: pnpm mutation:${{ matrix.pkg }}
+          path: ${{ env.REPORTS }}/stryker-incremental.json
+          key: stryker-${{ matrix.id }}-${{ github.sha }}
+          # The shard's own newest cache; else its parent's (an earlier, coarser shard whose
+          # incremental file covers these files: scripts/mutation-shards.ts).
+          restore-keys: |
+            stryker-${{ matrix.id }}-
+            stryker-${{ matrix.parent || matrix.id }}-
+      - name: Mutation testing (${{ matrix.id }})
+        env:
+          MUTATE: ${{ matrix.mutate }}
+        run: |
+          set -o pipefail
+          args=(run "stryker.${{ matrix.pkg }}.json")
+          if [ -n "$MUTATE" ]; then args+=(--mutate "$MUTATE"); fi
+          start=$(date +%s)
+          timeout 100m pnpm exec stryker "${args[@]}"
+          echo "${{ matrix.id }}: Stryker took $(( ($(date +%s) - start) / 60 )) min" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Save incremental mutation result
         if: always()
         uses: actions/cache/save@v6
         with:
-          path: reports/mutation/${{ matrix.pkg }}/stryker-incremental.json
-          key: stryker-${{ matrix.pkg }}-${{ github.sha }}-${{ github.run_id }}
+          path: ${{ env.REPORTS }}/stryker-incremental.json
+          key: stryker-${{ matrix.id }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      # Scored by scripts/mutation-summary.ts: only the shard's own mutants count (the report
+      # also carries old results of mutants outside the shard, kept by incremental mode).
       - name: Mutation score summary
         if: always()
         env:
-          PKG: ${{ matrix.pkg }}
+          ID: ${{ matrix.id }}
         run: |
-          node -e '
-            const pkg = process.env.PKG;
-            const r = require(`./reports/mutation/${pkg}/mutation.json`);
-            let detected = 0, undetected = 0;
-            for (const f of Object.values(r.files)) for (const m of f.mutants) {
-              if (["Killed", "Timeout"].includes(m.status)) detected++;
-              if (["Survived", "NoCoverage"].includes(m.status)) undetected++;
-            }
-            const score = (100 * detected / (detected + undetected)).toFixed(2);
-            const target = pkg === "num" ? 80 : 75;
-            console.log(`${pkg} mutation score: ${score}% (${detected} detected, ${undetected} undetected; target ${target}%, gated from v1.1)`);
-          ' | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ ! -f "$REPORTS/mutation.json" ]; then
+            echo "$ID: no report (Stryker did not finish)" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          pnpm exec tsx scripts/mutation-summary.ts "$ID" "$REPORTS/mutation.json" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Upload mutation report
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: mutation-report-${{ matrix.pkg }}
-          path: reports/mutation/${{ matrix.pkg }}/
+          name: mutation-report-${{ matrix.id }}
+          path: ${{ env.REPORTS }}/
+          if-no-files-found: warn
           retention-days: 30

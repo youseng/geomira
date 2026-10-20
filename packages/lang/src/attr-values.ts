@@ -1,6 +1,6 @@
 /**
  * The meaning of attributes (ADR-0009): every Style field (color, width, dash, hidden,
- * noimage, label), an object's layers, a claim's name, layer options and rules, view
+ * noimage, label; z, label_angle, label_dist since ADR-0010), an object's layers, a claim's name, layer options and rules, view
  * contents, triangle types. Each statement kind accepts its own keys; anything else is an
  * error with the list of keys it takes.
  */
@@ -16,6 +16,9 @@ export const STYLE_KEYS: readonly string[] = Object.freeze([
   'hidden',
   'noimage',
   'label',
+  'z',
+  'label_angle',
+  'label_dist',
 ]);
 export const DASHES: readonly string[] = Object.freeze(['solid', 'dashed', 'dotted']);
 
@@ -140,5 +143,19 @@ export function styleOf(m: ReadonlyMap<string, Attr>, out: Checked): Style {
     const t = textAttr(label, false, out);
     if (t !== undefined) s = { ...s, label: t };
   }
-  return s;
+  return { ...s, ...sceneStyle(m, out) };
+}
+
+/** The scene's Style fields (ADR-0010): z, label_angle (degrees), label_dist (pixels). */
+function sceneStyle(m: ReadonlyMap<string, Attr>, out: Checked): Style {
+  const [z, angle, dist] = [m.get('z'), m.get('label_angle'), m.get('label_dist')];
+  const zv = z === undefined ? undefined : numberAttr(z, -Number.MAX_VALUE, Number.MAX_VALUE, out);
+  const av =
+    angle === undefined ? undefined : numberAttr(angle, -Number.MAX_VALUE, Number.MAX_VALUE, out);
+  const dv = dist === undefined ? undefined : numberAttr(dist, 0, Number.MAX_VALUE, out);
+  return {
+    ...(zv === undefined ? {} : { z: zv }),
+    ...(av === undefined ? {} : { labelAngle: av }),
+    ...(dv === undefined ? {} : { labelDist: dv }),
+  };
 }

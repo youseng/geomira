@@ -1,5 +1,315 @@
 # STATUS
 
+## Run 7: ACCEPTED (2026-10-20)
+
+packages/scene and the apps/web canvas renderer (SPEC §13). Base check first: Run 6 was ACCEPTED
+(tag `run-6` = `main` = 91b0b0f) and `pnpm install && pnpm verify` was green locally on it (1454
+tests, add-only compared with `run-6`), with ci, deploy and tex green in CI on that commit
+(https://github.com/youseng/geomira/actions/runs/39417439660,
+https://github.com/youseng/geomira/actions/runs/39417439636,
+https://github.com/youseng/geomira/actions/runs/39417439598). **But the base was red in CI's
+nightly tier**: main's nightly `test` job (NIGHTLY=1) failed on 91b0b0f
+(https://github.com/youseng/geomira/actions/runs/39417439506): law P1's fixed-point test fails at
+seed 7, case 224 (a Run 6 printer bug, below). It was reproduced locally and fixed first, with a
+regression test, in its own commit (8e150fb), before the renderer commit; see "Known bugs".
+
+Every criterion holds: the laws are green (L8, L9 and note A's image-order law, counts below, also
+at NIGHTLY=1 scale); the screenshot baselines are stable (generated locally with Playwright's
+Chromium 1194, passed three repeats locally and in CI on another machine); frame time at 300
+objects is pasted below (CI: drag frame median 3.5 ms, p95 6.3 ms; SPEC budget 8 ms); verify is
+green locally and in CI (table under "CI on GitHub"). Scene coverage 98.89% lines, 91.23%
+branches (gated like kernel, claims, lang: 90 / 85).
+
+## Done (each item → the test file that proves it)
+
+0. **Housekeeping (note H), its own commits 77b3a69, 97dc7b1, b1a3e1b, 4c71eb1, 93148e6**:
+   nightly.yml shards mutation testing: `scripts/mutation-shards.ts` defines the matrix (num;
+   the kernel in eleven shards; claims, whose full run took 47 min, stays whole), read by a
+   `plan` job; every shard has its own incremental file under its own cache key
+   (`stryker-<shard>-…`, falling back to the cache of the earlier, coarser shard that held its
+   files), saves it and its report with actions/cache/save and upload-artifact under
+   `if: always()`, and runs Stryker under `timeout 100m` inside a 120-minute job;
+   `concurrency: nightly-${{ github.ref }}` cancels older runs; `plan` and the mutation jobs run
+   only on schedule and workflow_dispatch (the push-triggered runs ran `test` and skipped both);
+   a dispatch input `full` skips the cache restore, to measure full runs. The last kernel shard
+   is "every other file under tools/" (negated globs), so no new tool file is ever left out;
+   transforms.ts is cut into three line ranges (Stryker's `file:a-b`), only between top-level
+   statements, because a mutant that spans a cut belongs to no range (96 + 107 + 230 = 433
+   mutants, the same as the whole file). Each shard's score counts only its own mutants
+   (`scripts/mutation-summary.ts`; see "Known bugs"). → `scripts/mutation-shards.test.ts` (the
+   kernel shards partition stryker.kernel.json's files; the ranges tile the file; no top-level
+   statement crosses a cut, checked to fail with a cut at line 128; named files exist),
+   `scripts/mutation-summary.test.ts` (scope rule, every line in exactly one kernel shard, a
+   new tools file goes to kernel-h, malformed reports are errors, no NaN).
+   **Deviation from note H's "4 jobs"**, measured: with four shards the full runs took 51 and
+   58 minutes (kernel-2, kernel-1) and more than 75 (kernel-3, kernel-4), not "well under an
+   hour"; with eight, 9–53 minutes (kernel-h 53); with nine (lines.ts on its own), 2–57
+   (transforms.ts alone 56.5), so transforms.ts was cut into three ranges (eleven).
+   Timings and dispatch URLs: "Nightly (note H)" below.
+1. **Red base fixed (Run 6 bug)**: the printer printed images' `style X*` lines in the document's
+   order of a run of adjacent images; print() now prints runs in canonical order
+   (`sortImageRuns`). → `packages/lang/test/print-image-order.test.ts` (failed before the fix),
+   and P1's fixed-point test at NIGHTLY=1 (1000 documents) passes locally.
+2. **ADR-0010** (docs/adr/0010-scene.md, note E): the pipeline (Scene of world shapes → layout →
+   display list shared by renderer and hit-testing), viewport rules, layer set semantics, the
+   stable draw-order keys, style inheritance of images, three new Style fields, the
+   coincident-image decision, label grammar and placement, clipping, hit-testing and virtual
+   hits, the renderer, and where each law lives.
+3. **viewport.ts** (world y up ↔ screen y down only here; viewProblem; pan, zoom about an anchor,
+   fit) → `packages/scene/test/viewport.test.ts`. **clip.ts** (lines by slabs incl. through a
+   corner, rays, segments, empty ranges, carriers 1e308 away; circles by edge crossings incl.
+   radius 1e12; arcs; polygons) → `packages/scene/test/clip.test.ts`.
+4. **SceneBuilder** (build.ts): layer set semantics (visible iff any layer visible, drawn once in
+   the highest visible layer, whose opacity it takes), hidden styles, Undefined/Inexact listed
+   with reasons and never drawn, z-order (layer order, style z, kind, origin, rule positions),
+   sanitised styles, managed images styled like their sources unless overridden (labels: source
+   label + suffix) → `packages/scene/test/build.test.ts`, `coincide.test.ts`,
+   `shapes.test.ts`.
+5. **Coincident images** (note B): uses BAND from tolerance.ts and the kernel's measures
+   (signNormalized, rootGap); points on the mirror line, the mirror line itself, an "image only"
+   view (source layer hidden), the BAND boundary (0.9·BAND hidden, 1.1·BAND drawn, beyond EPS
+   inside BAND hidden), chains X**, point-set coincidence (swapped segment ends, permuted
+   polygon vertices; an opposite ray is not coincident) → `packages/scene/test/coincide.test.ts`;
+   in the browser → `apps/web/e2e/scene.spec.ts` ("image only view").
+6. **labels.ts / label-text.ts**: grammar with `_`, `_{…}`, `^`, primes, `*` raised, Greek escapes,
+   total on any string; anchors per kind; offsets (angle, pixels) from `label_angle` /
+   `label_dist`; automatic direction avoiding curves through the point →
+   `packages/scene/test/label-text.test.ts`, `labels.test.ts`.
+7. **hit.ts**: hits on the display list (dots, strokes with half their width, fills by nonzero
+   winding), top first; virtual hits (intersection of two curves, point on a curve, free);
+   nothing undrawn is hittable → `packages/scene/test/hit.test.ts`.
+8. **Style fields `z`, `labelAngle`, `labelDist`** and the language keys `z`, `label_angle`,
+   `label_dist` (ADR-0010 decision 6; ADR-0009's EBNF and docs/language.md updated; the P1–P3
+   generator draws them) → `packages/lang/test/scene-style.test.ts`, P1–P3.
+9. **Canvas renderer** (apps/web/src/render.ts): a pure function of display list and {hover,
+   selection}; HiDPI by setTransform(dpr) on a canvas of css × dpr pixels; draws exactly the
+   display list's paths → `apps/web/test/render.test.ts` (recording context: same geometry
+   calls as the display list for every example; deterministic; dpr; colour defaults; halos;
+   refused view; sub/superscripts), `apps/web/e2e/scene.spec.ts` (HiDPI: canvas.width = 2 ×
+   clientWidth at deviceScaleFactor 2).
+10. **Development page** (App.tsx, Board.tsx, SidePanel.tsx, figure.ts): pick an example (the
+    eight examples/*.geo and a generated 300-object figure), pan (drag), zoom (wheel, buttons),
+    fit, toggle layers (document edits), click to select, hover, Undefined objects listed with
+    reasons, "Measure frame time" → `apps/web/test/figure.test.ts`, `apps/web/e2e/scene.spec.ts`
+    (pan/zoom/fit restores the fitted picture), the frozen `App.test.tsx` and `shell.spec.ts`.
+11. **Laws L8, L9** on documents of the language's generator (printed and parsed) and on the
+    examples, in fitted desktop and mobile views, zoomed views and a view whose corner lies on a
+    line, through the renderer → `apps/web/test/laws/scene-laws.test.ts`; on extreme figures
+    (coordinates to 1e150 and 1e-150, any zoom, refused views) →
+    `packages/scene/test/laws/fuzz.test.ts`. **Note A's law** (permuting images inside runs of
+    adjacent images changes neither scene nor hits; and the same through a text round trip) →
+    `apps/web/test/laws/image-order.test.ts`; checked to fail when the draw key uses the object
+    index (temporary local mutation, reverted).
+12. **Playwright**: screenshot baselines of euler-line, nine-point-circle and reflection-layer
+    (desktop 1280×720 and mobile 390×664; `maxDiffPixelRatio` 0.002 for text anti-aliasing),
+    frame time at 300 objects (asserts median ≤ 8 ms) → `apps/web/e2e/scene.spec.ts`,
+    baselines in `apps/web/e2e/scene.spec.ts-snapshots/`.
+13. scene joins the coverage gate (90 / 85); the test-count floor is raised from 1454 to 1557
+    (docs/test-count.txt; 1550 in 7434d62, 1557 with the STATUS commit).
+
+### Law counts (one CI run; NIGHTLY=1 runs ten times as many, also green locally)
+
+| law                                       | inputs                                                                                                       | result |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------ |
+| L8/L9, generated documents (parsed)       | 120 documents, 387 views; 42,171 numbers finite; 59,126 canvas calls; 9,732 drawn samples hit; 7,625 cursors | holds  |
+| L8/L9, examples and the 300-object figure | 9 documents, 32 views; 15,473 numbers; 18,981 canvas calls; 7,176 drawn samples hit; 776 cursors             | holds  |
+| L8/L9, extreme figures (scene level)      | 200 figures (45 views refused, with reason); 15,905 numbers; 2,508 samples; 1,207 cursors, 1,909 hits        | holds  |
+| note A: permuted image runs               | 300 documents, 207 runs of ≥ 2 adjacent images, 395 images moved: scene and hits equal                       | holds  |
+| note A: text round trip                   | 200 documents (3 reordered by the round trip): scenes equal up to ids                                        | holds  |
+| NIGHTLY=1 (local)                         | 1,200 generated documents / 3,860 views; 2,000 extreme figures; 3,000 permuted documents; 2,000 round trips  | holds  |
+
+### Frame time (SPEC §17: drag frame ≤ 8 ms at 300 objects)
+
+A drag frame = move the first free point (document edit, incremental evaluation, scene, layout,
+canvas drawing); a pan frame = layout and drawing. 120 frames each after 20 warm-up frames,
+main-thread time (performance.now), Playwright's Chromium 1194.
+
+| where           | project | drag median | drag p95 | pan median | pan p95 |
+| --------------- | ------- | ----------- | -------- | ---------- | ------- |
+| CI (788863a)    | desktop | 3.5 ms      | 6.3 ms   | 2.4 ms     | 3.2 ms  |
+| CI (788863a)    | mobile  | 3.9 ms      | 6.3 ms   | 2.4 ms     | 3.3 ms  |
+| local (4 cores) | desktop | 5.2 ms      | 11.2 ms  | 3.0 ms     | 5.0 ms  |
+| local (4 cores) | mobile  | 5.7 ms      | 11.9 ms  | 3.3 ms     | 6.6 ms  |
+
+### Nightly (note H)
+
+Every dispatch ran on this branch (`workflow_dispatch`); minutes are the Stryker step of each
+shard job (from the jobs' step timestamps); every listed shard finished unless stated.
+
+| dispatch                                                        | commit      | split           | mode                                       | Stryker minutes per shard                                                                                                               | result                                                                                                       |
+| --------------------------------------------------------------- | ----------- | --------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| https://github.com/youseng/geomira/actions/runs/39420099935     | 77b3a69     | 4 kernel shards | full (no caches yet)                       | kernel-2 51, kernel-1 58.5, kernel-3 and kernel-4 > 75 (cancelled by the next push)                                                     | not "well under an hour": split again                                                                        |
+| https://github.com/youseng/geomira/actions/runs/39430453338     | 97dc7b1     | 8               | full, except a–d seeded from their parents | h 52.6, f 37, g 37, e 9, a–d ≈ 1                                                                                                        | success                                                                                                      |
+| https://github.com/youseng/geomira/actions/runs/39439262911     | b1a3e1b     | 9               | `full=true`                                | num 3.1, a 1.7, b (all of transforms.ts) 56.5, c 10.2, d 22.4, e 31.5, f 38.8, g 12.8, h 34.1, i 17.7, claims 46.8                      | success; transforms.ts split next                                                                            |
+| https://github.com/youseng/geomira/actions/runs/39452929337     | 4c71eb1     | 11              | incremental                                | every shard 0.3–1.7                                                                                                                     | success (its scores were miscounted: "Known bugs")                                                           |
+| **https://github.com/youseng/geomira/actions/runs/39457336299** | **93148e6** | **11**          | **`full=true`**                            | **num 3.1, a 1.6, b 1.9, c 29.3, d 27.2, e 36.2, f 37.3, g 34.3, h 35.1, i 15.8, j 3.6, k 10.0, claims 47.2**                           | **success: every shard finished, longest 47.2 (claims), kernel ≤ 37.3**                                      |
+| **https://github.com/youseng/geomira/actions/runs/39465526916** | **93148e6** | **11**          | **incremental (second dispatch)**          | **every shard restored its cache; Stryker 0.15–1.6 (num 0.15, claims 0.5, a 0.55, j 0.57, e/d/h/i/b/c 0.9–1.0, g 1.1, f 1.55, k 1.55)** | **success: incremental, minutes not hours; whole run 4.8 min (the NIGHTLY=1 test job, 4.5, is the longest)** |
+
+The NIGHTLY=1 `test` job passed in each of the last five dispatches. The same shard took
+different times in different full runs (c: 10.2 and 29.3 minutes on unchanged code); the
+runners' speed varies, so the margin under the 100-minute Stryker limit (about 53 minutes for
+the slowest shard) is the figure to watch, not "under an hour". Splitting transforms.ts took it
+from 56.5 minutes whole to 1.9 + 3.6 + 10.0 in parallel; the reason for so large a drop is not
+established (the ranges hold the same 433 mutants, checked locally).
+
+## Not done
+
+Nothing in Run 7's scope. Not started (later runs): the editor (tools, selection state, label
+drags writing `label_angle` / `label_dist`), export, the text panel. `mark_angle`,
+`mark_right`, `mark_segment` and `text` (SPEC §6.2 display tools): see "Requests".
+
+## Known bugs
+
+None known. Found and fixed during the run, each with a test in the same commit:
+
+- **Run 6 printer (red base)**: images' style lines followed the document's image-run order, so
+  print∘parse∘print ≠ print after edits (nightly P1, seed 7) → canonical run order in print();
+  `packages/lang/test/print-image-order.test.ts`.
+- Hover stayed on an object after the pointer left the canvas (found by the pan/zoom/fit e2e
+  test) → cleared on pointerleave; `apps/web/e2e/scene.spec.ts`.
+- Polygon fills were hit-tested even-odd while the canvas fills nonzero (found while writing the
+  L8 check) → nonzero winding; L8 laws.
+- Nightly scores of seeded shards were not the shard's own (found in the incremental dispatch
+  39452929337, where the three transforms.ts range shards each printed 225 detected, 0
+  undetected): Stryker 10's incremental mode keeps old results of mutants outside the current
+  `--mutate` scope in the report (IncrementalDiffer, "old mutants that didn't run this time
+  around aren't forgotten"), so the old summary counted them. → `scripts/mutation-summary.ts`
+  counts only the shard's own mutants and prints how many others were carried;
+  `scripts/mutation-summary.test.ts`. The scores of that dispatch are not used below.
+
+Known limitation (not a bug of the stated rules): labels avoid curves through their point but
+not other labels, so two close points can have overlapping labels (nine-point-circle: M_a and
+D); the editor run can set `label_angle`.
+
+## Uncertain
+
+- **Readings to confirm** (ADR-0010): an object in several layers is drawn once, in its highest
+  visible layer, with that layer's opacity; layer order outranks style z; points are labelled by
+  name by default and other kinds only with a label text; an image's label is its source's label
+  plus the suffix; hidden is inherited by images; "the source is drawn" includes a source that
+  is itself a hidden coincident image (chains); labels are not hit-tested; virtual hits as
+  defined in decision 13.
+- **"Virtual hits"** in the brief is read as the intersection / point-on-curve / free position
+  under the cursor (what a click would create); if something else was meant, hit.ts is the
+  place.
+- **Screenshot tolerance**: `maxDiffPixelRatio: 0.002` (≈ 1,500 px of 720k) absorbs text
+  anti-aliasing differences between machines; geometry differences are far larger. CI passed
+  with the locally generated baselines.
+- No mathematical facts were used beyond Run 6's examples (unchanged).
+
+## Changed frozen tests
+
+No line of a file frozen at `run-6` was modified or removed (`add-only: frozen tests compared
+with run-6, 0 violation(s)`). Lines were ADDED to one test helper: `packages/lang/test/helpers/
+gen-doc.ts` (three lines drawing the new style fields, plus a comment).
+
+## Acceptance command output
+
+### Local, 93148e6 (`pnpm install && pnpm verify`; the STATUS commit after it changes only docs/STATUS.md and docs/test-count.txt)
+
+```
+All matched files use Prettier code style!
+✔ no dependency violations found (328 modules, 1825 dependencies cruised)
+ok   tolerance: 439 files scanned, 0 violation(s)
+ok   file-length: 439 files scanned, 0 violation(s)
+ok   test-count: 1557 tests, floor 1550, 0 violation(s)
+ok   disabled-tests: 439 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-6, 0 violation(s)
+ok   forbidden-words: 439 files scanned, 0 violation(s)
+ Test Files  142 passed (142)
+      Tests  1557 passed (1557)
+ scene/src         |   98.15 |    91.23 |     100 |   98.89 |
+Statements   : 97.77% ( 6811/6966 )
+Branches     : 93.32% ( 5441/5830 )
+Lines        : 98.79% ( 5679/5748 )
+verify exit=0
+```
+
+### Laws (`npx vitest run packages/scene apps/web --reporter=verbose`, excerpts; NIGHTLY=1)
+
+```
+scene fuzz: 2000 figures, 162657 numbers finite, 407 views refused; L8 {"samples":28693,"cursors":12943,"hits":21468}
+note A (permuted image runs): {"docs":3000,"runs":2204,"moved":3865}
+L8/L9 (generated): {"docs":1200,"views":3860,"numbers":451244,"refused":0,"drawCalls":630359,"samples":103123,"cursors":78800,"hits":156373}
+L8/L9 (examples): {"docs":9,"views":32,"numbers":15473,"refused":0,"drawCalls":18981,"samples":7176,"cursors":776,"hits":8739}
+note A (round trips that reordered objects): 37
+      Tests  91 passed (91)
+```
+
+### Playwright in CI (788863a, `pnpm e2e`)
+
+```
+Running 16 tests using 2 workers
+  ✓ [desktop] screenshot baseline: euler-line / nine-point-circle / reflection-layer
+  ✓ [mobile]  screenshot baseline: euler-line / nine-point-circle / reflection-layer
+frame time (mobile): {"objects":300,"drag":{"frames":120,"median":3.9,"p95":6.3,"max":239.7},"pan":{"frames":120,"median":2.4,"p95":3.3,"max":228.7}}
+frame time (desktop): {"objects":300,"drag":{"frames":120,"median":3.5,"p95":6.3,"max":517},"pan":{"frames":120,"median":2.4,"p95":3.2,"max":627.2}}
+  ✓ HiDPI, image only view, pan/zoom/fit, shell (both projects)
+  16 passed (9.2s)
+```
+
+(The max is a single outlier frame per series, cause not investigated; the e2e test asserts
+the median against the 8 ms budget; p95 is also under 8 ms in CI, not locally.)
+
+### CI on GitHub
+
+| commit  | what                                       | ci (typecheck, lint, test, rules, e2e)                                  | deploy                                                              |
+| ------- | ------------------------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 788863a | renderer, laws, e2e                        | https://github.com/youseng/geomira/actions/runs/39426333639 success     | (not recorded)                                                      |
+| 4c71eb1 | nightly shards                             | https://github.com/youseng/geomira/actions/runs/39452924789 success     | https://github.com/youseng/geomira/actions/runs/39452924994 success |
+| 93148e6 | scoped mutation summary (last code commit) | **https://github.com/youseng/geomira/actions/runs/39457326001 success** | https://github.com/youseng/geomira/actions/runs/39457325984         |
+
+The STATUS commit after 93148e6 changes only docs/STATUS.md and docs/test-count.txt; its CI run
+is on the pull request.
+
+### Mutation (informational until v1.1, note F)
+
+Latest scores, from the `full=true` dispatch on **93148e6**
+(https://github.com/youseng/geomira/actions/runs/39457336299), each counted on the shard's own
+mutants (Killed + Timeout detected; Survived + NoCoverage undetected; compile errors not
+counted):
+
+```
+num mutation score: 89.06% (627 detected, 77 undetected; target 80%, gated from v1.1)
+kernel-a mutation score: 89.47% (17 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-b mutation score: 100.00% (18 detected, 0 undetected; target 75%, gated from v1.1)
+kernel-c mutation score: 99.48% (190 detected, 1 undetected; target 75%, gated from v1.1)
+kernel-d mutation score: 99.46% (183 detected, 1 undetected; target 75%, gated from v1.1)
+kernel-e mutation score: 98.86% (174 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-f mutation score: 99.56% (225 detected, 1 undetected; target 75%, gated from v1.1)
+kernel-g mutation score: 98.97% (193 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-h mutation score: 100.00% (158 detected, 0 undetected; target 75%, gated from v1.1)
+kernel-i mutation score: 100.00% (78 detected, 0 undetected; target 75%, gated from v1.1)
+kernel-j mutation score: 90.63% (29 detected, 3 undetected; target 75%, gated from v1.1)
+kernel-k mutation score: 100.00% (175 detected, 0 undetected; target 75%, gated from v1.1)
+claims mutation score: 73.21% (1082 detected, 396 undetected; target 75%, gated from v1.1)
+```
+
+Kernel total (the shards partition it): 1440 detected, 12 undetected, **99.17%**. claims is
+below its 75% target (informational until v1.1; Run 7 did not change packages/claims). Mutation
+configs exist only for num, kernel and claims; scene has none yet.
+
+## Requests
+
+- Please confirm the readings under "Uncertain" (ADR-0010).
+- `mark_angle`, `mark_right`, `mark_segment`, `text`: Run 3b's STATUS deferred them to "the scene
+  (SPEC §13), a later run", but Run 7's brief does not list them and they need new value kinds;
+  they were not built. Please say which run takes them (ADR-0010 Consequences).
+- The `run-7` tag is for the maintainer to place on the merge of this run's PR.
+- Formatting: new files were formatted with Prettier (whitespace only, AST-preserving); no
+  `eslint --fix` or other automatic fix was run (note D); lint findings were fixed by hand.
+
+## Notes for later runs
+
+- Editor: `layout(scene, view)` once per frame, then `drawDisplay` and `hitTest` on the same
+  list; `hitTest(...).virtual` gives the intersection / on-curve / free target of a click.
+- Export: consume `Scene` (world coordinates); clip with `clipLine` / `clipCircle`; label runs
+  from `parseLabel`.
+- The frame benchmark (apps/web/src/bench.ts) is the place to re-measure SPEC §17's drag budget
+  once the editor's drag path exists.
+
+---
+
 ## Run 6: ACCEPTED (2026-10-20)
 
 packages/lang (SPEC §11). Base check first: Run 5 was ACCEPTED (tag `run-5` = `main` =

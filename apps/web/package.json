@@ -12,6 +12,9 @@
   },
   "dependencies": {
     "@geomira/kernel": "workspace:*",
+    "@geomira/lang": "workspace:*",
+    "@geomira/num": "workspace:*",
+    "@geomira/scene": "workspace:*",
     "react": "19.2.9",
     "react-dom": "19.2.9"
   },
