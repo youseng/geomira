@@ -1,7 +1,7 @@
 /**
  * The nightly mutation matrix (nightly.yml, SPEC §17 L15). Each shard is one job with its own
  * incremental file and cache key, so a shard that finishes saves its progress even when
- * another times out. The kernel is split into nine shards by file group (its full run takes
+ * another times out. The kernel is split into eleven shards by file group (its full run takes
  * about four hours on a GitHub runner); num and claims finish within an hour and run whole.
  * The last kernel shard is "every other tool file" (negated globs), so a new file under
  * tools/ is always mutated by some shard. scripts/mutation-shards.test.ts checks that the
@@ -27,17 +27,28 @@ export interface Shard {
 
 const K = 'packages/kernel/src';
 
+/** The end line of an open-ended range (far beyond any file's length; files ≤ 400 lines). */
+export const OPEN_END = 100_000;
+
+/** A mutate entry without its `:start-end` line range. */
+export function fileOf(entry: string): string {
+  return entry.replace(/:\d+-\d+$/u, '');
+}
+
 /**
  * The kernel's file groups. The first split (four groups: kernel-1 … kernel-4) took 51–58
  * minutes per full shard on a GitHub runner, and two shards ran past 75; each group was
  * halved. In the eight-way split the full runs took 9–53 minutes, the "rest" shard the
- * longest, so lines.ts got its own shard. The last group takes every other file under
- * tools/. `parent` names an earlier shard that held the files (its cache seeds this shard's
+ * longest, so lines.ts got its own shard; in the nine-way split (full runs measured with
+ * full=true) transforms.ts alone took more than 50 minutes, so it is cut into three line
+ * ranges. The last group takes every other file under tools/. `parent` names an earlier shard that held the files (its cache seeds this shard's
  * first run).
  */
 const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly parent: string }[] = [
   { files: [`${K}/geom.ts`, `${K}/similarity.ts`], parent: 'kernel-1' },
-  { files: [`${K}/tools/transforms.ts`], parent: 'kernel-1' },
+  // transforms.ts alone took more than 50 minutes: three line ranges (Stryker's
+  // `file:start-end` form) cover it, the last one open-ended so no line can drop out.
+  { files: [`${K}/tools/transforms.ts:1-132`], parent: 'kernel-b' },
   {
     files: [`${K}/tools/pairs.ts`, `${K}/tools/intersect.ts`, `${K}/tools/range.ts`],
     parent: 'kernel-2',
@@ -53,18 +64,24 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     parent: 'kernel-4',
   },
   { files: [`${K}/tools/lines.ts`], parent: 'kernel-h' },
+  { files: [`${K}/tools/transforms.ts:133-244`], parent: 'kernel-b' },
+  { files: [`${K}/tools/transforms.ts:245-${String(OPEN_END)}`], parent: 'kernel-b' },
 ];
 
-const toolsInGroups = KERNEL_GROUPS.flatMap((g) => g.files).filter((f) =>
-  f.startsWith(`${K}/tools/`),
-);
+const toolsInGroups = [
+  ...new Set(
+    KERNEL_GROUPS.flatMap((g) => g.files)
+      .map(fileOf)
+      .filter((f) => f.startsWith(`${K}/tools/`)),
+  ),
+];
 
-const LETTERS = 'abcdefghi';
+const LETTERS = 'abcdefghijk';
 
 export const SHARDS: readonly Shard[] = [
   { id: 'num', pkg: 'num', mutate: [], parent: '' },
   ...KERNEL_GROUPS.map((g, i) => ({
-    // a … g, then i (h is the rest shard, kept under its name so it keeps its cache).
+    // a … g, then i, j, k (h is the rest shard, kept under its name so it keeps its cache).
     id: `kernel-${LETTERS[i < 7 ? i : i + 1] ?? String(i)}`,
     pkg: 'kernel' as const,
     mutate: g.files,
