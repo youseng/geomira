@@ -101,8 +101,7 @@ function viaOther<T>(
     if (bad !== undefined) return bad;
   }
   const X = vieta(P);
-  const r = pair.range(X);
-  if (r !== 'in') return r;
+  if ('kind' in X) return X;
   return [
     n === 1 || coincide(F, X, P, ctx) ? { at: X, side: 0 } : { at: X, side: 'measure', from: P },
   ];

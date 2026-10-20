@@ -87,7 +87,6 @@ function tangentPair<T>(
       return midOff(F, n, mid, rad, vRot90(F, w), true);
     },
     vieta: (X) => reflectIn(F, c.c, w, X),
-    range: () => 'in',
     output: (X) => output(F, c, tool, X),
   };
 }
@@ -153,7 +152,10 @@ export const TANGENT_FROM_TOOLS: readonly ToolSpec[] = [
     degenerate: DEGENERATE,
     export: 'numeric',
     doc: 'tangent_point(P, c, selectors): a point where a tangent from P touches c; two candidates (orient(+): cross(O − P, T − P) > 0), one double point when P is on c.',
-    examples: [{ args: [P5, C5], selectors: [{ kind: 'orient', sign: 1 }] }],
+    examples: [
+      { args: [P5, C5], selectors: [{ kind: 'orient', sign: 1 }] },
+      { args: [['6', '0'], C5], selectors: [{ kind: 'orient', sign: 1 }] },
+    ],
   },
   {
     id: 'tangent_from',
@@ -166,6 +168,9 @@ export const TANGENT_FROM_TOOLS: readonly ToolSpec[] = [
     degenerate: DEGENERATE,
     export: 'numeric',
     doc: 'tangent_from(P, c, selectors): a tangent from P to c, the line through its touch point T with direction rot90(T − O) (chiral); selectors judge T.',
-    examples: [{ args: [P5, C5], selectors: [{ kind: 'orient', sign: -1 }] }],
+    examples: [
+      { args: [P5, C5], selectors: [{ kind: 'orient', sign: -1 }] },
+      { args: [['6', '0'], C5], selectors: [{ kind: 'orient', sign: -1 }] },
+    ],
   },
 ];

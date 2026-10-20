@@ -162,6 +162,25 @@ export const INTERSECT_TOOLS: readonly ToolSpec[] = [
         ],
         selectors: [{ kind: 'other', p: ['3', '4'] }],
       },
+      {
+        args: [
+          {
+            through: [
+              ['0', '0'],
+              ['1', '0'],
+            ],
+            as: 'line',
+          },
+          {
+            call: 'circle',
+            args: [
+              ['0', '0'],
+              ['1', '1'],
+            ],
+          },
+        ],
+        selectors: [{ kind: 'along', sign: 1 }],
+      },
     ],
   },
 ];

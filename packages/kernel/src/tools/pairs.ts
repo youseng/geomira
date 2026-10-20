@@ -71,10 +71,11 @@ export interface Pair<T> {
   readonly ranged: boolean;
   count(): 1 | 2 | Undefined | Inexact;
   list(n: 1 | 2): readonly Cand<T>[] | Undefined | Inexact;
-  /** The other common point given P on both curves (exact); absent for line ∩ line. */
-  readonly vieta?: (P: Vec<T>) => Vec<T>;
-  /** Whether a point given by vieta lies on the ranges ('in'), or why not. */
-  range(X: Vec<T>): 'in' | Undefined | Inexact;
+  /**
+   * The other common point given P on both curves (exact), or why it is not on the ranges
+   * of a segment or ray; absent for line ∩ line.
+   */
+  readonly vieta?: (P: Vec<T>) => Vec<T> | Undefined | Inexact;
   output(X: Vec<T>): Value<T>;
 }
 
@@ -163,7 +164,6 @@ export function lineLinePair<T>(
       const X = lineLine(F, a, b, ctx);
       return 'kind' in X ? X : [{ at: X, side: 0 }];
     },
-    range: () => 'in',
     output: asPoint,
   };
 }
@@ -257,14 +257,14 @@ export function lineCirclePair<T>(
       const list = midOff(F, n, foot, F.div(diff, dd), l.d, false);
       return isInexact(list) ? list : onRange(F, l, list, ctx);
     },
-    // As other.ts (same operations, so other(P) and other() agree bit for bit).
+    // As other.ts (same operations and range decision, so other(P) and other() agree bit
+    // for bit).
     vieta: (P) => {
       const tc = paramOn(F, l, c.c);
-      return vAdd(F, l.p, vScale(F, l.d, F.sub(F.add(tc, tc), paramOn(F, l, P))));
-    },
-    range: (X) => {
-      const r = rangeStatus(F, l, paramOn(F, l, X), ctx, 'other intersection');
-      return r === 'out' ? outsideReason(l, 'other intersection') : r;
+      const t = F.sub(F.add(tc, tc), paramOn(F, l, P));
+      const r = rangeStatus(F, l, t, ctx, 'other intersection');
+      if (r === 'out') return outsideReason(l, 'other intersection');
+      return r === 'in' ? vAdd(F, l.p, vScale(F, l.d, t)) : r;
     },
     output: asPoint,
   };
@@ -325,6 +325,7 @@ export function circleCirclePair<T>(
   const s = vDot(F, w, w);
   const k = F.div(F.sub(F.add(s, c1.r2), c2.r2), F.add(s, s));
   const mid = vAdd(F, c1.c, vScale(F, w, k));
+  const counted = circlesCount(F, c1, c2, s, ctx);
   return {
     shape: CIRCLE_CIRCLE,
     noun: 'intersection',
@@ -334,18 +335,13 @@ export function circleCirclePair<T>(
     ],
     low: { kind: 'orient', from: c1.c, to: c2.c },
     ranged: false,
-    count: () => {
-      const r = circlesCount(F, c1, c2, s, ctx);
-      return 'kind' in r ? r : r.n;
-    },
+    count: () => ('kind' in counted ? counted : counted.n),
+    // Called only after count() gave n (so `counted` is not Undefined; D = 0 is never used).
     list: (n) => {
-      const r = circlesCount(F, c1, c2, s, ctx);
-      if ('kind' in r) return r;
-      const rad = F.div(r.D, F.mul(F.add(s, s), F.add(s, s)));
-      return midOff(F, n, mid, rad, vRot90(F, w), false);
+      const D = 'kind' in counted ? F.zero : counted.D;
+      return midOff(F, n, mid, F.div(D, F.mul(F.add(s, s), F.add(s, s))), vRot90(F, w), false);
     },
     vieta: (P) => reflectIn(F, c1.c, w, P),
-    range: () => 'in',
     output: asPoint,
   };
 }

@@ -41,4 +41,21 @@ describe('the generated exactness table', () => {
     expect(row('cos')?.otherwise).toBe('inexact: cos(45°) is not rational');
     expect(row('tan')?.otherwise).toBe('inexact: cos(30°) is not rational');
   });
+
+  it('discovers exactness of the Run 3b tools: branchable tools exact where the roots are rational', () => {
+    const row = (name: string) => exactnessRows(registry).find((r) => r.tool === name);
+    expect(row('intersect')).toMatchObject({
+      exactRun: 'can succeed',
+      exactExamples: 4,
+      examples: 5,
+    });
+    expect(row('intersect')?.otherwise).toBe('inexact: √(2) is not rational');
+    for (const t of ['tangent_point', 'tangent_from']) {
+      expect(row(t)).toMatchObject({ exactRun: 'can succeed', exactExamples: 1, examples: 2 });
+      expect(row(t)?.otherwise).toBe('inexact: √(275/1296) is not rational');
+    }
+    expect(row('ninepoint_center')).toMatchObject({ exactRun: 'can succeed', otherwise: '' });
+    expect(row('power')).toMatchObject({ exactRun: 'can succeed', otherwise: '' });
+    expect(row('radius')).toMatchObject({ exactRun: 'can succeed', exactExamples: 1, examples: 2 });
+  });
 });

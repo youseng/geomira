@@ -110,6 +110,7 @@ intersect(a, b, selectors): the common point of two lines, a line and a circle, 
   - `intersect(line((-4, -3), (4, 3)), circle((0, 0), (5, 0)), along(+))` → point (4, 3)
   - `intersect(circle((0, 0), (5, 0)), circle((6, 0), (3, 4)), orient(+))` → point (3, 4)
   - `intersect(line((3, 4), (0, 0)), circle((0, 0), (5, 0)), other(point(3, 4)))` → point (-3, -4)
+  - `intersect(line((0, 0), (1, 0)), circle((0, 0), (1, 1)), along(+))` → point (1.41421356237, 0)
 
 ### circumcenter
 
@@ -269,6 +270,7 @@ tangent_point(P, c, selectors): a point where a tangent from P touches c; two ca
   - square roots not representable → Inexact over Q and mod p (other(T) is exact)
 - Examples:
   - `tangent_point((5, 5), circle((0, 0), (5, 0)), orient(+))` → point (5, 0)
+  - `tangent_point((6, 0), circle((0, 0), (5, 0)), orient(+))` → point (4.16666666667, -2.76385399196)
 
 ## Lines
 
@@ -447,6 +449,7 @@ tangent_from(P, c, selectors): a tangent from P to c, the line through its touch
   - square roots not representable → Inexact over Q and mod p (other(T) is exact)
 - Examples:
   - `tangent_from((5, 5), circle((0, 0), (5, 0)), orient(-))` → line (0, 5) + t·(-5, 0), t ∈ [−∞, ∞], chiral
+  - `tangent_from((6, 0), circle((0, 0), (5, 0)), orient(-))` → line (4.16666666667, 2.76385399196) + t·(-2.76385399196, 4.16666666667), t ∈ [−∞, ∞], chiral
 
 ## Circles
 
