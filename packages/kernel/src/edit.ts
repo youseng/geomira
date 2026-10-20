@@ -150,7 +150,7 @@ function imagesOf(
   });
 }
 
-/** Renames an object; its managed images follow (X* stays the image of X). */
+/** Renames an object; its managed images follow (X* stays the image of X, X** of X*). */
 export function renameObject(doc: Document, id: number, name: string): EditResult {
   const o = findObject(doc, id);
   if (o === undefined) return fail(`there is no object #${String(id)}`);
@@ -158,9 +158,16 @@ export function renameObject(doc: Document, id: number, name: string): EditResul
   const problem = nameConflict(doc, name, id);
   if (problem !== undefined) return fail(problem);
   // An image is named source + suffix and source names are unique, so the new image
-  // names cannot collide in a valid document.
+  // names cannot collide in a valid document. Images of images (chained derived layers)
+  // follow too: X** stays the image of X* (found in Run 4, rename-chain.test.ts).
   const renames = new Map<number, string>([[id, name]]);
-  for (const img of imagesOf(doc, id)) renames.set(img.id, name + img.name.slice(o.name.length));
+  const queue = [id];
+  for (let src = queue.shift(); src !== undefined; src = queue.shift()) {
+    for (const img of imagesOf(doc, src)) {
+      renames.set(img.id, name + img.name.slice(o.name.length));
+      queue.push(img.id);
+    }
+  }
   const objects = doc.objects.map((x) => {
     const n = renames.get(x.id);
     return n === undefined ? x : { ...x, name: n };
