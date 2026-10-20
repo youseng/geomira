@@ -48,11 +48,6 @@ export function transformOf<T>(s: Similarity<T>): Transform<T> {
   return { kind: 'transform', t: s };
 }
 
-/** The identity map. */
-export function identity<T>(F: Field<T>): Similarity<T> {
-  return similarity(false, complex(F.one, F.zero), complex(F.zero, F.zero));
-}
-
 /**
  * Why `s` is not an invertible similarity, or undefined when it is: the scale factor a is
  * zero when BOTH its components are zero as dimensionless quantities (F.isZero: within EPS

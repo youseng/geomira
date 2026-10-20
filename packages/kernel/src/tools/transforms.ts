@@ -8,7 +8,7 @@
  * returned is invertible (similarityProblem), and numbers and maps are never imaged.
  */
 import { cAbs2, cDiv, cMul, cScale, cSub, complex, type Complex } from '@geomira/num/complex';
-import { isInexact, type Field, type Inexact } from '@geomira/num/field';
+import { allExact, isInexact, type Field, type Inexact } from '@geomira/num/field';
 import { RationalField } from '@geomira/num/rational-field';
 import { vSub } from '../geom';
 import {
@@ -61,15 +61,10 @@ function reflectLine<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext
   return similarity(true, a, cSub(F, p, cMul(F, a, complex(p.re, F.neg(p.im)))));
 }
 
-/** reflect(P): the half turn about P, z ↦ 2P − z. No degenerate case. */
-function reflectPoint<T>(F: Field<T>, args: readonly Value<T>[]): Built<T> {
-  const P = pointAt(args, 0);
-  if (P === undefined) return badArgs('reflect');
-  return fixing(F, complex(F.neg(F.one), F.zero), P);
-}
-
+/** reflect(P): the half turn about P, z ↦ 2P − z (no degenerate case); reflect(l) otherwise. */
 function reflectBuild<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Built<T> {
-  return args[0]?.kind === 'point' ? reflectPoint(F, args) : reflectLine(F, args, ctx);
+  const P = pointAt(args, 0);
+  return P === undefined ? reflectLine(F, args, ctx) : fixing(F, complex(F.neg(F.one), F.zero), P);
 }
 
 /**
@@ -79,13 +74,11 @@ function reflectBuild<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContex
  */
 function unit<T>(F: Field<T>, theta: Num<T>): Complex<T> | Inexact {
   if (theta.exact !== undefined) {
-    const [ec, es] = [RationalField.cos(theta.exact), RationalField.sin(theta.exact)];
-    if (!isInexact(ec) && !isInexact(es)) {
-      const [fc, fs] = [F.fromRational(ec), F.fromRational(es)];
-      if (isInexact(fc)) return fc;
-      if (isInexact(fs)) return fs;
-      return complex(fc, fs);
-    }
+    // Both rational only at the multiples of 90° (0, ±1: representable in every field).
+    const exact = allExact([RationalField.cos(theta.exact), RationalField.sin(theta.exact)]);
+    const values = isInexact(exact) ? exact : allExact(exact.map((x) => F.fromRational(x)));
+    const [fc, fs] = isInexact(values) ? [] : values;
+    if (fc !== undefined && fs !== undefined) return complex(fc, fs);
   }
   const [co, si] = [F.cos(theta.v), F.sin(theta.v)];
   if (isInexact(co)) return co;

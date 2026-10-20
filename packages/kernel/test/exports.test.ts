@@ -109,7 +109,6 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     names: [
       'applySimilarity',
       'composeSimilarities',
-      'identity',
       'inverseSimilarity',
       'mapDirection',
       'mapPoint',
