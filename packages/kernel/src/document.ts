@@ -84,9 +84,29 @@ export interface Assumption {
   readonly args: readonly Expr[];
 }
 
+/**
+ * Where a comment of the text format sits (ADR-0009): before the statement of an object,
+ * claim, assumption, layer or view, or of a directive; `header` comments come first and
+ * `end` comments last.
+ */
+export type CommentAnchor =
+  | { readonly kind: 'object' | 'claim' | 'assumption'; readonly id: number }
+  | { readonly kind: 'layer'; readonly id: string }
+  | { readonly kind: 'view'; readonly name: string }
+  | { readonly kind: 'header' | 'title' | 'author' | 'viewport' | 'end' };
+
+/** Comment lines (the text after `#`) before a statement, and its same-line comment. */
+export interface Comment {
+  readonly anchor: CommentAnchor;
+  readonly lines: readonly string[];
+  readonly inline?: string;
+}
+
 export interface Meta {
   readonly title?: string;
   readonly author?: string;
+  /** The text format's comments (ADR-0009); the kernel never reads them. */
+  readonly comments?: readonly Comment[];
 }
 
 export interface Document {

@@ -18,7 +18,8 @@ import { analyzeClaim, type ClaimAnalysis, type OrientationSite } from './analys
 import { callsOf, exprAt } from './expr-path';
 import { findFree, type FreeInput } from './free';
 import { assumptionProblem, comparisonDim, type MeasureDim } from './hypotheses';
-import { isLiteralParam, paramAt, type ClaimKindSpec } from './kind';
+import { argProblem } from './check';
+import type { ClaimKindSpec } from './kind';
 import { claimKind } from './kinds';
 import { addProbes, closureOf } from './probes';
 
@@ -71,21 +72,6 @@ export type PrepareResult =
 
 export function freeKey(id: number, path: readonly number[]): string {
   return `${String(id)}:${path.join('.')}`;
-}
-
-function argProblem(kind: ClaimKindSpec, args: readonly Expr[]): string | undefined {
-  const min = kind.params.length;
-  if (args.length < min || (kind.rest === undefined && args.length > min)) {
-    return `${kind.name} takes ${kind.rest === undefined ? String(min) : `at least ${String(min)}`} arguments, got ${String(args.length)}`;
-  }
-  for (const [i, a] of args.entries()) {
-    const p = paramAt(kind, i);
-    if (p === undefined) return `${kind.name}: too many arguments`;
-    if (isLiteralParam(p) !== (a.kind === 'lit')) {
-      return `${kind.name}: argument ${String(i + 1)} must be ${isLiteralParam(p) ? 'an exact number' : 'an object'}`;
-    }
-  }
-  return undefined;
 }
 
 /** Probes of the first argument of every two-argument glider (to read its object's kind). */
