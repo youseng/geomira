@@ -12,7 +12,9 @@ import * as document from '../src/document';
 import * as edit from '../src/edit';
 import * as evaluate from '../src/evaluate';
 import * as expr from '../src/expr';
+import * as geom from '../src/geom';
 import * as glider from '../src/glider';
+import * as incidence from '../src/incidence';
 import * as invariants from '../src/invariants';
 import * as layers from '../src/layers';
 import * as names from '../src/names';
@@ -146,6 +148,29 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './doc-edit': { module: docEdit, names: ['applyDocEdit', 'moveObject', 'reservedName'] },
   './views': { module: views, names: ['addView', 'applyView', 'removeView'] },
   './drag': { module: drag, names: ['dragThrough'] },
+  './geom': {
+    module: geom,
+    names: [
+      'abs',
+      'half',
+      'isZeroNormalized',
+      'isZeroVec',
+      'signNormalized',
+      'two',
+      'vAdd',
+      'vCross',
+      'vDot',
+      'vLerp',
+      'vRot90',
+      'vScale',
+      'vSub',
+      'vec',
+    ],
+  },
+  './incidence': {
+    module: incidence,
+    names: ['circleGap', 'requireOnCircle', 'requireOnLine', 'rootGap'],
+  },
 };
 
 describe('@geomira/kernel subpath surface', () => {

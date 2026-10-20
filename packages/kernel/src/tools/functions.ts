@@ -155,7 +155,7 @@ function spec(
     id,
     name: id,
     family: 'arithmetic',
-    signatures: [{ params: ['number'] }],
+    signatures: [{ params: ['number'], radical: true }],
     outputKinds: ['number'],
     compute,
     degenerate,

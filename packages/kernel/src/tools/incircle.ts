@@ -173,7 +173,10 @@ const GENERIC: readonly ExampleArg[] = [
   ['4', '0'],
   ['1', '3'],
 ];
-const THREE: readonly ToolSpec['signatures'][number][] = [{ params: ['point', 'point', 'point'] }];
+/** Side or arm lengths are square roots: every overload is radical (ADR-0008). */
+const THREE: readonly ToolSpec['signatures'][number][] = [
+  { params: ['point', 'point', 'point'], radical: true },
+];
 const TRIANGLE_CASES = [
   'coincident vertices → Undefined',
   'collinear vertices → Undefined',

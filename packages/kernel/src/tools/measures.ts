@@ -151,7 +151,10 @@ export const MEASURE_TOOLS: readonly ToolSpec[] = [
     id: 'dist',
     name: 'dist',
     family: 'measures',
-    signatures: [{ params: ['point', 'point'] }, { params: ['point', 'linear'] }],
+    signatures: [
+      { params: ['point', 'point'], radical: true },
+      { params: ['point', 'linear'], radical: true },
+    ],
     outputKinds: ['number'],
     compute: dist,
     degenerate: [
@@ -167,7 +170,7 @@ export const MEASURE_TOOLS: readonly ToolSpec[] = [
     id: 'ratio',
     name: 'ratio',
     family: 'measures',
-    signatures: [{ params: ['point', 'point', 'point', 'point'] }],
+    signatures: [{ params: ['point', 'point', 'point', 'point'], radical: true }],
     outputKinds: ['number'],
     compute: ratio,
     degenerate: ['C = D → Undefined (coincident points)', 'A = B → 0'],
@@ -179,7 +182,7 @@ export const MEASURE_TOOLS: readonly ToolSpec[] = [
     id: 'angle',
     name: 'angle',
     family: 'measures',
-    signatures: [{ params: ['point', 'point', 'point'] }],
+    signatures: [{ params: ['point', 'point', 'point'], radical: true }],
     outputKinds: ['number'],
     compute: angle,
     degenerate: ['A = B or C = B → Undefined', 'collinear: 0° or 180°', 'mod p → Inexact'],
@@ -191,7 +194,7 @@ export const MEASURE_TOOLS: readonly ToolSpec[] = [
     id: 'dangle',
     name: 'dangle',
     family: 'measures',
-    signatures: [{ params: ['point', 'point', 'point'] }],
+    signatures: [{ params: ['point', 'point', 'point'], radical: true }],
     outputKinds: ['number'],
     compute: dangle,
     degenerate: [
