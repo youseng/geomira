@@ -57,6 +57,9 @@ function styleItems(s: Style): string[] {
   if (s.hidden !== undefined) out.push(s.hidden ? 'hidden' : 'hidden=false');
   if (s.noimage !== undefined) out.push(s.noimage ? 'noimage' : 'noimage=false');
   if (s.label !== undefined) out.push(`label=${quote(s.label)}`);
+  if (s.z !== undefined) out.push(`z=${formatFloat(s.z)}`);
+  if (s.labelAngle !== undefined) out.push(`label_angle=${formatFloat(s.labelAngle)}`);
+  if (s.labelDist !== undefined) out.push(`label_dist=${formatFloat(s.labelDist)}`);
   return out;
 }
 

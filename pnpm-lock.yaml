@@ -124,7 +124,14 @@ importers:
 
   packages/num: {}
 
-  packages/scene: {}
+  packages/scene:
+    dependencies:
+      '@geomira/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@geomira/num':
+        specifier: workspace:*
+        version: link:../num
 
 packages:
 

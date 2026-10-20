@@ -19,6 +19,18 @@ export interface Style {
   /** Excludes the object from derived layers (SPEC §8.2). */
   readonly noimage?: boolean;
   readonly label?: string;
+  /**
+   * Drawing order within a layer (the scene, ADR-0010): a higher z is drawn later, on top.
+   * Absent = 0. Any finite number.
+   */
+  readonly z?: number;
+  /**
+   * Direction of the label's offset from its anchor, in degrees counter-clockwise from +x
+   * (SPEC §13 "offsets as (angle, pixels)", ADR-0010). Absent = chosen by the scene.
+   */
+  readonly labelAngle?: number;
+  /** Length of the label's offset in CSS pixels, ≥ 0 (ADR-0010). Absent = the kind's default. */
+  readonly labelDist?: number;
 }
 
 export interface DocObject {

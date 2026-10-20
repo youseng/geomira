@@ -56,6 +56,10 @@ function randomStyle(rng: Rng): Style {
   if (chance(rng, 0.3)) s = { ...s, hidden: chance(rng, 0.5) };
   if (chance(rng, 0.2)) s = { ...s, noimage: chance(rng, 0.5) };
   if (chance(rng, 0.3)) s = { ...s, label: text(rng, true) };
+  // ADR-0010 (Run 7): the scene's style fields.
+  if (chance(rng, 0.2)) s = { ...s, z: double(rng, -5, 5) };
+  if (chance(rng, 0.2)) s = { ...s, labelAngle: double(rng, -360, 360) };
+  if (chance(rng, 0.2)) s = { ...s, labelDist: double(rng, 0, 40) };
   return s;
 }
 
