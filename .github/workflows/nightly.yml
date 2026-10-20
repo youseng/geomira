@@ -6,7 +6,7 @@ name: nightly
 # Mutation scores are reported, not gated, until v1.1. Mutation runs only on schedule and
 # workflow_dispatch; a push that changes this file or a test config runs the test job only.
 #
-# Mutation is sharded (scripts/mutation-shards.ts): the kernel in nine file groups, num and
+# Mutation is sharded (scripts/mutation-shards.ts): the kernel in eleven shards, num and
 # claims whole. Every shard has its own incremental file and cache key, saves them under
 # `if: always()`, and gives Stryker its own time limit below the job's, so a finished shard
 # keeps its progress even if another shard runs out of time. A dispatch with `full` ignores
@@ -29,6 +29,7 @@ on:
       - stryker.*.json
       - vitest.*.config.ts
       - scripts/mutation-shards.ts
+      - scripts/mutation-summary.ts
 
 permissions:
   contents: read
@@ -125,28 +126,18 @@ jobs:
         with:
           path: ${{ env.REPORTS }}/stryker-incremental.json
           key: stryker-${{ matrix.id }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      # Scored by scripts/mutation-summary.ts: only the shard's own mutants count (the report
+      # also carries old results of mutants outside the shard, kept by incremental mode).
       - name: Mutation score summary
         if: always()
         env:
           ID: ${{ matrix.id }}
-          PKG: ${{ matrix.pkg }}
         run: |
           if [ ! -f "$REPORTS/mutation.json" ]; then
             echo "$ID: no report (Stryker did not finish)" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          node -e '
-            const { ID: id, PKG: pkg, REPORTS: dir } = process.env;
-            const r = require(`./${dir}/mutation.json`);
-            let detected = 0, undetected = 0;
-            for (const f of Object.values(r.files)) for (const m of f.mutants) {
-              if (["Killed", "Timeout"].includes(m.status)) detected++;
-              if (["Survived", "NoCoverage"].includes(m.status)) undetected++;
-            }
-            const score = (100 * detected / (detected + undetected)).toFixed(2);
-            const target = pkg === "num" ? 80 : 75;
-            console.log(`${id} mutation score: ${score}% (${detected} detected, ${undetected} undetected; target ${target}%, gated from v1.1)`);
-          ' | tee -a "$GITHUB_STEP_SUMMARY"
+          pnpm exec tsx scripts/mutation-summary.ts "$ID" "$REPORTS/mutation.json" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Upload mutation report
         if: always()
         uses: actions/upload-artifact@v7

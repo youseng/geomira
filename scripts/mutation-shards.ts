@@ -35,14 +35,42 @@ export function fileOf(entry: string): string {
   return entry.replace(/:\d+-\d+$/u, '');
 }
 
+/** The two glob forms the configs and shards use: an exact path and `<dir>/**\/*.ts`. */
+export function matchesGlob(pattern: string, file: string): boolean {
+  const suffix = '/**/*.ts';
+  if (pattern.endsWith(suffix))
+    return file.startsWith(pattern.slice(0, -suffix.length + 1)) && file.endsWith('.ts');
+  return pattern === file;
+}
+
+/**
+ * Whether a mutant of `file` (repo-relative; lines 1-based, as in Stryker's JSON report) is the
+ * shard's own, by Stryker's rule: a `file:a-b` entry holds a mutant only when the whole mutant
+ * lies in lines a..b, and `!glob` removes files. A shard without `mutate` owns its whole report.
+ */
+export function inScope(shard: Shard, file: string, start: number, end: number): boolean {
+  if (shard.mutate.length === 0) return true;
+  const minus = shard.mutate.filter((m) => m.startsWith('!')).map((m) => m.slice(1));
+  if (minus.some((p) => matchesGlob(p, file))) return false;
+  return shard.mutate
+    .filter((m) => !m.startsWith('!'))
+    .some((entry) => {
+      if (!matchesGlob(fileOf(entry), file)) return false;
+      const r = /:(\d+)-(\d+)$/u.exec(entry);
+      return r === null || (Number(r[1]) <= start && end <= Number(r[2]));
+    });
+}
+
 /**
  * The kernel's file groups. The first split (four groups: kernel-1 … kernel-4) took 51–58
  * minutes per full shard on a GitHub runner, and two shards ran past 75; each group was
  * halved. In the eight-way split the full runs took 9–53 minutes, the "rest" shard the
  * longest, so lines.ts got its own shard; in the nine-way split (full runs measured with
  * full=true) transforms.ts alone took more than 50 minutes, so it is cut into three line
- * ranges. The last group takes every other file under tools/. `parent` names an earlier shard that held the files (its cache seeds this shard's
- * first run).
+ * ranges, cut only between top-level statements (a mutant that spans two ranges belongs to
+ * neither; scripts/mutation-shards.test.ts checks the cuts). The last group takes every other
+ * file under tools/. `parent` names an earlier shard that held the files (its cache seeds this
+ * shard's first run).
  */
 const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly parent: string }[] = [
   { files: [`${K}/geom.ts`, `${K}/similarity.ts`], parent: 'kernel-1' },

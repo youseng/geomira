@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import * as ts from 'typescript';
 import { describe, expect, it } from 'vitest';
-import { fileOf, matrix, OPEN_END, SHARDS } from './mutation-shards';
+import { fileOf, matchesGlob, matrix, OPEN_END, SHARDS } from './mutation-shards';
 
 const ROOT = join(import.meta.dirname, '..');
 
@@ -11,20 +12,12 @@ function filesUnder(dir: string): string[] {
   );
 }
 
-/** The two glob forms the configs and shards use: an exact path and `<dir>/**\/*.ts`. */
-function matches(pattern: string, file: string): boolean {
-  const suffix = '/**/*.ts';
-  if (pattern.endsWith(suffix))
-    return file.startsWith(pattern.slice(0, -suffix.length + 1)) && file.endsWith('.ts');
-  return pattern === file;
-}
-
 /** Files selected by a Stryker `mutate` list (positive globs, then `!` exclusions). */
 function selected(patterns: readonly string[], universe: readonly string[]): string[] {
   const plus = patterns.filter((p) => !p.startsWith('!')).map(fileOf);
   const minus = patterns.filter((p) => p.startsWith('!')).map((p) => p.slice(1));
   return universe.filter(
-    (f) => plus.some((p) => matches(p, f)) && !minus.some((p) => matches(p, f)),
+    (f) => plus.some((p) => matchesGlob(p, f)) && !minus.some((p) => matchesGlob(p, f)),
   );
 }
 
@@ -76,6 +69,34 @@ describe('nightly mutation shards', () => {
     }
     expect([...whole.keys(), ...ranges.keys()].sort()).toEqual([...all].sort());
     expect([...whole.values()].every((c) => c === 1)).toBe(true);
+  });
+
+  it('a split file is cut only between top-level statements (a mutant across a cut is in no range)', () => {
+    const cutsByFile = new Map<string, number[]>();
+    for (const entry of kernel.flatMap((s) => s.mutate)) {
+      const r = /:\d+-(\d+)$/u.exec(entry);
+      if (r === null || Number(r[1]) === OPEN_END) continue;
+      cutsByFile.set(fileOf(entry), [...(cutsByFile.get(fileOf(entry)) ?? []), Number(r[1])]);
+    }
+    expect(cutsByFile.size).toBeGreaterThan(0);
+    for (const [file, cuts] of cutsByFile) {
+      const text = readFileSync(join(ROOT, file), 'utf8');
+      const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
+      const lineOf = (pos: number) => source.getLineAndCharacterOfPosition(pos).line + 1;
+      for (const statement of source.statements) {
+        const [a, b] = [lineOf(statement.getStart(source)), lineOf(statement.getEnd())];
+        for (const cut of cuts)
+          expect(
+            a <= cut && b > cut,
+            `${file}: lines ${String(a)}-${String(b)} cross ${String(cut)}`,
+          ).toBe(false);
+      }
+    }
+  });
+
+  it('every glob a shard uses has a form matchesGlob reads', () => {
+    for (const p of SHARDS.flatMap((s) => s.mutate).filter((m) => m.includes('*')))
+      expect(p.replace(/^!/, ''), p).toMatch(/^[^*]+\/\*\*\/\*\.ts$/u);
   });
 
   it('every file a shard names exists (a renamed file cannot drop out silently)', () => {
