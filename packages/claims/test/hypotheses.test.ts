@@ -72,7 +72,8 @@ describe('hypotheses: open conditions with a BAND margin', () => {
   });
 
   it('inside a polygon (strictly; the boundary fails, its band is ambiguous)', () => {
-    const square: Value<number> = { kind: 'polygon', pts: [P(0, 0), P(4, 0), P(4, 4), P(0, 4)] };
+    const v = (x: number, y: number) => ({ x, y });
+    const square: Value<number> = { kind: 'polygon', pts: [v(0, 0), v(4, 0), v(4, 4), v(0, 4)] };
     expect(check('inside', [P(1, 1), square])).toBe('holds');
     expect(check('inside', [P(5, 1), square])).toBe('fails');
     expect(check('inside', [P(4, 1), square])).toBe('fails');
