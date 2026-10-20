@@ -8,7 +8,7 @@ compared with `run-3a`), and ci and deploy were green in CI on that commit
 (https://github.com/youseng/geomira/actions/runs/39338015540,
 https://github.com/youseng/geomira/actions/runs/39338015541), so there was no red base.
 
-Every criterion holds: verify is green locally, in a clean clone (7e4c55c) and in CI (table
+Every criterion holds: verify is green locally, in a clean clone (c6ac36c) and in CI (table
 under "CI on GitHub"); candidates for intersect(curve, curve), tangent_point and tangent_from;
 every selector of SPEC §7 with the band rules and the parse-level errors;
 `isOrientationDependent`; each selector checked on 500 random figures, the mirror tests,
@@ -19,7 +19,8 @@ transformation tools, the display marks and `text`, and the `triangle` sugar, wh
 to later runs (transformations, scene, language); they are NOT registered, because the run
 prompt and CLAUDE.md forbid starting later runs' work. Every other §6.2 tool is registered,
 including three that Runs 2 and 3a had missed (`ninepoint_center`, `power`, `radius`), added
-here first. Kernel coverage 99.33% lines.
+here first. Kernel coverage 99.33% lines; kernel mutation score 99.17% (incremental, c6ac36c;
+97.46% in the full run on 7e4c55c, whose survivors pointed at test gaps now closed).
 
 ## Done (each item → the test file that proves it)
 
@@ -110,7 +111,13 @@ here first. Kernel coverage 99.33% lines.
     10, 6, 4 and 8 tests, the fifth was equivalent (`g !== 1` where g can only be ±1).
 14. ADR-0006 (branch selection); packages/kernel/README.md; docs/tools.md regenerated
     (examples with selectors, including irrational ones); the exactness table below;
-    docs/test-count.txt raised from 718 to 837.
+    docs/test-count.txt raised from 718 to 841.
+15. **Test gaps found by mutation testing, closed** (c6ac36c): the messages naming the
+    object other(P) checks first, the ray in "outside the ray" and the range-end messages;
+    a ray that meets a circle once needs no selector; exact tangency of circles with
+    irrational radii over Q (the exact sign of D) and mod p; degenerate first arguments.
+    Dead or equivalent code removed (other(P)'s data in one optional field that line ∩ line
+    omits; a no-op shortcut; an unused default parameter). → `branch-gaps.test.ts`.
 
 ### Registry vs SPEC §6.2, item by item
 
@@ -246,19 +253,30 @@ compared with run-3a, 0 violation(s)`). Lines were ADDED to these frozen files:
 
 ## Acceptance command output
 
-### Clean clone of 7e4c55c (`pnpm install --frozen-lockfile && pnpm verify`)
+### Clean clone of c6ac36c (`pnpm install --frozen-lockfile && pnpm verify`; 7e4c55c, before the mutation gaps were closed, was green too with 837 tests)
 
 ```
-$ git clone … && git checkout 7e4c55c && pnpm install --frozen-lockfile   # Done in 1.5s using pnpm v10.28.0
+$ git clone … && git checkout c6ac36c && pnpm install --frozen-lockfile   # Done in 1.1s using pnpm v10.28.0
 $ pnpm verify
 All matched files use Prettier code style!
-✔ no dependency violations found (156 modules, 818 dependencies cruised)
-ok   tolerance: 232 files scanned, 0 violation(s)
-ok   file-length: 232 files scanned, 0 violation(s)
-ok   test-count: 837 tests, floor 837, 0 violation(s)
-ok   disabled-tests: 232 files scanned, 0 violation(s)
+✔ no dependency violations found (157 modules, 827 dependencies cruised)
+ok   tolerance: 233 files scanned, 0 violation(s)
+ok   file-length: 233 files scanned, 0 violation(s)
+ok   test-count: 841 tests, floor 837, 0 violation(s)
+ok   disabled-tests: 233 files scanned, 0 violation(s)
 ok   add-only: frozen tests compared with run-3a, 0 violation(s)
-ok   forbidden-words: 232 files scanned, 0 violation(s)
+ok   forbidden-words: 233 files scanned, 0 violation(s)
+L3 intersect: 444 defined + 1723 Undefined agree, 202 not exact, 31 excluded (band); mod p 257
+L1 branch FloatField: 2000 documents, 112976 objects (27943 branchable calls, 1034 defined without selectors: double points and lone intersections), 48767 Undefined, 92 Inexact, 0 throws, 0 non-finite; reached: the line misses the circle 265, the circles are apart 43, one circle lies inside the other 59, concentric circles 1613, P lies inside the circle 568, ambiguous: add a selector 183, satisfies 578, does not apply to 1923, may appear only once 253, bare index 1044, takes no selectors 1491, needs the point on 934, within the band of incidence 121, lies on the line 306, needs two distinct 205, is undefined 36023, coincident points 1154
+L1 branch RationalField: 2000 documents, 112976 objects (27943 branchable calls, 625 defined without selectors: double points and lone intersections), 47939 Undefined, 2414 Inexact, 0 throws, 0 non-finite; reached: the line misses the circle 744, the circles are apart 130, one circle lies inside the other 205, concentric circles 1578, P lies inside the circle 683, ambiguous: add a selector 333, satisfies 325, does not apply to 1878, may appear only once 241, bare index 1025, takes no selectors 1491, needs the point on 949, within the band of incidence 0, lies on the line 167, needs two distinct 103, is undefined 35339, coincident points 1130
+L1 branch ModPField: 2000 documents, 112976 objects (27943 branchable calls, 587 defined without selectors: double points and lone intersections), 43118 Undefined, 7852 Inexact, 0 throws, 0 non-finite; reached: the line misses the circle 0, the circles are apart 0, one circle lies inside the other 0, concentric circles 1569, P lies inside the circle 456, ambiguous: add a selector 596, satisfies 0, does not apply to 1866, may appear only once 234, bare index 1016, takes no selectors 1491, needs the point on 1164, within the band of incidence 0, lies on the line 0, needs two distinct 76, is undefined 32443, coincident points 1120
+L3 ninepoint_center: 2137 defined + 234 Undefined agree, 0 not exact, 29 excluded (band); mod p 2137
+L3 power: 2100 defined + 284 Undefined agree, 0 not exact, 16 excluded (band); mod p 2100
+L3 radius: 588 defined + 314 Undefined agree, 1487 not exact, 11 excluded (band); mod p 0
+L3 tangent_point: 1201 defined + 1191 Undefined agree, 0 not exact, 8 excluded (band); mod p 1202
+L3 tangent_from: 1218 defined + 1173 Undefined agree, 0 not exact, 9 excluded (band); mod p 1222
+L11 branch: 476 paths through tangency, 38522 steps with |ΔV| ≤ 1.5·L·Δs, 9350 near-tangency steps with |ΔV| ≤ |ΔE| + h_band
+L11 other(): 3720 steps through tangency, |ΔX| ≤ 2r·Δφ, no Undefined
 theorem (float) the incenter–excenter lemma with other(A): 199 hold, 0 degenerate, 1 ill-conditioned
 theorem (heronian) the incenter–excenter lemma with other(A): 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (float) the arc midpoint: 199 hold, 0 degenerate, 1 ill-conditioned
@@ -279,17 +297,14 @@ theorem (float) the butterfly theorem: 199 hold, 0 degenerate, 1 ill-conditioned
 theorem (float) Reim's theorem: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (rational) Reim's theorem: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (float) tangent lengths from A: 199 hold, 0 degenerate, 1 ill-conditioned
+selector same_side: 396 one survivor, 72 two, 32 none; 0 draws not decisive
 theorem (heronian) tangent lengths from A: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (float) intersect(line(B, C), incircle) with no selector is the doub: 200 hold, 0 degenerate, 0 ill-conditioned
-theorem (heronian) intersect(line(B, C), incircle) with no selector is the doub: 200 hold, 0 degenerate, 0 ill-conditioned
-mirror: 3795 equivariant and 3600 orientation-dependent choices mirrored, 405 Undefined agree, 600 gliders re-projected
-L11 branch: 476 paths through tangency, 38522 steps with |ΔV| ≤ 1.5·L·Δs, 9350 near-tangency steps with |ΔV| ≤ |ΔE| + h_band
-selector same_side: 396 one survivor, 72 two, 32 none; 0 draws not decisive
 selector opposite_side: 370 one survivor, 40 two, 90 none; 0 draws not decisive
+theorem (heronian) intersect(line(B, C), incircle) with no selector is the doub: 200 hold, 0 degenerate, 0 ill-conditioned
 selector on_arc: 192 one survivor, 226 two, 82 none; 0 draws not decisive
 selector on_arc not: 177 one survivor, 82 two, 241 none; 0 draws not decisive
 selector between: 359 one survivor, 69 two, 72 none; 0 draws not decisive
-L11 other(): 3720 steps through tangency, |ΔX| ≤ 2r·Δφ, no Undefined
 selector inside: 316 one survivor, 15 two, 169 none; 0 draws not decisive
 selector outside: 329 one survivor, 151 two, 20 none; 0 draws not decisive
 selector near: 500 one survivor, 0 two, 0 none; 0 draws not decisive
@@ -298,23 +313,15 @@ selector other: 500 one survivor, 0 two, 0 none; 0 draws not decisive
 selector along(+): 500 one survivor, 0 two, 0 none; 0 draws not decisive
 selector along(-): 500 one survivor, 0 two, 0 none; 0 draws not decisive
 selector orient(+): 500 one survivor, 0 two, 0 none; 0 draws not decisive
-L3 branch: 1512 defined + 2465 Undefined agree, 0 not exact, 23 excluded (band); mod p 243; defined per shape/selector: {"near":174,"other":482,"cl":341,"between":145,"orient":312,"tangent_point":249,"inside":79,"cc":332,"far_from":159,"tangent_from":238,"along":215,"same_side":113,"lc":352,"on_arc":171,"outside":71,"opposite_side":55}
 selector orient(-): 500 one survivor, 0 two, 0 none; 0 draws not decisive
-L3 intersect: 444 defined + 1723 Undefined agree, 202 not exact, 31 excluded (band); mod p 257
-L3 ninepoint_center: 2137 defined + 234 Undefined agree, 0 not exact, 29 excluded (band); mod p 2137
-L3 power: 2100 defined + 284 Undefined agree, 0 not exact, 16 excluded (band); mod p 2100
-L3 radius: 588 defined + 314 Undefined agree, 1487 not exact, 11 excluded (band); mod p 0
-L3 tangent_point: 1201 defined + 1191 Undefined agree, 0 not exact, 8 excluded (band); mod p 1202
-L3 tangent_from: 1218 defined + 1173 Undefined agree, 0 not exact, 9 excluded (band); mod p 1222
-L1 branch FloatField: 2000 documents, 112976 objects (27943 branchable calls, 1034 defined without selectors: double points and lone intersections), 48767 Undefined, 92 Inexact, 0 throws, 0 non-finite; reached: the line misses the circle 265, the circles are apart 43, one circle lies inside the other 59, concentric circles 1613, P lies inside the circle 568, ambiguous: add a selector 183, satisfies 578, does not apply to 1923, may appear only once 253, bare index 1044, takes no selectors 1491, needs the point on 934, within the band of incidence 121, lies on the line 306, needs two distinct 205, is undefined 36023, coincident points 1154
-L1 branch RationalField: 2000 documents, 112976 objects (27943 branchable calls, 625 defined without selectors: double points and lone intersections), 47939 Undefined, 2414 Inexact, 0 throws, 0 non-finite; reached: the line misses the circle 744, the circles are apart 130, one circle lies inside the other 205, concentric circles 1578, P lies inside the circle 683, ambiguous: add a selector 333, satisfies 325, does not apply to 1878, may appear only once 241, bare index 1025, takes no selectors 1491, needs the point on 949, within the band of incidence 0, lies on the line 167, needs two distinct 103, is undefined 35339, coincident points 1130
-L1 branch ModPField: 2000 documents, 112976 objects (27943 branchable calls, 587 defined without selectors: double points and lone intersections), 43118 Undefined, 7852 Inexact, 0 throws, 0 non-finite; reached: the line misses the circle 0, the circles are apart 0, one circle lies inside the other 0, concentric circles 1569, P lies inside the circle 456, ambiguous: add a selector 596, satisfies 0, does not apply to 1866, may appear only once 234, bare index 1016, takes no selectors 1491, needs the point on 1164, within the band of incidence 0, lies on the line 0, needs two distinct 76, is undefined 32443, coincident points 1120
- Test Files  73 passed (73)
-      Tests  837 passed (837)
+mirror: 3795 equivariant and 3600 orientation-dependent choices mirrored, 405 Undefined agree, 600 gliders re-projected
+L3 branch: 1512 defined + 2465 Undefined agree, 0 not exact, 23 excluded (band); mod p 243; defined per shape/selector: {"near":174,"other":482,"cl":341,"between":145,"orient":312,"tangent_point":249,"inside":79,"cc":332,"far_from":159,"tangent_from":238,"along":215,"same_side":113,"lc":352,"on_arc":171,"outside":71,"opposite_side":55}
+ Test Files  74 passed (74)
+      Tests  841 passed (841)
 File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
-Statements   : 99.33% ( 2247/2262 )
-Branches     : 98.12% ( 1776/1810 )
-Lines        : 99.56% ( 1835/1843 )
+Statements   : 99.33% ( 2245/2260 )
+Branches     : 98.11% ( 1771/1805 )
+Lines        : 99.56% ( 1834/1842 )
 verify exit=0
 ```
 
@@ -322,23 +329,76 @@ verify exit=0
 "L3 branch": "defined per shape/selector" counts the defined exact comparisons in which each
 shape or selector took part.
 
-### Mutation testing of kernel geometry (`pnpm mutation:kernel`, local, full run on 7e4c55c)
+### Mutation testing of kernel geometry (`pnpm mutation:kernel`, local)
 
-Running at the time of this commit (2,922 mutants, of which the TypeScript checker rejects
-part); its score is added by the next STATUS commit. Mutation scores are informational
-until v1.1 (SPEC §17 L15).
+Full run on 7e4c55c (no incremental file existed locally), 48 minutes:
+
+```
+File                 |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+All files            |  97.46 |   97.70 |     1188 |         0 |         28 |        3 |     1703 |
+  intersect.ts       |  97.65 |   97.65 |       83 |         0 |          2 |        0 |      113 |
+  pairs.ts           |  79.57 |   79.57 |       74 |         0 |         19 |        0 |      132 |
+  range.ts           |  91.67 |   95.65 |       22 |         0 |          1 |        1 |       29 |
+  tangent-from.ts    |  98.48 |   98.48 |       65 |         0 |          1 |        0 |       94 |
+  circle-measures.ts | 100.00 |  100.00 |       43 |         0 |          0 |        0 |       46 |
+```
+
+The survivors of the new code were test gaps (Done, item 15) and dead code, closed in
+c6ac36c. Incremental run on c6ac36c (2,579 of 2,909 results reused, 2 minutes 33 seconds):
+
+```
+File                 |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+All files            |  99.17 |   99.34 |     1197 |         0 |          8 |        2 |     1702 |
+ tools               |  99.25 |   99.42 |     1190 |         0 |          7 |        2 |     1668 |
+  args.ts            |  95.45 |   95.45 |       21 |         0 |          1 |        0 |       50 |
+  arithmetic.ts      | 100.00 |  100.00 |       43 |         0 |          0 |        0 |       62 |
+  circle-measures.ts | 100.00 |  100.00 |       43 |         0 |          0 |        0 |       46 |
+  circles.ts         |  99.28 |   99.28 |      138 |         0 |          1 |        0 |      179 |
+  display.ts         | 100.00 |  100.00 |       32 |         0 |          0 |        0 |       25 |
+  functions.ts       |  98.21 |  100.00 |       55 |         0 |          0 |        1 |       80 |
+  incircle.ts        | 100.00 |  100.00 |       86 |         0 |          0 |        0 |      129 |
+  index.ts           | 100.00 |  100.00 |        1 |         0 |          0 |        0 |        0 |
+  intersect.ts       | 100.00 |  100.00 |       85 |         0 |          0 |        0 |      113 |
+  lines.ts           | 100.00 |  100.00 |       78 |         0 |          0 |        0 |      109 |
+  measures.ts        |  99.01 |  100.00 |      100 |         0 |          0 |        1 |      160 |
+  on.ts              | 100.00 |  100.00 |       47 |         0 |          0 |        0 |       65 |
+  other.ts           | 100.00 |  100.00 |       49 |         0 |          0 |        0 |       74 |
+  pairs.ts           |  98.80 |   98.80 |       82 |         0 |          1 |        0 |      130 |
+  points.ts          |  98.37 |   98.37 |      121 |         0 |          2 |        0 |      159 |
+  range.ts           |  95.65 |   95.65 |       22 |         0 |          1 |        0 |       29 |
+  tangent-from.ts    |  98.46 |   98.46 |       64 |         0 |          1 |        0 |       95 |
+  tangents.ts        | 100.00 |  100.00 |       70 |         0 |          0 |        0 |       81 |
+  triangle.ts        | 100.00 |  100.00 |       53 |         0 |          0 |        0 |       82 |
+ geom.ts             |  87.50 |   87.50 |        7 |         0 |          1 |        0 |       34 |
+```
+
+99.17% on c6ac36c (informational until v1.1, SPEC §17 L15). The 8 survivors are
+equivalent: Run 2's and 3a's five (geom.ts `abs`'s `case -1`, `pointsOf`'s length check,
+`param`'s range mod p, the flag of `foot`'s internal line, circles.ts `centreRadius`'s
+`s === 'none'`), and three new ones: one operand of `ranged: l.lo !== null || l.hi !==
+null` and of rangeName's `l.lo !== null && l.hi !== null` (a v1 line-like value has
+`lo === null` only when `hi === null` too), and the chirality flag of the polar line that
+tangent-from.ts builds only to test incidence (no result carries it). The 2 NoCoverage
+mutants are the messages of unreachable `assertNever` calls (measures.ts, functions.ts).
+Stryker ran in a clean clone, so this working tree was never touched during a run.
 
 ### CI on GitHub
 
-| Workflow | Run                                                         | Result                                                                     |
-| -------- | ----------------------------------------------------------- | -------------------------------------------------------------------------- |
-| ci       | https://github.com/youseng/geomira/actions/runs/39345215160 | success on 7e4c55c (push, the last code commit): verify, build, Playwright |
-| deploy   | https://github.com/youseng/geomira/actions/runs/39345215246 | success on 7e4c55c (build job; deploy job skipped off the default branch)  |
-| ci       | https://github.com/youseng/geomira/actions/runs/39344486107 | success on 482aea7 (push: the theorems)                                    |
-| ci       | https://github.com/youseng/geomira/actions/runs/39344064779 | success on 0a2b26a (push: laws L1 and L3 for branch selection)             |
-| ci       | https://github.com/youseng/geomira/actions/runs/39343627159 | success on 4657487 (push: predicates, mirror, band edges, L11)             |
-| ci       | https://github.com/youseng/geomira/actions/runs/39342405306 | success on 4fb7c83 (push: candidates and selectors)                        |
-| ci       | https://github.com/youseng/geomira/actions/runs/39345173909 | cancelled on 88543f0 (push; superseded by the push of 7e4c55c)             |
+| Workflow | Run                                                         | Result                                                                                        |
+| -------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| ci       | https://github.com/youseng/geomira/actions/runs/39350515735 | success on c6ac36c (push, the last code commit: the mutation gaps): verify, build, Playwright |
+| ci       | https://github.com/youseng/geomira/actions/runs/39350519800 | success on c6ac36c (pull_request, PR #6)                                                      |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39350515739 | success on c6ac36c (build job; deploy job skipped off the default branch)                     |
+| ci       | https://github.com/youseng/geomira/actions/runs/39345792268 | success on bcf0592 (push, the interim STATUS commit)                                          |
+| ci       | https://github.com/youseng/geomira/actions/runs/39345799018 | success on bcf0592 (pull_request, PR #6)                                                      |
+| ci       | https://github.com/youseng/geomira/actions/runs/39345650020 | cancelled on 7e4c55c (pull_request; superseded by the push of bcf0592)                        |
+| ci       | https://github.com/youseng/geomira/actions/runs/39345215160 | success on 7e4c55c (push, before the mutation gaps): verify, build, Playwright                |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39345215246 | success on 7e4c55c (build job; deploy job skipped off the default branch)                     |
+| ci       | https://github.com/youseng/geomira/actions/runs/39344486107 | success on 482aea7 (push: the theorems)                                                       |
+| ci       | https://github.com/youseng/geomira/actions/runs/39344064779 | success on 0a2b26a (push: laws L1 and L3 for branch selection)                                |
+| ci       | https://github.com/youseng/geomira/actions/runs/39343627159 | success on 4657487 (push: predicates, mirror, band edges, L11)                                |
+| ci       | https://github.com/youseng/geomira/actions/runs/39342405306 | success on 4fb7c83 (push: candidates and selectors)                                           |
+| ci       | https://github.com/youseng/geomira/actions/runs/39345173909 | cancelled on 88543f0 (push; superseded by the push of 7e4c55c)                                |
 
 ## Requests
 
