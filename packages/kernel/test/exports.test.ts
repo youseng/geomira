@@ -15,6 +15,7 @@ import * as names from '../src/names';
 import * as registry from '../src/registry';
 import * as selector from '../src/selector';
 import * as selectorCheck from '../src/selector-check';
+import * as similarity from '../src/similarity';
 import * as tool from '../src/tool';
 import * as value from '../src/value';
 
@@ -96,6 +97,21 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'callDiagnostics',
       'selectorDiagnostics',
       'staticKinds',
+    ],
+  },
+  './similarity': {
+    module: similarity,
+    names: [
+      'applySimilarity',
+      'composeSimilarities',
+      'identity',
+      'inverseSimilarity',
+      'mapDirection',
+      'mapPoint',
+      'scale2',
+      'similarity',
+      'similarityProblem',
+      'transformOf',
     ],
   },
 };

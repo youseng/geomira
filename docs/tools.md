@@ -561,6 +561,134 @@ excircle(A, B, C): the excircle opposite A; anchor: its touch point on BC.
   - `excircle((5, 12), (0, 0), (14, 0))` → circle centre (8, -12), r² = 144, anchor (8, 0)
   - `excircle((0, 0), (4, 0), (1, 3))` → circle centre (5.70245917364, 4.1101000264), r² = 16.892922227, anchor (2.79617957362, 1.20382042638)
 
+## Transformations
+
+### reflect
+
+reflect(l): the reflection in the carrier line of l (an anti-similarity); reflect(P): the half turn about P. reflect(X, l) and reflect(X, P) are the images of X.
+
+- Signatures: `reflect(linear)`, `reflect(point)`, `reflect(point, linear)`, `reflect(curve, linear)`, `reflect(polygon, linear)`, `reflect(point, point)`, `reflect(curve, point)`, `reflect(polygon, point)`
+- Result: transform, point, line, circle, polygon
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - a line with no direction → Undefined
+  - an Undefined mirror → Undefined
+  - X on the mirror (X = P for a point) → X itself
+- Examples:
+  - `reflect(line((0, 0), (1, 1)))` → similarity (anti) z ↦ (0, 1)·z̄ + (0, 0)
+  - `reflect((3, 1), line((0, 0), (1, 1)))` → point (1, 3)
+  - `reflect((1, 2))` → similarity z ↦ (-1, 0)·z + (2, 4)
+  - `reflect((3, 1), (1, 2))` → point (-1, 3)
+
+### rotate
+
+rotate(O, θ): the rotation by θ degrees counter-clockwise about O. rotate(X, O, θ) is the image of X. Exact over Q for multiples of 90°.
+
+- Signatures: `rotate(point, number)`, `rotate(point, point, number)`, `rotate(curve, point, number)`, `rotate(polygon, point, number)`
+- Result: transform, point, line, circle, polygon
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - θ a multiple of 360° → the identity
+  - θ not a multiple of 90° → Inexact over Q and mod p
+  - an Undefined centre → Undefined
+- Examples:
+  - `rotate((0, 0), 90)` → similarity z ↦ (0, 1)·z + (0, 0)
+  - `rotate((2, 0), (0, 0), 90)` → point (0, 2)
+  - `rotate((1, 0), (0, 0), 60)` → point (0.5, 0.866025403784)
+
+### homothety
+
+homothety(O, k): the homothety with centre O and ratio k (negative k allowed). homothety(X, O, k) is the image of X.
+
+- Signatures: `homothety(point, number)`, `homothety(point, point, number)`, `homothety(curve, point, number)`, `homothety(polygon, point, number)`
+- Result: transform, point, line, circle, polygon
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - k = 0 → Undefined
+  - k = 1 → the identity; k = −1 → the half turn about O
+- Examples:
+  - `homothety((1, 1), 2)` → similarity z ↦ (2, 0)·z + (-1, -1)
+  - `homothety((3, 1), (1, 1), 1/2)` → point (2, 1)
+  - `homothety(circle((0, 0), (1, 0)), (2, 0), 3)` → circle centre (-4, 0), r² = 9, anchor (-1, 0)
+
+### translate
+
+translate(A, B): the translation taking A to B. translate(X, A, B) is the image of X.
+
+- Signatures: `translate(point, point)`, `translate(point, point, point)`, `translate(curve, point, point)`, `translate(polygon, point, point)`
+- Result: transform, point, line, circle, polygon
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - A = B → the identity
+- Examples:
+  - `translate((0, 0), (2, 3))` → similarity z ↦ (1, 0)·z + (2, 3)
+  - `translate(line((0, 0), (1, 0)), (0, 0), (2, 3))` → line (2, 3) + t·(1, 0), t ∈ [−∞, ∞]
+
+### spiral
+
+spiral(A, B, C, D): the direct similarity taking A to C and B to D (a spiral similarity, or a translation when B − A = D − C). spiral(X, A, B, C, D) is the image of X.
+
+- Signatures: `spiral(point, point, point, point)`, `spiral(point, point, point, point, point)`, `spiral(curve, point, point, point, point)`, `spiral(polygon, point, point, point, point)`
+- Result: transform, point, line, circle, polygon
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - A = B or C = D → Undefined (coincident points)
+  - B − A = D − C → a translation
+- Examples:
+  - `spiral((0, 0), (1, 0), (0, 0), (0, 2))` → similarity z ↦ (0, 2)·z + (0, 0)
+  - `spiral((1, 1), (0, 0), (1, 0), (0, 0), (0, 2))` → point (-2, 2)
+
+### compose
+
+compose(T1, T2): the map X ↦ T1(T2(X)) (T2 first).
+
+- Signatures: `compose(transform, transform)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - a scale factor that vanishes (within EPS) → Undefined
+  - compose(T, inverse(T)) → the identity
+  - two anti-similarities → a direct similarity
+- Examples:
+  - `compose(reflect(line((0, 0), (1, 0))), reflect(line((0, 0), (0, 1))))` → similarity z ↦ (-1, 0)·z + (0, 0)
+
+### inverse
+
+inverse(T): the inverse map (the preimage of Y is apply(inverse(T), Y)).
+
+- Signatures: `inverse(transform)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - a reflection or a half turn → itself
+  - a hand-built map with scale factor 0 → Undefined
+- Examples:
+  - `inverse(homothety((1, 1), 2))` → similarity z ↦ (1/2, 0)·z + (1/2, 1/2)
+
+### apply
+
+apply(T, X): the image of a point, line, segment, ray, circle, arc or polygon. Ranges are kept, an anti-similarity reverses arcs, the chirality flag and the anchor of a circle are mapped with it (gliders on an image circle stay exact).
+
+- Signatures: `apply(transform, point)`, `apply(transform, curve)`, `apply(transform, polygon)`
+- Result: point, line, circle, polygon
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Degenerate cases:
+  - X a number or a transform → Undefined (not imaged)
+  - an Undefined T or X → Undefined
+  - an anti-similarity reverses arcs; ranges and the chirality flag are kept
+  - a circle without an anchor → an image without one
+- Examples:
+  - `apply(rotate((0, 0), 90), polygon((1, 0), (2, 0), (2, 1)))` → polygon (0, 1) (0, 2) (-1, 2)
+  - `apply(reflect(line((0, 0), (1, 0))), circle((1, 2), (1, 3)))` → circle centre (1, -2), r² = 1, anchor (1, -3)
+
 ## Measures
 
 ### dist

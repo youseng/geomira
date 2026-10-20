@@ -11,6 +11,7 @@
  *     ext_bisector): triangles inscribed in a circle at rational points w², whose chords
  *     2·|sin(φ₁ − φ₂)| are all rational (Heronian triangles).
  *   - Circle arguments: a random circle from the circle tools.
+ *   - Transformation tools (Run 4): l3-plans-transforms.ts.
  */
 import { add, div, mul, rational, sub, type Rational } from '@geomira/num/rational';
 import type { Rng } from '@geomira/num/rng';
@@ -18,6 +19,7 @@ import { call, lit, type Expr } from '../../src/expr';
 import type { Capability } from '../../src/value';
 import type { Builder } from './doc';
 import { FUNCTION_TOOLS, functionPlan } from './l3-plans-functions';
+import { TRANSFORM_TOOLS, transformPlan } from './l3-plans-transforms';
 
 type XY = readonly [Rational, Rational];
 
@@ -125,6 +127,11 @@ export function planArgs(
 ): Expr[] | undefined {
   if (HERONIAN.includes(tool)) return rng.nextFloat() < 0.5 ? heronian(b, rng) : undefined;
   if (FUNCTION_TOOLS.includes(tool)) return functionPlan(b, rng, tool);
+  if (TRANSFORM_TOOLS.includes(tool)) {
+    // Maps built from points alone: 30% of the samples from the sampler's own draws.
+    const own = !caps.includes('transform') && tool !== 'rotate' && rng.nextFloat() < 0.3;
+    return own ? undefined : transformPlan(b, rng, tool, caps);
+  }
   if (!INCIDENCE.includes(tool)) return undefined;
   // tangent_point / tangent_from (Run 3b): half the samples random (P inside or outside:
   // Undefined in both fields), half with P exactly on c (the double point, defined).

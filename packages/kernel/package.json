@@ -20,7 +20,8 @@
     "./docs": "./src/docs.ts",
     "./glider": "./src/glider.ts",
     "./selector": "./src/selector.ts",
-    "./selector-check": "./src/selector-check.ts"
+    "./selector-check": "./src/selector-check.ts",
+    "./similarity": "./src/similarity.ts"
   },
   "dependencies": {
     "@geomira/num": "workspace:*"
