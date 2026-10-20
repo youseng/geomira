@@ -110,7 +110,17 @@ importers:
         specifier: workspace:*
         version: link:../num
 
-  packages/lang: {}
+  packages/lang:
+    dependencies:
+      '@geomira/claims':
+        specifier: workspace:*
+        version: link:../claims
+      '@geomira/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@geomira/num':
+        specifier: workspace:*
+        version: link:../num
 
   packages/num: {}
 

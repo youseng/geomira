@@ -10,6 +10,7 @@ export default defineConfig({
         'packages/num/src/**/*.ts',
         'packages/kernel/src/**/*.ts',
         'packages/claims/src/**/*.ts',
+        'packages/lang/src/**/*.ts',
       ],
       reporter: ['text', 'json-summary', 'html'],
       reportsDirectory: 'coverage',
@@ -19,6 +20,8 @@ export default defineConfig({
         'packages/kernel/src/**/*.ts': { lines: 90, branches: 85 },
         // Run 5: claims gated like the kernel.
         'packages/claims/src/**/*.ts': { lines: 90, branches: 85 },
+        // Run 6: lang gated like the kernel and claims.
+        'packages/lang/src/**/*.ts': { lines: 90, branches: 85 },
       },
     },
     projects: [
