@@ -6,15 +6,21 @@ name: nightly
 # Mutation scores are reported, not gated, until v1.1. Mutation runs only on schedule and
 # workflow_dispatch; a push that changes this file or a test config runs the test job only.
 #
-# Mutation is sharded (scripts/mutation-shards.ts): the kernel in eight file groups, num and
+# Mutation is sharded (scripts/mutation-shards.ts): the kernel in nine file groups, num and
 # claims whole. Every shard has its own incremental file and cache key, saves them under
 # `if: always()`, and gives Stryker its own time limit below the job's, so a finished shard
-# keeps its progress even if another shard runs out of time.
+# keeps its progress even if another shard runs out of time. A dispatch with `full` ignores
+# the caches, to measure full runs.
 
 on:
   schedule:
     - cron: '17 3 * * *'
   workflow_dispatch:
+    inputs:
+      full:
+        description: 'Ignore the incremental caches (measure full mutation runs)'
+        type: boolean
+        default: false
   push:
     branches: ['**']
     tags-ignore: ['**']
@@ -93,6 +99,7 @@ jobs:
       # Incremental mode: the previous result lets Stryker re-test only mutants whose code or
       # covering tests changed. Each shard restores the newest entry of its own key.
       - name: Restore incremental mutation result
+        if: ${{ !inputs.full }}
         uses: actions/cache/restore@v6
         with:
           path: ${{ env.REPORTS }}/stryker-incremental.json

@@ -39,12 +39,12 @@ describe('nightly mutation shards', () => {
   const universe = filesUnder('packages/kernel/src');
   const kernel = SHARDS.filter((s) => s.pkg === 'kernel');
 
-  it('the kernel is split into eight shards, each seeded from a four-way shard', () => {
-    expect(kernel.map((s) => s.id)).toEqual(
-      ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((x) => `kernel-${x}`),
+  it('the kernel is split into nine shards, each seeded from an earlier shard', () => {
+    expect(kernel.map((s) => s.id).sort()).toEqual(
+      ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'].map((x) => `kernel-${x}`),
     );
     expect(new Set(kernel.map((s) => s.parent))).toEqual(
-      new Set(['kernel-1', 'kernel-2', 'kernel-3', 'kernel-4']),
+      new Set(['kernel-1', 'kernel-2', 'kernel-3', 'kernel-4', 'kernel-h']),
     );
   });
 
