@@ -14,7 +14,8 @@
     "./job": "./src/job.ts",
     "./verdict": "./src/verdict.ts",
     "./rungs": "./src/rungs.ts",
-    "./constants": "./src/constants.ts"
+    "./constants": "./src/constants.ts",
+    "./check": "./src/check.ts"
   },
   "dependencies": {
     "@geomira/kernel": "workspace:*",

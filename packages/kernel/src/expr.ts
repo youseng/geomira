@@ -4,17 +4,22 @@
  * object id (ADR-0003), so renaming never rewrites a definition.
  */
 import { assertNever } from '@geomira/num/assert';
-import { eq as rationalEq, type Rational } from '@geomira/num/rational';
+import { eq as rationalEq, formatRational, type Rational } from '@geomira/num/rational';
 
 export interface RefExpr {
   readonly kind: 'ref';
   readonly id: number;
 }
 
-/** An exact number literal (`2`, `0.1`, `2/3`, `-3/4`). */
+/**
+ * An exact number literal (`2`, `0.1`, `2/3`, `-3/4`). `text` is the literal as written
+ * when that differs from the canonical form (`0.1`, `60°`; ADR-0009): the language prints
+ * numbers as written. It is presentation only: equality and evaluation read `value`.
+ */
 export interface LitExpr {
   readonly kind: 'lit';
   readonly value: Rational;
+  readonly text?: string;
 }
 
 export interface CallExpr {
@@ -55,8 +60,11 @@ export function ref(id: number): RefExpr {
   return { kind: 'ref', id };
 }
 
-export function lit(value: Rational): LitExpr {
-  return { kind: 'lit', value };
+/** A literal; a `text` equal to the canonical form (formatRational) is not stored. */
+export function lit(value: Rational, text?: string): LitExpr {
+  return text === undefined || text === formatRational(value)
+    ? { kind: 'lit', value }
+    : { kind: 'lit', value, text };
 }
 
 export function call(

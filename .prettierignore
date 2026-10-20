@@ -14,3 +14,5 @@ reports/
 .stryker-tmp/
 # Generated from the tool registry (pnpm docs:tools); a test checks it byte for byte.
 docs/tools.md
+# Generated from the grammar, notation tables and registry (pnpm docs:lang); a test checks it byte for byte.
+docs/language.md

@@ -5,7 +5,21 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./parse": "./src/parse.ts",
+    "./print": "./src/print.ts",
+    "./parse-into": "./src/parse-into.ts",
+    "./diagnostic": "./src/diagnostic.ts",
+    "./migrate": "./src/migrate.ts",
+    "./canonical": "./src/canonical.ts",
+    "./notation": "./src/notation.ts",
+    "./grammar": "./src/grammar.ts",
+    "./docs": "./src/docs.ts"
+  },
+  "dependencies": {
+    "@geomira/claims": "workspace:*",
+    "@geomira/kernel": "workspace:*",
+    "@geomira/num": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

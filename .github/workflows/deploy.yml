@@ -5,6 +5,8 @@ name: deploy
 
 on:
   push:
+    branches: ['**']
+    tags-ignore: ['**']
   workflow_dispatch:
 
 permissions:

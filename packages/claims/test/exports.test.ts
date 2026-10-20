@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import pkg from '../package.json' with { type: 'json' };
+import * as check from '../src/check';
 import * as constants from '../src/constants';
 import * as evalClaim from '../src/eval-claim';
 import * as hypotheses from '../src/hypotheses';
@@ -14,6 +15,7 @@ import * as verdict from '../src/verdict';
 
 /** The public modules of @geomira/claims (ADR-0002, ADR-0008) and the runtime names each exports. */
 const SURFACE: Record<string, { module: object; names: string[] }> = {
+  './check': { module: check, names: ['argProblem', 'claimProblem'] },
   './kinds': { module: kinds, names: ['CLAIM_KINDS', 'POLYNOMIAL_KINDS', 'claimKind'] },
   './kind': {
     module: kind,
