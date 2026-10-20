@@ -68,6 +68,15 @@ importers:
       '@geomira/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
+      '@geomira/lang':
+        specifier: workspace:*
+        version: link:../../packages/lang
+      '@geomira/num':
+        specifier: workspace:*
+        version: link:../../packages/num
+      '@geomira/scene':
+        specifier: workspace:*
+        version: link:../../packages/scene
       react:
         specifier: 19.2.9
         version: 19.2.9

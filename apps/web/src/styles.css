@@ -75,3 +75,56 @@ body {
   background: var(--board);
   touch-action: none;
 }
+
+.app-header select,
+.app-header button {
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.app-main {
+  display: flex;
+}
+
+.board {
+  flex: 1;
+  min-width: 0;
+}
+
+.side {
+  width: 15rem;
+  padding: 0.5rem;
+  border-left: 1px solid var(--rule);
+  font-size: 0.8rem;
+  overflow: auto;
+}
+
+.side fieldset {
+  border: 1px solid var(--rule);
+}
+
+.side label {
+  display: block;
+}
+
+.side output {
+  display: block;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .app-main {
+    flex-direction: column;
+  }
+
+  .side {
+    width: auto;
+    max-height: 30%;
+    border-left: none;
+    border-top: 1px solid var(--rule);
+  }
+
+  .app-header {
+    flex-wrap: wrap;
+  }
+}
