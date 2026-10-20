@@ -5,7 +5,16 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./kinds": "./src/kinds.ts",
+    "./kind": "./src/kind.ts",
+    "./ndg": "./src/ndg.ts",
+    "./hypotheses": "./src/hypotheses.ts",
+    "./eval-claim": "./src/eval-claim.ts",
+    "./job": "./src/job.ts",
+    "./verdict": "./src/verdict.ts",
+    "./rungs": "./src/rungs.ts",
+    "./constants": "./src/constants.ts"
   },
   "dependencies": {
     "@geomira/kernel": "workspace:*",

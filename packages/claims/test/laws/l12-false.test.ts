@@ -4,8 +4,9 @@ import { FALSE_CLAIMS } from '../helpers/corpus-false';
 import { TRUE_THEOREMS } from '../helpers/corpus-true';
 import { DEGENERATE_CLAIMS } from '../helpers/corpus-degenerate';
 import { currentValue, localVerdict } from '../helpers/l12';
+import { lawCount } from '../helpers/laws';
 
-const SEEDS = [1, 2, 3, 4, 5];
+const SEEDS = Array.from({ length: lawCount(5) }, (_, i) => i + 1);
 const rows: string[] = [];
 
 describe('L12: the corpora have the required sizes', () => {

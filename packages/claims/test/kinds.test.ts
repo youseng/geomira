@@ -266,3 +266,31 @@ describe('angle kinds', () => {
     );
   });
 });
+
+describe('every kind is total on malformed arguments (never a throw, never NaN)', () => {
+  const malformed: Value<number>[][] = [
+    [],
+    [{ kind: 'number', v: 1 }],
+    Array.from({ length: 8 }, () => ({
+      kind: 'number' as const,
+      v: 2,
+      exact: { num: 2n, den: 1n },
+    })),
+    Array.from({ length: 8 }, () => ({ kind: 'polygon' as const, pts: [] })),
+    Array.from({ length: 8 }, (_, i) =>
+      i % 2 === 0 ? pt(FloatField, [i, 1]) : line(FloatField, [0, 0], [1, i]),
+    ),
+  ];
+  for (const k of CLAIM_KINDS) {
+    it(k.name, () => {
+      for (const args of malformed) {
+        const a = k.algebra(FloatField, args, { scale: 1 });
+        const r = k.residual(args, { scale: 1 });
+        expect(Number.isNaN(r), `${k.name} residual`).toBe(false);
+        if ('kind' in a) expect(['undefined', 'inexact']).toContain(a.kind);
+        else expect(r).toBeGreaterThanOrEqual(0);
+        if (k.gap !== undefined) expect(Number.isNaN(k.gap(args, { scale: 1 }))).toBe(false);
+      }
+    });
+  }
+});

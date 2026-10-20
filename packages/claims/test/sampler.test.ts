@@ -163,3 +163,35 @@ describe('samplers (SPEC §10.4)', () => {
     );
   });
 });
+
+describe('ordered gliders on a line', () => {
+  it('gliders named by in_order on one line are drawn with increasing parameters (global)', () => {
+    const f = new Figure().point('A', 0, 0).point('B', 6, 2).def('l', 'line', 'A', 'B');
+    for (const [name, t] of [
+      ['P', '1/4'],
+      ['Q', '1/2'],
+      ['R', '3/4'],
+    ] as const)
+      f.add(name, c('on', 'l', n(t)));
+    f.assume('in_order', 'P', 'Q', 'R', 'l');
+    const p = prep(f, f.claim('collinear', 'P', 'Q', 'R'));
+    expect(p.ordered.map((g) => [g.form, g.inputs.length])).toEqual([['line-glider', 3]]);
+    for (let s = 0; s < 50; s++) {
+      const ts = values(p, drawSample(p, 'global', s, s % 2 === 0), 'line-glider').map(([t]) =>
+        toNumber(t ?? { num: 0n, den: 1n }),
+      );
+      expect([...ts].sort((a, b) => a - b)).toEqual(ts);
+    }
+  });
+
+  it('gliders on different objects, or repeated, form no ordered group', () => {
+    const f = new Figure().point('A', 0, 0).point('B', 6, 2).point('C', 1, 5);
+    f.add('P', c('on', c('line', 'A', 'B'), n('1/4'))).add(
+      'Q',
+      c('on', c('line', 'A', 'C'), n('1/2')),
+    );
+    f.assume('in_order', 'P', 'Q', 'P', c('line', 'A', 'B'));
+    f.assume('in_order', 'P', 'Q', 'A', c('line', 'A', 'B'));
+    expect(prep(f, f.claim('collinear', 'A', 'B', 'P')).ordered).toEqual([]);
+  });
+});

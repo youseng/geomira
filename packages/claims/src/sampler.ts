@@ -16,7 +16,7 @@
  * counterexample document.
  */
 import { assertNever } from '@geomira/num/assert';
-import { fromInteger, rational, toNumber, type Rational } from '@geomira/num/rational';
+import { fromInteger, rational, toNumber, ZERO, type Rational } from '@geomira/num/rational';
 import { createRng, type Rng, type Seed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
 import type { Value } from '@geomira/kernel/value';
@@ -118,38 +118,38 @@ function radiusOf(ctx: Context, input: FreeInput): number {
 }
 
 function sampleInput(ctx: Context, input: FreeInput, v: readonly Rational[]): Rational[] {
-  const [a, b, c] = v.map((x) => toNumber(x));
+  const at = (i: number): number => toNumber(v[i] ?? ZERO);
   const local = ctx.regime === 'local';
   const g = () => ctx.rng.gaussian();
   switch (input.kind) {
     case 'point': {
-      const [x, y] = mapPoint(ctx.sim, a ?? 0, b ?? 0);
+      const [x, y] = mapPoint(ctx.sim, at(0), at(1));
       return [dyadic(x + ctx.sigma * g(), ctx.k), dyadic(y + ctx.sigma * g(), ctx.k)];
     }
     case 'radius': {
-      const r = dyadic((a ?? 0) * ctx.sim.s, ctx.k);
+      const r = dyadic(at(0) * ctx.sim.s, ctx.k);
       return [r.num === 0n ? dyadic(2 ** ctx.k, ctx.k) : r];
     }
     case 'line-glider': {
-      const [lo, hi, spread] = lineRange(ctx, input, a ?? 0);
+      const [lo, hi, spread] = lineRange(ctx, input, at(0));
       const t = local
-        ? (a ?? 0) + (ctx.sigma / ctx.prep.baseCtx.scale) * spread * g()
+        ? at(0) + (ctx.sigma / ctx.prep.baseCtx.scale) * spread * g()
         : ctx.rng.uniform(lo, hi);
       return [dyadic(t, tExponent(spread))];
     }
     case 'stereo': {
-      const phi = 2 * Math.atan2(b ?? 0, a ?? 1);
+      const phi = 2 * Math.atan2(at(1), at(0));
       return stereo(
         local ? phi + (ctx.sigma / radiusOf(ctx, input)) * g() : ctx.rng.uniform(0, 2 * Math.PI),
       );
     }
     case 'angle-glider': {
       const step = ((ctx.sigma / radiusOf(ctx, input)) * 180) / Math.PI;
-      const theta = local ? (a ?? 0) + ctx.sim.degrees + step * g() : ctx.rng.uniform(0, 360);
+      const theta = local ? at(0) + ctx.sim.degrees + step * g() : ctx.rng.uniform(0, 360);
       return [dyadic(theta, -GRID_BITS)];
     }
     case 'param':
-      return [...v.slice(0, 2), paramValue(ctx, v, a ?? 0, b ?? 1, c ?? 0)];
+      return [...v.slice(0, 2), paramValue(ctx, v, at(0), at(1), at(2))];
     default:
       return assertNever(input.kind, 'free input');
   }

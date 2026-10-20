@@ -8,7 +8,7 @@
  * by or takes the root of), so nothing throws; the discarded values are never used.
  */
 import type { Field } from '@geomira/num/field';
-import { add, bitSize, div, mul, neg, ONE, sub, type Rational } from '@geomira/num/rational';
+import { add, div, mul, neg, ONE, sub, type Rational } from '@geomira/num/rational';
 import { RationalField } from '@geomira/num/rational-field';
 
 export interface BudgetField {
@@ -17,15 +17,20 @@ export interface BudgetField {
   exceeded(): boolean;
 }
 
-/** RationalField with a budget of `bits` (numerator plus denominator) per value. */
+/**
+ * RationalField with a budget of `bits` per value: |numerator|·denominator < 2^bits, which is
+ * the number of bits of numerator plus denominator within one (bitLength(a) + bitLength(b) − 1
+ * ≤ bitLength(a·b)), measured without converting the numbers to text.
+ */
 export function budgetField(bits: number): BudgetField {
   let over = false;
+  const limit = 1n << BigInt(Math.max(0, Math.floor(bits)));
   const guard =
     (op: (a: Rational, b: Rational) => Rational) =>
     (a: Rational, b: Rational): Rational => {
       if (over) return ONE;
       const r = op(a, b);
-      if (bitSize(r) > bits) over = true;
+      if ((r.num < 0n ? -r.num : r.num) * r.den >= limit) over = true;
       return over ? ONE : r;
     };
   const field: Field<Rational> = {

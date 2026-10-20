@@ -186,19 +186,3 @@ export function floatDecide(
   if (truth === 'false') return { kind: 'false' };
   return { kind: 'ambiguous', reason: `ambiguous: ${reason}` };
 }
-
-/** Exhaustive helper for callers that switch on a decision. */
-export function decisionIsValid(d: Decision): boolean {
-  switch (d.kind) {
-    case 'true':
-    case 'false':
-      return true;
-    case 'degenerate':
-    case 'ambiguous':
-    case 'ill-conditioned':
-    case 'invalid':
-      return false;
-    default:
-      return assertNever(d, 'decision');
-  }
-}

@@ -5,8 +5,9 @@
 import { afterAll, describe, it } from 'vitest';
 import { TRUE_THEOREMS } from '../helpers/corpus-true';
 import { expectHolds } from '../helpers/l12';
+import { lawCount } from '../helpers/laws';
 
-const SEEDS = Array.from({ length: 20 }, (_, i) => i + 1);
+const SEEDS = Array.from({ length: lawCount(20) }, (_, i) => i + 1);
 const rows: string[] = [];
 
 describe('L12: true theorems hold in the local test (a)', () => {

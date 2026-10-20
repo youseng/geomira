@@ -2,7 +2,7 @@ name: nightly
 
 # The long-running tier: the test suite with NIGHTLY=1, and incremental mutation testing
 # (Stryker) of the packages that have a mutation config (SPEC §17 L15; num since Run 1,
-# kernel geometry since Run 2).
+# kernel geometry since Run 2, claims since Run 5).
 # Mutation scores are reported, not gated, until v1.1. Also runs when this file or a
 # mutation config changes, so edits to the nightly jobs are exercised before the next
 # scheduled run.
@@ -42,7 +42,7 @@ jobs:
         run: pnpm test
 
   # One job per package with a mutation config (L15): num since Run 1, kernel geometry
-  # (packages/kernel/src/geom.ts and tools/) since Run 2.
+  # (packages/kernel/src/geom.ts and tools/) since Run 2, packages/claims since Run 5.
   mutation:
     name: mutation-${{ matrix.pkg }}
     runs-on: ubuntu-24.04
@@ -50,7 +50,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pkg: [num, kernel]
+        pkg: [num, kernel, claims]
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
