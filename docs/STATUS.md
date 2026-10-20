@@ -1,5 +1,235 @@
 # STATUS
 
+## Run 6: ACCEPTED (2026-10-20)
+
+packages/lang (SPEC §11). Base check first: Run 5 was ACCEPTED (tag `run-5` = `main` =
+5663cf9), `pnpm install && pnpm verify` was green locally on it (1301 tests, add-only compared
+with `run-5`), and ci and deploy were green in CI on that commit
+(https://github.com/youseng/geomira/actions/runs/39402748358,
+https://github.com/youseng/geomira/actions/runs/39402748577), so there was no red base.
+
+Every criterion holds: verify is green locally, in a clean clone of a311a47 and in CI
+(https://github.com/youseng/geomira/actions/runs/39410957649 on a311a47, the final code commit;
+table under "CI on GitHub"); laws P1–P3 hold with the counts below; garbage fuzz never throws
+(2,800 texts per CI run; parse, print and parseInto); L1 holds on parsed documents in three
+fields; docs/language.md is generated and checked; the eight examples HOLD locally through
+runJob. lang coverage 98.24% lines, 92.26% branches (gated like kernel and claims: 90 / 85).
+Mutation (informational until v1.1, note F; lang has no mutation config, SPEC §17 L15 lists num,
+kernel geometry, claims): latest completed scores, all on 5663cf9
+(https://github.com/youseng/geomira/actions/runs/39402748331): num 89.06% (627 detected, 77
+undetected), claims 73.12% (1080 detected, 397 undetected; its first complete run); the kernel's
+run on that commit was still in progress when this was written (latest completed: 99.17%,
+c6ac36c, Run 3b). Not waited for.
+
+## Done (each item → the test file that proves it)
+
+0. **Housekeeping (note D)**: every workflow with a `push` trigger has `tags-ignore: ['**']`, plus
+   `branches: ['**']`: GitHub runs a push workflow that filters only on tags-ignore for no branch
+   push at all ("if you define only tags/tags-ignore … the workflow won't run for events
+   affecting the undefined Git ref"), so the branch filter keeps branch pushes exactly as before
+   (checked: ci, deploy, tex and nightly all ran on this branch's pushes). Commit 536c8a8.
+1. **ADR-0009** (docs/adr/0009-grammar.md, note E): the complete EBNF (names with the `*` rule,
+   exact numbers, nesting, selectors along/orient and every SPEC §7 selector, claims,
+   assumptions, derived-layer rules with suffix and exclude, `noimage`, views, attributes for every
+   Style field), the decisions on comments, literal spellings, P1's domain, parseInto, `on(obj)`,
+   `triangle` and migrations. → `test/docs.test.ts` (the ADR carries the grammar verbatim).
+2. **Lexer and recursive-descent parser** with per-line recovery and fix hints: "did you mean
+   M_a?", bare index → selector hint, reserved managed name, unknown names and tools with
+   suggestions, defined later, a failed line, `a* b` → "write a * … for multiplication". The
+   kernel's selector checks (ADR-0006), the registry's kind message, `claimProblem` and
+   `assumptionProblem` are reported at their call's line and column, never re-implemented
+   (note B). → `test/lexer.test.ts`, `test/parse.test.ts`, `test/diagnostics.test.ts`,
+   `test/errors.test.ts`.
+3. **Names with `*`** (note A): point names always glue stars (`A*B*` is A*, B*); lowercase and
+   Greek names glue them iff the next character is not a letter, digit, `_`, `(` or `\`; `a* b`
+   is an error with the hint. → `test/lexer.test.ts`; the property "printing and re-parsing
+   never confuses a product with a managed name" → `test/laws/stars.test.ts` (400 documents).
+4. **Printer**: deterministic, exact numbers as written (`LitExpr.text`), comments kept
+   (`Meta.comments`), `@version` always, fewest parentheses that keep the tree. →
+   `test/print.test.ts`, `packages/kernel/test/lit-text.test.ts`.
+5. **parseInto** (ids and styles of persisting names) → `test/parse-into.test.ts`,
+   `test/laws/p3.test.ts`. **Migrations** with a fixture test (a fictional version-0 file loads
+   as its version-1 form) → `test/migrate.test.ts`, `test/fixtures/migration/`.
+6. **Note B items**: `on(obj)` desugared to an explicit parameter (line t = 1/3; circle with a
+   known point (2 : 1); circle(O, r) 90°) → `test/parse.test.ts`; the `(x, y)` point literal;
+   `triangle A B C [type]` (seeded from a hash of the statement; acute, scalene, obtuse_at_V) →
+   `test/triangle.test.ts`; every ADR-0008 claim kind and every assumption kind has a notation and
+   round-trips → `test/notation.test.ts`.
+7. **Laws P1–P3** over a fast-check generator of registry documents (every tool through its
+   signatures, nesting to depth 2, selectors chosen to pass the kernel's checks, plain and
+   derived layers with suffixes, exclusions and chains, objects in several layers, styles of
+   every field, views, claims of every kind, assumptions of every kind, comments on every anchor,
+   title, author, viewport) → `test/laws/p1.test.ts`, `p2.test.ts`, `p3.test.ts`; garbage fuzz
+   and L1 on parsed documents → `test/laws/fuzz.test.ts`. Counts below.
+8. **`pnpm docs:lang`** writes docs/language.md (grammar, statements, attributes, selectors,
+   notation, every tool with signatures, the kernel's exactness verdict and the reason of each
+   example Inexact over RationalField, observed by running it); stale → test fails. →
+   `test/docs.test.ts`.
+9. **examples/**: eight classical theorems as .geo files, each canonical (printing the parsed
+   file gives the file back) and each claim HOLDS locally through runJob for seeds 1 and 2 (table
+   below). No contest problems. → `test/examples.test.ts`.
+10. packages/claims exports `./check` (`claimProblem`, `argProblem`: the check prepare already
+    ran, moved) → `packages/claims/test/check.test.ts`; lang joins the coverage gate; the
+    test-count floor is raised from 1301 to 1451.
+
+### Law counts (one CI run; NIGHTLY=1 runs ten times as many)
+
+| law                                  | inputs                                                                                                                             | result |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| P1 parse(print(doc)) = doc up to ids | 400 generated documents: 7,973 objects, 1,685 images, 149 derived layers, 307 views, 921 claims, 1,369 assumptions, 2,549 comments | holds  |
+| P1 fixed point                       | 100 documents: the parsed document is valid and prints to the same text                                                            | holds  |
+| P2 print∘parse idempotent            | 150 printed + 300 mutated documents, 1,000 token soups, 500 arbitrary strings                                                      | holds  |
+| P3 parseInto keeps ids and styles    | 200 documents (same text: same document, ids and nextId), 200 edited texts, 150 texts without styles                               | holds  |
+| note A (products vs managed names)   | 400 documents of random arithmetic next to `l*`, `w*`                                                                              | holds  |
+| garbage fuzz (never throws)          | 1,500 token soups, 1,000 arbitrary strings, 300 mutated files: parse, print, parseInto; results valid and synced                   | holds  |
+| L1 on parsed documents               | 150 × 2 parsed documents (clean and mutated), Float, Rational, ModP: 4,663 float values, none NaN or ±Infinity                     | holds  |
+
+### Examples (local test, N = 40, `pnpm vitest run packages/lang/test/examples.test.ts`)
+
+| file                  | claim                                                                     | seed 1                                            | seed 2                                            |
+| --------------------- | ------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
+| euler-line.geo        | `claim collinear(O, G, H) [name=euler]`                                   | HOLDS IN THIS CONFIGURATION (exact over Q, 40/40) | HOLDS IN THIS CONFIGURATION (exact over Q, 40/40) |
+| euler-line.geo        | `claim GH = 2·OG`                                                         | HOLDS (exact over Q, 40/40)                       | HOLDS (exact over Q, 40/40)                       |
+| nine-point-circle.geo | `claim concyclic(M_a, M_b, M_c, D, E, F, X, Y, Z)`                        | HOLDS (exact over Q, 40/40)                       | HOLDS (exact over Q, 40/40)                       |
+| nine-point-circle.geo | `claim on(D, ν)`, `claim on(X, ν)`                                        | HOLDS (exact over Q, 40/40)                       | HOLDS (exact over Q, 40/40)                       |
+| simson.geo            | `claim collinear(D, E, F) [name=simson]`                                  | HOLDS (exact over Q, 40/40)                       | HOLDS (exact over Q, 40/40)                       |
+| miquel.geo            | `claim on(M, c) [name=miquel]`, `claim concyclic(C, D, E, M)`             | HOLDS (exact over Q, 40/40)                       | HOLDS (exact over Q, 40/40)                       |
+| radical-axes.geo      | `claim concurrent(r12, r23, r13)`, `claim perpendicular(r12, line(P, Q))` | HOLDS (exact over Q, 40/40)                       | HOLDS (exact over Q, 40/40)                       |
+| incenter-excenter.geo | `claim MB = MC`, `MB = MI`, `MI = MI_a`, `collinear(A, I, I_a)`           | HOLDS (numeric, 40/40)                            | HOLDS (numeric, 40/40)                            |
+| feuerbach.geo         | `claim tangent(ν, i)`, `tangent(ν, x_a)`, `tangent(ν, x_b)`               | HOLDS (numeric, 40/40)                            | HOLDS (numeric, 40/40)                            |
+| reflection-layer.geo  | `claim on(H*, ω)`, `claim on(H, ω*)` (derived layer)                      | HOLDS (exact over Q, 40/40)                       | HOLDS (exact over Q, 40/40)                       |
+
+"HOLDS" abbreviates HOLDS IN THIS CONFIGURATION; every row was checked for each claim separately.
+
+## Not done
+
+Nothing in Run 6's scope. Not started (later runs): the editor's text panel (it will call
+parse, parseInto and print), the scene, export, the web app's language features.
+
+## Known bugs
+
+None known. Found and fixed during the run, each covered by a test in the same commit: the
+first version of the language refused two derived layers with the same source and suffix even
+when no names collide (the kernel allows that; P1 found it) → the check is now the kernel's own;
+"did you mean A?" for one-letter typos (every one-letter name is one edit away) → suggestions for
+names of three or more characters (`test/parse.test.ts`). An `eslint --fix` run during the
+session rewrote `return cond ? x : fail(…)` into statements that dropped the value; the five
+affected places were found by a script, rewritten by hand, and the whole suite (laws included)
+re-run green before the first commit.
+
+## Uncertain
+
+- **Readings to confirm** (all in ADR-0009): P1 holds up to ids AND up to the order of images
+  inside a run of consecutive images (the text does not record it; parse places images
+  canonically, ADR-0007); comments and literal spellings are stored in the document
+  (`Meta.comments`, `LitExpr.text`: two optional fields beyond SPEC §5's lists); parseInto keeps
+  the old style of an object only when the text states no style for it at all; a statement with
+  an error is left out whole; a derived layer whose rule cannot be made stays a plain layer; the
+  defaults of `on(obj)` (t = 1/3, (2 : 1), 90°) and the `triangle` types (acute, scalene,
+  obtuse_at_V; no right or isosceles: equalities are constructed).
+- **SPEC §10.1's "∠A + ∠B = 90°"** (a vertex letter alone) is not accepted: it names an angle only
+  when the figure has one triangle; the error's hint asks for ∠BAC. Please confirm.
+- **Claims and assumptions may name objects defined later in the text** (they are built after
+  all objects; I5 only needs existence); definitions may not (I2).
+- **Parse time**: 500 chained objects parse in about 25 ms; with a derived layer, 327 objects in
+  about 100 ms (the derived layers are synchronised after every object). SPEC sets no budget for
+  parsing; the editor run may want an incremental path.
+- **`branches: ['**']` next to `tags-ignore`** (note D): added because GitHub's documented
+  behaviour would otherwise stop push workflows on branches; the trigger set is otherwise
+  unchanged.
+- Mathematical facts used by the examples (classical, and all in Run 5's L12 corpus or its
+  Uncertain list): Euler line and GH = 2·OG; the nine-point circle through the midpoints, the
+  feet and the midpoints of AH, BH, CH; the Simson line; Miquel's theorem; radical axes of three
+  circles with non-collinear centres concurrent, and ⟂ the line of centres; the
+  incenter–excenter lemma (the second intersection M of AI with the circumcircle has MB = MC = MI
+  = MI_a, and A, I, I_a are collinear); Feuerbach (the nine-point circle touches the incircle
+  and the excircles); the reflection of H in BC lies on the circumcircle, so the reflected circle
+  passes through H. No contest problem was used (docs/examples-source.md does not exist yet).
+
+## Changed frozen tests
+
+No line of a file frozen at `run-5` was modified or removed (`add-only: frozen tests compared
+with run-5, 0 violation(s)`). Lines were ADDED to one frozen file:
+
+- `packages/claims/test/exports.test.ts`: the import and the surface of `./check`.
+
+The frozen `packages/lang/test/index.test.ts` (the root entry exports only VERSION) is
+untouched; the API is in subpaths (ADR-0002).
+
+## Acceptance command output
+
+### Clean clone of a311a47 (`pnpm install --frozen-lockfile && pnpm verify`)
+
+```
+$ git clone … && git checkout a311a47 && pnpm install --frozen-lockfile   # Done in 1.8s using pnpm v10.28.0
+$ pnpm verify
+All matched files use Prettier code style!
+✔ no dependency violations found (291 modules, 1665 dependencies cruised)
+ok   tolerance: 385 files scanned, 0 violation(s)
+ok   file-length: 385 files scanned, 0 violation(s)
+ok   test-count: 1451 tests, floor 1451, 0 violation(s)
+ok   disabled-tests: 385 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-5, 0 violation(s)
+ok   forbidden-words: 385 files scanned, 0 violation(s)
+ Test Files  123 passed (123)
+      Tests  1451 passed (1451)
+ lang/src          |   97.26 |    92.26 |   99.72 |   98.24 |
+Statements   : 97.65% ( 6073/6219 )
+Branches     : 93.46% ( 4850/5189 )
+Lines        : 98.73% ( 5060/5125 )
+verify exit=0
+```
+
+### packages/lang (`npx vitest run packages/lang --reporter=verbose`, excerpts)
+
+```
+P1: {"docs":400,"objects":7973,"images":1685,"claims":921,"assumptions":1369,"derived":149,"views":307,"comments":2549}
+P2 (mutated texts): 300
+garbage fuzz: 2800 texts
+L1 on parsed documents: 4663 float values checked
+ Test Files  18 passed (18)
+      Tests  147 passed (147)
+```
+
+### `pnpm docs:lang` (excerpt of docs/language.md)
+
+```
+| `midpoint` | points | `midpoint(point, point)` | point | can succeed | — |
+| `incenter` | points | `incenter(point, point, point)` | point | can succeed | √(18) is not rational |
+| `sqrt` | arithmetic | `sqrt(number)` | number | can succeed | √(2) is not rational |
+| `rotate` | transformations | `rotate(point, number)` · … | transform, point, line, circle, polygon | can succeed | sin(60°) is not rational |
+```
+
+### CI on GitHub
+
+| Workflow | Run                                                         | Result                                                                |
+| -------- | ----------------------------------------------------------- | --------------------------------------------------------------------- |
+| ci       | https://github.com/youseng/geomira/actions/runs/39410957649 | success on a311a47 (push: the final code commit)                      |
+| deploy   | https://github.com/youseng/geomira/actions/runs/39410957605 | success on a311a47                                                    |
+| ci       | https://github.com/youseng/geomira/actions/runs/39410281495 | success on 184c509 (the language commit, before the error-path tests) |
+| tex      | https://github.com/youseng/geomira/actions/runs/39410281531 | success on 184c509 (examples/ triggers it)                            |
+
+The commit that adds this STATUS (documentation only) gets its own ci run, listed in the PR.
+
+## Requests
+
+- Please confirm the readings under "Uncertain" (ADR-0009).
+- The `run-6` tag is for the maintainer to place on the merge of this run's PR.
+- Mutation testing of packages/lang is not configured (SPEC §17 L15 does not list it); add it to
+  the nightly matrix if wanted.
+
+## Notes for later runs
+
+- The editor run: `parse` for diagnostics, `parseInto(doc, text, registry)` for the two-way text
+  panel (ids and GUI styles survive), `print` for the canonical text; `canonicalDocument` /
+  `sameUpToIds` compare documents up to ids.
+- A new claim or assumption kind needs a notation entry (notation.test.ts fails otherwise); a new
+  file version needs a migration in MIGRATIONS (the chain test checks it).
+- Deleting an object leaves its comment anchored to a missing id; the printer moves it to the end.
+  The editor's remove edit may want to drop or move it explicitly.
+
+---
+
 ## Run 5: ACCEPTED (2026-10-20)
 
 packages/claims (SPEC §10, §16). Base check first: Run 4 was ACCEPTED (tag `run-4` = `main` =
