@@ -12,6 +12,8 @@ import * as kinds from '../src/kinds';
 import * as ndg from '../src/ndg';
 import * as rungs from '../src/rungs';
 import * as verdict from '../src/verdict';
+import * as verdictLine from '../src/verdict-line';
+import * as figureHypotheses from '../src/figure-hypotheses';
 
 /** The public modules of @geomira/claims (ADR-0002, ADR-0008) and the runtime names each exports. */
 const SURFACE: Record<string, { module: object; names: string[] }> = {
@@ -45,6 +47,11 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './verdict': {
     module: verdict,
     names: ['globalVerdict', 'localVerdict', 'newCollector', 'record'],
+  },
+  './verdict-line': { module: verdictLine, names: ['verdictLine'] },
+  './figure-hypotheses': {
+    module: figureHypotheses,
+    names: ['assumptionText', 'hypothesesInFigure'],
   },
   './rungs': { module: rungs, names: ['RUNG_NAMES', 'claimArgs', 'decideSample', 'floatValues'] },
   './constants': {

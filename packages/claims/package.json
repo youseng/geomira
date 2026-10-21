@@ -10,9 +10,11 @@
     "./kind": "./src/kind.ts",
     "./ndg": "./src/ndg.ts",
     "./hypotheses": "./src/hypotheses.ts",
+    "./figure-hypotheses": "./src/figure-hypotheses.ts",
     "./eval-claim": "./src/eval-claim.ts",
     "./job": "./src/job.ts",
     "./verdict": "./src/verdict.ts",
+    "./verdict-line": "./src/verdict-line.ts",
     "./rungs": "./src/rungs.ts",
     "./constants": "./src/constants.ts",
     "./check": "./src/check.ts"

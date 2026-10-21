@@ -24,6 +24,10 @@ import * as namesMod from '../src/names';
 import * as autosaveMod from '../src/autosave';
 import * as shareMod from '../src/share';
 import * as reportMod from '../src/report';
+import * as commandMod from '../src/command';
+import * as keymapMod from '../src/keymap';
+import * as panelsMod from '../src/panels';
+import * as restoreMod from '../src/restore';
 
 const SURFACE: Record<string, { module: object; names: string[] }> = {
   './state': {
@@ -81,6 +85,16 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   },
   './share': { module: shareMod, names: ['SHARE_PREFIX', 'decodeShare', 'encodeShare'] },
   './report': { module: reportMod, names: ['debugReport'] },
+  './command': {
+    module: commandMod,
+    names: ['MAX_COMPLETIONS', 'acceptCompletion', 'completions', 'runCommand'],
+  },
+  './keymap': { module: keymapMod, names: ['KEYMAP', 'helpSections', 'keyAction', 'keyText'] },
+  './panels': {
+    module: panelsMod,
+    names: ['claimRows', 'hypothesisRows', 'objectsByLayer', 'statementLines'],
+  },
+  './restore': { module: restoreMod, names: ['openAtStartup', 'restoreOffer', 'restoredSession'] },
 };
 
 describe('@geomira/editor subpath surface', () => {
