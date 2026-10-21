@@ -45,7 +45,7 @@ export const ASY_RESERVED: readonly string[] = Object.freeze([
   // types
   ...'void bool int real pair triple string pen path guide transform picture frame file'.split(' '),
   // plain functions and constants the export writes
-  ...'abs arc box circle clip cross dot draw fill filldraw format label labelmargin length linetype linewidth max min nullpath opacity point realMax reflect rgb rotate roundcap roundjoin scale shift sqrt texpreamble unit unitsize write defaultpen fontsize inverse pt'.split(
+  ...'abs arc box circle clip cross dot draw fill filldraw format label labelmargin length linetype linewidth max min nullpath opacity point realMax reflect rgb rotate roundcap roundjoin scale shift sqrt texpreamble unit unitsize write defaultpen fontsize inverse pt invisible'.split(
     ' ',
   ),
   // olympiad functions the aops dialect calls (ADR-0014)

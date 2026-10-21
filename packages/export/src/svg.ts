@@ -26,8 +26,26 @@ import {
 /** Decimals of SVG coordinates (CSS px). */
 const DIGITS = 3;
 
+/**
+ * Whether XML 1.0 allows the code point (its Char production: tab, LF, CR, U+0020–U+D7FF,
+ * U+E000–U+FFFD, U+10000 on). Others (C0 controls, U+FFFE, U+FFFF, lone surrogates) are
+ * written as U+FFFD so the file stays well-formed (Run 10 audit).
+ */
+function xmlChar(x: number): boolean {
+  return (
+    x === 0x9 ||
+    x === 0xa ||
+    x === 0xd ||
+    (x >= 0x20 && x <= 0xd7ff) ||
+    (x >= 0xe000 && x <= 0xfffd) ||
+    x >= 0x10000
+  );
+}
+
 export function xml(s: string): string {
-  return s
+  let text = '';
+  for (const ch of s) text += xmlChar(ch.codePointAt(0) ?? 0) ? ch : '\ufffd';
+  return text
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
