@@ -263,6 +263,9 @@ function HelpMenu(p: HeaderProps) {
           <MenuItem onClick={p.onHelp} close={close} kbd="?">
             Shortcuts and tools
           </MenuItem>
+          <a className="menu-link" href="about.html">
+            About Geomira
+          </a>
           <a
             className="menu-link"
             href="https://github.com/youseng/geomira/blob/main/docs/language.md"

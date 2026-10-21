@@ -265,7 +265,7 @@ button {
   position: absolute;
   right: 0;
   top: 36px;
-  z-index: 50;
+  z-index: 80;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 8px;
