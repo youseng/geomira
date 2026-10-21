@@ -95,7 +95,7 @@ describe('createRegistry', () => {
       expect(t.outputKinds.length).toBeGreaterThan(0);
       expect(t.doc.length).toBeGreaterThan(0);
       expect(t.examples.length).toBeGreaterThan(0);
-      expect(t.export).toBe('numeric');
+      expect(t.export === 'numeric' || typeof t.export.constructive === 'string').toBe(true);
       expect(REGISTRY.get(t.name)).toBe(t);
     }
     expect(REGISTRY.get('nope')).toBeUndefined();

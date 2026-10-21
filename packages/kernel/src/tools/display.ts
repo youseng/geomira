@@ -38,7 +38,7 @@ export const DISPLAY_TOOLS: readonly ToolSpec[] = [
       'consecutive coincident vertices → Undefined',
       'collinear vertices → a flat polygon',
     ],
-    export: 'numeric',
+    export: { constructive: 'polygon' },
     doc: 'The polygon with the given vertices, in order (at least three).',
     examples: [
       {

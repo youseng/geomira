@@ -165,6 +165,11 @@ const FAMILIES: readonly ToolFamily[] = [
   'arithmetic',
 ];
 
+/** "numeric", "constructive (foot)": a mapping as the reference shows it (ADR-0014). */
+function exportText(m: ToolSpec['export']): string {
+  return m === 'numeric' ? 'numeric' : `constructive (${m.constructive})`;
+}
+
 function toolSection(registry: Registry, t: ToolSpec): string[] {
   const lines = [`### ${t.name}`, '', t.doc, ''];
   lines.push(
@@ -172,7 +177,7 @@ function toolSection(registry: Registry, t: ToolSpec): string[] {
   );
   lines.push(`- Result: ${t.outputKinds.join(', ')}`);
   lines.push(`- Exact run (RationalField): ${exactness(registry, t)}`);
-  lines.push(`- Export: ${t.export}`);
+  lines.push(`- Export: ${exportText(t.export)}`);
   lines.push(`- Degenerate cases:${t.degenerate.length === 0 ? ' none' : ''}`);
   for (const d of t.degenerate) lines.push(`  - ${d}`);
   lines.push('- Examples:');

@@ -193,6 +193,7 @@ function triangleTool(
   compute: ToolSpec['compute'],
   outputKind: 'point' | 'circle',
   doc: string,
+  exported: ToolSpec['export'] = 'numeric',
 ): ToolSpec {
   return {
     id: name,
@@ -202,7 +203,7 @@ function triangleTool(
     outputKinds: [outputKind],
     compute,
     degenerate: TRIANGLE_CASES,
-    export: 'numeric',
+    export: exported,
     doc,
     examples: [{ args: HERON }, { args: GENERIC }],
   };
@@ -234,6 +235,7 @@ export const INCIRCLE_TOOLS: readonly ToolSpec[] = [
     incenter,
     'point',
     'The incenter of ABC (where the internal bisectors meet).',
+    { constructive: 'incenter' },
   ),
   triangleTool('excenter', excenter, 'point', 'excenter(A, B, C): the excenter opposite A.'),
   triangleTool(
@@ -241,6 +243,7 @@ export const INCIRCLE_TOOLS: readonly ToolSpec[] = [
     incircle,
     'circle',
     'The incircle of ABC; anchor: its touch point on BC.',
+    { constructive: 'incircle' },
   ),
   triangleTool(
     'excircle',

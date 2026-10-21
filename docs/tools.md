@@ -42,7 +42,7 @@ The midpoint of A and B.
 - Signatures: `midpoint(point, point)`
 - Result: point
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (midpoint)
 - Degenerate cases:
   - midpoint(A, A) = A
 - Examples:
@@ -68,7 +68,7 @@ foot(P, l) or foot(P, A, B): the orthogonal projection of P on the line.
 - Signatures: `foot(point, linear)`, `foot(point, point, point)`
 - Result: point
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (foot)
 - Degenerate cases:
   - foot(P, A, A) → Undefined (coincident points)
   - P on the line → P
@@ -84,7 +84,7 @@ intersect(a, b, selectors): the common point of two lines, a line and a circle, 
 - Signatures: `intersect(linear, linear)`, `intersect(linear, round)`, `intersect(round, linear)`, `intersect(round, round)`
 - Result: point
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (intersect)
 - Degenerate cases:
   - parallel lines → Undefined
   - coincident lines → Undefined
@@ -119,7 +119,7 @@ The centre of the circle through A, B, C.
 - Signatures: `circumcenter(point, point, point)`
 - Result: point
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (circumcenter)
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined (use cline)
@@ -133,7 +133,7 @@ The centroid (A + B + C) / 3, where the medians meet.
 - Signatures: `centroid(point, point, point)`
 - Result: point
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (centroid)
 - Degenerate cases:
   - collinear or coincident vertices → the mean of the vertices
 - Examples:
@@ -146,7 +146,7 @@ The orthocenter, where the altitudes meet.
 - Signatures: `orthocenter(point, point, point)`
 - Result: point
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (orthocenter)
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined
@@ -214,7 +214,7 @@ The incenter of ABC (where the internal bisectors meet).
 - Signatures: `incenter(point, point, point)`
 - Result: point
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (incenter)
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined
@@ -281,7 +281,7 @@ The line through A and B (achiral direction B − A).
 - Signatures: `line(point, point)`
 - Result: line
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (line)
 - Degenerate cases:
   - line(A, A) → Undefined (coincident points)
 - Examples:
@@ -294,7 +294,7 @@ The segment AB: A + t·(B − A) for t in [0, 1].
 - Signatures: `segment(point, point)`
 - Result: line
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (segment)
 - Degenerate cases:
   - segment(A, A) → Undefined (coincident points)
 - Examples:
@@ -307,7 +307,7 @@ The ray from A through B: A + t·(B − A) for t ≥ 0.
 - Signatures: `ray(point, point)`
 - Result: line
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (ray)
 - Degenerate cases:
   - ray(A, A) → Undefined (coincident points)
 - Examples:
@@ -460,7 +460,7 @@ circle(O, A): centre O through A (anchor A); circle(O, r): centre O, radius r (n
 - Signatures: `circle(point, point)`, `circle(point, number)`, `circle(point, point, point)`
 - Result: circle
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (circle)
 - Degenerate cases:
   - circle(O, O) → Undefined (coincident points)
   - circle(O, r) with r ≤ 0 → Undefined
@@ -480,7 +480,7 @@ The circle through A, B, C (the same as circle(A, B, C)); anchor A.
 - Signatures: `circumcircle(point, point, point)`
 - Result: circle
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (circumcircle)
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined (use cline)
@@ -536,7 +536,7 @@ The incircle of ABC; anchor: its touch point on BC.
 - Signatures: `incircle(point, point, point)`
 - Result: circle
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (incircle)
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined
@@ -570,7 +570,7 @@ reflect(l): the reflection in the carrier line of l (an anti-similarity); reflec
 - Signatures: `reflect(linear)`, `reflect(point)`, `reflect(point, linear)`, `reflect(curve, linear)`, `reflect(polygon, linear)`, `reflect(point, point)`, `reflect(curve, point)`, `reflect(polygon, point)`
 - Result: transform, point, line, circle, polygon
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (reflect)
 - Degenerate cases:
   - a line with no direction → Undefined
   - an Undefined mirror → Undefined
@@ -588,7 +588,7 @@ rotate(O, θ): the rotation by θ degrees counter-clockwise about O. rotate(X, O
 - Signatures: `rotate(point, number)`, `rotate(point, point, number)`, `rotate(curve, point, number)`, `rotate(polygon, point, number)`
 - Result: transform, point, line, circle, polygon
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (rotate)
 - Degenerate cases:
   - θ a multiple of 360° → the identity
   - θ not a multiple of 90° → Inexact over Q and mod p
@@ -605,7 +605,7 @@ homothety(O, k): the homothety with centre O and ratio k (negative k allowed). h
 - Signatures: `homothety(point, number)`, `homothety(point, point, number)`, `homothety(curve, point, number)`, `homothety(polygon, point, number)`
 - Result: transform, point, line, circle, polygon
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (homothety)
 - Degenerate cases:
   - k = 0 → Undefined
   - k = 1 → the identity; k = −1 → the half turn about O
@@ -621,7 +621,7 @@ translate(A, B): the translation taking A to B. translate(X, A, B) is the image 
 - Signatures: `translate(point, point)`, `translate(point, point, point)`, `translate(curve, point, point)`, `translate(polygon, point, point)`
 - Result: transform, point, line, circle, polygon
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (translate)
 - Degenerate cases:
   - A = B → the identity
 - Examples:
@@ -635,7 +635,7 @@ spiral(A, B, C, D): the direct similarity taking A to C and B to D (a spiral sim
 - Signatures: `spiral(point, point, point, point)`, `spiral(point, point, point, point, point)`, `spiral(curve, point, point, point, point)`, `spiral(polygon, point, point, point, point)`
 - Result: transform, point, line, circle, polygon
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (spiral)
 - Degenerate cases:
   - A = B or C = D → Undefined (coincident points)
   - B − A = D − C → a translation
@@ -650,7 +650,7 @@ compose(T1, T2): the map X ↦ T1(T2(X)) (T2 first).
 - Signatures: `compose(transform, transform)`
 - Result: transform
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (compose)
 - Degenerate cases:
   - a scale factor that vanishes (within EPS) → Undefined
   - compose(T, inverse(T)) → the identity
@@ -665,7 +665,7 @@ inverse(T): the inverse map (the preimage of Y is apply(inverse(T), Y)).
 - Signatures: `inverse(transform)`
 - Result: transform
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (inverse)
 - Degenerate cases:
   - a reflection or a half turn → itself
   - a hand-built map with scale factor 0 → Undefined
@@ -679,7 +679,7 @@ apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mar
 - Signatures: `apply(transform, point)`, `apply(transform, curve)`, `apply(transform, polygon)`, `apply(transform, annotation)`
 - Result: point, line, circle, polygon, angle_mark, segment_mark, text
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (apply)
 - Degenerate cases:
   - X a number or a transform → Undefined (not imaged)
   - an Undefined T or X → Undefined
@@ -807,7 +807,7 @@ The polygon with the given vertices, in order (at least three).
 - Signatures: `polygon(point, point, point, point…)`
 - Result: polygon
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (polygon)
 - Degenerate cases:
   - consecutive coincident vertices → Undefined
   - collinear vertices → a flat polygon
@@ -886,7 +886,7 @@ a + b on numbers (exact when both are exact).
 - Signatures: `add(number, number)`
 - Result: number
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (add)
 - Degenerate cases: none
 - Examples:
   - `add(2/3, 3/4)` → number 17/12
@@ -898,7 +898,7 @@ a − b on numbers (exact when both are exact).
 - Signatures: `sub(number, number)`
 - Result: number
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (sub)
 - Degenerate cases: none
 - Examples:
   - `sub(2/3, 3/4)` → number -1/12
@@ -910,7 +910,7 @@ a × b on numbers (exact when both are exact).
 - Signatures: `mul(number, number)`
 - Result: number
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (mul)
 - Degenerate cases: none
 - Examples:
   - `mul(2/3, 3/4)` → number 1/2
@@ -922,7 +922,7 @@ a ÷ b on numbers (exact when both are exact).
 - Signatures: `div(number, number)`
 - Result: number
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (div)
 - Degenerate cases:
   - b = 0 → Undefined (division by zero)
 - Examples:
@@ -935,7 +935,7 @@ a ÷ b on numbers (exact when both are exact).
 - Signatures: `neg(number)`
 - Result: number
 - Exact run (RationalField): can succeed
-- Export: numeric
+- Export: constructive (neg)
 - Degenerate cases: none
 - Examples:
   - `neg(2/3)` → number -2/3

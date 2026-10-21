@@ -19,7 +19,7 @@ import {
   similarityProblem,
   transformOf,
 } from '../similarity';
-import type { EvalContext, ExampleArg, Signature, ToolExample, ToolSpec } from '../tool';
+import type { EvalContext, ExampleArg, ExportOp, Signature, ToolExample, ToolSpec } from '../tool';
 import {
   capabilityKinds,
   undef,
@@ -160,7 +160,7 @@ function finish<T>(F: Field<T>, s: Built<T>, ctx: EvalContext, tool: string): Va
  * front (point, curve or polygon) give its image of X.
  */
 function mapTool(spec: {
-  readonly name: string;
+  readonly name: ExportOp;
   readonly bases: readonly (readonly Capability[])[];
   readonly build: Build;
   readonly degenerate: readonly string[];
@@ -192,7 +192,7 @@ function mapTool(spec: {
       return t.kind === 'transform' ? applyChecked(F, t.t, X, spec.name) : t;
     },
     degenerate: spec.degenerate,
-    export: 'numeric',
+    export: { constructive: spec.name },
     doc: spec.doc,
     examples: spec.examples,
   };
@@ -333,7 +333,7 @@ export const TRANSFORM_TOOLS: readonly ToolSpec[] = [
       'compose(T, inverse(T)) → the identity',
       'two anti-similarities → a direct similarity',
     ],
-    export: 'numeric',
+    export: { constructive: 'compose' },
     doc: 'compose(T1, T2): the map X ↦ T1(T2(X)) (T2 first).',
     examples: [
       {
@@ -355,7 +355,7 @@ export const TRANSFORM_TOOLS: readonly ToolSpec[] = [
       'a reflection or a half turn → itself',
       'a hand-built map with scale factor 0 → Undefined',
     ],
-    export: 'numeric',
+    export: { constructive: 'inverse' },
     doc: 'inverse(T): the inverse map (the preimage of Y is apply(inverse(T), Y)).',
     examples: [{ args: [callArg('homothety', P('1', '1'), '2')] }],
   },
@@ -373,7 +373,7 @@ export const TRANSFORM_TOOLS: readonly ToolSpec[] = [
       'a circle without an anchor → an image without one',
       'an anti-similarity reverses an angle mark (its arms swap)',
     ],
-    export: 'numeric',
+    export: { constructive: 'apply' },
     doc:
       'apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mark or ' +
       'text. Ranges ' +

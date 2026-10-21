@@ -102,7 +102,7 @@ export const INTERSECT_TOOLS: readonly ToolSpec[] = [
       'square roots not representable → Inexact over Q and mod p (other(P) is exact)',
       'a sign-based selector mod p → Inexact',
     ],
-    export: 'numeric',
+    export: { constructive: 'intersect' },
     doc: 'intersect(a, b, selectors): the common point of two lines, a line and a circle, or two circles; a curve pair with two candidates needs selectors (along(±) on line ∩ circle, orient(±) on circle ∩ circle, other(P), near(P), same_side(Q, l), …).',
     examples: [
       {
