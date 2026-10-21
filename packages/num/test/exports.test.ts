@@ -9,6 +9,7 @@ import * as floatField from '../src/float-field';
 import * as modp from '../src/modp';
 import * as rationalField from '../src/rational-field';
 import * as rational from '../src/rational';
+import * as decimal from '../src/decimal';
 import * as rng from '../src/rng';
 import * as tolerance from '../src/tolerance';
 
@@ -73,6 +74,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'tryToNumber',
     ],
   },
+  './decimal': { module: decimal, names: ['decimalText', 'floorLog10', 'pow10', 'roundTo'] },
   './field': {
     module: field,
     names: ['allExact', 'inexact', 'isInexact', 'mapExact', 'withDivisorLog', 'withSqrtLog'],

@@ -9,6 +9,7 @@
     "./tolerance": "./src/tolerance.ts",
     "./rng": "./src/rng.ts",
     "./rational": "./src/rational.ts",
+    "./decimal": "./src/decimal.ts",
     "./field": "./src/field.ts",
     "./float-field": "./src/float-field.ts",
     "./rational-field": "./src/rational-field.ts",

@@ -94,13 +94,19 @@ export interface Assignment {
   readonly input: FreeInput;
   /** New values for the input's slots (a shorter list leaves the remaining slots alone). */
   readonly values: readonly Rational[];
+  /** The literals' texts as written (ADR-0009 decision 12), e.g. short decimals; optional. */
+  readonly texts?: readonly (string | undefined)[];
 }
 
 function assignOne(def: Expr, a: Assignment): Expr {
   let out = def;
   a.values.forEach((v, k) => {
     const slot = a.input.slots[k];
-    if (slot !== undefined) out = replaceAt(out, [...a.input.path, slot], () => lit(v));
+    const text = a.texts?.[k];
+    if (slot !== undefined)
+      out = replaceAt(out, [...a.input.path, slot], () =>
+        text === undefined ? lit(v) : lit(v, text),
+      );
   });
   return out;
 }

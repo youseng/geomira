@@ -206,6 +206,29 @@ describe('randomFigure (Run 9b, ADR-0016)', () => {
     expect(RANDOMIZE_ATTEMPTS).toBe(500);
   });
 
+  it('writes short exact decimals: points to 10^(⌊log10 scale⌋ − 2), params inside their range', () => {
+    const f = obtuseTriangle().def('k', 'param', n(0), n(1), n('0.5'));
+    for (let seed = 0; seed < 20; seed++) {
+      const doc = figureOf(randomFigure(f.doc, REGISTRY, 'acute', seed)).doc;
+      for (const name of ['A', 'B']) {
+        const o = doc.objects.find((x) => x.name === name);
+        const e = o === undefined ? undefined : exprAt(o.def, []);
+        if (e?.kind !== 'call') throw new Error('not a call');
+        for (const a of e.args) {
+          if (a.kind !== 'lit') throw new Error('not a literal');
+          // The scale is 5: two decimals. The text reads back as the exact value.
+          expect(a.text ?? String(a.value.num)).toMatch(/^-?\d+(\.\d{1,2})?$/u);
+          expect(a.value.den === 1n || a.text !== undefined).toBe(true);
+        }
+      }
+      const [min, max, v] = literal(doc, 'k');
+      expect(min).toEqual({ num: 0n, den: 1n });
+      expect(max).toEqual({ num: 1n, den: 1n });
+      expect(v !== undefined && v.num >= 0n && v.num <= v.den).toBe(true);
+      expect(v !== undefined && 1000n % v.den === 0n).toBe(true);
+    }
+  });
+
   it('every type over many seeds gives a valid figure of that type', () => {
     const f = obtuseTriangle().def('O', 'circumcenter', 'A', 'B', 'C');
     const check: Record<TriangleType, (t: ReturnType<typeof angles>) => boolean> = {

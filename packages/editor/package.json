@@ -27,7 +27,9 @@
     "./command": "./src/command.ts",
     "./keymap": "./src/keymap.ts",
     "./panels": "./src/panels.ts",
-    "./restore": "./src/restore.ts"
+    "./restore": "./src/restore.ts",
+    "./randomize": "./src/randomize.ts",
+    "./tool-groups": "./src/tool-groups.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

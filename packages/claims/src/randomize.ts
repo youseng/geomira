@@ -13,6 +13,9 @@
  *   - any: the document's hypotheses only (no triangle needed).
  * Every type but `any` also asks each other angle of the triangle to exceed SHAPE_MIN_DEG,
  * as the `triangle` sugar does (ADR-0009 decision 11), so the new triangle is readable.
+ * Free inputs are then rounded to short exact decimals (points and radii to 10^(⌊log10 scale⌋
+ * − 2), line parameters and (u : v) to 0.001, angles to 0.1°, params to a thousandth of
+ * their range), so the text shows "A = (1.23, -0.5)"; the hypotheses are checked after that.
  * A sample is accepted only when every object that is defined in the current figure stays
  * defined (a new figure, not a degenerate one). Degenerate cases: no free input, fewer than
  * three free points for a typed choice, an invalid figure or assumption, or no accepted
@@ -21,7 +24,17 @@
  */
 import { FloatField } from '@geomira/num/float-field';
 import { assertNever } from '@geomira/num/assert';
-import { add, fromInteger, mul, sub, toNumber, type Rational } from '@geomira/num/rational';
+import { decimalText, floorLog10, pow10, roundTo } from '@geomira/num/decimal';
+import {
+  add,
+  compare,
+  fromInteger,
+  fromNumber,
+  mul,
+  sub,
+  toNumber,
+  type Rational,
+} from '@geomira/num/rational';
 import { deriveSeed, type Seed } from '@geomira/num/rng';
 import { evalContextFor } from '@geomira/kernel/context';
 import type { Assumption, Document } from '@geomira/kernel/document';
@@ -29,11 +42,10 @@ import { evaluate } from '@geomira/kernel/evaluate';
 import { call, exprEquals, lit, ref } from '@geomira/kernel/expr';
 import type { Registry } from '@geomira/kernel/registry';
 import type { Value } from '@geomira/kernel/value';
-import { GRID_BITS } from './constants';
 import { prepareFigure, type PreparedFigure } from './figure-prep';
-import { readFree, writeFree, type FreeInput } from './free';
+import { readFree, writeFree, type Assignment, type FreeInput } from './free';
 import { checkAssumption } from './hypotheses';
-import { drawSample, dyadic } from './sampler';
+import { drawSample } from './sampler';
 
 export type TriangleType = 'acute' | 'obtuse' | 'right' | 'any';
 
@@ -99,23 +111,90 @@ function freePoints(fig: PreparedFigure): FreeInput[] {
   return fig.free.filter((x) => x.kind === 'point' && x.path.length === 0);
 }
 
+/** Decimal exponents of the free inputs' grids (see the module comment). */
+const PARAM_DIGITS = 3;
+const ANGLE_EXP = -1;
+const RATIO_EXP = -3;
+
+/** x rounded to 10^e with its decimal text. */
+function decimal(x: Rational, e: number): { value: Rational; text: string } {
+  const value = roundTo(x, e);
+  return { value, text: decimalText(value, e) };
+}
+
+/** A param's v on its grid, kept inside [min, max]. */
+function paramDecimal(min: Rational, max: Rational, v: Rational) {
+  const e = floorLog10(sub(max, min)) - PARAM_DIGITS;
+  let r = roundTo(v, e);
+  if (compare(r, max) > 0) r = sub(r, pow10(e));
+  if (compare(r, min) < 0) r = add(r, pow10(e));
+  return { value: r, text: decimalText(r, e) };
+}
+
+function roundInput(x: FreeInput, v: readonly Rational[], e: number): Assignment | undefined {
+  const all = (k: number) => v.map((y) => decimal(y, k));
+  const out = (d: readonly { value: Rational; text: string | undefined }[]): Assignment => ({
+    input: x,
+    values: d.map((y) => y.value),
+    texts: d.map((y) => y.text),
+  });
+  switch (x.kind) {
+    case 'point':
+      return out(all(e));
+    case 'radius': {
+      const r = decimal(v[0] ?? fromInteger(0), e);
+      return r.value.num === 0n ? undefined : out([r]);
+    }
+    case 'line-glider':
+      return out(all(RATIO_EXP));
+    case 'stereo': {
+      const d = all(RATIO_EXP);
+      return d.every((y) => y.value.num === 0n) ? undefined : out(d);
+    }
+    case 'angle-glider':
+      return out(all(ANGLE_EXP));
+    case 'param': {
+      const [min, max, p] = v;
+      return min === undefined || max === undefined || p === undefined
+        ? undefined
+        : out([
+            ...[min, max].map((y) => ({ value: y, text: undefined })),
+            paramDecimal(min, max, p),
+          ]);
+    }
+    default:
+      return assertNever(x.kind, 'free input');
+  }
+}
+
+/** The sample with every free input on its decimal grid. */
+function decimals(fig: PreparedFigure, sample: Document, e: number): Document {
+  const out: Assignment[] = [];
+  for (const x of fig.free) {
+    const v = readFree(sample, x);
+    const a = v === undefined ? undefined : roundInput(x, v, e);
+    if (a !== undefined) out.push(a);
+  }
+  return writeFree(sample, out);
+}
+
 /** C moved onto the perpendicular to AB at A (exactly), or undefined if it lands on A. */
-function rightAt(doc: Document, [a, b, c]: readonly FreeInput[]): Document | undefined {
+function rightAt(doc: Document, [a, b, c]: readonly FreeInput[], e: number): Document | undefined {
   const [A, B, C] = [a, b, c].map((x) => (x === undefined ? undefined : readFree(doc, x)));
   const [ax, ay, bx, by, cx, cy] = [A?.[0], A?.[1], B?.[0], B?.[1], C?.[0], C?.[1]];
   if (ax === undefined || ay === undefined || bx === undefined || by === undefined) return;
   if (cx === undefined || cy === undefined || c === undefined) return;
-  // w = AB turned by 90°; C' = A + t·w with t the projection of AC on w, on the coarse grid.
+  // w = AB turned by 90°; C' = A + t·w with t the projection of AC on w, to two decimals.
   const w: readonly [Rational, Rational] = [sub(ay, by), sub(bx, ax)];
   const [wx, wy] = [toNumber(w[0]), toNumber(w[1])];
   const len2 = wx * wx + wy * wy;
   if (!(len2 > 0)) return undefined;
-  const t = dyadic(
-    ((toNumber(cx) - toNumber(ax)) * wx + (toNumber(cy) - toNumber(ay)) * wy) / len2,
-    -GRID_BITS,
-  );
+  const proj = ((toNumber(cx) - toNumber(ax)) * wx + (toNumber(cy) - toNumber(ay)) * wy) / len2;
+  const t = roundTo(fromNumber(proj), -2);
   if (t.num === 0n) return undefined;
-  return writeFree(doc, [{ input: c, values: [add(ax, mul(t, w[0])), add(ay, mul(t, w[1]))] }]);
+  const xy = [add(ax, mul(t, w[0])), add(ay, mul(t, w[1]))];
+  const texts = xy.map((z) => decimalText(z, e - 2));
+  return writeFree(doc, [{ input: c, values: xy, texts }]);
 }
 
 function definedIds(values: ReadonlyMap<number, Value<number>>): Set<number> {
@@ -189,10 +268,11 @@ export function randomFigure(
   const fig = prep.figure;
   const current = evalContextFor(doc);
   if (!current.ok) return refused(current.reason);
+  const e = floorLog10(fromNumber(fig.baseCtx.scale)) - 2;
   const keep = definedIds(evaluate(doc, registry, FloatField, current.ctx).values);
   for (let i = 0; i < attempts; i++) {
-    const drawn = drawSample(fig, 'global', deriveSeed(seed, i), false);
-    const sample = type === 'right' ? rightAt(drawn, pts) : drawn;
+    const drawn = decimals(fig, drawSample(fig, 'global', deriveSeed(seed, i), false), e);
+    const sample = type === 'right' ? rightAt(drawn, pts, e) : drawn;
     if (sample === undefined || !accepts(fig, sample, keep)) continue;
     const names = tri.map((id) => doc.objects.find((o) => o.id === id)?.name ?? '?');
     return { kind: 'figure', ...result(doc, sample), triangle: names, attempts: i + 1 };
