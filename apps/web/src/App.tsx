@@ -1,151 +1,154 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { VERSION } from '@geomira/kernel';
-import { createRegistry, type Registry } from '@geomira/kernel/registry';
-import { zoomViewport, type Size, type Viewport } from '@geomira/scene/viewport';
-import { measureFrames, type FrameTimes } from './bench';
+import { Component, useCallback, useRef, useState, type ReactNode, type RefObject } from 'react';
+import type { Size } from '@geomira/scene/viewport';
 import { Board } from './Board';
-import { EXAMPLES } from './examples';
-import { loadFigure, viewportFor, type Figure } from './figure';
-import { LIGHT_THEME } from './render';
-import { SidePanel } from './SidePanel';
+import { CommandBar } from './CommandBar';
+import { ErrorBanner, TextDialog } from './Dialogs';
+import { Header } from './Header';
+import { useAutosave, useFitOnOpen, useInternalErrors, useShortcuts, useStartup } from './hooks';
+import { reportOf, useFit, useHeader, useKeyActions, usePage, type Dialog } from './page';
+import { SidePanel, type Tab } from './SidePanel';
+import type { EditorStore, Notice } from './store';
+import { ToolBar } from './ToolBar';
 
-const FIRST = EXAMPLES[0]?.id ?? '';
-const BENCH_FRAMES = 120;
-
-interface ToolbarProps {
-  readonly exampleId: string;
-  readonly onExample: (id: string) => void;
-  readonly onFit: () => void;
-  readonly onZoom: (factor: number) => void;
-  readonly onMeasure: () => void;
+/** Catches render errors: the page shows them as internal errors with the debug report. */
+class Boundary extends Component<
+  { readonly children: ReactNode; readonly onError: (m: string) => void },
+  { failed: boolean }
+> {
+  override state = { failed: false };
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true };
+  }
+  override componentDidCatch(error: Error): void {
+    this.props.onError(error.message);
+  }
+  override render(): ReactNode {
+    return this.state.failed ? (
+      <p className="muted">This panel failed to draw (see the error above).</p>
+    ) : (
+      this.props.children
+    );
+  }
 }
 
-function Toolbar({ exampleId, onExample, onFit, onZoom, onMeasure }: ToolbarProps) {
+function NoticeLine({ notice }: { notice: Notice | null }) {
+  if (notice === null) return null;
   return (
-    <>
-      <select
-        aria-label="Example"
-        value={exampleId}
-        onChange={(e) => {
-          onExample(e.target.value);
-        }}
-      >
-        {EXAMPLES.map((e) => (
-          <option key={e.id} value={e.id}>
-            {e.id}
-          </option>
-        ))}
-      </select>
-      <button type="button" onClick={onFit}>
-        Fit
-      </button>
-      <button
-        type="button"
-        aria-label="Zoom in"
-        onClick={() => {
-          onZoom(1.25);
-        }}
-      >
-        +
-      </button>
-      <button
-        type="button"
-        aria-label="Zoom out"
-        onClick={() => {
-          onZoom(0.8);
-        }}
-      >
-        −
-      </button>
-      <button type="button" onClick={onMeasure}>
-        Measure frame time
-      </button>
-    </>
+    <div className={`notice notice-${notice.tone}`} role="status">
+      {notice.text}
+      {(notice.diagnostics ?? []).map((d) => (
+        <div key={`${String(d.line)}:${String(d.column)}`}>
+          Line {d.line}, column {d.column}: {d.message}. {d.hint}
+        </div>
+      ))}
+    </div>
   );
 }
 
-/** The figure state of the page: the example, its figure, the viewport and the size. */
-function useFigure(registry: Registry) {
-  const [exampleId, setExampleId] = useState(FIRST);
-  const [figure, setFigure] = useState<Figure>(() => loadFigure(EXAMPLES[0]?.text ?? '', registry));
-  const [viewport, setViewport] = useState<Viewport | null>(null);
+function DialogView({ dialog, onClose }: { dialog: Dialog; onClose: () => void }) {
+  if (dialog === null) return null;
+  const share = dialog.kind === 'share';
+  return (
+    <TextDialog
+      title={share ? 'Share link' : 'Debug report'}
+      text={dialog.text}
+      copyLabel={share ? 'Copy link' : 'Copy debug report'}
+      multiline={!share}
+      onClose={onClose}
+    />
+  );
+}
+
+/** Keyboard shortcuts; "/" focuses the command bar, "?" shows the help. */
+function usePageShortcuts(
+  store: EditorStore,
+  fit: () => void,
+  commandRef: RefObject<HTMLInputElement | null>,
+  setTab: (f: (t: Tab) => Tab) => void,
+) {
+  const focusCommand = useCallback(() => commandRef.current?.focus(), [commandRef]);
+  const toggleHelp = useCallback(() => {
+    setTab((t) => (t === 'Help' ? 'Text' : 'Help'));
+  }, [setTab]);
+  useShortcuts(useKeyActions(store, fit, focusCommand, toggleHelp));
+}
+
+/** The page's state, effects and actions. */
+function useApp() {
+  const page = usePage();
+  const { store, snap, sceneOf, onInternal } = page;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const commandRef = useRef<HTMLInputElement>(null);
   const [size, setSize] = useState<Size | null>(null);
-  useEffect(() => {
-    if (viewport === null && size !== null) setViewport(viewportFor(figure, size));
-  }, [viewport, size, figure]);
-  const choose = (id: string) => {
-    setExampleId(id);
-    setFigure(loadFigure(EXAMPLES.find((e) => e.id === id)?.text ?? '', registry));
-    setViewport(null);
-  };
-  const onSize = useCallback((s: Size) => {
-    setSize(s);
+  const [ready, setReady] = useState(false);
+  const [tab, setTab] = useState<Tab>('Text');
+  const [dialog, setDialog] = useState<Dialog>(null);
+  const onReady = useCallback(() => {
+    setReady(true);
   }, []);
-  return { exampleId, choose, figure, setFigure, viewport, setViewport, size, onSize };
+  useStartup(store, onReady);
+  useAutosave(store, snap, ready);
+  useFitOnOpen(store, snap.openCount, size, sceneOf);
+  useInternalErrors(onInternal);
+  const fit = useFit(store, size, sceneOf);
+  usePageShortcuts(store, fit, commandRef, setTab);
+  const canvas = useCallback(() => canvasRef.current, []);
+  const header = useHeader({ store, runs: page.runs, snap, size, ready, fit, canvas, setDialog });
+  return { page, canvasRef, commandRef, setSize, tab, setTab, dialog, setDialog, header };
 }
 
 /**
- * Run 7 development page: pick an example, pan (drag), zoom (wheel or buttons), fit, toggle
- * layers, select objects (click), and measure frame times. The figure is drawn by the
- * canvas renderer from the scene (packages/scene).
+ * Geomira (SPEC §15): the canvas with the GUI tools, the command bar and the panels, over
+ * packages/editor (every change is an edit), packages/scene (drawing, hit-testing) and
+ * packages/claims (badges here, tests in a Web Worker).
  */
 export function App() {
-  const registry = useMemo(() => createRegistry(), []);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const f = useFigure(registry);
-  const [selection, setSelection] = useState<ReadonlySet<number>>(new Set());
-  const [times, setTimes] = useState<FrameTimes | null>(null);
-  const zoomBy = (factor: number) => {
-    if (f.viewport === null || f.size === null) return;
-    const centre = { x: f.size.width / 2, y: f.size.height / 2 };
-    f.setViewport(zoomViewport({ viewport: f.viewport, size: f.size }, centre, factor));
-  };
-  const measure = () => {
-    const ctx = canvasRef.current?.getContext('2d');
-    if (ctx === null || ctx === undefined || f.viewport === null || f.size === null) return;
-    const env = { ctx, registry, size: f.size, viewport: f.viewport, dpr: window.devicePixelRatio };
-    setTimes(measureFrames(f.figure, { ...env, theme: LIGHT_THEME }, BENCH_FRAMES));
-    f.setViewport({ ...f.viewport }); // redraw the figure the measurement drew over
-  };
+  const { page, canvasRef, commandRef, setSize, tab, setTab, dialog, setDialog, header } = useApp();
+  const { store, snap, scene } = page;
+  const { state } = snap;
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>Geomira</h1>
-        <span className="app-version">v{VERSION}</span>
-        <Toolbar
-          exampleId={f.exampleId}
-          onExample={(id) => {
-            f.choose(id);
-            setSelection(new Set());
-            setTimes(null);
+      <Header {...header.props} />
+      {page.internal !== null && (
+        <ErrorBanner
+          message={page.internal}
+          report={() => reportOf(store)}
+          onClose={() => {
+            page.setInternal(null);
           }}
-          onFit={() => {
-            f.setViewport(null);
-          }}
-          onZoom={zoomBy}
-          onMeasure={measure}
         />
-      </header>
+      )}
+      <NoticeLine notice={snap.notice} />
+      <ToolBar store={store} state={state} />
+      <CommandBar store={store} inputRef={commandRef} />
       <main className="app-main">
         <Board
           canvasRef={canvasRef}
-          scene={f.figure.scene}
-          viewport={f.viewport}
-          onViewport={f.setViewport}
-          onSize={f.onSize}
-          selection={selection}
-          onSelect={(id) => {
-            setSelection(new Set(id === null ? [] : [id]));
-          }}
+          store={store}
+          scene={scene}
+          viewport={state.viewport}
+          hover={state.hover}
+          selection={state.selection}
+          onSize={setSize}
         />
-        <SidePanel
-          figure={f.figure}
-          registry={registry}
-          onFigure={f.setFigure}
-          selection={selection}
-          times={times}
-        />
+        <Boundary onError={page.onInternal}>
+          <SidePanel
+            store={store}
+            state={state}
+            scene={scene}
+            runs={page.runs}
+            times={header.times}
+            tab={tab}
+            onTab={setTab}
+          />
+        </Boundary>
       </main>
+      <DialogView
+        dialog={dialog}
+        onClose={() => {
+          setDialog(null);
+        }}
+      />
     </div>
   );
 }

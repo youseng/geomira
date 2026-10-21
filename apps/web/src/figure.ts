@@ -90,6 +90,6 @@ export function movePoint(f: Figure, registry: Registry, id: number, x: number, 
 }
 
 /** The viewport to show: the document's, else the scene fitted into `size`. */
-export function viewportFor(f: Figure, size: Size): Viewport {
+export function viewportFor(f: Pick<Figure, 'doc' | 'scene'>, size: Size): Viewport {
   return f.doc.viewport ?? fitViewport(sceneBounds(f.scene), size, FIT_MARGIN);
 }

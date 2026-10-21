@@ -65,6 +65,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@geomira/claims':
+        specifier: workspace:*
+        version: link:../../packages/claims
+      '@geomira/editor':
+        specifier: workspace:*
+        version: link:../../packages/editor
       '@geomira/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
