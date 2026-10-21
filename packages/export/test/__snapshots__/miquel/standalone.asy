@@ -10,7 +10,7 @@ pair gm_lo = (-5.409645292680986, -5.117632119799227), gm_hi = (8.51840945648498
 pen gmc0 = rgb("1B1F24");
 
 // ---- helpers ----
-// A circle: centre c, radius r.
+// A circle: center c, radius r.
 struct gmcircle { pair c; real r; }
 gmcircle gm_mkcircle(pair c, real r) { gmcircle k = new gmcircle; k.c = c; k.r = r; return k; }
 pair gm_circumcenter(pair a, pair b, pair c) {
@@ -31,9 +31,9 @@ pair[] gm_cc(gmcircle a, gmcircle b) {
   pair n = (-d.y, d.x) / sqrt(s);
   return new pair[] {a.c + x * d - h * n, a.c + x * d + h * n};
 }
-// other(P): the reflection of P in the line of centres
+// other(P): the reflection of P in the line of centers
 pair gm_cc_other(gmcircle a, gmcircle b, pair p) { return reflect(a.c, b.c) * p; }
-// A point as the canvas draws it: a dot of radius r, outlined in the paper colour, opacity a.
+// A point as the canvas draws it: a dot of radius r, outlined in the paper color, opacity a.
 void gm_dot(pair z, real r, pen p, real a) {
   filldraw(circle(z, r), p + opacity(a), gm_paper + opacity(a) + linewidth(0.75));
 }

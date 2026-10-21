@@ -163,7 +163,7 @@ function picture(f: ExportFrame): { lines: string[]; warnings: ExportWarning[] }
     ...(w.origin.x === 0 && w.origin.y === 0
       ? []
       : [
-          `% Coordinates are relative to (${num(w.origin.x, w.digits)}, ${num(w.origin.y, w.digits)}), the centre of the view.`,
+          `% Coordinates are relative to (${num(w.origin.x, w.digits)}, ${num(w.origin.y, w.digits)}), the center of the view.`,
         ]),
     ...warningLines(warnings, '%'),
   ];

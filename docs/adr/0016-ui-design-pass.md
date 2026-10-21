@@ -197,8 +197,8 @@ and the end-to-end selectors.
     dot and corner letter (G, O, I, H, N, Iₐ) for the centres, its incircle, excircle and
     nine-point circle icons, and a circumcircle icon designed here (a circle through a
     triangle's vertices). The tool table's types and helpers move to tool-ui.ts (tools.ts
-    re-exports the types) so each file stays under 400 lines. The tool labels spell "centre"
-    as the rest of the interface does; the group keeps the maintainer's and Geomdraw's name.
+    re-exports the types) so each file stays under 400 lines. Names and spelling: decisions
+    23 and 24.
 22. **Frozen tests changed by decisions 20–21** (each line cites this ADR in its commit):
     `packages/scene/test/display.test.ts` (the polygon's `fill` length becomes its `region`
     length, plus an added line that its `fill` is null); `packages/scene/test/hit.test.ts` (a
@@ -209,6 +209,35 @@ and the end-to-end selectors.
     export golden files change in their colours and lose the fills of uncoloured polygons; the
     screenshot and PNG baselines are regenerated, and the three phone canvas baselines are
     again CI's own renders (decision 19).
+
+23. **Olympiad names for the centre tools** (`conventional-names.ts`, data in
+    tools-centers.ts: `Build.prefer`). When free, the circumcenter is O, the centroid G, the
+    incenter I, the orthocenter H, the nine-point center N, the excenter I_a, I_b or I_c (the
+    lowercase name of the vertex picked first; a first vertex whose name is not one Latin
+    letter asks for no name), and the circumcircle and the incircle ω. A name is free when no
+    object, claim or layer has it; a taken name falls back to the usual rule (the next free
+    capital, or c, c_1, … for circles). The excircle and the nine-point circle keep the usual
+    rule, as asked. The preference lives in its own module so the public `./names` surface
+    (frozen) is unchanged.
+24. **American spelling in all interface text**, matching the language's tool names
+    (circumcenter, ninepoint_center): the tool labels, prompts and help (Circumcenter,
+    Incenter, Orthocenter, Nine-point center, Excenter, "Circle (center, point)", "mirror line
+    or center"), the Style panel's Color, "canceled after" on a canceled test, the Undefined
+    reasons and tool documentation of the kernel ("P is the center", "circle center …"), the
+    language's and the scene's viewport messages, the export warnings ("the color … cannot be
+    read") and the comments an export writes into its file, and the landing page ("MIT
+    license"). Accessible names change with the labels. Not changed: identifiers and code
+    comments (`kind: 'cancelled'`, `ExportWarning` kind `'colour'`, not shown), the
+    maintainer's documents (SPEC, ADRs, STATUS), and the EBNF comment on `@viewport` ("centre
+    x, centre y, zoom"), which ADR-0009 carries verbatim (a test checks it). The palette accepts both
+    gray and grey. Frozen lines changed (commit citing this ADR): `packages/kernel/test`
+    glider.test.ts (2) and docs.test.ts (1); `packages/export/test` formats.test.ts (1),
+    frame-paint.test.ts (1) and svg-tikz.test.ts (2); `apps/web/e2e` flows-build.spec.ts (2:
+    "Circle (center, point)"), flows-persist.spec.ts (1: the Color label) and
+    flows-claims.spec.ts (1: "canceled after"). Also changed, in test helpers rather than test
+    files: the degenerate-case keys in `packages/kernel/test/helpers/` (degenerate-branch,
+    -circles, -gaps and -transforms: 5 lines), which must equal the registry's declared cases.
+    The export goldens change in those comments and warnings; docs/tools.md is regenerated.
 
 ## Consequences
 

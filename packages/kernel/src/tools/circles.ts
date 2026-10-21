@@ -160,7 +160,7 @@ export const NINEPOINT_CENTER_TOOL: ToolSpec = {
   compute: ninepointCenter,
   degenerate: ['coincident vertices → Undefined', 'collinear vertices → Undefined'],
   export: 'numeric',
-  doc: 'The centre of the nine-point circle of ABC: the midpoint of the circumcenter and the orthocenter.',
+  doc: 'The center of the nine-point circle of ABC: the midpoint of the circumcenter and the orthocenter.',
   examples: [
     {
       args: [
@@ -202,7 +202,7 @@ export const CIRCLE_TOOLS: readonly ToolSpec[] = [
       'circle(A, B, C) with collinear points → Undefined (use cline)',
     ],
     export: { constructive: 'circle' },
-    doc: 'circle(O, A): centre O through A (anchor A); circle(O, r): centre O, radius r (no anchor); circle(A, B, C): the circle through A, B, C (anchor A).',
+    doc: 'circle(O, A): center O through A (anchor A); circle(O, r): center O, radius r (no anchor); circle(A, B, C): the circle through A, B, C (anchor A).',
     examples: [{ args: [O, A] }, { args: [O, '5/2'] }, { args: ABC }],
   },
   {
@@ -271,7 +271,7 @@ export const CIRCLE_TOOLS: readonly ToolSpec[] = [
     compute: center,
     degenerate: [],
     export: 'numeric',
-    doc: 'The centre of a circle.',
+    doc: 'The center of a circle.',
     examples: [{ args: [{ call: 'circle', args: ABC }] }],
   },
 ];

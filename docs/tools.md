@@ -114,7 +114,7 @@ intersect(a, b, selectors): the common point of two lines, a line and a circle, 
 
 ### circumcenter
 
-The centre of the circle through A, B, C.
+The center of the circle through A, B, C.
 
 - Signatures: `circumcenter(point, point, point)`
 - Result: point
@@ -155,7 +155,7 @@ The orthocenter, where the altitudes meet.
 
 ### center
 
-The centre of a circle.
+The center of a circle.
 
 - Signatures: `center(round)`
 - Result: point
@@ -167,7 +167,7 @@ The centre of a circle.
 
 ### on
 
-Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range); on(c, u, v): the stereographic parameter (u : v) from the anchor of c (rational; (u : 0) is the anchor); on(c, θ): the point at angle θ (degrees) from the centre.
+Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range); on(c, u, v): the stereographic parameter (u : v) from the anchor of c (rational; (u : 0) is the anchor); on(c, θ): the point at angle θ (degrees) from the center.
 
 - Signatures: `on(linear, number)`, `on(round, number, number)`, `on(round, number)`
 - Result: point
@@ -241,7 +241,7 @@ excenter(A, B, C): the excenter opposite A.
 
 ### ninepoint_center
 
-The centre of the nine-point circle of ABC: the midpoint of the circumcenter and the orthocenter.
+The center of the nine-point circle of ABC: the midpoint of the circumcenter and the orthocenter.
 
 - Signatures: `ninepoint_center(point, point, point)`
 - Result: point
@@ -262,7 +262,7 @@ tangent_point(P, c, selectors): a point where a tangent from P touches c; two ca
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Degenerate cases:
-  - P inside c (or P = the centre) → Undefined
+  - P inside c (or P = the center) → Undefined
   - P on c (the gap |OP| − r within the band) → the double point
   - two candidates and no selector → Undefined (ambiguous: add a selector)
   - along(±) → Undefined (use orient(±))
@@ -377,7 +377,7 @@ polar(P, c): the polar of P with respect to c; chiral (a quarter turn of P − O
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Degenerate cases:
-  - P = the centre → Undefined
+  - P = the center → Undefined
   - P on c → the tangent at P
 - Examples:
   - `polar((10, 5), circle((0, 0), (5, 0)))` → line (2, 1) + t·(-5, 10), t ∈ [−∞, ∞], chiral
@@ -441,7 +441,7 @@ tangent_from(P, c, selectors): a tangent from P to c, the line through its touch
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Degenerate cases:
-  - P inside c (or P = the centre) → Undefined
+  - P inside c (or P = the center) → Undefined
   - P on c (the gap |OP| − r within the band) → the double point
   - two candidates and no selector → Undefined (ambiguous: add a selector)
   - along(±) → Undefined (use orient(±))
@@ -455,7 +455,7 @@ tangent_from(P, c, selectors): a tangent from P to c, the line through its touch
 
 ### circle
 
-circle(O, A): centre O through A (anchor A); circle(O, r): centre O, radius r (no anchor); circle(A, B, C): the circle through A, B, C (anchor A).
+circle(O, A): center O through A (anchor A); circle(O, r): center O, radius r (no anchor); circle(A, B, C): the circle through A, B, C (anchor A).
 
 - Signatures: `circle(point, point)`, `circle(point, number)`, `circle(point, point, point)`
 - Result: circle
@@ -469,9 +469,9 @@ circle(O, A): centre O through A (anchor A); circle(O, r): centre O, radius r (n
   - circle(A, B, C) with coincident points → Undefined
   - circle(A, B, C) with collinear points → Undefined (use cline)
 - Examples:
-  - `circle((1, 2), (4, 6))` → circle centre (1, 2), r² = 25, anchor (4, 6)
-  - `circle((1, 2), 5/2)` → circle centre (1, 2), r² = 25/4
-  - `circle((0, 0), (4, 0), (1, 3))` → circle centre (2, 1), r² = 5, anchor (0, 0)
+  - `circle((1, 2), (4, 6))` → circle center (1, 2), r² = 25, anchor (4, 6)
+  - `circle((1, 2), 5/2)` → circle center (1, 2), r² = 25/4
+  - `circle((0, 0), (4, 0), (1, 3))` → circle center (2, 1), r² = 5, anchor (0, 0)
 
 ### circumcircle
 
@@ -485,7 +485,7 @@ The circle through A, B, C (the same as circle(A, B, C)); anchor A.
   - coincident vertices → Undefined
   - collinear vertices → Undefined (use cline)
 - Examples:
-  - `circumcircle((0, 0), (4, 0), (1, 3))` → circle centre (2, 1), r² = 5, anchor (0, 0)
+  - `circumcircle((0, 0), (4, 0), (1, 3))` → circle center (2, 1), r² = 5, anchor (0, 0)
 
 ### cline
 
@@ -499,7 +499,7 @@ The circle through A, B, C (anchor A), or the line AB when A, B, C are collinear
   - coincident points → Undefined
   - collinear points → the line through them
 - Examples:
-  - `cline((0, 0), (4, 0), (1, 3))` → circle centre (2, 1), r² = 5, anchor (0, 0)
+  - `cline((0, 0), (4, 0), (1, 3))` → circle center (2, 1), r² = 5, anchor (0, 0)
   - `cline((0, 0), (1, 1), (3, 3))` → line (0, 0) + t·(1, 1), t ∈ [−∞, ∞]
 
 ### diameter_circle
@@ -513,7 +513,7 @@ The circle with diameter AB; anchor A.
 - Degenerate cases:
   - diameter_circle(A, A) → Undefined (coincident points)
 - Examples:
-  - `diameter_circle((1, 2), (4, 6))` → circle centre (5/2, 4), r² = 25/4, anchor (1, 2)
+  - `diameter_circle((1, 2), (4, 6))` → circle center (5/2, 4), r² = 25/4, anchor (1, 2)
 
 ### ninepoint_circle
 
@@ -527,7 +527,7 @@ The nine-point circle of ABC (through the midpoints of the sides); anchor: the m
   - coincident vertices → Undefined
   - collinear vertices → Undefined
 - Examples:
-  - `ninepoint_circle((0, 0), (4, 0), (1, 3))` → circle centre (3/2, 1), r² = 5/4, anchor (5/2, 3/2)
+  - `ninepoint_circle((0, 0), (4, 0), (1, 3))` → circle center (3/2, 1), r² = 5/4, anchor (5/2, 3/2)
 
 ### incircle
 
@@ -542,8 +542,8 @@ The incircle of ABC; anchor: its touch point on BC.
   - collinear vertices → Undefined
   - a side length not rational (over Q) → Inexact
 - Examples:
-  - `incircle((5, 12), (0, 0), (14, 0))` → circle centre (6, 4), r² = 16, anchor (6, 0)
-  - `incircle((0, 0), (4, 0), (1, 3))` → circle centre (1.45981848652, 1.05217763377), r² = 1.10707777301, anchor (2.20382042638, 1.79617957362)
+  - `incircle((5, 12), (0, 0), (14, 0))` → circle center (6, 4), r² = 16, anchor (6, 0)
+  - `incircle((0, 0), (4, 0), (1, 3))` → circle center (1.45981848652, 1.05217763377), r² = 1.10707777301, anchor (2.20382042638, 1.79617957362)
 
 ### excircle
 
@@ -558,8 +558,8 @@ excircle(A, B, C): the excircle opposite A; anchor: its touch point on BC.
   - collinear vertices → Undefined
   - a side length not rational (over Q) → Inexact
 - Examples:
-  - `excircle((5, 12), (0, 0), (14, 0))` → circle centre (8, -12), r² = 144, anchor (8, 0)
-  - `excircle((0, 0), (4, 0), (1, 3))` → circle centre (5.70245917364, 4.1101000264), r² = 16.892922227, anchor (2.79617957362, 1.20382042638)
+  - `excircle((5, 12), (0, 0), (14, 0))` → circle center (8, -12), r² = 144, anchor (8, 0)
+  - `excircle((0, 0), (4, 0), (1, 3))` → circle center (5.70245917364, 4.1101000264), r² = 16.892922227, anchor (2.79617957362, 1.20382042638)
 
 ## Transformations
 
@@ -592,7 +592,7 @@ rotate(O, θ): the rotation by θ degrees counter-clockwise about O. rotate(X, O
 - Degenerate cases:
   - θ a multiple of 360° → the identity
   - θ not a multiple of 90° → Inexact over Q and mod p
-  - an Undefined centre → Undefined
+  - an Undefined center → Undefined
 - Examples:
   - `rotate((0, 0), 90)` → similarity z ↦ (0, 1)·z + (0, 0)
   - `rotate((2, 0), (0, 0), 90)` → point (0, 2)
@@ -600,7 +600,7 @@ rotate(O, θ): the rotation by θ degrees counter-clockwise about O. rotate(X, O
 
 ### homothety
 
-homothety(O, k): the homothety with centre O and ratio k (negative k allowed). homothety(X, O, k) is the image of X.
+homothety(O, k): the homothety with center O and ratio k (negative k allowed). homothety(X, O, k) is the image of X.
 
 - Signatures: `homothety(point, number)`, `homothety(point, point, number)`, `homothety(curve, point, number)`, `homothety(polygon, point, number)`
 - Result: transform, point, line, circle, polygon
@@ -612,7 +612,7 @@ homothety(O, k): the homothety with centre O and ratio k (negative k allowed). h
 - Examples:
   - `homothety((1, 1), 2)` → similarity z ↦ (2, 0)·z + (-1, -1)
   - `homothety((3, 1), (1, 1), 1/2)` → point (2, 1)
-  - `homothety(circle((0, 0), (1, 0)), (2, 0), 3)` → circle centre (-4, 0), r² = 9, anchor (-1, 0)
+  - `homothety(circle((0, 0), (1, 0)), (2, 0), 3)` → circle center (-4, 0), r² = 9, anchor (-1, 0)
 
 ### translate
 
@@ -688,7 +688,7 @@ apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mar
   - an anti-similarity reverses an angle mark (its arms swap)
 - Examples:
   - `apply(rotate((0, 0), 90), polygon((1, 0), (2, 0), (2, 1)))` → polygon (0, 1) (0, 2) (-1, 2)
-  - `apply(reflect(line((0, 0), (1, 0))), circle((1, 2), (1, 3)))` → circle centre (1, -2), r² = 1, anchor (1, -3)
+  - `apply(reflect(line((0, 0), (1, 0))), circle((1, 2), (1, 3)))` → circle center (1, -2), r² = 1, anchor (1, -3)
 
 ## Measures
 
@@ -780,7 +780,7 @@ power(P, c) = |PO|² − r²: negative inside c, zero on c, positive outside (ex
 - Export: numeric
 - Degenerate cases:
   - P on c → 0
-  - P = the centre → −r²
+  - P = the center → −r²
 - Examples:
   - `power((7, 1), circle((0, 0), (3, 4)))` → number 25
 

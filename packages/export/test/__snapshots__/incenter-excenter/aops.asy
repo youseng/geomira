@@ -18,7 +18,7 @@ gmline gm_mkline(pair p, pair d, bool haslo, real lo, bool hashi, real hi) {
   return l;
 }
 gmline gm_line(pair a, pair b) { return gm_mkline(a, b - a, false, 0, false, 0); }
-// A circle: centre c, radius r.
+// A circle: center c, radius r.
 struct gmcircle { pair c; real r; }
 gmcircle gm_mkcircle(pair c, real r) { gmcircle k = new gmcircle; k.c = c; k.r = r; return k; }
 pair gm_foot(pair p, gmline l) { return l.p + dot(p - l.p, l.d) / dot(l.d, l.d) * l.d; }
@@ -39,7 +39,7 @@ pair[] gm_lc(gmline l, gmcircle k) {
 }
 // other(P): the second intersection, 2F - P (Vieta)
 pair gm_lc_other(gmline l, gmcircle k, pair p) { return 2 * gm_foot(k.c, l) - p; }
-// A point as the canvas draws it: a dot of radius r, outlined in the paper colour, opacity a.
+// A point as the canvas draws it: a dot of radius r, outlined in the paper color, opacity a.
 void gm_dot(pair z, real r, pen p, real a) {
   filldraw(circle(z, r), p + opacity(a), gm_paper + opacity(a) + linewidth(0.75));
 }

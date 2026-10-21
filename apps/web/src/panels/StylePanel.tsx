@@ -57,7 +57,7 @@ function ChoiceFields({ s, set }: FieldsProps) {
   return (
     <>
       <label>
-        Colour
+        Color
         <select
           value={s.color ?? ''}
           onChange={(e) => {

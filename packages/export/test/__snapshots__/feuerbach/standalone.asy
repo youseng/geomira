@@ -11,7 +11,7 @@ pen gmc0 = rgb("1B1F24");
 pen gmc1 = rgb("1F6FD1");
 
 // ---- helpers ----
-// A circle: centre c, radius r.
+// A circle: center c, radius r.
 struct gmcircle { pair c; real r; }
 gmcircle gm_mkcircle(pair c, real r) { gmcircle k = new gmcircle; k.c = c; k.r = r; return k; }
 pair gm_incenter(pair a, pair b, pair c) {
@@ -22,7 +22,7 @@ gmcircle gm_incircle(pair a, pair b, pair c) {
   real p = abs(b - c) + abs(c - a) + abs(a - b);
   return gm_mkcircle(gm_incenter(a, b, c), abs(cross(b - a, c - a)) / p);
 }
-// A point as the canvas draws it: a dot of radius r, outlined in the paper colour, opacity a.
+// A point as the canvas draws it: a dot of radius r, outlined in the paper color, opacity a.
 void gm_dot(pair z, real r, pen p, real a) {
   filldraw(circle(z, r), p + opacity(a), gm_paper + opacity(a) + linewidth(0.75));
 }

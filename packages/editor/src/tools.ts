@@ -11,7 +11,7 @@
  */
 import type { ToolId } from './tool-state';
 import { call, L, P, type ToolUI } from './tool-ui';
-import { CENTRE_TOOLS, TRIANGLE_CIRCLE_TOOLS } from './tools-centres';
+import { CENTER_TOOLS, TRIANGLE_CIRCLE_TOOLS } from './tools-centers';
 
 export type { Build, PickKind, ToolStep, ToolUI } from './tool-ui';
 
@@ -125,12 +125,12 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
   ),
   call(
     'circle',
-    'Circle (centre, point)',
+    'Circle (center, point)',
     'c',
     'circle',
     'circle',
-    [P('centre'), P('point on the circle')],
-    'The circle with a centre through a point.',
+    [P('center'), P('point on the circle')],
+    'The circle with a center through a point.',
   ),
   call(
     'circle3',
@@ -142,7 +142,7 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     'The circle through three points.',
   ),
   ...TRIANGLE_CIRCLE_TOOLS,
-  ...CENTRE_TOOLS,
+  ...CENTER_TOOLS,
   {
     id: 'tangent',
     label: 'Tangent',
@@ -168,7 +168,7 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     'point',
     [
       { pick: 'figure', prompt: 'object to reflect' },
-      { pick: 'mirror', prompt: 'mirror line or centre' },
+      { pick: 'mirror', prompt: 'mirror line or center' },
     ],
     'The mirror image of an object in a line or a point.',
   ),

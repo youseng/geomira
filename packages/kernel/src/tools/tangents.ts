@@ -38,7 +38,7 @@ function polar<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Val
   if (bad !== undefined) return bad;
   const w = vSub(F, P, c.c);
   if (F.isZero(w.x, 'length', ctx) && F.isZero(w.y, 'length', ctx)) {
-    return undef('P is the centre: its polar is the line at infinity');
+    return undef('P is the center: its polar is the line at infinity');
   }
   const foot = vAdd(F, c.c, vScale(F, w, F.div(c.r2, vDot(F, w, w))));
   return chiralLine(foot, vRot90(F, w));
@@ -93,7 +93,7 @@ export const TANGENT_TOOLS: readonly ToolSpec[] = [
     signatures: [{ params: ['point', 'round'] }],
     outputKinds: ['line'],
     compute: polar,
-    degenerate: ['P = the centre → Undefined', 'P on c → the tangent at P'],
+    degenerate: ['P = the center → Undefined', 'P on c → the tangent at P'],
     export: 'numeric',
     doc: 'polar(P, c): the polar of P with respect to c; chiral (a quarter turn of P − O).',
     examples: [{ args: [['10', '5'], C] }],

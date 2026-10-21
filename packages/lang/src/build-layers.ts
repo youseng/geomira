@@ -172,7 +172,7 @@ function viewLine(st: State, s: ViewStmt): CommentAnchor | undefined {
     st.diags.push(
       error(
         vp.span,
-        'viewport takes three numbers: centre x, centre y, zoom',
+        'viewport takes three numbers: center x, center y, zoom',
         'write viewport=0,0,50',
       ),
     );

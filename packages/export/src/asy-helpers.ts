@@ -61,7 +61,7 @@ export const ASY_HELPERS: readonly (readonly [string, AsyHelper])[] = Object.fre
     'gmcircle',
     H(
       [],
-      '// A circle: centre c, radius r.',
+      '// A circle: center c, radius r.',
       'struct gmcircle { pair c; real r; }',
       'gmcircle gm_mkcircle(pair c, real r) { gmcircle k = new gmcircle; k.c = c; k.r = r; return k; }',
     ),
@@ -173,7 +173,7 @@ export const ASY_HELPERS: readonly (readonly [string, AsyHelper])[] = Object.fre
       '  pair n = (-d.y, d.x) / sqrt(s);',
       '  return new pair[] {a.c + x * d - h * n, a.c + x * d + h * n};',
       '}',
-      '// other(P): the reflection of P in the line of centres',
+      '// other(P): the reflection of P in the line of centers',
       'pair gm_cc_other(gmcircle a, gmcircle b, pair p) { return reflect(a.c, b.c) * p; }',
     ),
   ],
@@ -240,7 +240,7 @@ export const ASY_HELPERS: readonly (readonly [string, AsyHelper])[] = Object.fre
     'dot',
     H(
       [],
-      '// A point as the canvas draws it: a dot of radius r, outlined in the paper colour, opacity a.',
+      '// A point as the canvas draws it: a dot of radius r, outlined in the paper color, opacity a.',
       'void gm_dot(pair z, real r, pen p, real a) {',
       '  filldraw(circle(z, r), p + opacity(a), gm_paper + opacity(a) + linewidth(0.75));',
       '}',

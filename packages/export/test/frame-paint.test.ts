@@ -37,7 +37,7 @@ describe('exportFrame', () => {
     const bad = exportFrame(doc, values, {
       view: { viewport: { cx: 0, cy: 0, zoom: 0 }, size: { width: 10, height: 10 } },
     });
-    expect(bad).toEqual({ ok: false, problem: 'the viewport needs a finite centre and zoom > 0' });
+    expect(bad).toEqual({ ok: false, problem: 'the viewport needs a finite center and zoom > 0' });
     const big = exportFrame(doc, values, {
       view: {
         viewport: { cx: 0, cy: 0, zoom: 1 },

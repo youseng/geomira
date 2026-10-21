@@ -1,11 +1,14 @@
 /**
- * The triangle centres and circles as GUI tools (ADR-0016 decision 21): pick three points
- * A, B, C, as for the kernel tools of the same name. Keys: Geomdraw's chord digits for the
- * five centres it numbers (centroid 1, circumcentre 2, incentre 3, orthocentre 4, nine-point
- * centre 5; Geomdraw types them after G, which is the glider here), the free digits 6–9 for
- * the excentre and three circles, and Shift+N for the nine-point circle (every lowercase
- * letter is taken). The excentre and the excircle are the ones opposite the first pick.
+ * The triangle centers and circles as GUI tools (ADR-0016 decisions 21, 23): pick three
+ * points A, B, C, as for the kernel tools of the same name. Keys: Geomdraw's chord digits for
+ * the five centers it numbers (centroid 1, circumcenter 2, incenter 3, orthocenter 4,
+ * nine-point center 5; Geomdraw types them after G, which is the glider here), the free
+ * digits 6–9 for the excenter and three circles, and Shift+N for the nine-point circle (every
+ * lowercase letter is taken). The excenter and the excircle are the ones opposite the first
+ * pick. Each center, the circumcircle and the incircle take their olympiad name when it is
+ * free (conventional-names.ts).
  */
+import type { NamePreference } from './conventional-names';
 import { call, P, type ToolStep, type ToolUI } from './tool-ui';
 
 const TRIANGLE: readonly ToolStep[] = [P('first vertex'), P('second vertex'), P('third vertex')];
@@ -15,6 +18,8 @@ const OPPOSITE: readonly ToolStep[] = [
   P('second vertex'),
   P('third vertex'),
 ];
+
+const named = (name: string): NamePreference => ({ kind: 'fixed', name });
 
 /** Circles of a triangle (the Circles group). */
 export const TRIANGLE_CIRCLE_TOOLS: readonly ToolUI[] = [
@@ -26,6 +31,7 @@ export const TRIANGLE_CIRCLE_TOOLS: readonly ToolUI[] = [
     'circle',
     TRIANGLE,
     'The circle through the three vertices of triangle ABC.',
+    named('ω'),
   ),
   call(
     'incircle',
@@ -35,6 +41,7 @@ export const TRIANGLE_CIRCLE_TOOLS: readonly ToolUI[] = [
     'circle',
     TRIANGLE,
     'The circle inside triangle ABC tangent to its three sides.',
+    named('ω'),
   ),
   call(
     'excircle',
@@ -56,8 +63,8 @@ export const TRIANGLE_CIRCLE_TOOLS: readonly ToolUI[] = [
   ),
 ];
 
-/** Centres of a triangle (the Centers group; labels spelt as the rest of the interface). */
-export const CENTRE_TOOLS: readonly ToolUI[] = [
+/** Centers of a triangle (the Centers group). */
+export const CENTER_TOOLS: readonly ToolUI[] = [
   call(
     'centroid',
     'Centroid',
@@ -66,50 +73,56 @@ export const CENTRE_TOOLS: readonly ToolUI[] = [
     'point',
     TRIANGLE,
     'The centroid G of triangle ABC, where its medians meet.',
+    named('G'),
   ),
   call(
     'circumcenter',
-    'Circumcentre',
+    'Circumcenter',
     '2',
     'circumcenter',
     'point',
     TRIANGLE,
-    'The circumcentre O of triangle ABC, the centre of the circle through A, B, C.',
+    'The circumcenter O of triangle ABC, the center of the circle through A, B, C.',
+    named('O'),
   ),
   call(
     'incenter',
-    'Incentre',
+    'Incenter',
     '3',
     'incenter',
     'point',
     TRIANGLE,
-    'The incentre I of triangle ABC, where its angle bisectors meet.',
+    'The incenter I of triangle ABC, where its angle bisectors meet.',
+    named('I'),
   ),
   call(
     'orthocenter',
-    'Orthocentre',
+    'Orthocenter',
     '4',
     'orthocenter',
     'point',
     TRIANGLE,
-    'The orthocentre H of triangle ABC, where its altitudes meet.',
+    'The orthocenter H of triangle ABC, where its altitudes meet.',
+    named('H'),
   ),
   call(
     'ninepoint_center',
-    'Nine-point centre',
+    'Nine-point center',
     '5',
     'ninepoint_center',
     'point',
     TRIANGLE,
-    'The centre N of the nine-point circle of triangle ABC.',
+    'The center N of the nine-point circle of triangle ABC.',
+    named('N'),
   ),
   call(
     'excenter',
-    'Excentre',
+    'Excenter',
     '6',
     'excenter',
     'point',
     OPPOSITE,
-    'The excentre of triangle ABC opposite A (the centre of that excircle).',
+    'The excenter I_a of triangle ABC opposite A (the center of that excircle).',
+    { kind: 'vertex', base: 'I' },
   ),
 ];

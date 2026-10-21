@@ -133,7 +133,7 @@ const C5: ExampleArg = {
 };
 
 const DEGENERATE = [
-  'P inside c (or P = the centre) → Undefined',
+  'P inside c (or P = the center) → Undefined',
   'P on c (the gap |OP| − r within the band) → the double point',
   'two candidates and no selector → Undefined (ambiguous: add a selector)',
   'along(±) → Undefined (use orient(±))',

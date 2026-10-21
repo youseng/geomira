@@ -15,9 +15,9 @@ export it for an AoPS post or a handout.
   `claim concyclic(M_a, M_b, M_c, D, E, F)`), edited in the Text panel or one line at a time in
   the command line; a share link holds the whole text and opens the same figure again.
 - **Tools in groups** (points, lines, circles, triangle centres, transformations, marks,
-  measures and claims), each with a one-key shortcut: click A, B, C for the circumcentre,
-  incentre, orthocentre, centroid, nine-point centre, excentre, or the circumcircle, incircle,
-  excircle and nine-point circle; intersections and tangents ask which of two points you mean
+  measures and claims), each with a one-key shortcut: click A, B, C for the circumcenter O,
+  incenter I, orthocenter H, centroid G, nine-point center N, excenter I_a, or the
+  circumcircle and incircle ω, the excircle and the nine-point circle; intersections and tangents ask which of two points you mean
   and write a selector that keeps that choice when the figure moves.
 - **Honest about degeneracy.** An object that cannot be constructed is shown as undefined with
   its reason (“the circles are apart”), never drawn as garbage, and a point never jumps.
@@ -32,7 +32,7 @@ export it for an AoPS post or a handout.
   similarities; a layer can hold the image of another layer and follows it.
 - **Randomize** draws a new figure of the same construction with an acute, obtuse or right
   triangle (or any), through the claim tester's own sampler.
-- **Colours by name** (`color=red`, `blue`, `green`, `orange`, `purple`, `grey`, …) in
+- **Colors by name** (`color=red`, `blue`, `green`, `orange`, `purple`, `grey`, …) in
   Geomdraw's palette, the same on the canvas and in every export; hex colours as written.
   Polygons are outlines unless they are coloured.
 - **Exports** of what you see: SVG, PNG (with the figure's text inside), TikZ, and Asymptote,

@@ -66,7 +66,7 @@ export const GLIDER_TOOLS: readonly ToolSpec[] = [
       'on(c, θ) over Q or mod p → Inexact unless r, cos θ and sin θ are representable',
     ],
     export: 'numeric',
-    doc: 'Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range); on(c, u, v): the stereographic parameter (u : v) from the anchor of c (rational; (u : 0) is the anchor); on(c, θ): the point at angle θ (degrees) from the centre.',
+    doc: 'Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range); on(c, u, v): the stereographic parameter (u : v) from the anchor of c (rational; (u : 0) is the anchor); on(c, θ): the point at angle θ (degrees) from the center.',
     examples: [
       { args: [SEGMENT, '1/4'] },
       { args: [CIRCLE, '1', '2'] },

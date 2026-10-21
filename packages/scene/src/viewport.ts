@@ -78,7 +78,7 @@ export function viewProblem(view: View): string | undefined {
   const { cx, cy, zoom } = view.viewport;
   const { width, height } = view.size;
   if (!finite(cx, cy, zoom) || !(zoom > 0))
-    return 'the viewport needs a finite centre and zoom > 0';
+    return 'the viewport needs a finite center and zoom > 0';
   if (!(width > 0 && height > 0 && width <= MAX_SURFACE && height <= MAX_SURFACE))
     return `the drawing surface must be between 0 and ${String(MAX_SURFACE)} pixels`;
   const h = halfExtent(view);

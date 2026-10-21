@@ -142,7 +142,7 @@ function stereoOf<T>(F: Field<T>, c: Circle<T>, X: Vec<T>, ctx: EvalContext): Re
 
 function angleOf<T>(F: Field<T>, c: Circle<T>, X: Vec<T>, ctx: EvalContext): Result<T> {
   const w = vSub(F, X, c.c);
-  if (isZeroVec(F, w, ctx)) return undef('the point is the centre: it has no angle');
+  if (isZeroVec(F, w, ctx)) return undef('the point is the center: it has no angle');
   const a = F.atan2(w.y, w.x);
   return isInexact(a) ? a : { form: 'angle', degrees: a };
 }
@@ -203,7 +203,7 @@ export function dragParameter<T>(
     return isInexact(t) ? t : { form: 'line', t };
   }
   const w = vSub(F, cursor, o.c);
-  if (isZeroVec(F, w, ctx)) return undef('the cursor is at the centre: no nearest point');
+  if (isZeroVec(F, w, ctx)) return undef('the cursor is at the center: no nearest point');
   if (form === 'angle') return angleOf(F, o, cursor, ctx);
   const [r, n] = [F.sqrt(o.r2), F.sqrt(vDot(F, w, w))];
   if (isInexact(r)) return r;

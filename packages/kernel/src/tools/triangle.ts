@@ -125,7 +125,7 @@ export const TRIANGLE_TOOLS: readonly ToolSpec[] = [
     compute: circumcenter,
     degenerate: ['coincident vertices → Undefined', 'collinear vertices → Undefined (use cline)'],
     export: { constructive: 'circumcenter' },
-    doc: 'The centre of the circle through A, B, C.',
+    doc: 'The center of the circle through A, B, C.',
     examples: [{ args: ABC }],
   },
   {

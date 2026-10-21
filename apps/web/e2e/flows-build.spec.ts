@@ -147,11 +147,11 @@ test('command bar: completions from the registry; shortcuts and help from the ke
   await page.getByLabel('Geometry canvas').click();
   await page.keyboard.press('c');
   const tools = page.getByRole('toolbar', { name: 'Tools' });
-  await expect(tools.getByRole('button', { name: 'Circle (centre, point)' })).toHaveAttribute(
+  await expect(tools.getByRole('button', { name: 'Circle (center, point)' })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
   await tab(page, 'Help');
-  await expect(page.getByRole('tabpanel')).toContainText('Circle (centre, point)');
+  await expect(page.getByRole('tabpanel')).toContainText('Circle (center, point)');
   await expect(page.getByRole('tabpanel')).toContainText('Ctrl+Shift+Z');
 });

@@ -75,7 +75,7 @@ describe('TikZ', () => {
     expect(t).toMatch(/^% GEOMIRA export: TikZ\. One unit is [\d.]+bp/u);
     expect(t).toContain('% Needs \\usepackage{tikz} and \\usepackage{amssymb}.');
     expect(t).toContain(
-      '% Warning: the colour "notacolour" of k cannot be read: drawn in the default ink',
+      '% Warning: the color "notacolour" of k cannot be read: drawn in the default ink',
     );
     for (const m of t.matchAll(/\\definecolor\{gmc\d+\}\{HTML\}\{([^}]*)\}/gu))
       expect(m[1]).toMatch(/^[0-9A-F]{6}$/u);
@@ -119,7 +119,7 @@ describe('TikZ', () => {
     };
     const t = toTikz(frameOf(far, { view })).text;
     expect(t).toContain(
-      '% Coordinates are relative to (100001.5, 100000), the centre of the view.',
+      '% Coordinates are relative to (100001.5, 100000), the center of the view.',
     );
     expect(t).toContain('(-1.5,0)');
     const near = toTikz(frameOf(far.replaceAll('100000', '1').replace('100003', '4'))).text;

@@ -52,7 +52,7 @@ export const CIRCLE_MEASURE_TOOLS: readonly ToolSpec[] = [
     signatures: [{ params: ['point', 'round'] }],
     outputKinds: ['number'],
     compute: power,
-    degenerate: ['P on c → 0', 'P = the centre → −r²'],
+    degenerate: ['P on c → 0', 'P = the center → −r²'],
     export: 'numeric',
     doc: 'power(P, c) = |PO|² − r²: negative inside c, zero on c, positive outside (exact).',
     examples: [{ args: [['7', '1'], C5] }],

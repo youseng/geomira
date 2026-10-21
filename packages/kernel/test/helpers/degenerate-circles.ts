@@ -160,10 +160,10 @@ export const CIRCLE_CASES: Record<string, Record<string, () => void>> = {
     },
   },
   polar: {
-    'P = the centre → Undefined': () => {
+    'P = the center → Undefined': () => {
       for (const F of FIELDS)
         expect(reason(at(F, 'polar', O0, C5))).toBe(
-          'undefined: P is the centre: its polar is the line at infinity',
+          'undefined: P is the center: its polar is the line at infinity',
         );
     },
     'P on c → the tangent at P': () => {

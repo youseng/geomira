@@ -85,7 +85,7 @@ describe('the generated tool reference (docs/tools.md)', () => {
       { kind: 'undefined', reason: 'u' },
     ];
     expect(values.map((v) => formatValue(v, show))).toEqual([
-      'circle centre (0, 0), r² = 4',
+      'circle center (0, 0), r² = 4',
       'similarity (anti)',
       'similarity',
       'Inexact (r)',

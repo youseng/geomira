@@ -30,7 +30,7 @@ export function RunLine({ run, store, explain, label }: RunLineProps) {
     case 'cancelled':
       return (
         <p className="run muted">
-          {label}: cancelled after {run.done} of {run.n} figures
+          {label}: canceled after {run.done} of {run.n} figures
         </p>
       );
     case 'failed':

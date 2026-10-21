@@ -1,8 +1,9 @@
 /**
- * The shape of a GUI tool's data (tools.ts holds the table, tools-centres.ts the triangle
- * centres and circles) and the helpers that write table entries.
+ * The shape of a GUI tool's data (tools.ts holds the table, tools-centers.ts the triangle
+ * centers and circles) and the helpers that write table entries.
  */
 import type { ToolId } from './tool-state';
+import type { NamePreference } from './conventional-names';
 import type { NameKind } from './names';
 
 export type PickKind = 'point' | 'line' | 'circle' | 'curve' | 'figure' | 'mirror' | 'transform';
@@ -17,7 +18,13 @@ export type Build =
   /** Nothing more: picking (or creating) the point is the tool's whole work. */
   | { readonly kind: 'none' }
   /** name = tool(picks…) */
-  | { readonly kind: 'call'; readonly tool: string; readonly name: NameKind }
+  | {
+      readonly kind: 'call';
+      readonly tool: string;
+      readonly name: NameKind;
+      /** The conventional name, used when free (conventional-names.ts). */
+      readonly prefer?: NamePreference;
+    }
   /** intersect(a, b, selectors): the clicked candidate, by the GUI selector choice. */
   | { readonly kind: 'intersection' }
   /** tangent(P, c) when P is on c, else tangent_from(P, c, selectors) by the GUI choice. */
@@ -53,6 +60,9 @@ export function call(
   name: NameKind,
   steps: readonly ToolStep[],
   help: string,
+  prefer?: NamePreference,
 ): ToolUI {
-  return { id, label, key, help, steps, build: { kind: 'call', tool, name } };
+  const build: Build =
+    prefer === undefined ? { kind: 'call', tool, name } : { kind: 'call', tool, name, prefer };
+  return { id, label, key, help, steps, build };
 }

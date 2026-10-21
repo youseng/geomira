@@ -48,7 +48,7 @@ export function done(state: EditorState): EditResult {
 
 /** A valid viewport: finite centre, zoom within the scene's clamp. */
 export function viewportProblem(v: Viewport): string | undefined {
-  if (!Number.isFinite(v.cx) || !Number.isFinite(v.cy)) return 'the viewport centre is not finite';
+  if (!Number.isFinite(v.cx) || !Number.isFinite(v.cy)) return 'the viewport center is not finite';
   return Number.isFinite(v.zoom) && v.zoom >= MIN_ZOOM && v.zoom <= MAX_ZOOM
     ? undefined
     : 'the zoom is outside the supported range';

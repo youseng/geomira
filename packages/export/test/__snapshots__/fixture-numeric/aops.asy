@@ -18,7 +18,7 @@ gmline gm_mkline(pair p, pair d, bool haslo, real lo, bool hashi, real hi) {
   return l;
 }
 gmline gm_ray(pair a, pair b) { return gm_mkline(a, b - a, true, 0, false, 0); }
-// A circle: centre c, radius r.
+// A circle: center c, radius r.
 struct gmcircle { pair c; real r; }
 gmcircle gm_mkcircle(pair c, real r) { gmcircle k = new gmcircle; k.c = c; k.r = r; return k; }
 pair gm_midpoint(pair a, pair b) { return (a + b) / 2; }
@@ -40,7 +40,7 @@ path gm_path(gmline l) {
   }
   return t0 <= t1 ? (l.p + t0 * l.d)--(l.p + t1 * l.d) : nullpath;
 }
-// A point as the canvas draws it: a dot of radius r, outlined in the paper colour, opacity a.
+// A point as the canvas draws it: a dot of radius r, outlined in the paper color, opacity a.
 void gm_dot(pair z, real r, pen p, real a) {
   filldraw(circle(z, r), p + opacity(a), gm_paper + opacity(a) + linewidth(0.75));
 }

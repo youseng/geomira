@@ -51,7 +51,7 @@ export function warningText(w: ExportWarning): string {
     const code = `U+${w.codePoint.toString(16).toUpperCase().padStart(4, '0')}`;
     return `the label of ${w.object} has a character TeX cannot write (${JSON.stringify(w.char)}, ${code}): written as ?`;
   }
-  return `the colour ${JSON.stringify(w.colour)} of ${w.object} cannot be read: drawn in the default ink`;
+  return `the color ${JSON.stringify(w.colour)} of ${w.object} cannot be read: drawn in the default ink`;
 }
 
 export interface Paint {

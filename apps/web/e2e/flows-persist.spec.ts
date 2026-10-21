@@ -35,7 +35,7 @@ test('objects panel lists Undefined reasons; style panel edits the text', async 
   );
   await page.getByRole('button', { name: 'B', exact: true }).click();
   await tab(page, 'Style');
-  await page.getByLabel('Colour').selectOption('red');
+  await page.getByLabel('Color').selectOption('red');
   await page.getByLabel('No image in derived layers (noimage)').check();
   await expectLines(page, 'B = (2, 0) [color=red, noimage]');
 });
