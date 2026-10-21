@@ -110,15 +110,26 @@ export function createEditor(doc: Document, env: EditorEnv): EditorState {
 }
 
 /**
- * The state with a new document: values re-evaluated, the selection, hover and active
- * layer pruned to what still exists (an object or layer an edit removed is not selected,
- * hovered or active any more).
+ * The tool's picks and pending choice when every object they name still exists; else the
+ * idle tool (Run 10 audit: picks survived the undo of the point they named, so the next click
+ * was refused, or bound to another object that later took the freed id).
+ */
+function prunedTool(t: ToolState, ids: ReadonlySet<number>): ToolState {
+  const named = [...t.picks, ...(t.choosing?.args ?? [])];
+  return named.every((id) => ids.has(id)) ? t : idleTool(t.claimKind);
+}
+
+/**
+ * The state with a new document: values re-evaluated, the selection, hover, active layer and
+ * the tool's picks pruned to what still exists (an object or layer an edit removed is not
+ * selected, hovered, active or picked any more).
  */
 export function withDocument(s: EditorState, doc: Document, env: EditorEnv): EditorState {
   if (doc === s.doc) return s;
   const ids = new Set(doc.objects.map((o) => o.id));
   return {
     ...s,
+    toolState: prunedTool(s.toolState, ids),
     doc,
     values: reevaluate(s.values, s.doc, doc, env),
     selection: s.selection.filter((id) => ids.has(id)),
