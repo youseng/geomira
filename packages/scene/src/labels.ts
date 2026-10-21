@@ -18,6 +18,7 @@
  * bottom-aligned when it points up, centred in between (renderer: textAlign/textBaseline).
  */
 import { clipLine } from './clip';
+import { boxesOverlap, labelBox, MIN_CLEAR_DEG } from './label-box';
 import type { LabelRun } from './label-text';
 import type { DisplayItem, Path, Primitive, Scene } from './types';
 import type { Rect, Vec2, View } from './viewport';
@@ -177,65 +178,120 @@ function gap(a: number, b: number): number {
 }
 
 /**
- * The automatic direction of a point label, degrees: the first preferred direction whose
- * angular gap to every blocked direction is largest, gaps counted in whole degrees and
- * capped at 45° (a direction 45° clear of every curve is as good as any other, so the
- * preference order decides; rounding keeps that decision free of float noise).
+ * The automatic directions of a point label, degrees, best first: each preferred direction
+ * is scored by its angular gap to every blocked direction, in whole degrees and capped at
+ * 45° (a direction 45° clear of every curve is as good as any other, so the preference order
+ * decides; rounding keeps that decision free of float noise); higher scores first, ties in
+ * preference order. The first is the direction a lone label takes.
  */
-function autoAngle(c: Vec2, items: readonly DisplayItem[], self: number): number {
+function autoAngles(c: Vec2, items: readonly DisplayItem[], self: number): readonly Ranked[] {
   const dirs = blocked(c, items, self);
-  let best = PREFERRED[0] ?? 45;
-  let bestGap = -1;
-  for (const deg of PREFERRED) {
+  const ranked = PREFERRED.map((deg, order) => {
     const a = (deg * Math.PI) / 180;
     const g = dirs.reduce((m, d) => Math.min(m, gap(a, d)), Math.PI);
-    const score = Math.min(45, Math.round((g * 180) / Math.PI));
-    if (score > bestGap) [best, bestGap] = [deg, score];
-  }
-  return best;
+    return { deg, order, score: Math.min(45, Math.round((g * 180) / Math.PI)) };
+  });
+  return ranked.sort((x, y) => y.score - x.score || x.order - y.order);
 }
 
-function place(view: View, p: Primitive, item: DisplayItem, items: readonly DisplayItem[]) {
+interface Ranked {
+  readonly deg: number;
+  readonly order: number;
+  readonly score: number;
+}
+
+/** The label of `p` placed in direction `angle` (degrees) from `anchor`. */
+function placedAt(p: Primitive, item: DisplayItem, anchor: Vec2, angle: number): PlacedLabel {
   const label = p.label;
-  const anchor = anchorOf(view, item);
-  if (label === null || anchor === undefined) return undefined;
-  const angle =
-    label.angle ??
-    (item.kind === 'point'
-      ? autoAngle(anchor, items, item.id)
-      : item.kind === 'angle_mark'
-        ? (((bisector(item.paths) ?? 45) % 360) + 360) % 360
-        : 45);
   const rad = (angle * Math.PI) / 180;
-  const centred = item.kind === 'text' && label.angle === null;
+  const centred = item.kind === 'text' && label?.angle === null;
   const [cos, sin] = centred ? [0, 0] : [Math.cos(rad), Math.sin(rad)];
-  const placed: PlacedLabel = {
+  const dist = label?.dist ?? 0;
+  return {
     id: p.id,
-    runs: label.runs,
-    text: label.text,
+    runs: label?.runs ?? [],
+    text: label?.text ?? '',
     anchor,
-    at: { x: anchor.x + label.dist * cos, y: anchor.y - label.dist * sin },
+    at: { x: anchor.x + dist * cos, y: anchor.y - dist * sin },
     angle,
     align: cos > TILT ? 'left' : cos < -TILT ? 'right' : 'center',
     baseline: sin > TILT ? 'bottom' : sin < -TILT ? 'top' : 'middle',
     color: p.style.color,
     opacity: p.style.opacity,
   };
-  return placed;
 }
 
-/** The labels of the drawn items, in draw order. */
+/** Whether a label's direction is chosen here (a point without `label_angle`). */
+function automatic(p: Primitive, item: DisplayItem): boolean {
+  return item.kind === 'point' && p.label !== null && p.label.angle === null;
+}
+
+/** A label with a fixed direction: explicit, or by kind (marks: the bisector; others 45°). */
+function placeFixed(view: View, p: Primitive, item: DisplayItem): PlacedLabel | undefined {
+  const anchor = anchorOf(view, item);
+  if (p.label === null || anchor === undefined) return undefined;
+  const angle =
+    p.label.angle ??
+    (item.kind === 'angle_mark' ? (((bisector(item.paths) ?? 45) % 360) + 360) % 360 : 45);
+  return placedAt(p, item, anchor, angle);
+}
+
+/**
+ * An automatic point label: the best direction for the curves through the point, unless its
+ * box would overlap a label placed before it; then the next direction in rank order whose
+ * box overlaps none and that keeps at least MIN_CLEAR_DEG from the curves; if every one
+ * collides, the best direction after all (note C of Run 8b).
+ */
+function placeAuto(
+  view: View,
+  p: Primitive,
+  item: DisplayItem,
+  items: readonly DisplayItem[],
+  taken: readonly Rect[],
+): PlacedLabel | undefined {
+  const anchor = anchorOf(view, item);
+  if (anchor === undefined) return undefined;
+  const ranked = autoAngles(anchor, items, item.id);
+  const best = ranked[0]?.score ?? 45;
+  const first = placedAt(p, item, anchor, ranked[0]?.deg ?? 45);
+  for (const r of ranked) {
+    if (r.score < Math.min(best, MIN_CLEAR_DEG)) break;
+    const l = r.deg === first.angle ? first : placedAt(p, item, anchor, r.deg);
+    const box = labelBox(l);
+    if (!taken.some((t) => boxesOverlap(box, t))) return l;
+  }
+  return first;
+}
+
+/**
+ * The labels of the drawn items, in draw order. Labels with a fixed direction (explicit
+ * `label_angle`, and every label that is not a point's) are placed first and never moved;
+ * then the automatic point labels, in draw order, each avoiding the boxes of all labels
+ * placed before it. Deterministic: the same display list gives the same placement.
+ */
 export function placeLabels(
   scene: Scene,
   items: readonly DisplayItem[],
   view: View,
 ): PlacedLabel[] {
   const byId = new Map(scene.primitives.map((p) => [p.id, p]));
-  const out: PlacedLabel[] = [];
+  const placed = new Map<number, PlacedLabel>();
   for (const item of items) {
     const p = byId.get(item.id);
-    const placed = p === undefined ? undefined : place(view, p, item, items);
-    if (placed !== undefined) out.push(placed);
+    const l = p === undefined || automatic(p, item) ? undefined : placeFixed(view, p, item);
+    if (l !== undefined) placed.set(item.id, l);
   }
-  return out;
+  const taken = [...placed.values()].map(labelBox);
+  for (const item of items) {
+    const p = byId.get(item.id);
+    if (p === undefined || !automatic(p, item)) continue;
+    const l = placeAuto(view, p, item, items, taken);
+    if (l === undefined) continue;
+    placed.set(item.id, l);
+    taken.push(labelBox(l));
+  }
+  return items.flatMap((item) => {
+    const l = placed.get(item.id);
+    return l === undefined ? [] : [l];
+  });
 }
