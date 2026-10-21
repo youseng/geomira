@@ -106,6 +106,10 @@ export function Board(props: BoardProps) {
       data-zoom={viewport.zoom}
       onPointerDown={(e) => {
         if (display === null) return;
+        // Leave a focused field first, so its blur (the text panel applies its draft) comes
+        // before the press starts a drag, which would refuse the text (Run 10 audit).
+        const focused = document.activeElement;
+        if (focused instanceof HTMLElement && focused !== e.currentTarget) focused.blur();
         e.currentTarget.setPointerCapture(e.pointerId);
         gestures.down(e.pointerId, local(e), display);
       }}
