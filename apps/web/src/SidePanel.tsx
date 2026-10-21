@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { EditorState } from '@geomira/editor/state';
 import { assertNever } from '@geomira/num/assert';
 import type { Scene } from '@geomira/scene/types';
@@ -8,6 +9,7 @@ import { LayersPanel } from './panels/LayersPanel';
 import { ObjectsPanel } from './panels/ObjectsPanel';
 import { StylePanel } from './panels/StylePanel';
 import { TextPanel } from './panels/TextPanel';
+import { useSettled } from './settled';
 import type { EditorStore } from './store';
 import type { TestRuns } from './test-runs';
 
@@ -39,7 +41,8 @@ function Summary({ scene, state }: { scene: Scene; state: EditorState }) {
   );
 }
 
-function Body({
+/** The tab's panel; memoised, so a drag frame (with the settled state unchanged) skips it. */
+const Body = memo(function Body({
   tab,
   store,
   state,
@@ -59,17 +62,21 @@ function Body({
     default:
       return assertNever(tab, 'tab');
   }
-}
+});
+
+const Layers = memo(LayersPanel);
 
 /**
  * The panels (SPEC §15): the layers and a summary of the scene always on top, then Text,
- * Objects, Claims, Style and Help as tabs. On a phone the panel sits under the canvas.
+ * Objects, Claims, Style and Help as tabs. On a phone the panel sits under the canvas. During
+ * a drag they show the state from before it and update at drag end (settled.ts, note F).
  */
 export function SidePanel(props: SidePanelProps) {
-  const { store, state, scene, runs, times, tab, onTab } = props;
+  const { store, scene, runs, times, tab, onTab } = props;
+  const state = useSettled(props.state);
   return (
     <aside className="side" aria-label="Figure">
-      <LayersPanel store={store} state={state} />
+      <Layers store={store} state={state} />
       <Summary scene={scene} state={state} />
       <div className="tabs" role="tablist" aria-label="Panels">
         {TABS.map((t) => (

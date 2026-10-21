@@ -1,4 +1,12 @@
-import { Component, useCallback, useRef, useState, type ReactNode, type RefObject } from 'react';
+import {
+  Component,
+  memo,
+  useCallback,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import type { Size } from '@geomira/scene/viewport';
 import { Board } from './Board';
 import { CommandBar } from './CommandBar';
@@ -8,6 +16,7 @@ import { Header } from './Header';
 import { useAutosave, useFitOnOpen, useInternalErrors, useShortcuts, useStartup } from './hooks';
 import { reportOf, useFit, useHeader, useKeyActions, usePage, type Dialog } from './page';
 import { SidePanel, type Tab } from './SidePanel';
+import { useSettled } from './settled';
 import type { EditorStore, Notice } from './store';
 import { ToolBar } from './ToolBar';
 
@@ -80,6 +89,10 @@ function DialogView(p: {
   );
 }
 
+/** The bars do not change during a drag: they render the settled state (note F of Run 9a). */
+const Tools = memo(ToolBar);
+const Commands = memo(CommandBar);
+
 /** Keyboard shortcuts; "/" focuses the command bar, "?" shows the help. */
 function usePageShortcuts(
   store: EditorStore,
@@ -128,6 +141,7 @@ export function App() {
     useApp();
   const { store, snap, scene } = page;
   const { state } = snap;
+  const settled = useSettled(state);
   return (
     <div className="app">
       <Header {...header.props} />
@@ -146,8 +160,8 @@ export function App() {
           store.setNotice(null);
         }}
       />
-      <ToolBar store={store} state={state} />
-      <CommandBar store={store} inputRef={commandRef} />
+      <Tools store={store} state={settled} />
+      <Commands store={store} inputRef={commandRef} />
       <main className="app-main">
         <Board
           canvasRef={canvasRef}
