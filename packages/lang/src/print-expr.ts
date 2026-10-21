@@ -1,14 +1,14 @@
 /**
  * Printing expressions (ADR-0009): names for references, numbers as written (a literal's
  * `text` when it reads back as its value, else the canonical form), `(x, y)` for points,
- * infix arithmetic with the fewest parentheses that parse back to the same tree (operators
+ * strings quoted with the escapes of the lexer (ADR-0011), infix arithmetic with the fewest parentheses that parse back to the same tree (operators
  * are left-associative, so a right operand of equal precedence keeps its parentheses),
  * spaces around every binary operator (so `l* * 2` never reads as a name), selectors last.
  */
 import type { Expr, LitExpr } from '@geomira/kernel/expr';
 import { eq, formatRational } from '@geomira/num/rational';
 import { formatSelector } from '@geomira/kernel/selector';
-import { exactLiteral } from './lex-literals';
+import { exactLiteral, quote } from './lex-literals';
 
 export type Names = (id: number) => string | undefined;
 
@@ -60,6 +60,8 @@ function printAt(e: Expr, names: Names, min: number): string {
       return names(e.id) ?? `#${String(e.id)}`;
     case 'lit':
       return litText(e);
+    case 'str':
+      return quote(e.value);
     case 'call': {
       const [a, b] = e.args;
       const infix = INFIX[e.tool];

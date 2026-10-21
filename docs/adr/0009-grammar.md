@@ -1,7 +1,8 @@
 # ADR-0009: The language: grammar, names with `*`, printing, parseInto, migrations (Run 6)
 
 Status: accepted (Run 6; decision 22 revised before merge at the maintainer's request; the
-style keys z, label_angle and label_dist were added by ADR-0010 in Run 7). Extends SPEC §11 (statements, names, laws, versioning), ADR-0003
+style keys z, label_angle and label_dist were added by ADR-0010 in Run 7; string arguments by
+ADR-0011 in Run 8a). Extends SPEC §11 (statements, names, laws, versioning), ADR-0003
 (items 2 and 5: literals and claims as data), ADR-0004 (item 9: `on(obj)`), ADR-0006 (item 14:
 parse-level selector checks), ADR-0007 (items 9 and 10: managed names, placement of images) and
 ADR-0008 (decision 2 and its consequences: the notation of the claim kinds, `assumptionProblem`).
@@ -85,7 +86,9 @@ primary       = number | name | call | "(" , expr , ")" | "(" , expr , "," , exp
                                                             (* (x, y) is point(x, y) *)
 call          = tool , "(" , [ args ] , ")" ;               (* tool: a registry name *)
 args          = arg , { "," , arg } , { "," , selector } | selector , { "," , selector } ;
-arg           = expr ;                                      (* on(obj) gets an explicit parameter *)
+arg           = expr | string ;                             (* on(obj) gets an explicit parameter;
+                                                               a string only as a whole argument:
+                                                               text(P, "…") (ADR-0011) *)
 selector      = ( "same_side" | "opposite_side" ) , "(" , expr , "," , expr , ")"
               | "on_arc" , "(" , expr , "," , expr , "," , [ "not" ] , expr , ")"
               | "between" , "(" , expr , "," , expr , ")"

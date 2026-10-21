@@ -3,6 +3,10 @@
  * or ±Infinity: degenerate input gives Undefined with a reason, and a number that is not
  * representable in the field gives Inexact. Unbounded line ranges are `null` (ADR-0003).
  *
+ * The display values of SPEC §6.2 (ADR-0011, Run 8a): AngleMark, SegmentMark, Text, and the
+ * Str a text shows. They are values like any other (images map them, the scene draws them),
+ * but no claim or construction tool takes them.
+ *
  * Reserved kinds, documented only (Phase 2 / later runs, no code): IdealPoint (the common
  * direction of parallel lines; v1 parallel lines are Undefined), Conic, Locus. Capability
  * tests accept any `{ kind: string }`, so a future kind matches no capability and every
@@ -67,6 +71,44 @@ export interface Polygon<T> {
   readonly pts: readonly Vec<T>[];
 }
 
+/**
+ * An angle mark at vertex `b` (ADR-0011): the arcs (or the right-angle square) of the
+ * convex angle between the rays b → from and b → to, running COUNTER-CLOCKWISE from the arm
+ * through `from` to the arm through `to`, swept angle in (0°, 180°). `from` and `to` are
+ * points on the arms (the A and C of mark_angle(A, B, C), in counter-clockwise order), so a
+ * map takes them along; an anti-similarity swaps them (a reflection reverses a mark's
+ * orientation). `arcs` (1–3) is the number of arcs; `right` draws the square of a right angle.
+ */
+export interface AngleMark<T> {
+  readonly kind: 'angle_mark';
+  readonly b: Vec<T>;
+  readonly from: Vec<T>;
+  readonly to: Vec<T>;
+  readonly arcs: number;
+  readonly right: boolean;
+}
+
+/** Tick marks (1–3) across the middle of the segment from `p` to `q` (ADR-0011). */
+export interface SegmentMark<T> {
+  readonly kind: 'segment_mark';
+  readonly p: Vec<T>;
+  readonly q: Vec<T>;
+  readonly ticks: number;
+}
+
+/** A text (a non-empty string, label grammar) anchored at `at` (ADR-0011). */
+export interface Text<T> {
+  readonly kind: 'text';
+  readonly at: Vec<T>;
+  readonly text: string;
+}
+
+/** A string (the value of a string literal); only `text` takes one (ADR-0011). */
+export interface Str {
+  readonly kind: 'string';
+  readonly s: string;
+}
+
 /** z ↦ a·z + b, or a·z̄ + b when `anti`. Reserved, documented only: 'mobius', 'projective'. */
 export interface Similarity<T> {
   readonly type: 'similarity';
@@ -86,13 +128,26 @@ export interface Undefined {
   readonly reason: string;
 }
 
-export type DefinedValue<T> = Point<T> | Line<T> | Circle<T> | Num<T> | Polygon<T> | Transform<T>;
+export type DefinedValue<T> =
+  | Point<T>
+  | Line<T>
+  | Circle<T>
+  | Num<T>
+  | Polygon<T>
+  | Transform<T>
+  | AngleMark<T>
+  | SegmentMark<T>
+  | Text<T>
+  | Str;
 
 export type Value<T> = DefinedValue<T> | Undefined | Inexact;
 
 export type ValueKind = Value<unknown>['kind'];
 
-/** Every kind of the Value union (unknown future kinds are not in it). */
+/**
+ * The kinds of SPEC §4's Value union. The display kinds ADR-0011 added are DISPLAY_KINDS;
+ * together they are every kind of the union (unknown future kinds are in neither).
+ */
 export const VALUE_KINDS: readonly ValueKind[] = Object.freeze([
   'point',
   'line',
@@ -104,14 +159,33 @@ export const VALUE_KINDS: readonly ValueKind[] = Object.freeze([
   'inexact',
 ]);
 
+/** The display kinds (ADR-0011): the marks, text, and the string a text shows. */
+export const DISPLAY_KINDS: readonly ValueKind[] = Object.freeze([
+  'angle_mark',
+  'segment_mark',
+  'text',
+  'string',
+]);
+
 /** Whether a value's kind belongs to the Value union (false for future or test-only kinds). */
 export function isKnownKind(v: { readonly kind: string }): boolean {
-  return VALUE_KINDS.some((k) => k === v.kind);
+  return VALUE_KINDS.some((k) => k === v.kind) || DISPLAY_KINDS.some((k) => k === v.kind);
 }
 
-/** Capabilities (SPEC §4): what a tool parameter accepts. */
+/**
+ * Capabilities (SPEC §4): what a tool parameter accepts. ADR-0011 adds `annotation` (the
+ * marks and text: what apply maps besides figures) and `string` (text's string).
+ */
 export type Capability =
-  'point' | 'curve' | 'linear' | 'round' | 'number' | 'transform' | 'polygon';
+  | 'point'
+  | 'curve'
+  | 'linear'
+  | 'round'
+  | 'number'
+  | 'transform'
+  | 'polygon'
+  | 'annotation'
+  | 'string';
 
 export const CAPABILITIES: readonly Capability[] = Object.freeze([
   'point',
@@ -121,6 +195,8 @@ export const CAPABILITIES: readonly Capability[] = Object.freeze([
   'number',
   'transform',
   'polygon',
+  'annotation',
+  'string',
 ]);
 
 /** The value kinds that have each capability. */
@@ -140,6 +216,10 @@ export function capabilityKinds(cap: Capability): readonly ValueKind[] {
       return ['transform'];
     case 'polygon':
       return ['polygon'];
+    case 'annotation':
+      return ['angle_mark', 'segment_mark', 'text'];
+    case 'string':
+      return ['string'];
     default:
       return assertNever(cap, 'capability');
   }
@@ -211,6 +291,13 @@ export function numbersOf<T>(v: Value<T>): T[] {
       return v.pts.flatMap((p) => [p.x, p.y]);
     case 'transform':
       return [v.t.a.re, v.t.a.im, v.t.b.re, v.t.b.im];
+    case 'angle_mark':
+      return [v.b.x, v.b.y, v.from.x, v.from.y, v.to.x, v.to.y];
+    case 'segment_mark':
+      return [v.p.x, v.p.y, v.q.x, v.q.y];
+    case 'text':
+      return [v.at.x, v.at.y];
+    case 'string':
     case 'undefined':
     case 'inexact':
       return [];

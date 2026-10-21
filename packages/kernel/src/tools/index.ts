@@ -1,5 +1,5 @@
 /**
- * The v1 tools of Runs 2, 3a, 3b and 4, in registry order (read only by registry.ts; the generated
+ * The v1 tools of Runs 2, 3a, 3b, 4 and 8a, in registry order (read only by registry.ts; the generated
  * docs group them by family).
  */
 import type { ToolSpec } from '../tool';
@@ -11,6 +11,7 @@ import { FUNCTION_TOOLS } from './functions';
 import { INCIRCLE_TOOLS } from './incircle';
 import { INTERSECT_TOOLS } from './intersect';
 import { LINE_TOOLS } from './lines';
+import { MARK_TOOLS } from './marks';
 import { MEASURE_TOOLS } from './measures';
 import { GLIDER_TOOLS } from './on';
 import { OTHER_TOOLS } from './other';
@@ -38,4 +39,5 @@ export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze([
   ...CIRCLE_MEASURE_TOOLS,
   ...TANGENT_FROM_TOOLS,
   ...TRANSFORM_TOOLS,
+  ...MARK_TOOLS,
 ]);

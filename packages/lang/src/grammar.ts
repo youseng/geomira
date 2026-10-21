@@ -63,7 +63,9 @@ primary       = number | name | call | "(" , expr , ")" | "(" , expr , "," , exp
                                                             (* (x, y) is point(x, y) *)
 call          = tool , "(" , [ args ] , ")" ;               (* tool: a registry name *)
 args          = arg , { "," , arg } , { "," , selector } | selector , { "," , selector } ;
-arg           = expr ;                                      (* on(obj) gets an explicit parameter *)
+arg           = expr | string ;                             (* on(obj) gets an explicit parameter;
+                                                               a string only as a whole argument:
+                                                               text(P, "…") (ADR-0011) *)
 selector      = ( "same_side" | "opposite_side" ) , "(" , expr , "," , expr , ")"
               | "on_arc" , "(" , expr , "," , expr , "," , [ "not" ] , expr , ")"
               | "between" , "(" , expr , "," , expr , ")"

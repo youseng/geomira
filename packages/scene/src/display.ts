@@ -10,11 +10,13 @@
  * screen radius exceeds MAX_ARC_RADIUS, sampled finely enough that the chords stay within
  * ARC_SAGITTA of the circle), and an arc (screen centre and radius; `from` < `to` are
  * counter-clockwise angles as seen on the screen, i.e. in the world's orientation; the
- * renderer draws ctx.arc(x, y, r, −from, −to, true)).
+ * renderer draws ctx.arc(x, y, r, −from, −to, true)). Marks and text (ADR-0011) are laid
+ * out by mark-paths.ts: arcs and short polylines of a fixed pixel size, and a text's handle.
  */
 import { assertNever } from '@geomira/num/assert';
 import { clipCircle, clipLine, clipPolygon, inside, type Span } from './clip';
 import { placeLabels, type PlacedLabel } from './labels';
+import { markPaths } from './mark-paths';
 import { MAX_WIDTH } from './style';
 import type { DisplayItem, Path, Primitive, Scene } from './types';
 import { toScreen, viewProblem, worldRect, type Rect, type Vec2, type View } from './viewport';
@@ -104,6 +106,11 @@ function itemOf(view: View, p: Primitive, rect: Rect): DisplayItem | null {
       fill = f.length >= 3 ? f.map((q) => toScreen(view, q)) : null;
       break;
     }
+    case 'angle_mark':
+    case 'segment_mark':
+    case 'text':
+      paths = markPaths(view, s, rect);
+      break;
     default:
       return assertNever(s, 'shape');
   }

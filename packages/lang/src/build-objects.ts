@@ -7,7 +7,7 @@
  */
 import { ref, type Expr } from '@geomira/kernel/expr';
 import type { Document, LayerRule, Style } from '@geomira/kernel/document';
-import { exprKinds, syncDerived } from '@geomira/kernel/derived';
+import { exprKinds, syncDerived, type Held } from '@geomira/kernel/derived';
 import { ruleProblem } from '@geomira/kernel/derived-edit';
 import { reservedName } from '@geomira/kernel/doc-edit';
 import { addObject } from '@geomira/kernel/edit';
@@ -92,12 +92,25 @@ function applyStyles(st: State, ids: readonly number[]): boolean {
 }
 
 /**
+ * Exclusion by name: an active rule does not image an object whose name its exclude list
+ * holds, even one the same sync creates (an image of an object defined later in the text),
+ * whose name resolves to an id only after the sync (see the kernel's Held).
+ */
+function heldBy(st: State): Held {
+  return (layerId, x) =>
+    st.rules.some(
+      (r) =>
+        r.state === 'active' && r.layerId === layerId && r.exclude.some((n) => n.name === x.name),
+    );
+}
+
+/**
  * Synchronises the derived layers until nothing changes (new images may be excluded or
  * styled [noimage], which removes their own images). Returns an error message or undefined.
  */
 export function sync(st: State): string | undefined {
   for (let round = 0; round <= st.doc.objects.length + st.rules.length + 1; round++) {
-    const r = syncDerived(withRules(st.doc, currentRules(st)), st.registry);
+    const r = syncDerived(withRules(st.doc, currentRules(st)), st.registry, heldBy(st));
     if (!r.ok) return r.error;
     st.doc = r.doc;
     prune(st);

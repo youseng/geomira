@@ -3,13 +3,16 @@
  * ANCHOR moved by its offset: `dist` pixels in the direction `angle` (degrees,
  * counter-clockwise as seen on the screen). Anchors: a point's dot; the middle of the
  * visible part of a line, segment or ray; the point of a circle at 45° if it is visible,
- * else the middle of its first visible arc; a polygon's vertex centroid. A label whose
- * anchor is off the surface is not placed.
+ * else the middle of its first visible arc; a polygon's vertex centroid; an angle mark's
+ * outermost arc at its middle (or the corner of its square); a segment mark's middle tick; a
+ * text's anchor (ADR-0011). A label whose anchor is off the surface is not placed.
  *
  * Automatic direction (points without `label_angle`): of the eight compass directions,
  * preferring 45°, 135°, 315°, 225°, 90°, 0°, 270°, 180° in that order, the one farthest
  * (in angle) from the directions of the drawn curves that pass within NEAR_PX of the point;
- * so labels avoid the lines through their point. Other kinds default to 45°.
+ * so labels avoid the lines through their point. An angle mark's label points along the
+ * bisector of its angle, out of the angle; other kinds default to 45°. A text without
+ * `label_angle` is centred on its anchor (its string is the label, at distance 0 by default).
  *
  * The text box is aligned away from the anchor: left-aligned when the offset points right,
  * bottom-aligned when it points up, centred in between (renderer: textAlign/textBaseline).
@@ -89,20 +92,40 @@ function circleAnchor(view: View, paths: readonly Path[]): Vec2 | undefined {
   return undefined;
 }
 
+/** The middle of the outermost arc of an angle mark (arcs are laid out innermost first). */
+function markAnchor(paths: readonly Path[]): Vec2 | undefined {
+  const last = paths[paths.length - 1];
+  if (last?.kind === 'arc') return arcPoint(last, (last.from + last.to) / 2);
+  return last?.kind === 'poly' ? last.pts[1] : undefined;
+}
+
+/** The bisector direction of an angle mark, degrees (screen and world agree on angles). */
+function bisector(paths: readonly Path[]): number | undefined {
+  const p = paths[0];
+  if (p?.kind === 'arc') return (((p.from + p.to) / 2) * 180) / Math.PI;
+  if (p?.kind !== 'poly') return undefined;
+  const [a, c, b] = p.pts;
+  return a === undefined || b === undefined || c === undefined
+    ? undefined
+    : (screenAngle({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, c) * 180) / Math.PI;
+}
+
 function anchorOf(view: View, item: DisplayItem): Vec2 | undefined {
   const first = item.paths[0];
   const q =
-    item.kind === 'point'
+    item.kind === 'point' || item.kind === 'text'
       ? first?.kind === 'dot'
         ? first.c
         : undefined
-      : item.kind === 'circle'
-        ? circleAnchor(view, item.paths)
-        : item.kind === 'polygon' && item.fill !== null
-          ? centroid(item.fill)
-          : first?.kind === 'poly'
-            ? polyMiddle(view, first.pts)
-            : undefined;
+      : item.kind === 'angle_mark'
+        ? markAnchor(item.paths)
+        : item.kind === 'circle'
+          ? circleAnchor(view, item.paths)
+          : item.kind === 'polygon' && item.fill !== null
+            ? centroid(item.fill)
+            : first?.kind === 'poly'
+              ? polyMiddle(view, first.pts)
+              : undefined;
   return q !== undefined && onSurface(view, q) ? q : undefined;
 }
 
@@ -176,9 +199,16 @@ function place(view: View, p: Primitive, item: DisplayItem, items: readonly Disp
   const label = p.label;
   const anchor = anchorOf(view, item);
   if (label === null || anchor === undefined) return undefined;
-  const angle = label.angle ?? (item.kind === 'point' ? autoAngle(anchor, items, item.id) : 45);
+  const angle =
+    label.angle ??
+    (item.kind === 'point'
+      ? autoAngle(anchor, items, item.id)
+      : item.kind === 'angle_mark'
+        ? (((bisector(item.paths) ?? 45) % 360) + 360) % 360
+        : 45);
   const rad = (angle * Math.PI) / 180;
-  const [cos, sin] = [Math.cos(rad), Math.sin(rad)];
+  const centred = item.kind === 'text' && label.angle === null;
+  const [cos, sin] = centred ? [0, 0] : [Math.cos(rad), Math.sin(rad)];
   const placed: PlacedLabel = {
     id: p.id,
     runs: label.runs,

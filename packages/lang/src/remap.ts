@@ -21,6 +21,8 @@ export function mapExpr(e: Expr, f: (id: number) => number): Expr {
       return ref(f(e.id));
     case 'lit':
       return e.text === undefined ? lit(e.value) : lit(e.value, e.text);
+    case 'str':
+      return { kind: 'str', value: e.value };
     case 'call':
       return call(
         e.tool,

@@ -84,6 +84,10 @@ describe('createRegistry', () => {
       'compose',
       'inverse',
       'apply',
+      'mark_angle',
+      'mark_right',
+      'mark_segment',
+      'text',
     ]);
     for (const t of REGISTRY.tools) {
       expect(t.id).toBe(t.name);

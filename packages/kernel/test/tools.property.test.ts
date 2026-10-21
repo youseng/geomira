@@ -17,6 +17,7 @@ import { FUNCTION_PROPERTIES } from './helpers/function-properties';
 import { GAP_PROPERTIES } from './helpers/gap-properties';
 import { BRANCH_PROPERTIES } from './helpers/branch-properties';
 import { TRANSFORM_PROPERTIES } from './helpers/transform-properties';
+import { DISPLAY_PROPERTIES } from './helpers/display-properties';
 
 interface Property {
   readonly tools: readonly string[];
@@ -278,6 +279,7 @@ const PROPERTIES: readonly Property[] = [
   ...GAP_PROPERTIES,
   ...BRANCH_PROPERTIES,
   ...TRANSFORM_PROPERTIES,
+  ...DISPLAY_PROPERTIES,
   {
     tools: ['add', 'sub', 'mul', 'div', 'neg'],
     name: 'arithmetic: a − b = a + (−b), (a·b)/b = a, exact values carried',

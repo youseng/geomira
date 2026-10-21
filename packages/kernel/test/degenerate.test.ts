@@ -30,6 +30,7 @@ import { FUNCTION_CASES } from './helpers/degenerate-functions';
 import { GAP_CASES } from './helpers/degenerate-gaps';
 import { INTERSECT_CURVE_CASES, TANGENT_CASES } from './helpers/degenerate-branch';
 import { TRANSFORM_CASES } from './helpers/degenerate-transforms';
+import { APPLY_DISPLAY_CASES, DISPLAY_CASES } from './helpers/degenerate-display';
 
 const CASES: Record<string, Record<string, () => void>> = {
   point: {},
@@ -250,6 +251,8 @@ const CASES: Record<string, Record<string, () => void>> = {
   ...GAP_CASES,
   ...TANGENT_CASES,
   ...TRANSFORM_CASES,
+  ...DISPLAY_CASES,
+  apply: { ...TRANSFORM_CASES.apply, ...APPLY_DISPLAY_CASES },
 };
 
 describe('degenerate cases (ToolSpec.degenerate), each a test', () => {

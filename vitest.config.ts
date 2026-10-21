@@ -12,6 +12,7 @@ export default defineConfig({
         'packages/claims/src/**/*.ts',
         'packages/lang/src/**/*.ts',
         'packages/scene/src/**/*.ts',
+        'packages/editor/src/**/*.ts',
       ],
       reporter: ['text', 'json-summary', 'html'],
       reportsDirectory: 'coverage',
@@ -25,6 +26,8 @@ export default defineConfig({
         'packages/lang/src/**/*.ts': { lines: 90, branches: 85 },
         // Run 7: scene gated like the kernel, claims and lang.
         'packages/scene/src/**/*.ts': { lines: 90, branches: 85 },
+        // Run 8a: editor gated like the other packages.
+        'packages/editor/src/**/*.ts': { lines: 90, branches: 85 },
       },
     },
     projects: [

@@ -84,6 +84,10 @@ function gliderDefault(st: State, obj: Expr): readonly Expr[] | string {
     case 'number':
     case 'polygon':
     case 'transform':
+    case 'angle_mark':
+    case 'segment_mark':
+    case 'text':
+    case 'string':
     case undefined:
       return 'on(…) takes a line or a circle';
     default:

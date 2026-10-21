@@ -6,7 +6,7 @@
  * images, hidden objects, Undefined values and off-surface parts have no paths.
  *
  * VIRTUAL hits say what the cursor would make if no point is under it (for the editor's
- * tools): the intersection of two drawn curves within `radius` of the cursor (the nearest
+ * tools; marks are not curves here, ADR-0011): the intersection of two drawn curves within `radius` of the cursor (the nearest
  * one), else the nearest point of the topmost curve under the cursor (a point on it),
  * else a free position. Each carries its screen and world position. The virtual hit is
  * 'none' when a point is hit (the point itself is the target) and when the view has a
@@ -22,6 +22,9 @@ export const HIT_RADIUS = 6;
 
 /** At most this many curves under the cursor are intersected pairwise. */
 const MAX_VIRTUAL_CURVES = 8;
+
+/** Kinds whose strokes are figure curves (marks are signs, not curves to construct on). */
+const CURVE_KINDS: readonly ShapeKind[] = ['line', 'circle', 'polygon'];
 
 export interface Hit {
   readonly id: number;
@@ -86,7 +89,9 @@ function curvePieces(items: readonly DisplayItem[], ids: readonly number[]): Pie
 
 function virtualHit(display: DisplayList, hits: readonly Hit[], q: Vec2, radius: number) {
   const at = (p: Vec2) => ({ at: p, world: toWorld(display.view, p) });
-  const curves = hits.filter((h) => h.part === 'curve').slice(0, MAX_VIRTUAL_CURVES);
+  const curves = hits
+    .filter((h) => h.part === 'curve' && CURVE_KINDS.includes(h.kind))
+    .slice(0, MAX_VIRTUAL_CURVES);
   const pieces = curvePieces(
     display.items,
     curves.map((h) => h.id),

@@ -1,5 +1,5 @@
 /**
- * Definitions (SPEC §5): Expr = Ref | Lit (exact) | Call(tool, Expr[], selectors).
+ * Definitions (SPEC §5): Expr = Ref | Lit (exact) | Str | Call(tool, Expr[], selectors).
  * Nested calls are trees; inline subexpressions have no identity. References are by
  * object id (ADR-0003), so renaming never rewrites a definition.
  */
@@ -22,6 +22,15 @@ export interface LitExpr {
   readonly text?: string;
 }
 
+/**
+ * A string literal (`"Let ABC be a triangle"`, ADR-0011): the value of a Str, which only
+ * `text` takes. Equality compares the strings.
+ */
+export interface StrExpr {
+  readonly kind: 'str';
+  readonly value: string;
+}
+
 export interface CallExpr {
   readonly kind: 'call';
   readonly tool: string;
@@ -29,7 +38,7 @@ export interface CallExpr {
   readonly selectors: readonly Selector[];
 }
 
-export type Expr = RefExpr | LitExpr | CallExpr;
+export type Expr = RefExpr | LitExpr | StrExpr | CallExpr;
 
 /**
  * Branch selectors (SPEC §7), stored as syntax. Filters: same_side, opposite_side,
@@ -113,6 +122,7 @@ function collectRefs(e: Expr, out: number[]): void {
       out.push(e.id);
       return;
     case 'lit':
+    case 'str':
       return;
     case 'call':
       for (const a of e.args) collectRefs(a, out);
@@ -130,6 +140,8 @@ export function exprEquals(a: Expr, b: Expr): boolean {
       return b.kind === 'ref' && a.id === b.id;
     case 'lit':
       return b.kind === 'lit' && rationalEq(a.value, b.value);
+    case 'str':
+      return b.kind === 'str' && a.value === b.value;
     case 'call':
       return (
         b.kind === 'call' &&

@@ -5,6 +5,7 @@
  *   unary   = "-" number (glued: a negative literal) | "-" unary | primary
  *   primary = number | name | call | "(" expr ")" | "(" expr "," expr ")"
  *   call    = tool "(" [ arg { "," arg } ] ")"   (selectors are the trailing arguments)
+ *   arg     = string | expr                      (a string only as a whole argument: ADR-0011)
  * Operators are left-associative; `-` binds tighter than `*`, which binds tighter than `+`.
  */
 import type { ExprNode, SelectorNode } from './ast';
@@ -94,6 +95,12 @@ function parsePrimary(c: Cursor): ExprNode | undefined {
       unexpectedPunct(c, t.value);
       return undefined;
     case 'string':
+      fail(
+        c,
+        `expected an expression, found ${describe(t)}`,
+        'a string is only an argument of a call, as in text(P, "…")',
+      );
+      return undefined;
     case 'directive': {
       fail(c, `expected an expression, found ${describe(t)}`, 'write a name, a number or a call');
       return undefined;
@@ -173,7 +180,7 @@ function parseCall(c: Cursor): ExprNode | undefined {
           );
           return undefined;
         }
-        const a = parseExpr(c);
+        const a = parseArg(c);
         if (a === undefined) return undefined;
         args.push(a);
       }
@@ -183,6 +190,16 @@ function parseCall(c: Cursor): ExprNode | undefined {
   }
   if (expect(c, ')', `close the call to ${head.value}`) === undefined) return undefined;
   return { kind: 'call', tool: head.value, args, selectors, span: since(c, head) };
+}
+
+/** A call argument: a string literal standing alone (ADR-0011), else an expression. */
+function parseArg(c: Cursor): ExprNode | undefined {
+  const t = peek(c);
+  if (t?.kind === 'string' && (isPunct(c, ',', 1) || isPunct(c, ')', 1))) {
+    next(c);
+    return { kind: 'str', value: t.value, span: t };
+  }
+  return parseExpr(c);
 }
 
 /**

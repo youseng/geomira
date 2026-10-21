@@ -233,6 +233,7 @@ function step(doc: Document, registry: Registry, [op, seed]: Step): Document {
       'number',
       'transform',
       'polygon',
+      'annotation',
     ] as const);
     return addObj(c, randomCall(c, cap, 0), cap === 'point');
   }

@@ -54,6 +54,8 @@ describe('values and capabilities (SPEC §4)', () => {
       number: ['number'],
       transform: ['transform'],
       polygon: ['polygon'],
+      annotation: ['angle_mark', 'segment_mark', 'text'],
+      string: ['string'],
     });
     expect(() => capabilityKinds('nope' as never)).toThrow(/unexpected capability/);
   });

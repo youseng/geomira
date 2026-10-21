@@ -32,6 +32,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     module: value,
     names: [
       'CAPABILITIES',
+      'DISPLAY_KINDS',
       'VALUE_KINDS',
       'capabilityKinds',
       'hasCapability',

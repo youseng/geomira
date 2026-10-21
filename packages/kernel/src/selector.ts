@@ -81,6 +81,8 @@ export function formatExpr(e: Expr, name: (id: number) => string | undefined): s
       return name(e.id) ?? `#${String(e.id)}`;
     case 'lit':
       return formatRational(e.value);
+    case 'str':
+      return `"${e.value.replace(/["\\]/gu, (c) => `\\${c}`)}"`;
     case 'call': {
       const parts = [
         ...e.args.map((a) => formatExpr(a, name)),

@@ -247,6 +247,9 @@ export class BranchFuzzer {
       this.add('point', call('intersect', [this.of('line'), this.of('circle'), this.num(2)]));
     } else {
       const tool = pick(this.rng, this.registry.tools);
+      // point(x, y) with literals is a free point: anything() may give it 1e200, a figure
+      // beyond MAX_SCALE that contextOf refuses (reached once the registry grew, Run 8a).
+      if (tool.name === 'point') return;
       const args = (tool.signatures[0]?.params ?? []).map((cap) =>
         this.arg(
           cap === 'round'
