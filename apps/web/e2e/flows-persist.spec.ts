@@ -74,6 +74,23 @@ test('opening a share link keeps the autosave; Restore previous figure brings it
   await expect(await textArea(other)).toHaveValue(linked);
 });
 
+test('a damaged share link is refused with its reason; the autosave opens instead', async ({
+  page,
+  context,
+}) => {
+  await openApp(page);
+  await command(page, 'P = (1, 1)');
+  await expectLines(page, 'P = (1, 1)');
+  const own = await text(page);
+  await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), CURRENT)).toBe(own);
+  const other = await context.newPage();
+  await openApp(other, './#s=not*a*link');
+  await expect(
+    other.getByRole('status').filter({ hasText: 'The link could not be opened' }),
+  ).toContainText('the link cannot be read');
+  await expect(await textArea(other)).toHaveValue(own);
+});
+
 test('the debug report is reachable from the page and from an internal error', async ({ page }) => {
   await openApp(page);
   await command(page, 'A = (0, 0)');

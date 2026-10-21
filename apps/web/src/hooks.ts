@@ -13,39 +13,41 @@ import type { Scene } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
 import { viewportFor } from './figure';
 import { readSlots } from './persist';
-import type { EditorStore, Snapshot } from './store';
+import type { EditorStore, Notice, Snapshot } from './store';
 
 /** Autosave this long after the last change (ms). */
 export const AUTOSAVE_MS = 200;
 
-/** Opens the share link of the URL, if any (true when one was opened). */
-function openLink(store: EditorStore, hash: string): boolean {
-  if (!hash.startsWith(SHARE_PREFIX)) return false;
+/** Opens the share link of the URL, if any: whether one was opened, and why not. */
+function openLink(store: EditorStore, hash: string): { opened: boolean; notice: Notice | null } {
+  if (!hash.startsWith(SHARE_PREFIX)) return { opened: false, notice: null };
   const r = decodeShare(hash, store.env.registry);
-  if (!r.ok) {
-    store.setNotice({
-      tone: 'error',
-      text: `The link could not be opened: ${r.reason}.`,
-      ...(r.diagnostics ? { diagnostics: r.diagnostics } : {}),
-    });
-    return false;
+  if (r.ok) {
+    store.openText(r.text, 'link');
+    return { opened: true, notice: null };
   }
-  store.openText(r.text, 'link');
-  return true;
+  const d = r.diagnostics === undefined ? {} : { diagnostics: r.diagnostics };
+  return {
+    opened: false,
+    notice: { tone: 'error', text: `The link could not be opened: ${r.reason}.`, ...d },
+  };
 }
 
 /** Startup: a valid share link, else the autosave, else a new figure; later links too. */
 export function useStartup(store: EditorStore, onReady: () => void): void {
   useEffect(() => {
-    const linked = openLink(store, location.hash);
-    if (!linked) {
+    const link = openLink(store, location.hash);
+    if (!link.opened) {
       const start = openAtStartup(readSlots(), null);
       if (start.text === null) store.open(emptyDocument(), 'new');
       else store.openText(start.text, start.origin);
+      // After the figure that opened instead, so its own notice does not hide the link's.
+      if (link.notice !== null) store.setNotice(link.notice);
     }
     onReady();
     const onHash = () => {
-      openLink(store, location.hash);
+      const l = openLink(store, location.hash);
+      if (l.notice !== null) store.setNotice(l.notice);
     };
     addEventListener('hashchange', onHash);
     return () => {

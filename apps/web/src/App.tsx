@@ -31,7 +31,7 @@ class Boundary extends Component<
   }
 }
 
-function NoticeLine({ notice }: { notice: Notice | null }) {
+function NoticeLine({ notice, onClose }: { notice: Notice | null; onClose: () => void }) {
   if (notice === null) return null;
   return (
     <div className={`notice notice-${notice.tone}`} role="status">
@@ -40,7 +40,10 @@ function NoticeLine({ notice }: { notice: Notice | null }) {
         <div key={`${String(d.line)}:${String(d.column)}`}>
           Line {d.line}, column {d.column}: {d.message}. {d.hint}
         </div>
-      ))}
+      ))}{' '}
+      <button type="button" className="small" onClick={onClose}>
+        Dismiss
+      </button>
     </div>
   );
 }
@@ -118,7 +121,12 @@ export function App() {
           }}
         />
       )}
-      <NoticeLine notice={snap.notice} />
+      <NoticeLine
+        notice={snap.notice}
+        onClose={() => {
+          store.setNotice(null);
+        }}
+      />
       <ToolBar store={store} state={state} />
       <CommandBar store={store} inputRef={commandRef} />
       <main className="app-main">

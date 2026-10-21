@@ -84,6 +84,10 @@ export function TextPanel({ store, state }: TextPanelProps) {
         <button
           type="button"
           disabled={!dirty}
+          onMouseDown={(e) => {
+            // Keep the focus in the text: leaving it would apply the text this button reverts.
+            e.preventDefault();
+          }}
           onClick={() => {
             sync(printed);
           }}

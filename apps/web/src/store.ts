@@ -74,7 +74,9 @@ export class EditorStore {
       return r;
     }
     if (r.state.doc !== before.doc) this.autosave.edited();
-    this.publish({ state: r.state, notice: null });
+    // A refusal is answered by the next success; errors and information stay until dismissed.
+    const notice = this.snap.notice?.tone === 'refusal' ? null : this.snap.notice;
+    this.publish({ state: r.state, notice });
     return r;
   }
 
