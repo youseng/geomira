@@ -1,5 +1,300 @@
 # STATUS
 
+## Run 9b: ACCEPTED (2026-10-21)
+
+The UI design pass in the look of the maintainer's Geomdraw, Randomize, the README with a
+landing page and a smoke test of the deployed site
+([ADR-0016](adr/0016-ui-design-pass.md)). Base check first: Run 9a was ACCEPTED (merged as PR
+#13; `main` = 16dfa8d, the maintainer's upload of docs/design/geomdraw-reference.zip; the
+`run-9a` tag is placed, so the add-only guard compares with `run-9a`). `pnpm install && pnpm
+verify` was green locally on 16dfa8d (2086 tests), and ci and deploy were green in CI on it
+(https://github.com/youseng/geomira/actions/runs/39592389005,
+https://github.com/youseng/geomira/actions/runs/39592388922).
+
+Every criterion holds on 7d95eba: verify green locally (2120 tests, on 999d446) and in CI; all earlier
+end-to-end flows pass, with the eleven added lines of ADR-0016 decision 14; new screenshot
+baselines for the desktop and the phone are committed; the side-by-side images are below; the
+long task stays at most 16 ms (CI: 3.3 ms) and the full UI drag frame's app work at most
+8 ms (CI median 5.52 ms). CI on GitHub: ci **https://github.com/youseng/geomira/actions/runs/39605322287 success**, deploy **https://github.com/youseng/geomira/actions/runs/39605322376 success**, tex
+**https://github.com/youseng/geomira/actions/runs/39604348357 success (999d446, the last export change)**.
+
+### Side by side: Geomdraw (left) and Geomira (right)
+
+The main screen (the nine-point circle; Geomdraw's screenshot 02 at 1280 × 720):
+
+![Geomdraw's main screen next to Geomira's](status/run-9b/main-screen.png)
+
+The Claims panel (Geomdraw's screenshot 03; Geomira's Euler line after a local test):
+
+![Geomdraw's claim cards next to Geomira's](status/run-9b/claims-panel.png)
+
+The phone layout (390 × 664 at 2×; Geomdraw's screenshot 06):
+
+![Geomdraw's phone layout next to Geomira's](status/run-9b/phone.png)
+
+## Done (each item → the test file that proves it)
+
+1. **Layout (item 1).** Brand top left; the icon top bar (undo/redo, Randomize with its
+   triangle type, a claim box with Test, the View, Examples and Export menus, Settings, Help);
+   the tool palette in labelled groups with icons, tooltips (label, help, key) and the shortcut
+   letter of the editor's keymap; the Text, Objects, Layers, Claims, Style and Help tabs; zoom
+   and fit floating on the canvas; the status line with the tool's prompt; the command line.
+   The groups are editor data (`@geomira/editor/tool-groups`), the icons static SVG data
+   (`apps/web/src/icons.tsx`, one per tool, compiler-checked).
+   → `apps/web/e2e/flows-design.spec.ts` (main screen baseline, names), `apps/web/test/design.test.tsx`
+   (every tool once in the toolbar "Tools", named by its label, with its tooltip, its group and
+   an icon), `packages/editor/test/tool-groups.test.ts`.
+2. **Canvas style (item 2).** Italic serif labels with real sub- and superscripts (M_a, A_1, A*,
+   H′; the scene's label runs were already real), the face "Geomira Math" (local italic faces,
+   ADR-0016 decision 10); Geomdraw's highlight and selection blues for hover and selection; the
+   export theme follows (EXPORT_THEME.fontFamily, SVG `font-style="italic"`); the scene and
+   renderer contracts are unchanged (L8, L9, label collision and coincident-image tests pass
+   unchanged). → `apps/web/test/export-theme.test.ts` (unchanged, passes),
+   `packages/export/test/frame-paint.test.ts` (one line, below), the regenerated canvas and PNG
+   baselines (`scene.spec.ts`, `flows-export.spec.ts`), the SVG goldens (font line only).
+3. **Claims as cards (item 3).** Statement in italic math, the pill (unchanged badge texts),
+   Test and Test globally, the verdict line (SPEC §10.5 wording, unchanged) and its monospace
+   detail, stale results greyed with Re-test, live claim chips bottom left of the canvas; global
+   findings in the info colour. → `flows-claims.spec.ts` (Run 8b, unchanged, passes),
+   `flows-design.spec.ts` (claim box, card, chip; Claims baseline), `design.test.tsx`.
+4. **Developer items (item 4).** Measure frame time and object counts behind Settings or
+   `?dev=1`; Debug report in the Help menu and on every internal-error message.
+   → `flows-design.spec.ts` "developer items", `flows-persist.spec.ts` (debug report, two
+   paths), `scene.spec.ts` (frame time through Settings), `design.test.tsx` (not in the bar).
+5. **Phone (item 5).** Icon-only top bar, the tab row, the horizontal tool strip with vertical
+   group labels, the command line; panels as a drawer that keeps the canvas's size; nothing
+   clipped. → `apps/web/e2e/design-mobile.spec.ts` (baseline, clipping, drawer, Randomize and
+   menus), `mobile.spec.ts` (Run 8b flows, pass).
+6. **Randomize (item 6).** `@geomira/claims/randomize` samples the free inputs with the GLOBAL
+   sampler and the type as a hypothesis on the first three free points (acute; obtuse at the
+   first vertex; right as an exact special position, since right angles are constructed, never
+   assumed; any), keeps every defined object defined, writes short exact decimals;
+   `@geomira/editor/randomize` makes it one batch edit; apps/web only draws the seed.
+   → `packages/claims/test/randomize.test.ts` (14 tests: each type over many seeds, exact right
+   angle over Q, determinism, ids/claims kept, hypotheses respected, every free-input kind,
+   refusals), `packages/editor/test/randomize.test.ts` (one history entry, undo exact),
+   `packages/num/test/decimal.test.ts`, `flows-design.spec.ts` (each type in the browser, undo).
+7. **Accessibility (item 7).** Accessible names equal to the old labels (visually hidden text,
+   decision 5: aria-label would collide with the frozen `getByLabel('Text', { exact: true })`
+   for the Text tool), visible focus (2 px outline), WCAG AA contrast in both colour schemes.
+   → `flows-design.spec.ts` (names, focus, contrast light and dark), every frozen flow.
+8. **README, landing page, smoke test (item 8).** README.md (screenshot, features, an
+   Asymptote export quoted from the euler-line golden); `apps/web/public/about.html` (linked
+   from the Help menu); `e2e/pages-smoke.spec.ts` in the new `pages` project: against the built
+   site in every e2e run, and against the Pages URL in deploy.yml's new `smoke` job after a
+   deploy. → `pages-smoke.spec.ts`.
+9. **No later-run features (item 9).** None of What's special?, Steps, Findings, Solution,
+   Bash, Inversion, Coords, symbolic checks, problem library: no stub, no dead button. The
+   Centers group is left out (no centre tools in the editor; decision 3).
+
+## Not done
+
+Nothing in Run 9b's scope. Not started (later runs): the examples run (postponed by the
+maintainer), everything after it.
+
+## Known bugs
+
+None known. Found and fixed during the run:
+
+- The claim box's button first read exactly "Test"; Run 8b's long-task spec clicks the first
+  button with that text, which must be a claim card's. It reads "▸Test" (`design.test.tsx`).
+- Run 7's fit test compares two pictures of the canvas byte for byte; the floating Fit button's
+  hover restyle changed the anti-aliasing of its corners after a click. No hover restyle now.
+- Dark scheme: the status line on the (always light) canvas was 2.6:1; the stage keeps the
+  light tokens (`flows-design.spec.ts` contrast, dark).
+- CI-only (ci 39602546629, 39604348208): CI resolves `system-ui` to another font than this
+  container (which has Inter) and the label face to another installed italic; text on the canvas
+  made Run 7's canvas baselines differ.
+  Fixed by decision 19 of ADR-0016, and the three phone canvas baselines are CI's renders.
+
+## Uncertain
+
+- **Right triangles in Randomize.** A right angle cannot be a hypothesis (SPEC §6.2, §10.3:
+  constructed, never assumed; equality assumptions are refused). "right" therefore places C
+  exactly on the perpendicular to AB at A in the new figure: a special position, which tests
+  and drags do not keep. Please confirm this reading of "with the chosen type as a hypothesis".
+- **Which triangle.** Randomize's triangle is the first three free points in construction
+  order; "obtuse" puts the obtuse angle at the first one. Geomdraw's
+  own choice was not read (its JavaScript is not to be reused).
+- **Colours, dot radius, stroke width.** Hover and selection take Geomdraw's blues; ink
+  #1b1f24, paper #fbfbf8, fill alpha 0.08, dots 3.5 px and strokes 1.5 px are unchanged because
+  frozen tests pin them (decision 11). Say if Geomdraw's #111111 / white / thinner strokes are
+  wanted; that changes frozen export and scene tests under an ADR.
+- **The side-by-side images contain Geomdraw's screenshots** (from the reference zip, which
+  itself is not unzipped into the repository). If they should not be committed, they can be
+  replaced by links.
+- No contest problems or mathematical facts were used.
+
+## Changed frozen tests
+
+Compared with `run-9a`: `add-only: frozen tests compared with run-9a, 0 violation(s)` (on the
+committed tree; the one modified line is in commit 2723282, which cites ADR-0016).
+
+- **Modified (1 line)**: `packages/export/test/frame-paint.test.ts`, EXPORT_THEME's
+  `fontFamily` (the italic label family; Prettier writes it on two lines), under
+  [ADR-0016](adr/0016-ui-design-pass.md) decision 14.
+- **Added lines only (no line removed)**: `scene.spec.ts` (2: Settings before Measure frame time,
+  the Layers tab before the coincident count), `mobile.spec.ts` (1: the Layers tab),
+  `flows-build.spec.ts` (1: the Layers tab), `flows-export.spec.ts` (3: SVG in the Export menu),
+  `flows-persist.spec.ts` (4: the Export menu before Share link and each Restore previous
+  figure, the Help menu before Debug report); the surface tests of num, claims and editor gain
+  their new subpaths (`./decimal`, `./randomize`, `./tool-groups`).
+- **Baselines** (not test code): Run 7's canvas baselines and Run 9a's PNG goldens regenerated
+  for the new look; the SVG goldens change in their `<g font-family …>` line only.
+- `apps/web/playwright.config.ts` (config): the `pages` project, `pages-smoke` ignored by the
+  desktop and mobile projects, no local server when `GEOMIRA_PAGES_URL` is set.
+
+## Acceptance command output
+
+### Local, 999d446 (`pnpm install && pnpm verify`; 7d95eba changes only e2e baselines and the ADR)
+
+```
+All matched files use Prettier code style!
+✔ no dependency violations found (467 modules, 2631 dependencies cruised)
+ok   tolerance: 676 files scanned, 0 violation(s)
+ok   file-length: 676 files scanned, 0 violation(s)
+ok   test-count: 2120 tests, floor 2086, 0 violation(s)
+ok   disabled-tests: 676 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-9a, 0 violation(s)
+ok   forbidden-words: 676 files scanned, 0 violation(s)
+ Test Files  194 passed (194)
+      Tests  2120 passed (2120)
+ claims/src        |   95.28 |    86.57 |    99.5 |   97.87 |
+ editor/src        |   93.64 |    87.23 |   98.67 |   97.14 |
+ export/src        |   95.62 |     87.5 |   99.03 |   96.55 |
+ kernel/src        |   98.48 |     95.8 |   99.73 |   98.96 |
+ kernel/src/tools  |   99.33 |    98.32 |     100 |   99.73 |
+ lang/src          |   97.65 |    92.99 |   99.72 |   98.53 |
+ scene/src         |   97.63 |    90.48 |     100 |   98.33 |
+Statements   : 96.97% ( 9401/9694 )
+Branches     : 91.6% ( 7629/8328 )
+Functions    : 99.53% ( 2148/2158 )
+Lines        : 98.29% ( 7841/7977 )
+verify exit=0
+```
+
+`docs/test-count.txt` is raised to 2120.
+
+### Contrast (WCAG AA, light scheme; text on its own background)
+
+| text                        | ratio |
+| --------------------------- | ----- |
+| muted #62625d on panel #fff | 6.13  |
+| muted on bg #f4f4f2         | 5.57  |
+| ok #2b7530 on ok-soft       | 4.98  |
+| amber #8a5800 on amber-soft | 5.38  |
+| bad #b3261e on bad-soft     | 5.58  |
+| info/accent #2f5fb3 on soft | 5.24  |
+| white on accent #2f5fb3     | 6.16  |
+
+Geomdraw's own ok #2e7d32 (4.49) and amber #a76a00 (3.98) on their tints are below 4.5, so
+those two (and muted) are darkened. The dark-scheme pairs are 6.0–13.5. The e2e test measures
+the rendered texts in both schemes.
+
+### Playwright in CI (ci job, 7d95eba, `pnpm e2e`)
+
+```
+✓   1 [mobile] › e2e/design-mobile.spec.ts:31:1 › screenshot baseline: the phone layout
+✓   2 [mobile] › e2e/mobile.spec.ts:50:1 › pan with one finger, pinch with two
+✓   3 [mobile] › e2e/design-mobile.spec.ts:38:1 › nothing is clipped: top bar, tabs, tool strip, command line, drawer
+✓   5 [mobile] › e2e/design-mobile.spec.ts:66:1 › Randomize and the menus work on a phone
+✓   4 [mobile] › e2e/mobile.spec.ts:80:1 › drag a point with a finger; the text follows
+✓   6 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: euler-line
+✓   8 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: nine-point-circle
+✓   7 [mobile] › e2e/mobile.spec.ts:90:1 › the panels work on a phone: tabs, objects, claims, command bar
+✓   9 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: reflection-layer
+✓  10 [mobile] › e2e/shell.spec.ts:3:1 › shows the title and an empty canvas
+✓  12 [desktop] › e2e/flows-build.spec.ts:8:1 › triangle and circumcircle by mouse and by command bar give the identical text
+✓  13 [desktop] › e2e/flows-build.spec.ts:44:1 › dragging a free point moves it, rounds it at the end, and undo returns
+frame time (mobile): {"objects":300,"drag":{"frames":120,"median":5.400000000023283,"p95":13.200000000011642,"max":401},"pan":{"frames":120,"median":3.1000000000349246,"p95":4.5,"max":403.29999999998836}}
+✓  11 [mobile] › e2e/scene.spec.ts:28:1 › frame time at 300 objects (SPEC §17: drag frame ≤ 8 ms)
+✓  15 [mobile] › e2e/scene.spec.ts:51:3 › HiDPI › the canvas has devicePixelRatio device pixels per CSS pixel
+✓  16 [mobile] › e2e/scene.spec.ts:62:1 › hiding the source layer draws the coincident images (image only view)
+✓  17 [mobile] › e2e/scene.spec.ts:73:1 › pan, zoom and fit change the picture; fit restores it
+✓  18 [desktop] › e2e/flows-claims.spec.ts:15:1 › local test, then global test, then open the counterexample
+✓  14 [desktop] › e2e/flows-build.spec.ts:69:1 › 50 random undo/redo steps: every step shows its text; redoing all returns the original
+✓  19 [desktop] › e2e/flows-claims.spec.ts:53:1 › with assume lines the global test follows the local test by itself
+✓  20 [desktop] › e2e/flows-build.spec.ts:116:1 › a derived layer from a transform, its images, and dragging an image moves its source
+✓  22 [desktop] › e2e/flows-build.spec.ts:135:1 › command bar: completions from the registry; shortcuts and help from the keymap
+✓  21 [desktop] › e2e/flows-claims.spec.ts:68:1 › a figure that violates an assume line says so at that line, and the tests still run
+✓  23 [desktop] › e2e/flows-design.spec.ts:20:1 › screenshot baseline: the main screen (nine-point circle)
+✓  25 [desktop] › e2e/flows-design.spec.ts:28:1 › screenshot baseline: the Claims panel after a local test (seed masked)
+✓  24 [desktop] › e2e/flows-claims.spec.ts:89:1 › cancel stops a running test; badges are three-valued
+✓  27 [desktop] › e2e/flows-export.spec.ts:35:1 › SVG: the canvas picture as SVG, shown and downloaded
+✓  28 [desktop] › e2e/flows-export.spec.ts:46:1 › PNG: the canvas size times the pixel ratio, with the figure text inside
+✓  26 [desktop] › e2e/flows-design.spec.ts:45:1 › Randomize draws a new figure of each triangle type as one undoable edit
+✓  30 [desktop] › e2e/flows-design.spec.ts:63:1 › Randomize says why it cannot draw a typed triangle
+✓  29 [desktop] › e2e/flows-export.spec.ts:68:1 › PNG at 1×: pixel for pixel the canvas on the screen
+✓  31 [desktop] › e2e/flows-design.spec.ts:72:1 › the claim box adds the claim, opens Claims and tests it; the chip follows
+✓  32 [desktop] › e2e/flows-export.spec.ts:103:1 › TikZ: snippet and standalone document, copy and download
+✓  33 [desktop] › e2e/flows-design.spec.ts:104:1 › developer items: behind Settings, or on from the start with ?dev=1
+✓  34 [desktop] › e2e/flows-export.spec.ts:124:1 › Asymptote: standalone with helpers, and the AoPS form with olympiad.asy
+✓  35 [desktop] › e2e/flows-design.spec.ts:117:1 › icon buttons are named by their old labels; keyboard focus is visible
+✓  36 [desktop] › e2e/flows-export.spec.ts:147:1 › a character TeX cannot write is reported in the TeX formats, not in SVG
+✓  37 [desktop] › e2e/flows-design.spec.ts:160:3 › text meets WCAG AA contrast (light scheme)
+✓  39 [desktop] › e2e/flows-design.spec.ts:160:3 › text meets WCAG AA contrast (dark scheme)
+✓  38 [desktop] › e2e/flows-export.spec.ts:190:3 › PNG golden: euler-line
+✓  40 [desktop] › e2e/flows-persist.spec.ts:8:1 › text panel: two-way, with per-line diagnostics
+✓  41 [desktop] › e2e/flows-export.spec.ts:190:3 › PNG golden: feuerbach
+✓  42 [desktop] › e2e/flows-persist.spec.ts:28:1 › objects panel lists Undefined reasons; style panel edits the text
+✓  43 [desktop] › e2e/flows-export.spec.ts:190:3 › PNG golden: incenter-excenter
+✓  45 [desktop] › e2e/flows-export.spec.ts:190:3 › PNG golden: miquel
+✓  46 [desktop] › e2e/flows-export.spec.ts:190:3 › PNG golden: nine-point-circle
+✓  44 [desktop] › e2e/flows-persist.spec.ts:43:1 › opening a share link keeps the autosave; Restore previous figure brings it back
+✓  47 [desktop] › e2e/flows-export.spec.ts:190:3 › PNG golden: radical-axes
+✓  49 [desktop] › e2e/flows-export.spec.ts:190:3 › PNG golden: reflection-layer
+✓  48 [desktop] › e2e/flows-persist.spec.ts:80:1 › a damaged share link is refused with its reason; the autosave opens instead
+✓  51 [desktop] › e2e/flows-persist.spec.ts:97:1 › the debug report is reachable from the page and from an internal error
+✓  50 [desktop] › e2e/flows-export.spec.ts:190:3 › PNG golden: simson
+✓  53 [desktop] › e2e/shell.spec.ts:3:1 › shows the title and an empty canvas
+✓  52 [desktop] › e2e/scene.spec.ts:19:3 › screenshot baseline: euler-line
+✓  54 [desktop] › e2e/scene.spec.ts:19:3 › screenshot baseline: nine-point-circle
+✓  55 [desktop] › e2e/scene.spec.ts:19:3 › screenshot baseline: reflection-layer
+✓  56 [pages] › e2e/pages-smoke.spec.ts:9:1 › the site opens, draws an example, and its landing page leads to the app
+frame time (desktop): {"objects":300,"drag":{"frames":120,"median":3.2000000000116415,"p95":5.599999999976717,"max":442.6000000000349},"pan":{"frames":120,"median":1.8000000000465661,"p95":3.2000000000116415,"max":427.0999999999767}}
+✓  57 [desktop] › e2e/scene.spec.ts:28:1 › frame time at 300 objects (SPEC §17: drag frame ≤ 8 ms)
+✓  58 [desktop] › e2e/scene.spec.ts:51:3 › HiDPI › the canvas has devicePixelRatio device pixels per CSS pixel
+✓  59 [desktop] › e2e/scene.spec.ts:62:1 › hiding the source layer draws the coincident images (image only view)
+✓  60 [desktop] › e2e/scene.spec.ts:73:1 › pan, zoom and fit change the picture; fit restores it
+main thread during a test (measure): {"tasks":8861,"maxTask":3.3,"longTasks":[],"pingGaps":8807,"maxPingGap":3.3}
+✓  61 [measure] › e2e/long-task.spec.ts:53:1 › the main thread never blocks for more than 16 ms during a local and a global test
+full UI drag frame (measure-drag): {"objects":300,"app":{"frames":120,"median":5.52,"p95":8.05,"max":9.72},"raster":{"frames":120,"median":12.44,"p95":14.36,"max":15.13},"total":{"frames":120,"median":18.16,"p95":21.54,"max":22.33}}
+✓  62 [measure-drag] › e2e/drag-frame.spec.ts:86:1 › a full UI drag frame at 300 objects (SPEC §17: ≤ 8 ms)
+62 passed
+```
+
+### CI on GitHub
+
+| commit  | what                                                   | ci                          | deploy                      | tex                                              |
+| ------- | ------------------------------------------------------ | --------------------------- | --------------------------- | ------------------------------------------------ |
+| eab2c6b | steps 1–5 (Randomize, the UI, specs, README, contrast) | failure 39602546629 (fonts) | failure 39602546767 (fonts) | success 39602546646                              |
+| 999d446 | step 6: overlays that render alike; Randomize coverage | failure 39604348208 (phone) | failure 39604348258 (phone) | success 39604348357                              |
+| 7d95eba | the phone canvas baselines are CI's renders; ADR-0016  | **success 39605322287**     | **success 39605322376**     | (not triggered: nothing under its paths changed) |
+
+Run URLs are `https://github.com/youseng/geomira/actions/runs/<id>`. The nightly is not waited
+for. The smoke job runs only after a deploy from `main`, i.e. on the merge.
+
+## Requests
+
+- Please confirm the readings under "Uncertain" (right triangles in Randomize, the triangle,
+  the pinned colours and sizes, the committed side-by-side images).
+- The `run-9b` tag is for the maintainer to place on the merge.
+- Local screenshots: this container has the Inter font, which `system-ui` picks; the baselines
+  were rendered with a fontconfig that hides it (as on CI). The phone canvas baselines are CI's.
+- Formatting: new and changed files were formatted with Prettier and every change it made was
+  reviewed (whitespace and line breaks only). No `eslint --fix` or other automatic fix was run;
+  lint findings were fixed by hand.
+- No runtime dependency was added.
+
+## Notes for later runs
+
+- A new GUI tool needs an icon (`icons.tsx`, the compiler asks) and a group (the Record in
+  `tool-groups.ts`).
+- Screenshot baselines with interface text depend on the machine's fonts: render them as CI
+  does, or take CI's renders from the Playwright report artifact.
+
+---
+
 ## Run 9a: ACCEPTED (2026-10-21)
 
 packages/export (SPEC §14) with the Export dialog, the TeX/Asymptote CI job and the full UI drag
