@@ -1,5 +1,256 @@
 # STATUS
 
+## Run 8a: ACCEPTED (2026-10-21)
+
+packages/editor (SPEC §12, §7 GUI choice), preceded by the display values (SPEC §6.2). Base
+check first: Run 7 was ACCEPTED (tag `run-7` = `main` = 70a473b); `pnpm install && pnpm verify`
+was green locally on it (1557 tests, add-only compared with `run-6`), and ci, deploy and nightly
+were green in CI on that commit (https://github.com/youseng/geomira/actions/runs/39511564901,
+https://github.com/youseng/geomira/actions/runs/39511564850,
+https://github.com/youseng/geomira/actions/runs/39511565396).
+
+**A red tier found during the run and fixed first**: the push of step 0 (10ae9a1) ran the
+nightly test job (it changed scripts/mutation-shards.ts), which failed
+(https://github.com/youseng/geomira/actions/runs/39516403350): (1) note A's round-trip law
+(Run 7, apps/web image-order.test.ts, NIGHTLY seed 11, case 1986) found a **Run 6 builder bug**
+that the step-0 generator change exposed; (2) the step-0 display fuzz had no explicit time
+limit. Both were reproduced locally and fixed in their own commit (0fa234d), with regression
+tests; see "Known bugs". A full local NIGHTLY=1 run on 0fa234d then found two more, both in this
+run's own tests (note C's continuity tracker, and a time limit), fixed in de266d3; the whole
+suite then passed locally with NIGHTLY=1 (output below).
+
+Every criterion holds: the fuzz counts are pasted below (500 runs per CI, 20,000 with
+NIGHTLY=1, both green); verify is green locally and in CI (table under "CI on GitHub"). Editor
+coverage 96.95% lines, 87.1% branches (gated like the other packages: 90 / 85).
+
+## Done (each item → the test file that proves it)
+
+0. **Display values, their own commit 10ae9a1 (ADR-0011)**: value kinds `angle_mark`,
+   `segment_mark`, `text` and `string` (`DISPLAY_KINDS`, beside SPEC §4's `VALUE_KINDS`),
+   capabilities `annotation` and `string`; tools `mark_angle(A, B, C[, arcs])` (the convex angle,
+   stored counter-clockwise; an exact count 1–3), `mark_right(A, B, C)` (the right-angle style:
+   decided with the band, Undefined unless the angle is right), `mark_segment(P, Q[, ticks])`,
+   `text(P, "…")` (non-empty string),
+   ONE compute<T> each in `packages/kernel/src/tools/marks.ts`, every degenerate case a test;
+   `apply` maps marks and texts (an anti-similarity swaps an angle mark's arms, so the
+   orientation reverses) and derived layers image them; string literals in the language as whole
+   call arguments; P1–P3 generator coverage; scene shapes (pixel-sized mark paths, a text drawn
+   as its label with a handle for hit-testing), kind order, bounds, labels, coincident images;
+   docs/tools.md and docs/language.md regenerated. →
+   `packages/kernel/test/degenerate.test.ts` and `helpers/degenerate-display.ts` (degenerate
+   cases), `packages/kernel/test/tools.property.test.ts` with `helpers/display-properties.ts`
+   (properties, images, reflection reverses orientation), `packages/lang/test/display-notation.test.ts`
+   (notation; P1–P3 via the generator), `packages/scene/test/display-values.test.ts` (shapes,
+   coincident-image rule), `packages/scene/test/laws/display-fuzz.test.ts` (L8, L9),
+   `apps/web/test/laws/display-laws.test.ts` (L8/L9 through the renderer).
+1. **State and applyEdit** (`src/state.ts`, `src/edit.ts`, `src/ui-edit.ts`, `src/claim-edit.ts`):
+   every edit type (the kernel's DocEdits, claims and assumptions through packages/claims,
+   `replaceText` through lang's `parseInto`, the document's `@viewport`, batches, drags, UI
+   edits); total: a refusal returns the very same state with the reason; the text format's
+   checks (`src/checks.ts`) and text order (`src/order.ts`) keep every state expressible (L5);
+   selection, hover, active layer, tool and viewport outside history. → `test/edit.test.ts`.
+   **History** with exact undo/redo, a drag gesture as one entry (moves coalesced, rounding
+   inside it), bounded at 500. → `test/history.test.ts`, `test/drag.test.ts` (drag targets:
+   free points, gliders of every form, images through `dragThrough`, texts; protocol).
+2. **Drag-end rounding** (`src/rounding.ts`, `src/drag.ts`): the finer of 10^(⌊log10 scale⌋ − 4)
+   and the largest power of ten g with g·zoom ≤ 0.1, decided exactly; gliders on parameter grids;
+   images with the chain's scale factor; kept only if nothing moves more than 0.1 px. →
+   `test/rounding.test.ts` (property: no rounded point — free, glider t / (u : v) / angle, image
+   through ×3 and ×1/3 maps — moves by more than 0.1 px on screen; 200 runs per CI, 2,000 with
+   NIGHTLY=1; the rounding is applied, and the definition prints as decimals without fractions,
+   in more than 95% of drags).
+3. **Tool state machine** (`src/tools.ts` data, `src/machine.ts` one machine, `src/create.ts`,
+   `src/names.ts`) for point, glider, intersection, midpoint, line/segment/ray, parallel,
+   perpendicular, perp bisector, bisector, circle (centre-point / 3 points), tangent, foot,
+   reflect, polygon, the four marks, measure (distance, angle), claim, and "new derived layer
+   from transform". → `test/machine.test.ts` (every tool builds; no tool is a stub).
+   **GUI selector choice** (`src/choice.ts`, `src/options.ts`, `src/robust.ts`; ADR-0012
+   decisions 12–14), on the kernel's candidates and selectors. → `test/choice.test.ts`
+   (constructed situations for each step: other(P); same_side / opposite_side; on_arc; the
+   largest margin within the kind; along / orient incl. tangents; near(P) for an incident point;
+   refusals; L16), `test/robust.test.ts`, and **note C** `test/choice-robust.test.ts` (random
+   figures, every intersection of six curve pairs, 200 local-regime copies each: the written
+   selector is never a bare index, passes the language's checks, picks the clicked point in
+   every judged copy, and is other / same_side / opposite_side / on_arc whenever one decides —
+   brute force over every such selector of the construction).
+4. **Autosave policy** (`src/autosave.ts`, pure), **share links** (`src/share.ts`, `#s=` +
+   lz-string, verified by re-encoding) and the **debug report** (`src/report.ts`). →
+   `test/persist.test.ts` (policy cases; L5 round trip on generated documents; damaged, cut and
+   garbage links refused; report contents).
+5. **Editor-level model-based fuzzing** (fc.commands, `test/laws/fuzz.test.ts`,
+   `test/helpers/fuzz-commands.ts`): every edit type, undo/redo walks, replaceText, layer
+   switches, drags (through images), tool inputs, garbage and out-of-order edits; after EVERY
+   step L1 (finite values, incremental = full evaluation), L5 (print → parse equal up to ids
+   and image-run order with lang's `sameUpToIds`; the share link decodes to the same text), L6
+   (the model's own document stacks agree with every undo/redo by identity; undo∘redo returns
+   the document), L7 (invariants), L13 (sync); a refusal returns the same state. 500 runs per
+   CI, 20,000 with NIGHTLY=1 (counts below).
+6. **ADR-0012** (docs/adr/0012-editor-core.md) records the editor's decisions; the editor joins
+   the coverage gates; `test/exports.test.ts` pins its subpath surface.
+
+### Fuzz counts
+
+L14, the editor fuzz (`npx vitest run packages/editor/test/laws/fuzz.test.ts --reporter=verbose`,
+on de266d3; maxCommands 25, seed 20261021). Every command is followed by L1, L5, L6, L7 and L13:
+
+```
+L14 editor fuzz: 500 runs; {"steps":8113,"applied":{"tool:click":180,"add":411,"docViewport":73,"updateRule":144,"move":82,"activeLayer":65,"remove":97,"addClaim":18,"undo":298,"redo":204,"addView":152,"dragStart":166,"dragMove":269,"dragCancel":31,"rename":62,"removeRule":67,"tool":59,"batch":87,"addAssumption":26,"tool:cancel":62,"hover":51,"updateLayer":167,"select":52,"dragEnd":89,"redefine":48,"style":59,"removeView":17,"setLayers":43,"removeAssumption":4,"replaceText":122,"addDerivedLayer":87,"addLayer":36,"applyView":21,"removeLayer":59,"viewport":19,"removeClaim":2,"tool:object":6},"refused":{"addAssumption":174,"tool:object":185,"addLayer":146,"setLayers":151,"rename":140,"addDerivedLayer":120,"docViewport":135,"dragEnd":278,"undo":206,"dragStart":201,"dragMove":470,"dragCancel":75,"batch":86,"removeAssumption":177,"removeView":78,"style":145,"redo":306,"renameClaim":87,"removeLayer":118,"redefine":123,"viewport":58,"addView":59,"add":141,"applyView":77,"tool:click":9,"tool:finish":69,"updateRule":37,"tool:text":73,"addClaim":193,"removeRule":126,"move":106,"replaceText":65,"hover":10,"remove":104,"removeClaim":105,"activeLayer":7,"updateLayer":26,"select":12},"maxObjects":41,"undo":298,"redo":204,"dragsThrough":111}
+ ✓ L14: editor-level model-based fuzzing (500 runs, fc.commands) > every edit type, undo/redo, replaceText, layer switches, drags, tools, garbage: L1, L5, L6, L7, L13 after each step 22140ms
+```
+
+With NIGHTLY=1 (local, de266d3, part of the full NIGHTLY=1 suite below):
+
+```
+L14 editor fuzz: 20000 runs; {"steps":322087,"applied":{"tool:click":7197,"add":16757,"docViewport":2529,"updateRule":5555,"move":3297,"activeLayer":2235,"remove":3839,"addClaim":786,"undo":13282,"redo":9183,"addView":5595,"dragStart":6720,"dragMove":12001,"dragCancel":1090,"rename":2021,"removeRule":2212,"tool":2509,"batch":3429,"addAssumption":977,"tool:cancel":2465,"hover":2321,"updateLayer":6207,"select":2147,"dragEnd":3651,"redefine":1472,"style":2151,"removeView":572,"setLayers":1400,"removeAssumption":158,"replaceText":4708,"addDerivedLayer":2665,"addLayer":1759,"applyView":544,"removeLayer":2656,"viewport":631,"removeClaim":75,"tool:object":243,"renameClaim":48,"tool:text":2},"refused":{"addAssumption":6579,"tool:object":7279,"addLayer":5776,"setLayers":6054,"rename":5215,"addDerivedLayer":4689,"docViewport":4836,"dragEnd":11255,"undo":9072,"dragStart":8280,"dragMove":18004,"dragCancel":2576,"batch":4069,"removeAssumption":7255,"removeView":3274,"style":5369,"redo":13063,"renameClaim":3686,"removeLayer":4825,"redefine":5925,"viewport":1866,"addView":2023,"add":5795,"applyView":3212,"tool:click":108,"tool:finish":2449,"updateRule":1957,"tool:text":2481,"addClaim":6785,"removeRule":5191,"move":4051,"replaceText":2579,"hover":257,"remove":3607,"removeClaim":3713,"activeLayer":230,"updateLayer":1221,"select":392},"maxObjects":51,"undo":13282,"redo":9183,"dragsThrough":4533}
+ ✓ L14: editor-level model-based fuzzing (20000 runs, fc.commands) > … L1, L5, L6, L7, L13 after each step 766354ms
+```
+
+(The 20,000-run fuzz takes about 13 minutes; the nightly test job's limit is 120 minutes.)
+
+Note C (`test/choice-robust.test.ts`): judged = copies whose candidates neither met nor crossed
+on the way and where the selector's value exists; every judged copy picks the followed point.
+
+```
+CI scale:      note C: tiers {"1":40,"2":29,"3":49}; {"cases":118,"copies":23600,"judged":21568,"met":1753,"crossed":242,"undefined":37}
+NIGHTLY=1:     note C: tiers {"1":400,"2":303,"3":451}; {"cases":1154,"copies":230800,"judged":214993,"met":14661,"crossed":1087,"undefined":59}
+```
+
+Display values (step 0), NIGHTLY=1:
+
+```
+display fuzz: 2000 figures; items {"point":7509,"segment_mark":1194,"angle_mark":917,"text":1171}; L8 {"samples":56922,"cursors":11249,"hits":36586}
+L8/L9 (generated): {"docs":1200,"views":3874,"numbers":453280,"refused":0,"drawCalls":633008,"samples":104706,"cursors":79002,"hits":153255}
+note A (round trips that reordered objects): 42
+```
+
+## Not done
+
+Nothing in Run 8a's scope. Not started (later runs): the web app's panels and the GUI wiring of
+the editor, exports of the display values (the export run). No mutation config for
+packages/editor was added (note G: informational; it would be sharded like the kernel).
+
+## Known bugs
+
+None known. Found and fixed during the run, each with a failing test first:
+
+- **Run 6 builder (nightly, note A round trip, seed 11)**: `@layer b = image(T, one)
+[exclude=X*,Y*]` beside `@layer two = image(T, one)` — the image Y* of an object defined later
+  in the text was imaged into b in the same sync that created it, before the name Y* resolved,
+  so the printed text of a valid document failed to parse ("the image name Y** of Y* in layer b
+  is already used"). → syncDerived takes optional held sources (kernel `Held`), and the language
+  holds back objects named in an active rule's exclude list. `packages/lang/test/exclude-forward.test.ts`
+  (failed before the fix), `packages/kernel/test/derived-held.test.ts`.
+- **Step-0 display fuzz** timed out at 2000 runs in CI (no explicit time limit) → 120 s, as the
+  scene's other law fuzz.
+- **Note C's tracker (this run's test, NIGHTLY=1, figure 75, l2 ∩ c2, copy 126)**: the first
+  tracking step started with zero velocities, so two candidates that crossed inside it (through
+  a tangency, each ending near where the other began) looked like two that barely moved; the
+  tracker followed the wrong branch and judged a copy that is a configuration change, failing
+  the exact selector other(E). → velocities from a first step of 2⁻²⁰ of the path, and a step
+  over which the vector between the candidates turns by ≥ 90° is bisected (a meet inside a
+  step). Many copies earlier counted as "crossed" are now counted as meets (CI scale: crossed
+  859 → 242, met 1072 → 1753; judged 21632 → 21568 of 23600; 0 failures either way). The
+  share-link round trip needed an explicit time limit at 1,000 runs.
+- Found by the editor fuzz (fixed before the editor commits): a `move` could put a user object
+  inside an image run, which the text cannot express (→ text order, `test/edit.test.ts` "keeps
+  the document in text order"); a redefinition could change a kind under its dependents, which
+  the text then refuses (→ `dependentsProblem`, "what the text format cannot hold"); a rename
+  left stale Undefined reasons naming the old name in incremental values (→ renamed objects are
+  re-evaluated, "a rename re-evaluates …").
+
+## Uncertain
+
+- **Display readings** (ADR-0011): `mark_angle` marks the CONVEX angle ∠ABC (undirected); the
+  "right-angle style" is `mark_right`'s value and is never chosen automatically at 90°;
+  `mark_right` is Undefined unless the angle is right (decided with the band); a string is a
+  value (`string` kind) only as a whole call argument; counts are exact 1–3.
+- **GUI choice tier 2 (ADR-0012 decision 13)**: SPEC §7 says "within a kind, the largest
+  decision margin". The margin is read as a margin in standard deviations of the local noise,
+  and an option below ROBUST_SIGMAS = 5 does not decide (the choice falls to along / orient).
+  Please confirm this reading.
+- **Tier 4** (`near(P)`) is reachable only for branchable tools without low-level selectors: every
+  registry tool that can meet twice takes along / orient, so the test uses a test-only tool.
+- **Text order** (ADR-0012 decision 7): moves into an image run are normalised, not refused.
+- No mathematical facts were used beyond earlier runs' (no contest problems).
+
+## Changed frozen tests
+
+No line of a file frozen at `run-7` was modified or removed (`add-only: frozen tests compared
+with run-7, 0 violation(s)`). Lines were ADDED (step 0, commit 10ae9a1) to:
+packages/kernel/test/degenerate.test.ts (3), exports.test.ts (1), helpers/degenerate.ts (4),
+helpers/fuzz-branch.ts (3: a guard against a free point beyond MAX_SCALE that the larger
+registry exposed in the branch fuzz's misuse cases), helpers/l3-plans.ts (2),
+helpers/similarity-gen.ts (20), radical.test.ts (4), registry.test.ts (4),
+tools.property.test.ts (2), value.test.ts (2); packages/lang/test/helpers/gen-doc.ts (1) and
+helpers/gen-expr.ts (2).
+
+## Acceptance command output
+
+### Local, de266d3 (`pnpm install && pnpm verify`; the STATUS commit after it changes only docs/STATUS.md)
+
+```
+All matched files use Prettier code style!
+✔ no dependency violations found (373 modules, 2168 dependencies cruised)
+ok   tolerance: 487 files scanned, 0 violation(s)
+ok   file-length: 487 files scanned, 0 violation(s)
+ok   test-count: 1684 tests, floor 1684, 0 violation(s)
+ok   disabled-tests: 487 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-7, 0 violation(s)
+ok   forbidden-words: 487 files scanned, 0 violation(s)
+ Test Files  159 passed (159)
+      Tests  1684 passed (1684)
+ editor/src        |   92.94 |     87.1 |    98.4 |   96.95 |
+Statements   : 97.14% ( 7957/8191 )
+Branches     : 92.5% ( 6493/7019 )
+Lines        : 98.49% ( 6623/6724 )
+verify exit=0
+```
+
+### Local, de266d3, the whole suite with NIGHTLY=1 (`NIGHTLY=1 npx vitest run --reporter=verbose`)
+
+```
+ ✓ note C … > 100 random figures, every intersection of six curve pairs, 200 copies each 192802ms
+ ✓ share links (law L5) > round trip … for generated documents 7857ms
+ ✓ no rounded point moves by more than 0.1 px on screen > … 2098ms
+ ✓ L14: editor-level model-based fuzzing (20000 runs, fc.commands) > … 766354ms
+ Test Files  159 passed (159)
+      Tests  1684 passed (1684)
+   Duration  767.79s
+```
+
+### CI on GitHub
+
+| commit  | what                                     | ci (typecheck, lint, test, rules, e2e)                                  | deploy                                                              |
+| ------- | ---------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 10ae9a1 | step 0: display values                   | https://github.com/youseng/geomira/actions/runs/39516403374 success     | https://github.com/youseng/geomira/actions/runs/39516403362 success |
+| 876ff36 | steps 1–5: editor, fuzz, ADR-0012        | https://github.com/youseng/geomira/actions/runs/39524413824 success     | https://github.com/youseng/geomira/actions/runs/39524413801 success |
+| 0fa234d | nightly-tier fixes (exclude, time limit) | https://github.com/youseng/geomira/actions/runs/39525562569 success     | https://github.com/youseng/geomira/actions/runs/39525562583 success |
+| de266d3 | note C tracker (last code commit)        | **https://github.com/youseng/geomira/actions/runs/39528640623 success** | https://github.com/youseng/geomira/actions/runs/39528640621 success |
+
+The nightly workflow's push trigger ran only for 10ae9a1 (it changed scripts/mutation-shards.ts):
+its test job failed (https://github.com/youseng/geomira/actions/runs/39516403350), for the two
+reasons fixed in 0fa234d; the NIGHTLY=1 suite was then run locally on de266d3 (above). Note G:
+the nightly is not waited for. The STATUS commit after de266d3 changes only docs/STATUS.md; its
+CI run is on the pull request.
+
+## Requests
+
+- Please confirm the readings under "Uncertain" (ADR-0011, ADR-0012).
+- lz-string 1.5.0 was added as a runtime dependency of packages/editor (CLAUDE.md lists it as
+  allowed).
+- The `run-8a` tag is for the maintainer to place on the merge of this run's PR.
+- Formatting: new files were formatted with Prettier (whitespace only); no `eslint --fix` or
+  other automatic fix was run (note E); lint findings were fixed by hand.
+
+## Notes for later runs
+
+- The web app: `applyEdit(state, edit, env)` for everything; `toolInput` for clicks
+  (`hitTest(...)` result + world position); `toolUI(id)` for help and shortcuts.
+- `encodeShare` / `decodeShare` and the autosave functions are pure; storage and timers belong
+  to apps/web.
+
+---
+
 ## Run 7: ACCEPTED (2026-10-20)
 
 packages/scene and the apps/web canvas renderer (SPEC §13). Base check first: Run 6 was ACCEPTED
