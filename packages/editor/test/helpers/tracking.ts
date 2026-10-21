@@ -124,6 +124,9 @@ export function localCopy(doc: Document, scale: number, rng: Rng): Copy {
   };
 }
 
+/** The first step of a path, which gives the candidates' velocities (see `follow`). */
+export const FIRST_STEP = 2 ** -20;
+
 /** Bisections of one path step at most (a step of 1/(STEPS·2^MAX_DEPTH) of the path). */
 export const MAX_DEPTH = 14;
 
@@ -143,8 +146,11 @@ export const ahead = (p: V, v: V, h: number): V => ({ x: p.x + v.x * h, y: p.y +
  * told apart there. Both are followed with their velocities: the candidates at t1 are
  * assigned to the branches whose predicted positions they are nearest to, and the step is
  * accepted only when both lie within a quarter of the smaller gap between the two (before
- * and after) of their predictions; otherwise the step is bisected. Two candidates meeting
- * make the gap vanish, which no bisection depth resolves (a tangency).
+ * and after) of their predictions, and when the vector from one to the other turns by less
+ * than 90° over the step (assigned and predicted: two candidates can meet BETWEEN the ends of
+ * a step whose ends are far apart, and the ends alone would not show it); otherwise the step
+ * is bisected. Two candidates meeting make the gap vanish, or the vector reverse within ever
+ * smaller steps, which no bisection depth resolves (a tangency).
  */
 export function track(
   copy: Copy,
@@ -162,7 +168,9 @@ export function track(
   const [pp, pq] = [ahead(cur.p, cur.vp, h), ahead(cur.q, cur.vq, h)];
   const [np, nq] = dist(x, pp) + dist(y, pq) <= dist(y, pp) + dist(x, pq) ? [x, y] : [y, x];
   const gap = Math.min(dist(cur.p, cur.q), dist(np, nq));
-  if (Math.max(dist(np, pp), dist(nq, pq)) * 4 < gap) {
+  const turned = (u: V, w: V) =>
+    (cur.p.x - cur.q.x) * (u.x - w.x) + (cur.p.y - cur.q.y) * (u.y - w.y) <= 0;
+  if (Math.max(dist(np, pp), dist(nq, pq)) * 4 < gap && !turned(np, nq) && !turned(pp, pq)) {
     const v = (to: V, from: V): V => ({ x: (to.x - from.x) / h, y: (to.y - from.y) / h });
     return { p: np, q: nq, vp: v(np, cur.p), vq: v(nq, cur.q) };
   }
@@ -183,9 +191,20 @@ export function follow(
   start: readonly [V, V],
 ): [V, V] | undefined {
   const still = { x: 0, y: 0 };
-  let cur: Track | undefined = { p: start[0], q: start[1], vp: still, vq: still };
+  // The velocities first, from a step too short for the candidates to pass each other: with
+  // zero velocities, two candidates that cross inside one step, each ending near where the
+  // other began, would look like two that barely moved.
+  let cur: Track | undefined = track(
+    copy,
+    a,
+    b,
+    0,
+    FIRST_STEP,
+    { p: start[0], q: start[1], vp: still, vq: still },
+    0,
+  );
   for (let i = 1; i <= STEPS && cur !== undefined; i++)
-    cur = track(copy, a, b, (i - 1) / STEPS, i / STEPS, cur, 0);
+    cur = track(copy, a, b, i === 1 ? FIRST_STEP : (i - 1) / STEPS, i / STEPS, cur, 0);
   if (cur === undefined) return undefined;
   // Back in the copy's own frame: the candidates of the copy nearest to the followed ones.
   const [p, q] = candidatesOf(copy.at(1), a, b) ?? [];

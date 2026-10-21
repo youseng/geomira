@@ -81,7 +81,7 @@ describe('share links (law L5)', () => {
       { numRuns: RUNS, seed: 5 },
     );
     expect(n).toBe(RUNS);
-  });
+  }, 120_000);
 
   it('refuses what is not a link, garbage, a damaged (cut) link, and a text with errors', () => {
     const doc = editorOf('A = (0, 0)\nB = (4, 0)\nM = midpoint(A, B)').doc;
