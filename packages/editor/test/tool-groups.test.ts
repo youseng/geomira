@@ -19,6 +19,7 @@ describe('tool groups', () => {
       'Points',
       'Lines',
       'Circles',
+      'Centers',
       'Transform',
       'Marks',
       'Measure / Claim',

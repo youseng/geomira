@@ -2,7 +2,8 @@
  * Icons (Run 9b, ADR-0016): the tool icons of the maintainer's Geomdraw design, as static SVG
  * data on a 24 × 24 grid (strokes in currentColor, the accent dot in the accent colour), one
  * per GUI tool of packages/editor (the Record makes the compiler require every tool), and
- * the top bar's glyphs. Decorative: every button that shows one has its own accessible name.
+ * the top bar's glyphs; the centre tools carry Geomdraw's corner letter. Decorative: every
+ * button that shows one has its own accessible name.
  */
 import type { ReactNode } from 'react';
 import type { ToolId } from '@geomira/editor/tool-state';
@@ -102,6 +103,46 @@ const TOOL_PARTS: Readonly<Record<ToolId, readonly ReactNode[]>> = {
     <circle key="2" cx="16" cy="5.1" r="1.9" fill="currentColor" stroke="none" />,
     <circle key="3" cx="14.1" cy="19.7" r="1.9" fill="currentColor" stroke="none" />,
   ],
+  circumcircle: [
+    <circle key="0" cx="12" cy="12" r="9" />,
+    <path key="1" d="M12 3 L4.2 16.5 L19.8 16.5 Z" />,
+  ],
+  incircle: [
+    <path key="0" d="M3 20 L21 20 L10 5 Z" />,
+    <circle key="1" cx="10.6" cy="14.9" r="5" />,
+  ],
+  excircle: [<path key="0" d="M7 10 L17 10 L11 3 Z" />, <circle key="1" cx="12" cy="16" r="5.5" />],
+  ninepoint_circle: [
+    <path key="0" d="M3 20 L21 20 L10 5 Z" />,
+    <circle key="1" cx="12.3" cy="15" r="4.8" strokeDasharray="2.5 2" />,
+    <circle key="2" cx="12" cy="20" r="1.9" fill="currentColor" stroke="none" />,
+    <circle key="3" cx="15.5" cy="12.5" r="1.9" fill="currentColor" stroke="none" />,
+    <circle key="4" cx="6.5" cy="12.5" r="1.9" fill="currentColor" stroke="none" />,
+  ],
+  centroid: [
+    <path key="0" d="M3 20 L21 20 L10 5 Z" />,
+    <circle key="1" cx="11.5" cy="14.5" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  circumcenter: [
+    <path key="0" d="M3 20 L21 20 L10 5 Z" />,
+    <circle key="1" cx="11.5" cy="14.5" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  incenter: [
+    <path key="0" d="M3 20 L21 20 L10 5 Z" />,
+    <circle key="1" cx="11.5" cy="14.5" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  orthocenter: [
+    <path key="0" d="M3 20 L21 20 L10 5 Z" />,
+    <circle key="1" cx="11.5" cy="14.5" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  ninepoint_center: [
+    <path key="0" d="M3 20 L21 20 L10 5 Z" />,
+    <circle key="1" cx="11.5" cy="14.5" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  excenter: [
+    <path key="0" d="M3 20 L21 20 L10 5 Z" />,
+    <circle key="1" cx="11.5" cy="14.5" r="2.4" className="icon-accent" stroke="none" />,
+  ],
   reflect: [
     <line key="0" x1="12" y1="3" x2="12" y2="21" strokeDasharray="2.5 2" />,
     <circle key="1" cx="6" cy="9" r="1.9" fill="currentColor" stroke="none" />,
@@ -149,8 +190,35 @@ const TOOL_PARTS: Readonly<Record<ToolId, readonly ReactNode[]>> = {
   ],
 };
 
-/** The icon of a GUI tool. */
+/**
+ * The letter in the corner of a centre tool's button (Geomdraw's), naming the centre; the
+ * triangle icons are otherwise alike.
+ */
+const CORNER: Readonly<Partial<Record<ToolId, string>>> = {
+  centroid: 'G',
+  circumcenter: 'O',
+  incenter: 'I',
+  orthocenter: 'H',
+  ninepoint_center: 'N',
+  excenter: 'Iₐ',
+};
+
+/** The icon of a GUI tool (with its corner letter, if any). */
 export function ToolIcon({ tool }: { tool: ToolId }) {
+  const corner = CORNER[tool];
+  return (
+    <>
+      {corner !== undefined && (
+        <span className="ct" aria-hidden="true">
+          {corner}
+        </span>
+      )}
+      <ToolSvg tool={tool} />
+    </>
+  );
+}
+
+function ToolSvg({ tool }: { tool: ToolId }) {
   return (
     <svg
       className="icon"

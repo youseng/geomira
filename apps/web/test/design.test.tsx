@@ -1,7 +1,8 @@
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { createEditor } from '@geomira/editor/state';
-import { TOOL_GROUPS } from '@geomira/editor/tool-groups';
+import { keyCap, TOOL_GROUPS } from '@geomira/editor/tool-groups';
+import type { ToolId } from '@geomira/editor/tool-state';
 import { TOOLS } from '@geomira/editor/tools';
 import { emptyDocument } from '@geomira/kernel/document';
 import { createRegistry } from '@geomira/kernel/registry';
@@ -24,7 +25,7 @@ describe('the tool palette', () => {
     expect(html).toContain('role="toolbar" aria-label="Tools"');
     for (const t of TOOLS) {
       expect(html.split(`<span class="sr-only">${t.label}</span>`)).toHaveLength(2);
-      expect(html).toContain(`title="${t.label}: ${t.help} (key ${t.key.toUpperCase()})"`);
+      expect(html).toContain(`title="${t.label}: ${t.help} (key ${keyCap(t.key)})"`);
     }
     for (const g of TOOL_GROUPS) expect(html).toContain(`role="group" aria-label="${g.label}"`);
   });
@@ -36,10 +37,34 @@ describe('the tool palette', () => {
   it('has an icon for every tool', () => {
     for (const t of TOOLS) {
       const svg = renderToString(<ToolIcon tool={t.id} />);
-      expect(svg).toMatch(/^<svg class="icon" viewBox="0 0 24 24"/u);
+      expect(svg).toMatch(
+        /^(<span class="ct" aria-hidden="true">[^<]+<\/span>)?<svg class="icon" viewBox="0 0 24 24"/u,
+      );
       expect(svg).toContain('aria-hidden="true"');
       expect(svg.length, t.id).toBeGreaterThan(150);
     }
+  });
+
+  it("the centre tools carry Geomdraw's corner letter; a Shift key shows as ⇧", () => {
+    const corner = (id: ToolId) =>
+      /^<span class="ct" aria-hidden="true">([^<]+)<\/span>/u.exec(
+        renderToString(<ToolIcon tool={id} />),
+      )?.[1];
+    expect(
+      (
+        [
+          'centroid',
+          'circumcenter',
+          'incenter',
+          'orthocenter',
+          'ninepoint_center',
+          'excenter',
+        ] as const
+      ).map(corner),
+    ).toEqual(['G', 'O', 'I', 'H', 'N', 'Iₐ']);
+    expect(corner('circle3')).toBeUndefined();
+    expect(html).toContain('<span class="k" aria-hidden="true">⇧N</span>');
+    expect(html).toContain('<span class="k" aria-hidden="true">2</span>');
   });
 });
 

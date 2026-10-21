@@ -272,3 +272,21 @@ h3.sec {
   padding: 0 4px;
   background: var(--panel2);
 }
+
+/* A tool button's key (bottom right) and a centre tool's letter (top left, Geomdraw's). */
+.tool .k {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  font-size: 9px;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.tool .ct {
+  position: absolute;
+  left: 3px;
+  top: 1px;
+  font: italic 600 9px var(--math);
+  color: var(--muted);
+}

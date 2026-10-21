@@ -98,7 +98,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   },
   './restore': { module: restoreMod, names: ['openAtStartup', 'restoreOffer', 'restoredSession'] },
   './randomize': { module: randomizeMod, names: ['randomizeEdit'] },
-  './tool-groups': { module: toolGroupsMod, names: ['TOOL_GROUPS', 'toolGroup'] },
+  './tool-groups': { module: toolGroupsMod, names: ['TOOL_GROUPS', 'keyCap', 'toolGroup'] },
 };
 
 describe('@geomira/editor subpath surface', () => {

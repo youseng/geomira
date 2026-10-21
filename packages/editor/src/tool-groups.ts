@@ -7,7 +7,8 @@
 import type { ToolId } from './tool-state';
 import { TOOLS, type ToolUI } from './tools';
 
-export type ToolGroupId = 'points' | 'lines' | 'circles' | 'transform' | 'marks' | 'measure';
+export type ToolGroupId =
+  'points' | 'lines' | 'circles' | 'centers' | 'transform' | 'marks' | 'measure';
 
 export interface ToolGroup {
   readonly id: ToolGroupId;
@@ -33,6 +34,16 @@ const GROUP_OF: Readonly<Record<ToolId, ToolGroupId>> = {
   polygon: 'lines',
   circle: 'circles',
   circle3: 'circles',
+  circumcircle: 'circles',
+  incircle: 'circles',
+  excircle: 'circles',
+  ninepoint_circle: 'circles',
+  centroid: 'centers',
+  circumcenter: 'centers',
+  incenter: 'centers',
+  orthocenter: 'centers',
+  ninepoint_center: 'centers',
+  excenter: 'centers',
   reflect: 'transform',
   derived_layer: 'transform',
   mark_angle: 'marks',
@@ -48,6 +59,7 @@ const LABELS: readonly { readonly id: ToolGroupId; readonly label: string }[] = 
   { id: 'points', label: 'Points' },
   { id: 'lines', label: 'Lines' },
   { id: 'circles', label: 'Circles' },
+  { id: 'centers', label: 'Centers' },
   { id: 'transform', label: 'Transform' },
   { id: 'marks', label: 'Marks' },
   { id: 'measure', label: 'Measure / Claim' },
@@ -61,4 +73,9 @@ export const TOOL_GROUPS: readonly ToolGroup[] = Object.freeze(
 /** The group of a tool. */
 export function toolGroup(id: ToolId): ToolGroupId {
   return GROUP_OF[id];
+}
+
+/** How a tool's key is shown on its button: a letter in capitals, "⇧N" for a Shift letter. */
+export function keyCap(key: string): string {
+  return key === key.toLowerCase() ? key.toUpperCase() : `⇧${key}`;
 }

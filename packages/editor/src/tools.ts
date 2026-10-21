@@ -10,58 +10,10 @@
  * point), a transform (from the objects panel: maps are not drawn).
  */
 import type { ToolId } from './tool-state';
-import type { NameKind } from './names';
+import { call, L, P, type ToolUI } from './tool-ui';
+import { CENTRE_TOOLS, TRIANGLE_CIRCLE_TOOLS } from './tools-centres';
 
-export type PickKind = 'point' | 'line' | 'circle' | 'curve' | 'figure' | 'mirror' | 'transform';
-
-export interface ToolStep {
-  readonly pick: PickKind;
-  readonly prompt: string;
-}
-
-/** What a tool builds when its picks are complete. */
-export type Build =
-  /** Nothing more: picking (or creating) the point is the tool's whole work. */
-  | { readonly kind: 'none' }
-  /** name = tool(picks…) */
-  | { readonly kind: 'call'; readonly tool: string; readonly name: NameKind }
-  /** intersect(a, b, selectors): the clicked candidate, by the GUI selector choice. */
-  | { readonly kind: 'intersection' }
-  /** tangent(P, c) when P is on c, else tangent_from(P, c, selectors) by the GUI choice. */
-  | { readonly kind: 'tangent' }
-  /** text(P, "…"): the string comes as a `text` input after the anchor. */
-  | { readonly kind: 'text' }
-  /** claim <kind>(picks…) (the claim tool's kind is in the tool state). */
-  | { readonly kind: 'claim' }
-  /** A derived layer of the active layer under the picked transform. */
-  | { readonly kind: 'derivedLayer' };
-
-export interface ToolUI {
-  readonly id: ToolId;
-  readonly label: string;
-  /** Keyboard shortcut (one key). */
-  readonly key: string;
-  readonly help: string;
-  readonly steps: readonly ToolStep[];
-  /** Further picks of one kind, ended by a `finish` input (or, for points, the first pick again). */
-  readonly rest?: ToolStep;
-  readonly build: Build;
-}
-
-const P = (prompt: string): ToolStep => ({ pick: 'point', prompt });
-const L = (prompt: string): ToolStep => ({ pick: 'line', prompt });
-
-function call(
-  id: ToolId,
-  label: string,
-  key: string,
-  tool: string,
-  name: NameKind,
-  steps: readonly ToolStep[],
-  help: string,
-): ToolUI {
-  return { id, label, key, help, steps, build: { kind: 'call', tool, name } };
-}
+export type { Build, PickKind, ToolStep, ToolUI } from './tool-ui';
 
 export const TOOLS: readonly ToolUI[] = Object.freeze([
   {
@@ -189,6 +141,8 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     [P('first point'), P('second point'), P('third point')],
     'The circle through three points.',
   ),
+  ...TRIANGLE_CIRCLE_TOOLS,
+  ...CENTRE_TOOLS,
   {
     id: 'tangent',
     label: 'Tangent',

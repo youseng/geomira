@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { claimToolKinds, stepsOf } from '@geomira/editor/machine';
 import type { EditorState } from '@geomira/editor/state';
-import { TOOL_GROUPS } from '@geomira/editor/tool-groups';
+import { keyCap, TOOL_GROUPS } from '@geomira/editor/tool-groups';
 import { toolUI } from '@geomira/editor/tools';
 import { SrOnly, ToolIcon } from './icons';
 import type { EditorStore } from './store';
@@ -42,14 +42,14 @@ export function Palette({ store, state }: ToolBarProps) {
                   type="button"
                   className="tool"
                   aria-pressed={state.tool === t.id}
-                  title={`${t.label}: ${t.help} (key ${t.key.toUpperCase()})`}
+                  title={`${t.label}: ${t.help} (key ${keyCap(t.key)})`}
                   onClick={() => {
                     store.apply({ kind: 'tool', tool: t.id });
                   }}
                 >
                   <ToolIcon tool={t.id} />
                   <span className="k" aria-hidden="true">
-                    {t.key.toUpperCase()}
+                    {keyCap(t.key)}
                   </span>
                   <SrOnly>{t.label}</SrOnly>
                 </button>
