@@ -75,7 +75,7 @@ export function freeKey(id: number, path: readonly number[]): string {
 }
 
 /** Probes of the first argument of every two-argument glider (to read its object's kind). */
-function gliderExprs(doc: Document): { key: string; expr: Expr }[] {
+export function gliderExprs(doc: Document): { key: string; expr: Expr }[] {
   return doc.objects.flatMap((o) =>
     callsOf(o.def)
       .filter(({ call }) => call.tool === 'on' && call.args.length === 2)
@@ -85,7 +85,7 @@ function gliderExprs(doc: Document): { key: string; expr: Expr }[] {
   );
 }
 
-function orderedGroups(
+export function orderedGroups(
   doc: Document,
   hyps: readonly Assumption[],
   free: readonly FreeInput[],
@@ -189,7 +189,7 @@ function probe(doc: Document, c: Checked, registry: Registry): Probing {
   };
 }
 
-function hypothesesOf(doc: Document, hypProbes: readonly number[]): PreparedHypothesis[] {
+export function hypothesesOf(doc: Document, hypProbes: readonly number[]): PreparedHypothesis[] {
   let h = 0;
   return doc.assumptions.map((a) => {
     const probes = hypProbes.slice(h, h + a.args.length);

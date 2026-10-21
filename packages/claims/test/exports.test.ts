@@ -14,6 +14,7 @@ import * as rungs from '../src/rungs';
 import * as verdict from '../src/verdict';
 import * as verdictLine from '../src/verdict-line';
 import * as figureHypotheses from '../src/figure-hypotheses';
+import * as randomize from '../src/randomize';
 
 /** The public modules of @geomira/claims (ADR-0002, ADR-0008) and the runtime names each exports. */
 const SURFACE: Record<string, { module: object; names: string[] }> = {
@@ -52,6 +53,16 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './figure-hypotheses': {
     module: figureHypotheses,
     names: ['assumptionText', 'hypothesesInFigure'],
+  },
+  './randomize': {
+    module: randomize,
+    names: [
+      'OBTUSE_MIN_DEG',
+      'RANDOMIZE_ATTEMPTS',
+      'SHAPE_MIN_DEG',
+      'TRIANGLE_TYPES',
+      'randomFigure',
+    ],
   },
   './rungs': { module: rungs, names: ['RUNG_NAMES', 'claimArgs', 'decideSample', 'floatValues'] },
   './constants': {
@@ -94,5 +105,6 @@ describe('@geomira/claims subpath surface', () => {
     expect(Object.isFrozen(kinds.POLYNOMIAL_KINDS)).toBe(true);
     expect(Object.isFrozen(hypotheses.ASSUMPTION_KINDS)).toBe(true);
     expect(Object.isFrozen(rungs.RUNG_NAMES)).toBe(true);
+    expect(Object.isFrozen(randomize.TRIANGLE_TYPES)).toBe(true);
   });
 });
