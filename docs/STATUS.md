@@ -26,7 +26,12 @@ are done (items 10–12 below), with six frozen lines changed under ADR-0016 dec
 c10cb19: verify green locally (2143 tests), the full Playwright suite green locally (64 tests,
 below), every baseline regenerated (the three phone canvas baselines are CI's renders again,
 from ci 39613683770's report: only those three differed there, as in decision 19), long task max 6.8 ms (budget 16) and drag-frame app work
-median 5.81 ms locally (budget 8). CI: pending (filled in by the last commit).
+median 5.81 ms locally (budget 8). CI on 33b290a: ci
+**https://github.com/youseng/geomira/actions/runs/39615104610 success** (push; the
+pull-request run 39615115561 too), deploy
+**https://github.com/youseng/geomira/actions/runs/39615104712 success**, tex
+**https://github.com/youseng/geomira/actions/runs/39615115526 success**; in CI the long task
+max is 3.8 ms and the drag-frame app work median 3.56 ms.
 
 ### Side by side: Geomdraw (left) and Geomira (right)
 
@@ -257,6 +262,31 @@ full UI drag frame (measure-drag): {"objects":300,"app":{"frames":120,"median":5
 
 `docs/test-count.txt` is raised to 2143.
 
+### The additions: Playwright in CI (ci job 39615104610, 33b290a; selected lines of the 64)
+
+```
+✓   1 [mobile] › e2e/design-mobile.spec.ts:31:1 › screenshot baseline: the phone layout
+✓   6 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: euler-line
+✓   8 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: nine-point-circle
+✓   9 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: reflection-layer
+✓  18 [desktop] › e2e/flows-centres.spec.ts:16:1 › the circumcentre and the incircle by clicks; the same text as by command
+✓  19 [desktop] › e2e/flows-centres.spec.ts:58:1 › the centre tools have their keys: 2 is the circumcentre, Shift+N the nine-point circle
+✓  25 [desktop] › e2e/flows-design.spec.ts:20:1 › screenshot baseline: the main screen (nine-point circle)
+✓  26 [desktop] › e2e/flows-design.spec.ts:28:1 › screenshot baseline: the Claims panel after a local test (seed masked)
+✓  34 [desktop] › e2e/flows-export.spec.ts:103:1 › TikZ: snippet and standalone document, copy and download
+✓  40 [desktop] › e2e/flows-export.spec.ts:190:3 › PNG golden: euler-line
+✓  54 [desktop] › e2e/scene.spec.ts:19:3 › screenshot baseline: euler-line
+✓  57 [pages] › e2e/pages-smoke.spec.ts:9:1 › the site opens, draws an example, and its landing page leads to the app
+main thread during a test (measure): {"tasks":15368,"maxTask":3.8,"longTasks":[],"pingGaps":15305,"maxPingGap":3.7}
+✓  63 [measure] › e2e/long-task.spec.ts:53:1 › the main thread never blocks for more than 16 ms during a local and a global test
+full UI drag frame (measure-drag): {"objects":300,"app":{"frames":120,"median":3.56,"p95":6.01,"max":10.62},"raster":{"frames":120,"median":9.81,"p95":10.93,"max":14.96},"total":{"frames":120,"median":13.48,"p95":17.03,"max":20.46}}
+✓  64 [measure-drag] › e2e/drag-frame.spec.ts:86:1 › a full UI drag frame at 300 objects (SPEC §17: ≤ 8 ms)
+64 passed (42.4s)
+```
+
+Locally, the three phone canvas baselines (now CI's renders) differ from this container's
+renders, as after decision 19; every other test passes here too.
+
 ### Local, 999d446 (`pnpm install && pnpm verify`; 7d95eba changes only e2e baselines and the ADR)
 
 ```
@@ -382,7 +412,7 @@ full UI drag frame (measure-drag): {"objects":300,"app":{"frames":120,"median":5
 | 999d446 | step 6: overlays that render alike; Randomize coverage | failure 39604348208 (phone) | failure 39604348258 (phone) | success 39604348357                              |
 | 7d95eba | the phone canvas baselines are CI's renders; ADR-0016  | **success 39605322287**     | **success 39605322376**     | (not triggered: nothing under its paths changed) |
 | c10cb19 | the three additions: Centers, palette, outlines        | failure 39613683770 (phone) | failure 39613325998 (phone) | success 39613683880                              |
-| next    | the phone canvas baselines are CI's renders; STATUS    | pending                     | pending                     | pending                                          |
+| 33b290a | the phone canvas baselines are CI's renders; STATUS    | **success 39615104610**     | **success 39615104712**     | **success 39615115526**                          |
 
 Run URLs are `https://github.com/youseng/geomira/actions/runs/<id>`. The nightly is not waited
 for. The smoke job runs only after a deploy from `main`, i.e. on the merge.
@@ -390,7 +420,8 @@ for. The smoke job runs only after a deploy from `main`, i.e. on the merge.
 ## Requests
 
 - Please confirm the readings under "Uncertain" (right triangles in Randomize, the triangle,
-  the pinned colours and sizes, the committed side-by-side images).
+  the pinned colours and sizes, the committed side-by-side images; and for the additions: the
+  fill of coloured polygons, the palette values, the centre tools' names, spelling and keys).
 - The `run-9b` tag is for the maintainer to place on the merge.
 - Local screenshots: this container has the Inter font, which `system-ui` picks; the baselines
   were rendered with a fontconfig that hides it (as on CI). The phone canvas baselines are CI's.
