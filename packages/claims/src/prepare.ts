@@ -83,11 +83,16 @@ export function freeKey(id: number, path: readonly number[]): string {
   return `${String(id)}:${path.join('.')}`;
 }
 
-/** Probes of the first argument of every two-argument glider (to read its object's kind). */
+/**
+ * Probes of the object of every glider: on(obj, p) to read its kind (line or circle), and
+ * both forms for the samplers' local steps (a line's |d|, a circle's radius).
+ */
 export function gliderExprs(doc: Document): { key: string; expr: Expr }[] {
   return doc.objects.flatMap((o) =>
     callsOf(o.def)
-      .filter(({ call }) => call.tool === 'on' && call.args.length === 2)
+      .filter(
+        ({ call }) => call.tool === 'on' && (call.args.length === 2 || call.args.length === 3),
+      )
       .flatMap(({ call, path }) =>
         call.args[0] === undefined ? [] : [{ key: freeKey(o.id, path), expr: call.args[0] }],
       ),
