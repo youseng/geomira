@@ -29,7 +29,7 @@
 <g data-id="3" data-name="C">
 <circle cx="357.99" cy="186.274" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
 </g>
-<g font-family="&quot;DejaVu Serif&quot;, serif">
+<g font-family="&quot;Geomira Math&quot;, &quot;Latin Modern Roman&quot;, &quot;CMU Serif&quot;, &quot;Liberation Serif&quot;, &quot;Times New Roman&quot;, serif" font-style="italic">
 <text data-id="1" x="298.08" y="110.636" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">A</tspan></text>
 <text data-id="2" x="235.646" y="176.91" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">B</tspan></text>
 <text data-id="3" x="364.354" y="176.91" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">C</tspan></text>

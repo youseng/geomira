@@ -122,6 +122,7 @@ test('a derived layer from a transform, its images, and dragging an image moves 
   await tab(page, 'Objects');
   await page.getByRole('button', { name: 't', exact: true }).click();
   await expectLines(page, '@layer image = image(t, main)');
+  await tab(page, 'Layers');
   await expect(page.getByLabel('image', { exact: true })).toBeChecked();
   // C* = (1, -3), the mirror image of C in AB; dragging it moves C (drag-through, SPEC §8.4).
   await tool(page, 'Move');

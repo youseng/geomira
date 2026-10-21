@@ -1,0 +1,167 @@
+/* The Claims panel: the claim box, claim and hypothesis cards, pills, verdict lines (Run 9b). */
+
+.claimbox {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.claimbox input {
+  flex: 1;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 8px;
+  background: var(--panel2);
+  min-width: 0;
+}
+
+.side .claimbox .tb {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 6px;
+  padding: 0 12px;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 9px;
+  margin-bottom: 6px;
+  background: var(--panel);
+  /* A test's progress lays out its card alone. */
+  contain: content;
+}
+
+.card-head {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.card-head .math {
+  font-size: 15px;
+  flex: 1;
+  word-break: break-word;
+}
+
+.ty {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  flex: none;
+}
+
+.line-no {
+  font: 11px var(--mono);
+  color: var(--muted);
+  flex: none;
+}
+
+.badge {
+  display: inline-block;
+  margin: 3px 0 2px;
+  font: 600 11.5px var(--mono);
+  padding: 1px 8px;
+  border-radius: 10px;
+}
+
+.badge::before {
+  margin-right: 4px;
+}
+
+.badge-true {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.badge-true::before {
+  content: '✓';
+}
+
+.badge-false {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.badge-false::before {
+  content: '✗';
+}
+
+.badge-undefined {
+  background: var(--info-soft);
+  color: var(--info);
+  white-space: normal;
+}
+
+.badge-undefined::before {
+  content: '?';
+}
+
+.claim-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.stale-note {
+  margin: 6px 0 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.runs.stale {
+  opacity: 0.55;
+}
+
+.run {
+  margin: 6px 0 0;
+}
+
+.verdict-line {
+  margin: 6px 0 2px;
+  font-weight: 600;
+}
+
+.verdict-detail {
+  margin: 0;
+  font: 11.5px/1.45 var(--mono);
+  color: var(--muted);
+  word-break: break-word;
+}
+
+.tone-holds .verdict-line {
+  color: var(--ok);
+}
+
+.tone-false .verdict-line,
+.tone-mixed .verdict-line,
+.tone-error {
+  color: var(--bad);
+}
+
+/* Global findings are information, never the colour of a failure (SPEC §10.5). */
+.tone-info .verdict-line {
+  color: var(--info);
+}
+
+.tone-inconclusive .verdict-line {
+  color: var(--muted);
+}
+
+.hyp-message {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
+.hyp-fails .hyp-message,
+.hyp-ambiguous .hyp-message,
+.hyp-undefined .hyp-message,
+.hyp-invalid .hyp-message {
+  color: var(--amber);
+}

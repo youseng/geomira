@@ -185,7 +185,7 @@
 <g data-id="73" data-name="D">
 <circle cx="287.097" cy="174.808" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
 </g>
-<g font-family="&quot;DejaVu Serif&quot;, serif">
+<g font-family="&quot;Geomira Math&quot;, &quot;Latin Modern Roman&quot;, &quot;CMU Serif&quot;, &quot;Liberation Serif&quot;, &quot;Times New Roman&quot;, serif" font-style="italic">
 <text data-id="1" x="280.832" y="203.329" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">A</tspan></text>
 <text data-id="2" x="432.371" y="231.057" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">B</tspan></text>
 <text data-id="3" x="293.361" y="77.047" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">C</tspan></text>

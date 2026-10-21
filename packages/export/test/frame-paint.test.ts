@@ -55,7 +55,8 @@ describe('paint', () => {
       paper: '#fbfbf8',
       fillAlpha: 0.08,
       fontPx: 15,
-      fontFamily: '"DejaVu Serif", serif',
+      fontFamily:
+        '"Geomira Math", "Latin Modern Roman", "CMU Serif", "Liberation Serif", "Times New Roman", serif',
     });
   });
 

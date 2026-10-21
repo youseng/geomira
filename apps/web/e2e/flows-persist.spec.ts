@@ -48,6 +48,7 @@ test('opening a share link keeps the autosave; Restore previous figure brings it
   for (const line of ['P = (1, 1)', 'Q = (3, 2)', 's = segment(P, Q)']) await command(page, line);
   await expectLines(page, 's = segment(P, Q)');
   const linked = await text(page);
+  await page.getByRole('button', { name: 'Export', exact: true }).click();
   await page.getByRole('button', { name: 'Share link' }).click();
   const link = await page
     .getByRole('dialog', { name: 'Share link' })
@@ -67,9 +68,11 @@ test('opening a share link keeps the autosave; Restore previous figure brings it
   // Opening the link did not overwrite the autosave.
   await other.waitForTimeout(500);
   expect(await other.evaluate((k) => localStorage.getItem(k), CURRENT)).toBe(own);
+  await other.getByRole('button', { name: 'Export', exact: true }).click();
   await other.getByRole('button', { name: 'Restore previous figure' }).click();
   await expect(await textArea(other)).toHaveValue(own);
   // And back: the link's figure is now the previous one.
+  await other.getByRole('button', { name: 'Export', exact: true }).click();
   await other.getByRole('button', { name: 'Restore previous figure' }).click();
   await expect(await textArea(other)).toHaveValue(linked);
 });
@@ -94,6 +97,7 @@ test('a damaged share link is refused with its reason; the autosave opens instea
 test('the debug report is reachable from the page and from an internal error', async ({ page }) => {
   await openApp(page);
   await command(page, 'A = (0, 0)');
+  await page.getByRole('button', { name: 'Help', exact: true }).click();
   await page.getByRole('button', { name: 'Debug report' }).click();
   const report = page.getByRole('dialog', { name: 'Debug report' }).getByRole('textbox');
   await expect(report).toHaveValue(/^# GEOMIRA debug report\n/u);

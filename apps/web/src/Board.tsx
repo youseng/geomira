@@ -50,6 +50,27 @@ function useSurface(
 }
 
 /**
+ * The label face (an @font-face of local fonts) loads on first use; a canvas does not redraw
+ * by itself when it arrives, so the board draws again once it has loaded (Run 9b).
+ */
+function useLabelFace(): number {
+  const [loaded, setLoaded] = useState(0);
+  useEffect(() => {
+    let live = true;
+    document.fonts.load(`${String(LIGHT_THEME.fontSize)}px ${LIGHT_THEME.fontFamily}`).then(
+      () => {
+        if (live) setLoaded((n) => n + 1);
+      },
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, []);
+  return loaded;
+}
+
+/**
  * The drawing surface: the display list of the scene in the editor's viewport, drawn by the
  * canvas renderer (HiDPI) with hover and selection halos. Pointer input goes through
  * gestures.ts (tools, drags, pan, pinch); the wheel zooms about the cursor. The viewport is
@@ -64,12 +85,13 @@ export function Board(props: BoardProps) {
     [scene, viewport, size],
   );
   const selected = useMemo(() => new Set(selection), [selection]);
+  const fonts = useLabelFace();
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (display === null || ctx === null || ctx === undefined) return;
     const ui: UiState = { hover, selection: selected };
     drawDisplay(ctx, display, ui, LIGHT_THEME, window.devicePixelRatio);
-  }, [canvasRef, display, hover, selected]);
+  }, [canvasRef, display, hover, selected, fonts]);
   const local = (e: { clientX: number; clientY: number }) => {
     const r = canvasRef.current?.getBoundingClientRect();
     return { x: e.clientX - (r?.left ?? 0), y: e.clientY - (r?.top ?? 0) };

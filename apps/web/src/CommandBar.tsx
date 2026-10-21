@@ -68,12 +68,15 @@ function useCommandBar(store: EditorStore, inputRef: CommandBarProps['inputRef']
 export function CommandBar({ store, inputRef }: CommandBarProps) {
   const c = useCommandBar(store, inputRef);
   return (
-    <div className="command-bar">
+    <div className="cmdbar">
+      <span className="pr" aria-hidden="true">
+        ›
+      </span>
       <input
         ref={inputRef}
         type="text"
         aria-label="Command"
-        placeholder="Type a statement, e.g. O = circumcenter(A, B, C), or a tool name; / to focus"
+        placeholder="Command, construction or claim — e.g.  X = midpoint(A, H)  ·  claim collinear(A, B, C)   (press /)"
         spellCheck={false}
         autoComplete="off"
         value={c.text}

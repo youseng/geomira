@@ -1,128 +1,274 @@
-/* The panels' contents: objects, claims and verdicts, style, help (Run 8b). */
+/* The side panel, its tabs and the panels' contents (Run 9b, Geomdraw's right column). */
 
-.objects ul,
-.claims ul {
+.side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  min-height: 0;
+  min-width: 0;
+  /* Changes inside the panels (test progress, verdicts) lay out the panel alone. */
+  contain: strict;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  padding: 0 4px;
+  flex: none;
+}
+
+.tabs [role='tab'] {
+  border: none;
+  background: none;
+  padding: 8px 7px 6px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.tabs [role='tab'][aria-selected='true'] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.drawer-close {
+  display: none;
+}
+
+.tab-body {
+  flex: 1;
+  overflow: auto;
+  padding: 10px;
+  min-height: 0;
+}
+
+.empty {
+  color: var(--muted);
+  padding: 10px 2px;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+h3.sec {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin: 12px 0 6px;
+  font-weight: 600;
+}
+
+.side ul {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
+.side button:not([role='tab']):not(.drawer-close):not(.object-name):not(.tb) {
+  font-size: 11.5px;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.side button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.math {
+  font-family: var(--serif);
+  font-style: italic;
+}
+
+.math sub,
+.math sup {
+  font-size: 0.72em;
+}
+
+/* ---- text ---- */
+.text-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+}
+
+.text-panel textarea {
+  flex: 1;
+  min-height: 16rem;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font: 12px/1.6 var(--mono);
+  background: var(--panel);
+  white-space: pre;
+  resize: none;
+  tab-size: 2;
+}
+
+.text-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.diagnostics {
+  font-size: 12px;
+}
+
+.diag-error {
+  color: var(--bad);
+}
+
+.hint {
+  color: var(--muted);
+}
+
+/* ---- objects ---- */
 .object-group h3 {
-  font-size: 0.85rem;
-  margin: 0.5rem 0 0.2rem;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin: 6px 0 4px;
 }
 
 .object-row {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 0 0.4rem;
-  padding: 0.1rem 0;
+  gap: 0 8px;
+  padding: 3px 4px;
+  border-radius: 5px;
+  align-items: baseline;
+}
+
+.object-row:hover {
+  background: var(--panel2);
+}
+
+.object-name {
+  border: 1px solid transparent;
+  background: none;
+  padding: 0 4px;
+  border-radius: 4px;
+  font: italic 14px var(--serif);
+}
+
+.object-row.selected .object-name {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.object-def {
+  font: 12px var(--mono);
+  word-break: break-word;
 }
 
 .object-status {
   grid-column: 2;
   color: var(--muted);
+  font-size: 11.5px;
 }
 
 .status-undefined .object-status,
 .status-inexact .object-status {
-  color: #9a3412;
+  color: var(--bad);
 }
 
-.object-row.selected .object-name {
-  outline: 2px solid #2f81f7;
+/* ---- layers, style, help ---- */
+.layers {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 10px 8px;
 }
 
-.claim {
-  contain: content;
-}
-
-.claim,
-.hypothesis {
-  border-bottom: 1px solid var(--rule);
-  padding: 0.35rem 0;
-}
-
-.line-no {
+.layers legend {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
   color: var(--muted);
 }
 
-.badge {
-  display: inline-block;
-  padding: 0 0.35rem;
-  border-radius: 0.6rem;
-  font-size: 0.75rem;
-}
-
-.badge-true {
-  background: #dafbe1;
-  color: #116329;
-}
-
-.badge-false {
-  background: #ffebe9;
-  color: #82071e;
-}
-
-.badge-undefined {
-  background: #eaeef2;
-  color: #57606a;
-}
-
-.claim-actions {
+.layer-row {
   display: flex;
-  gap: 0.3rem;
-  margin: 0.25rem 0;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
 }
 
-.verdict-line {
-  margin: 0.2rem 0;
-  font-weight: 600;
+.layer-row label {
+  display: flex;
+  gap: 5px;
+  align-items: center;
 }
 
-.verdict-detail {
-  margin: 0;
-  color: var(--muted);
-}
-
-.tone-holds .verdict-line {
-  color: #116329;
-}
-
-.tone-false .verdict-line,
-.tone-mixed .verdict-line,
-.tone-error {
-  color: #82071e;
-}
-
-.tone-info .verdict-line {
-  color: #0550ae;
-}
-
-.tone-inconclusive .verdict-line {
-  color: #57606a;
-}
-
-.hyp-fails .hyp-message,
-.hyp-ambiguous .hyp-message,
-.hyp-undefined .hyp-message,
-.hyp-invalid .hyp-message {
-  color: #9a6700;
-  margin: 0.2rem 0;
+.layer-note {
+  margin: 8px 0 0;
+  font-size: 12px;
 }
 
 .style-panel label {
   display: flex;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin: 0.2rem 0;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.style-panel select,
+.style-panel input[type='text'],
+.style-panel input[type='number'] {
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--panel2);
+  padding: 0 6px;
+  max-width: 55%;
+}
+
+.help {
+  font-size: 12.5px;
+}
+
+.help h3 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.help section {
+  margin-bottom: 12px;
 }
 
 .help table {
   border-collapse: collapse;
+  width: 100%;
 }
 
 .help td {
-  padding: 0.1rem 0.4rem;
+  padding: 1.5px 4px;
   vertical-align: top;
+}
+
+.help td:first-child {
+  white-space: nowrap;
+}
+
+.help kbd {
+  font: 11px var(--mono);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0 4px;
+  background: var(--panel2);
 }

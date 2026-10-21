@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { claimToolKinds, stepsOf } from '@geomira/editor/machine';
 import type { EditorState } from '@geomira/editor/state';
-import { TOOLS, toolUI } from '@geomira/editor/tools';
+import { TOOL_GROUPS } from '@geomira/editor/tool-groups';
+import { toolUI } from '@geomira/editor/tools';
+import { SrOnly, ToolIcon } from './icons';
 import type { EditorStore } from './store';
 
 export interface ToolBarProps {
@@ -18,7 +20,46 @@ function prompt(state: EditorState): string {
   if (tool.build.kind === 'text' && ts.picks.length > 0) return `${tool.label}: type the text`;
   const { steps, rest } = stepsOf(tool, ts);
   const step = steps[ts.picks.length] ?? rest;
-  return step === undefined ? tool.help : `${tool.label}: ${step.prompt}`;
+  return step === undefined ? `${tool.label}: ${tool.help}` : `${tool.label}: ${step.prompt}`;
+}
+
+/**
+ * The tool palette (Geomdraw's left column; on a phone a strip along the bottom): the editor's
+ * tools in their labelled groups (packages/editor tool-groups), each an icon with its
+ * shortcut letter and a tooltip from the tool table; its accessible name is the tool's label.
+ */
+export function Palette({ store, state }: ToolBarProps) {
+  return (
+    <nav className="palette" aria-label="Tool palette">
+      <div role="toolbar" aria-label="Tools" aria-orientation="vertical">
+        {TOOL_GROUPS.map((g) => (
+          <div key={g.id} className="pgroup" role="group" aria-label={g.label}>
+            <h4 aria-hidden="true">{g.label}</h4>
+            <div className="pgrid">
+              {g.tools.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className="tool"
+                  aria-pressed={state.tool === t.id}
+                  title={`${t.label}: ${t.help} (key ${t.key.toUpperCase()})`}
+                  onClick={() => {
+                    store.apply({ kind: 'tool', tool: t.id });
+                  }}
+                >
+                  <ToolIcon tool={t.id} />
+                  <span className="k" aria-hidden="true">
+                    {t.key.toUpperCase()}
+                  </span>
+                  <SrOnly>{t.label}</SrOnly>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </nav>
+  );
 }
 
 function TextInput({ store }: { store: EditorStore }) {
@@ -39,28 +80,10 @@ function TextInput({ store }: { store: EditorStore }) {
           setValue(e.target.value);
         }}
       />
-      <button type="submit">Place</button>
+      <button type="submit" className="tb small-tb">
+        Place
+      </button>
     </form>
-  );
-}
-
-function ToolButtons({ store, state }: ToolBarProps) {
-  return (
-    <div className="tools" role="toolbar" aria-label="Tools">
-      {TOOLS.map((t) => (
-        <button
-          key={t.id}
-          type="button"
-          aria-pressed={state.tool === t.id}
-          title={`${t.help} (key ${t.key})`}
-          onClick={() => {
-            store.apply({ kind: 'tool', tool: t.id });
-          }}
-        >
-          {t.label}
-        </button>
-      ))}
-    </div>
   );
 }
 
@@ -83,42 +106,51 @@ function ClaimKind({ store, state }: ToolBarProps) {
 }
 
 /**
- * The GUI tools (SPEC §12: tools are data, one state machine): one button per entry of the
- * editor's tool table, with its shortcut; the active tool's prompt; Finish and Cancel; the
- * claim tool's kind; the text tool's string.
+ * The active tool's controls on the canvas (top left, Geomdraw's hint box): the claim tool's
+ * kind, the text tool's string, Finish and Cancel; shown only when the tool has one.
  */
-export function ToolBar({ store, state }: ToolBarProps) {
+export function ToolHint({ store, state }: ToolBarProps) {
   const tool = toolUI(state.tool);
   const ts = state.toolState;
   const hasRest = tool !== undefined && stepsOf(tool, ts).rest !== undefined;
+  const text = tool?.build.kind === 'text' && ts.picks.length > 0;
+  const cancel = ts.picks.length > 0 || ts.choosing !== null;
+  if (state.tool !== 'claim' && !text && !hasRest && !cancel) return null;
   return (
-    <div className="toolbar">
-      <ToolButtons store={store} state={state} />
-      <div className="tool-prompt">
-        <span role="status">{prompt(state)}</span>
-        {state.tool === 'claim' && <ClaimKind store={store} state={state} />}
-        {tool?.build.kind === 'text' && ts.picks.length > 0 && <TextInput store={store} />}
-        {hasRest && (
-          <button
-            type="button"
-            onClick={() => {
-              store.input({ kind: 'finish' });
-            }}
-          >
-            Finish
-          </button>
-        )}
-        {(ts.picks.length > 0 || ts.choosing !== null) && (
-          <button
-            type="button"
-            onClick={() => {
-              store.input({ kind: 'cancel' });
-            }}
-          >
-            Cancel picks
-          </button>
-        )}
-      </div>
+    <div className="tool-hint">
+      {state.tool === 'claim' && <ClaimKind store={store} state={state} />}
+      {text && <TextInput store={store} />}
+      {hasRest && (
+        <button
+          type="button"
+          className="tb small-tb"
+          onClick={() => {
+            store.input({ kind: 'finish' });
+          }}
+        >
+          Finish
+        </button>
+      )}
+      {cancel && (
+        <button
+          type="button"
+          className="tb small-tb"
+          onClick={() => {
+            store.input({ kind: 'cancel' });
+          }}
+        >
+          Cancel picks
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** The status line (bottom left of the canvas): the active tool's prompt. */
+export function StatusLine({ state }: { state: EditorState }) {
+  return (
+    <div className="statusbar">
+      <span role="status">{prompt(state)}</span>
     </div>
   );
 }

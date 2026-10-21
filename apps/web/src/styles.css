@@ -1,26 +1,70 @@
+/*
+ * Geomira's page in the layout, colours and type of the maintainer's Geomdraw (Run 9b,
+ * ADR-0016): tokens, the grid, the top bar and its menus, the tool palette, the phone layout.
+ * The canvas and what floats on it: stage.css; the panels: panels.css.
+ */
 :root {
-  --bg: #ffffff;
-  --fg: #1b1f24;
-  --muted: #6a737d;
-  --board: #fbfbf8;
-  --rule: #d0d7de;
-  color-scheme: light dark;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  --bg: #f4f4f2;
+  --panel: #ffffff;
+  --panel2: #f7f7f5;
+  --border: #dcdcd6;
+  --text: #1d1d1b;
+  --muted: #62625d;
+  --accent: #2f5fb3;
+  --accent-soft: #e6edf9;
+  --accent-ink: #ffffff;
+  --canvas: #fbfbf8;
+  --ok: #2b7530;
+  --ok-soft: #e7f3e8;
+  --amber: #8a5800;
+  --amber-soft: #fbf1dc;
+  --bad: #b3261e;
+  --bad-soft: #fbe9e7;
+  --info: #2f5fb3;
+  --info-soft: #e6edf9;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, 'DejaVu Sans Mono', monospace;
+  --serif: 'Latin Modern Roman', 'CMU Serif', 'Times New Roman', 'Liberation Serif', Times, serif;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0d1117;
-    --fg: #e6edf3;
-    --muted: #8b949e;
-    --board: #161b22;
-    --rule: #30363d;
+    --bg: #111315;
+    --panel: #1a1d20;
+    --panel2: #202428;
+    --border: #30353a;
+    --text: #e6e6e3;
+    --muted: #9a9e9f;
+    --accent: #7aa7ff;
+    --accent-soft: #1f2a3d;
+    --accent-ink: #0d1117;
+    --ok: #81c784;
+    --ok-soft: #1b2b1d;
+    --amber: #f2c46d;
+    --amber-soft: #2d2615;
+    --bad: #ff8a80;
+    --bad-soft: #2f1c1a;
+    --info: #7aa7ff;
+    --info-soft: #1f2a3d;
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
   }
+}
+
+/*
+ * The canvas's label face (render.ts LIGHT_THEME): the italic of the first serif the platform
+ * has, Latin Modern and CMU first (Geomdraw's math labels), then Liberation Serif (the Linux
+ * default and the CI machines'), Times New Roman, DejaVu and FreeSerif.
+ */
+@font-face {
+  font-family: 'Geomira Math';
+  src:
+    local('Latin Modern Roman Italic'), local('LMRoman10-Italic'), local('CMU Serif Italic'),
+    local('CMUSerif-Italic'), local('Liberation Serif Italic'), local('LiberationSerif-Italic'),
+    local('Times New Roman Italic'), local('TimesNewRomanPS-ItalicMT'),
+    local('DejaVu Serif Italic'), local('DejaVuSerif-Italic'), local('FreeSerif Italic'),
+    local('FreeSerifItalic');
 }
 
 * {
@@ -36,59 +80,14 @@ body,
 
 body {
   background: var(--bg);
-  color: var(--fg);
-}
-
-.app {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.app-header {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--rule);
-}
-
-.app-header h1 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.app-version {
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
-.app-main {
-  flex: 1;
-  min-height: 0;
-}
-
-.board {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: var(--board);
-  touch-action: none;
-}
-
-.app-header select,
-.app-header button {
-  font: inherit;
-  font-size: 0.85rem;
-}
-
-.app-main {
-  display: flex;
-}
-
-.board {
-  flex: 1;
-  min-width: 0;
+  color: var(--text);
+  font:
+    13px/1.4 system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  overflow: hidden;
 }
 
 button,
@@ -96,258 +95,297 @@ select,
 input,
 textarea {
   font: inherit;
-  font-size: 0.85rem;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .muted {
   color: var(--muted);
 }
 
-.app-header {
-  flex-wrap: nowrap;
-  overflow-x: auto;
+.app {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 360px;
+  grid-template-rows: 46px minmax(0, 1fr) 40px;
+  grid-template-areas:
+    'top top top'
+    'pal stage side'
+    'pal cmd side';
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ---- top bar ---- */
+.topbar {
+  grid-area: top;
+  display: flex;
   align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+
+.brand h1 {
+  margin: 0 8px 0 0;
+  font-size: 0;
+  line-height: 1;
   white-space: nowrap;
 }
 
-.toolbar {
-  border-bottom: 1px solid var(--rule);
-  padding: 0.25rem 0.5rem;
+/* The logotype: "Geom" upright, "ira" italic (the heading's text stays "Geomira"). */
+.brand h1::before,
+.brand h1::after {
+  font-family: var(--serif);
+  font-size: 19px;
+  letter-spacing: 0.2px;
 }
 
-.tools {
-  display: flex;
-  gap: 0.25rem;
-  overflow-x: auto;
-  white-space: nowrap;
-  padding-bottom: 0.25rem;
+.brand h1::before {
+  content: 'Geom' / '';
+  font-weight: 600;
 }
 
-.tools button[aria-pressed='true'] {
-  background: #2f81f7;
-  color: #fff;
-  border-color: #2f81f7;
+.brand h1::after {
+  content: 'ira' / '';
+  font-style: italic;
+  font-weight: 400;
 }
 
-.tool-prompt {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 1.6rem;
-  font-size: 0.85rem;
-}
-
-.tool-text {
-  display: inline-flex;
-  gap: 0.25rem;
-}
-
-.command-bar {
+.tb {
   position: relative;
-  padding: 0.25rem 0.5rem;
-  border-bottom: 1px solid var(--rule);
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  border-radius: 6px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
-.command-bar input {
-  width: 100%;
-  font-family: ui-monospace, 'DejaVu Sans Mono', monospace;
+.tb:hover {
+  border-color: var(--accent);
 }
 
-.completions {
-  position: absolute;
-  z-index: 10;
-  left: 0.5rem;
-  right: 0.5rem;
-  margin: 0;
+.tb.icon {
+  width: 32px;
   padding: 0;
-  list-style: none;
-  background: var(--bg);
-  border: 1px solid var(--rule);
-  max-height: 14rem;
-  overflow: auto;
-  font-size: 0.8rem;
+  justify-content: center;
+  font-size: 15px;
 }
 
-.completions li {
-  padding: 0.15rem 0.4rem;
+.tb:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.seg {
+  display: inline-flex;
+}
+
+.seg .tb:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.seg select.tb {
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+  padding: 0 4px;
+}
+
+.claim-form {
+  flex: 1 1 260px;
+  min-width: 120px;
+  max-width: 520px;
+  display: flex;
+}
+
+.claim-form input {
+  flex: 1;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 6px 0 0 6px;
+  padding: 0 9px;
+  background: var(--panel2);
+  min-width: 0;
+}
+
+.claim-form .tb {
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* The examples' native select lies over its button, invisible, so a click opens its list. */
+.examples select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
   cursor: pointer;
 }
 
-.completions li[aria-selected='true'] {
-  background: #ddf4ff;
+.examples:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
-.completion-label {
-  font-family: ui-monospace, 'DejaVu Sans Mono', monospace;
+/* ---- menus ---- */
+.menu-wrap {
+  position: relative;
 }
 
-.command-error,
-.notice,
-.error-banner {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.85rem;
+.menu {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  z-index: 50;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 6px;
+  min-width: 230px;
 }
 
-.command-error,
-.notice-refusal,
-.notice-error {
-  color: #9a3412;
-}
-
-.error-banner {
-  background: #ffebe9;
-  color: #82071e;
-}
-
-.side {
-  width: 24rem;
-  padding: 0.5rem;
-  border-left: 1px solid var(--rule);
-  font-size: 0.8rem;
-  overflow: auto;
-  /* Changes inside the panels (test progress, verdicts) lay out the panel alone. */
-  contain: strict;
-}
-
-.side fieldset {
-  border: 1px solid var(--rule);
-}
-
-.side output {
-  display: block;
-  margin-top: 0.5rem;
-}
-
-.layer-row {
+.menu button,
+.menu label,
+.menu .menu-link {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.small {
-  padding: 0 0.3rem;
-}
-
-.tabs {
-  display: flex;
-  gap: 0.2rem;
-  margin-top: 0.5rem;
-  border-bottom: 1px solid var(--rule);
-}
-
-.tabs button[aria-selected='true'] {
-  font-weight: 600;
-  border-bottom: 2px solid #2f81f7;
-}
-
-.tab-body {
-  padding-top: 0.5rem;
-}
-
-.text-panel textarea {
   width: 100%;
-  min-height: 22rem;
-  font-family: ui-monospace, 'DejaVu Sans Mono', monospace;
-  font-size: 0.8rem;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 6px 8px;
+  border-radius: 5px;
+  color: var(--text);
+  text-decoration: none;
 }
 
-.diagnostics {
-  padding-left: 1rem;
+.menu button:hover,
+.menu label:hover,
+.menu .menu-link:hover {
+  background: var(--accent-soft);
 }
 
-.diag-error {
-  color: #9a3412;
+.menu button:disabled {
+  opacity: 0.45;
+  cursor: default;
+  background: none;
 }
 
-.hint {
+.menu hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 5px 2px;
+}
+
+.kbd {
+  margin-left: auto;
+  font: 11px var(--mono);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0 4px;
+  background: var(--panel2);
   color: var(--muted);
 }
 
-.dialog {
-  position: fixed;
-  z-index: 20;
-  left: 50%;
-  top: 20%;
-  transform: translateX(-50%);
-  width: min(40rem, calc(100% - 1rem));
-  background: var(--bg);
-  border: 1px solid var(--rule);
-  padding: 0.75rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+/* ---- tool palette ---- */
+.palette {
+  grid-area: pal;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 6px 6px 10px;
+  scrollbar-width: thin;
 }
 
-.dialog h2 {
-  margin-top: 0;
-  font-size: 1rem;
+.pgroup {
+  margin-bottom: 4px;
 }
 
-.dialog input,
-.dialog textarea {
-  width: 100%;
-  margin-bottom: 0.5rem;
+.pgroup h4 {
+  margin: 5px 2px 3px;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 600;
 }
 
-@media (max-width: 600px) {
-  .app-main {
-    flex-direction: column;
-  }
-
-  .board {
-    flex: 0 0 auto;
-    height: 55vh;
-  }
-
-  .side {
-    width: auto;
-    flex: 1 1 auto;
-    min-height: 0;
-    border-left: none;
-    border-top: 1px solid var(--rule);
-  }
-
-  .app-header {
-    padding: 0.25rem 0.5rem;
-  }
-
-  .tool-prompt {
-    min-height: 1.2rem;
-    font-size: 0.75rem;
-  }
-
-  .text-panel textarea {
-    min-height: 12rem;
-  }
+.pgrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
 }
 
-/* The Export dialog (Run 9a): formats as radio rows, the file's text below. */
-.export-dialog {
-  top: 6%;
-  max-height: 88vh;
-  overflow: auto;
-}
-
-.export-dialog [role='radiogroup'] {
+.tool {
+  position: relative;
+  height: 34px;
+  border: 1px solid transparent;
+  background: none;
+  border-radius: 6px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-  margin-bottom: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  padding: 0;
 }
 
-.export-dialog input[type='radio'] {
-  width: auto;
-  margin: 0;
+.tool .icon {
+  width: 24px;
+  height: 24px;
 }
 
-.export-warnings {
-  margin: 0 0 0.5rem;
-  padding-left: 1.25rem;
-  color: #9a3412;
+.icon-accent {
+  fill: var(--accent);
 }
 
-.export-dialog textarea {
-  font-family: ui-monospace, 'DejaVu Sans Mono', monospace;
-  font-size: 0.8rem;
-  white-space: pre;
-  overflow-x: auto;
+.tool:hover {
+  background: var(--panel2);
+  border-color: var(--border);
+}
+
+.tool[aria-pressed='true'] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tool .k {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  font-size: 9px;
+  color: var(--muted);
+  font-family: var(--mono);
 }

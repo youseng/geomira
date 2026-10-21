@@ -24,7 +24,8 @@ export const EXPORT_THEME: ExportTheme = Object.freeze({
   paper: '#fbfbf8',
   fillAlpha: 0.08,
   fontPx: 15,
-  fontFamily: '"DejaVu Serif", serif',
+  fontFamily:
+    '"Geomira Math", "Latin Modern Roman", "CMU Serif", "Liberation Serif", "Times New Roman", serif',
 });
 
 /** A text export: the file's contents, its warnings, the ids of the objects drawn (back to front). */

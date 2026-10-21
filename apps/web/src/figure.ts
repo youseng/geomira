@@ -30,6 +30,13 @@ export interface Figure {
 /** Margin around a fitted figure, CSS px. */
 export const FIT_MARGIN = 40;
 
+/**
+ * The margin in the desktop layout (Run 9b), whose zoom buttons float in a column at the
+ * canvas's right edge: a fitted figure's labels stay clear of them. The phone layout puts
+ * them in a row along the bottom and keeps FIT_MARGIN.
+ */
+export const WIDE_FIT_MARGIN = 72;
+
 function evaluated(doc: Document, registry: Registry): Evaluation<number> {
   const c = evalContextFor(doc);
   return evaluate(doc, registry, FloatField, c.ok ? c.ctx : { scale: 0 });
@@ -89,7 +96,11 @@ export function movePoint(f: Figure, registry: Registry, id: number, x: number, 
   return { ...f, doc: r.doc, evaluation, scene: buildScene(r.doc, evaluation.values) };
 }
 
-/** The viewport to show: the document's, else the scene fitted into `size`. */
-export function viewportFor(f: Pick<Figure, 'doc' | 'scene'>, size: Size): Viewport {
-  return f.doc.viewport ?? fitViewport(sceneBounds(f.scene), size, FIT_MARGIN);
+/** The viewport to show: the document's, else the scene fitted into `size` with `margin`. */
+export function viewportFor(
+  f: Pick<Figure, 'doc' | 'scene'>,
+  size: Size,
+  margin: number = FIT_MARGIN,
+): Viewport {
+  return f.doc.viewport ?? fitViewport(sceneBounds(f.scene), size, margin);
 }

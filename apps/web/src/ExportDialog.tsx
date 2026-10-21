@@ -29,6 +29,8 @@ export interface ExportDialogProps {
   readonly registry: Registry;
   /** The canvas's size: the export shows the canvas's view. */
   readonly size: Size | null;
+  /** The format chosen in the Export menu. */
+  readonly initialFormat: ExportFormat;
   readonly onClose: () => void;
   readonly onError: (message: string) => void;
 }
@@ -168,7 +170,7 @@ function Output(p: { out: ExportOutput; text: string; onError: (m: string) => vo
 
 /** The dialog (module comment). */
 export function ExportDialog(p: ExportDialogProps) {
-  const [format, setFormat] = useState<ExportFormat>('svg');
+  const [format, setFormat] = useState<ExportFormat>(p.initialFormat);
   const [variant, setVariant] = useState<Variant>({ standalone: false, aops: false, ratio: 2 });
   const { state, registry, size } = p;
   const text = useMemo(() => print(state.doc), [state.doc]);

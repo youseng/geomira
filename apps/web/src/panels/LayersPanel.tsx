@@ -4,6 +4,8 @@ import type { EditorStore } from '../store';
 export interface LayersPanelProps {
   readonly store: EditorStore;
   readonly state: EditorState;
+  /** Images not drawn because they coincide with their drawn sources (SPEC §13). */
+  readonly coincident: number;
 }
 
 /** A derived layer's rule in words: "image of main under t". */
@@ -17,12 +19,14 @@ function ruleText(state: EditorState, layerId: string): string {
 
 /**
  * Layers (SPEC §8.2, §15): visibility (a document edit: it is in the text), the active layer
- * (where new objects are built), derived layers' rules, and removal of a layer.
+ * (where new objects are built), derived layers' rules, removal of a layer, and how many images
+ * are not drawn because they coincide with their sources (SPEC §13).
  */
-export function LayersPanel({ store, state }: LayersPanelProps) {
+export function LayersPanel({ store, state, coincident }: LayersPanelProps) {
   return (
     <fieldset className="layers">
       <legend>Layers</legend>
+
       {state.doc.layers.map((l, i) => (
         <div key={l.id} className="layer-row">
           <label>
@@ -64,6 +68,9 @@ export function LayersPanel({ store, state }: LayersPanelProps) {
           )}
         </div>
       ))}
+      <p className="muted layer-note">
+        {coincident} coincident images hidden (an image on its drawn source is not drawn)
+      </p>
     </fieldset>
   );
 }

@@ -140,7 +140,8 @@ export function toSvg(f: ExportFrame): ExportText {
     ...(title === undefined ? [] : [`<title>${xml(title)}</title>`]),
     `<rect width="${n(width)}" height="${n(height)}" fill="${xml(f.theme.paper)}"/>`,
     ...f.display.items.map((item) => itemElement(f, item, warnings)),
-    `<g font-family="${xml(f.theme.fontFamily)}">`,
+    // Labels are italic serif math, as on the canvas (whose label face is the italic one).
+    `<g font-family="${xml(f.theme.fontFamily)}" font-style="italic">`,
     ...f.display.labels.map((l) => labelElement(f, l, names.get(l.id) ?? '', warnings)),
     '</g>',
     '</svg>',
