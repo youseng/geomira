@@ -27,7 +27,7 @@ and the end-to-end selectors.
 
 ## Decision
 
-### Layout and look (apps/web: styles.css, stage.css, panels.css, phone.css)
+### Layout and look (apps/web: styles.css, stage.css, dialogs.css, panels.css, claims.css, phone.css)
 
 1. **Geomdraw's grid and tokens.** A grid of top bar, palette (96 px), stage, command line and
    side panel (360 px); Geomdraw's CSS variables (bg, panel, border, text, muted, accent, ok,
@@ -47,7 +47,10 @@ and the end-to-end selectors.
 4. **Canvas overlays** (`Stage.tsx`): the active tool's controls (claim kind, text, Finish,
    Cancel picks) top left with notices and internal errors under them; a developer box top right;
    live claim chips bottom left; zoom, zoom out and fit bottom right (a column on the desktop, a
-   row on the phone); the status line (the tool's prompt) along the bottom, pointer-transparent.
+   row on the phone); the status line (the tool's prompt) in a 22 px strip under the canvas, in
+   the canvas's colour, so it reads as Geomdraw's status line without lying on the canvas.
+   Under `prefers-color-scheme: dark` the stage keeps the light tokens: the canvas is drawn in its
+   light theme in both schemes, and dark overlay text on it would fail contrast (2.6:1).
 
 ### Accessible names and the frozen selectors (note 7 of the run)
 
@@ -149,6 +152,22 @@ and the end-to-end selectors.
     strip (groups side by side, their labels vertical), then the command line. A tab opens its
     panel as a drawer from the top bar to the tool strip ("Hide panels" closes it), so the canvas
     keeps its size.
+
+### What floats on the canvas renders alike everywhere
+
+19. Run 7's frozen canvas screenshots take the canvas's box, overlays included, with a
+    tolerance of 0.2 % of the pixels, and machines resolve `system-ui` to different fonts (this
+    development container has Inter; the CI machines do not). So nothing in the canvas's box is
+    set in the platform's interface font: the status line lies under the canvas (decision 4), the
+    chips and claim cards set math in the canvas's own label face (`--math`, decision 10), and
+    the zoom and fit buttons draw SVG icons, not text glyphs. The floating buttons have no hover
+    restyle: repainting them after a hover changes the anti-aliasing of their corners, which Run
+    7's fit test (two pictures of the canvas compared byte for byte) would see. The page-level
+    baselines of this run (main screen, Claims panel, phone) contain interface text and are
+    rendered as on the CI machines (STATUS says how). The CI machines resolve the label face to
+    another installed italic than this container (the chips' text is wider there), which stays
+    within the desktop tolerances but not on the phone's narrow canvas: the three phone canvas
+    baselines of Run 7's spec are CI's own renders (CI is the reference, CLAUDE.md).
 
 ## Consequences
 
