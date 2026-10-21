@@ -8,10 +8,19 @@ import type { PlacedLabel } from '@geomira/scene/labels';
 import { toWorld, type Vec2 } from '@geomira/scene/viewport';
 import type { ExportFrame } from './frame';
 import { texLabel, texProse } from './tex-label';
-import { warningText, type ExportWarning } from './paint';
+import { num, warningText, type ExportWarning } from './paint';
 
 /** One CSS pixel in PostScript points (bp). */
 export const BP_PER_PX = 0.75;
+
+/**
+ * A positive measure (a unit, a zoom) as text: six decimals from 0.001 on (as before), else
+ * seven significant digits in exponent form, which TeX comments and Asymptote's reals read
+ * (Run 10 audit: a figure 10^9 wide had `unitsize(0)`).
+ */
+export function measureText(x: number): string {
+  return Math.abs(x) >= 0.001 ? num(x, 6) : x.toExponential(6);
+}
 
 /** The world point of a screen point of the frame's view. */
 export function world(f: ExportFrame, s: Vec2): Vec2 {
