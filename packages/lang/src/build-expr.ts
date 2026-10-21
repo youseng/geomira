@@ -22,6 +22,9 @@ import type { ExprNode, SelectorNode } from './ast';
 import { error, type Diagnostic, type Span } from './diagnostic';
 import { exactLiteral } from './lex-literals';
 import { makeSelector } from './selectors';
+import { nestedTooDeep } from './parse-expr';
+import { assertNever } from '@geomira/num/assert';
+import { MAX_EXPR_DEPTH } from '@geomira/kernel/limits';
 import { suggest } from './suggest';
 
 export interface ExprEnv {
@@ -46,8 +49,47 @@ export interface Converted {
   readonly calls: readonly CallSite[];
 }
 
-/** Converts one node; undefined (with diagnostics) when some part does not resolve. */
+/** The children of a node (selector arguments included). */
+function children(n: ExprNode): readonly ExprNode[] {
+  switch (n.kind) {
+    case 'num':
+    case 'name':
+    case 'str':
+      return [];
+    case 'pair':
+      return [n.x, n.y];
+    case 'binary':
+      return [n.left, n.right];
+    case 'neg':
+      return [n.operand];
+    case 'call':
+      return [...n.args, ...n.selectors.flatMap((s) => ('args' in s ? s.args : []))];
+    default:
+      return assertNever(n, 'expression node');
+  }
+}
+
+/** Whether `node` is nested deeper than MAX_EXPR_DEPTH (computed without recursion). */
+function tooDeep(node: ExprNode): boolean {
+  const stack: [ExprNode, number][] = [[node, 1]];
+  for (let top = stack.pop(); top !== undefined; top = stack.pop()) {
+    const [n, d] = top;
+    if (d > MAX_EXPR_DEPTH) return true;
+    for (const k of children(n)) stack.push([k, d + 1]);
+  }
+  return false;
+}
+
+/**
+ * Converts one node; undefined (with diagnostics) when some part does not resolve or the node
+ * is nested deeper than MAX_EXPR_DEPTH (a long operator chain is as deep as it is long).
+ */
 export function convert(node: ExprNode, env: ExprEnv): Converted | undefined {
+  if (tooDeep(node)) {
+    const d = nestedTooDeep();
+    env.diags.push(error(node.span, d.message, d.hint));
+    return undefined;
+  }
   const calls: CallSite[] = [];
   const e = toExpr(node, env, calls);
   return e === undefined ? undefined : { expr: e, calls };

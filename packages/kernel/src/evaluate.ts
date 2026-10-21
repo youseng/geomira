@@ -8,7 +8,7 @@
 import { assertNever } from '@geomira/num/assert';
 import { inexact, isInexact, type Field } from '@geomira/num/field';
 import { contextProblem } from './context';
-import { FLOAT_ARG_LIMIT } from './limits';
+import { exprDepth, FLOAT_ARG_LIMIT, MAX_EXPR_DEPTH } from './limits';
 import type { Document } from './document';
 import { refsOf, selectorExprs, type CallExpr, type Expr } from './expr';
 import type { Registry } from './registry';
@@ -100,6 +100,13 @@ function run<T>(
   for (const o of doc.objects) {
     if (problem !== undefined) {
       values.set(o.id, undef(problem));
+      continue;
+    }
+    if (exprDepth(o.def) > MAX_EXPR_DEPTH) {
+      values.set(
+        o.id,
+        undef(`${o.name} is nested more than ${String(MAX_EXPR_DEPTH)} levels deep`),
+      );
       continue;
     }
     const old = prev?.values.get(o.id);

@@ -16,6 +16,7 @@ import {
 import { refsOf, type Expr } from './expr';
 import { dependentClosure, stableTopologicalOrder } from './graph';
 import { nameProblem } from './names';
+import { exprDepth, MAX_EXPR_DEPTH } from './limits';
 
 export type EditResult<X extends object = object> =
   | ({ readonly ok: true; readonly doc: Document } & X)
@@ -41,6 +42,11 @@ export interface NewObject {
 
 export function fail(error: string): { readonly ok: false; readonly error: string } {
   return { ok: false, error };
+}
+
+/** A definition deeper than MAX_EXPR_DEPTH (limits.ts): refused before any recursive walk. */
+function nestedTooDeep(name: string): string {
+  return `${name} is nested more than ${String(MAX_EXPR_DEPTH)} levels deep: write intermediate objects`;
 }
 
 /** Why `name` cannot be given to a new or renamed object (`self` is the renamed id). */
@@ -71,6 +77,7 @@ export function addObject(doc: Document, spec: NewObject): EditResult<{ readonly
   const layers = spec.layers ?? [MAIN_LAYER_ID];
   const lp = layersProblem(doc, layers);
   if (lp !== undefined) return fail(lp);
+  if (exprDepth(spec.def) > MAX_EXPR_DEPTH) return fail(nestedTooDeep(spec.name));
   const missing = missingRef(doc, spec.def);
   if (missing !== undefined) return fail(`there is no object #${String(missing)}`);
   const id = doc.nextId;
@@ -185,6 +192,7 @@ export function redefineObject(doc: Document, id: number, def: Expr): EditResult
   const o = findObject(doc, id);
   if (o === undefined) return fail(`there is no object #${String(id)}`);
   if (o.managedBy !== undefined) return managedError(o);
+  if (exprDepth(def) > MAX_EXPR_DEPTH) return fail(nestedTooDeep(o.name));
   const missing = missingRef(doc, def);
   if (missing !== undefined) return fail(`there is no object #${String(missing)}`);
   const below = new Set(dependentClosure(doc.objects, [id]));

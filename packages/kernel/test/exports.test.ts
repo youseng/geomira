@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import pkg from '../package.json' with { type: 'json' };
 import * as context from '../src/context';
 import * as figureSize from '../src/figure-size';
+import * as limits from '../src/limits';
 import * as derived from '../src/derived';
 import * as derivedEdit from '../src/derived-edit';
 import * as docEdit from '../src/doc-edit';
@@ -89,6 +90,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './registry': { module: registry, names: ['createRegistry', 'rejection'] },
   './context': { module: context, names: ['contextProblem', 'evalContextFor'] },
   './figure-size': { module: figureSize, names: ['figureDiameter'] },
+  './limits': { module: limits, names: ['FLOAT_ARG_LIMIT', 'MAX_EXPR_DEPTH', 'exprDepth'] },
   './evaluate': { module: evaluate, names: ['evaluate', 'evaluateFrom'] },
   './docs': {
     module: docs,

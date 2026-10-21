@@ -11,14 +11,21 @@ import type { Document } from './document';
 import type { Expr } from './expr';
 import { FLOAT_ARG_LIMIT } from './limits';
 
-function freePoints(e: Expr, out: (readonly [Rational, Rational])[], radii: Rational[]): void {
-  if (e.kind !== 'call') return;
-  const [x, y] = e.args;
-  if (e.tool === 'point' && e.args.length === 2 && x?.kind === 'lit' && y?.kind === 'lit') {
-    out.push([x.value, y.value]);
+/** The free points and explicit radii of `root`, without recursion (total on any depth). */
+function freePoints(root: Expr, out: (readonly [Rational, Rational])[], radii: Rational[]): void {
+  const stack: Expr[] = [root];
+  for (let e = stack.pop(); e !== undefined; e = stack.pop()) {
+    if (e.kind !== 'call') continue;
+    const [x, y] = e.args;
+    if (e.tool === 'point' && e.args.length === 2 && x?.kind === 'lit' && y?.kind === 'lit') {
+      out.push([x.value, y.value]);
+    }
+    if (e.tool === 'circle' && e.args.length === 2 && y?.kind === 'lit') radii.push(y.value);
+    for (let k = e.args.length - 1; k >= 0; k--) {
+      const a = e.args[k];
+      if (a !== undefined) stack.push(a);
+    }
   }
-  if (e.tool === 'circle' && e.args.length === 2 && y?.kind === 'lit') radii.push(y.value);
-  for (const a of e.args) freePoints(a, out, radii);
 }
 
 /** max − min of a non-empty list (a loop: no argument-count limit). */
