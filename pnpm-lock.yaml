@@ -71,6 +71,9 @@ importers:
       '@geomira/editor':
         specifier: workspace:*
         version: link:../../packages/editor
+      '@geomira/export':
+        specifier: workspace:*
+        version: link:../../packages/export
       '@geomira/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel

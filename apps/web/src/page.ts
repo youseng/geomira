@@ -28,7 +28,8 @@ const BENCH_FRAMES = 120;
 /** The test worker starts this long after the page (ms). */
 const WARM_MS = 300;
 
-export type Dialog = { readonly kind: 'share' | 'report'; readonly text: string } | null;
+export type Dialog =
+  { readonly kind: 'share' | 'report'; readonly text: string } | { readonly kind: 'export' } | null;
 
 export function reportOf(store: EditorStore): string {
   const agent = typeof navigator === 'undefined' ? 'unknown' : navigator.userAgent;
@@ -175,6 +176,9 @@ export function useHeader(env: HeaderEnv) {
     },
     onReport: () => {
       env.setDialog({ kind: 'report', text: reportOf(store) });
+    },
+    onExport: () => {
+      env.setDialog({ kind: 'export' });
     },
     onMeasure: () => {
       const ctx = env.canvas()?.getContext('2d');

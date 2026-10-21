@@ -14,6 +14,7 @@ export interface HeaderProps {
   readonly onShare: () => void;
   readonly onRestore: () => void;
   readonly onReport: () => void;
+  readonly onExport: () => void;
   readonly onMeasure: () => void;
 }
 
@@ -28,6 +29,9 @@ function Actions(p: HeaderProps) {
       </button>
       <button type="button" onClick={p.onShare}>
         Share link
+      </button>
+      <button type="button" onClick={p.onExport}>
+        Export
       </button>
       <button type="button" disabled={!p.canRestore} onClick={p.onRestore}>
         Restore previous figure
