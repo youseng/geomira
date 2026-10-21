@@ -67,13 +67,32 @@ export class EditorStore {
     if (notice !== this.snap.notice) this.publish({ notice });
   }
 
+  /** The document when the current drag started (a drag is one edit, or none if canceled). */
+  private beforeDrag: EditorState['doc'] | null = null;
+
+  /**
+   * Marks the session edited (autosave, share links) when a document change is committed: an
+   * edit, or a drag at its end if it moved anything. A canceled drag restores the document and
+   * is no edit (Run 10 audit: each dragMove marked a link session edited, so a canceled drag
+   * saved the link and removed its hash).
+   */
+  private noteEdit(after: EditorState, before: EditorState): void {
+    if (after.drag !== null) {
+      if (before.drag === null) this.beforeDrag = before.doc;
+      return;
+    }
+    const from = this.beforeDrag ?? before.doc;
+    this.beforeDrag = null;
+    if (after.doc !== from) this.autosave.edited();
+  }
+
   private commit(r: EditResult, before: EditorState): EditResult {
     if (!r.ok) {
       const d = r.diagnostics === undefined ? {} : { diagnostics: r.diagnostics };
       this.setNotice({ tone: 'refusal', text: r.reason, ...d });
       return r;
     }
-    if (r.state.doc !== before.doc) this.autosave.edited();
+    this.noteEdit(r.state, before);
     // A refusal is answered by the next success; errors and information stay until dismissed.
     const notice = this.snap.notice?.tone === 'refusal' ? null : this.snap.notice;
     this.publish({ state: r.state, notice });
@@ -113,6 +132,7 @@ export class EditorStore {
 
   open(doc: Document, origin: Origin, notice: Notice | null = null): void {
     this.autosave.opened(origin);
+    this.beforeDrag = null;
     const state = createEditor(doc, this.env);
     this.publish({ state, notice, openCount: this.snap.openCount + 1 });
   }
