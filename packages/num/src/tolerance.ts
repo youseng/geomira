@@ -24,6 +24,13 @@ export const FLOOR_DELTA = 1e-10;
 /** Number of perturbations used to estimate the noise floor. */
 export const FLOOR_SAMPLES = 3;
 
+/**
+ * The export's coordinate check (SPEC §14): every number Asymptote computes for an exported
+ * object agrees with the kernel's float value within EXPORT_TOL·scale (lengths and
+ * positions; numbers within EXPORT_TOL·max(1, |x|)).
+ */
+export const EXPORT_TOL = 1e-6;
+
 /** A residual below TRUE_FACTOR·floor is TRUE. */
 export const TRUE_FACTOR = 100;
 

@@ -9,6 +9,7 @@ blob-report/
 *.log
 # TeX / Asymptote build products (tex.yml)
 tests/fixtures/out/
+tests/fixtures/out-export/
 # Mutation testing (Stryker): reports and incremental state, and its sandbox
 reports/
 .stryker-tmp/

@@ -45,6 +45,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'POINT_LABEL_DIST',
       'POINT_RADIUS',
       'STROKE_WIDTH',
+      'dashPattern',
       'drawStyle',
       'effectiveStyle',
       'labelOf',

@@ -136,7 +136,20 @@ importers:
         specifier: 1.5.0
         version: 1.5.0
 
-  packages/export: {}
+  packages/export:
+    dependencies:
+      '@geomira/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@geomira/lang':
+        specifier: workspace:*
+        version: link:../lang
+      '@geomira/num':
+        specifier: workspace:*
+        version: link:../num
+      '@geomira/scene':
+        specifier: workspace:*
+        version: link:../scene
 
   packages/kernel:
     dependencies:
