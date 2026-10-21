@@ -128,3 +128,55 @@ test('icon buttons are named by their old labels; keyboard focus is visible', as
   });
   expect(outline).toBe('solid2px');
 });
+
+/** The WCAG contrast of each element's text with the first opaque background under it. */
+async function contrasts(page: Page, selectors: readonly string[]) {
+  return page.evaluate((sels) => {
+    const rgb = (c: string): number[] | null => {
+      const m = /rgba?\(([^)]+)\)/u.exec(c);
+      if (m === null) return null;
+      const v = (m[1] ?? '').split(/[ ,/]+/u).map(Number);
+      return v.length >= 4 && v[3] === 0 ? null : v.slice(0, 3);
+    };
+    const lum = (v: number[]) =>
+      v
+        .map((x) => x / 255)
+        .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+        .reduce((s, c, i) => s + c * ([0.2126, 0.7152, 0.0722][i] ?? 0), 0);
+    return sels.map((sel) => {
+      const el = document.querySelector(sel);
+      if (el === null) return { sel, ratio: 0 };
+      const fg = rgb(getComputedStyle(el).color) ?? [0, 0, 0];
+      let bg: number[] | null = null;
+      for (let e: Element | null = el; e !== null && bg === null; e = e.parentElement)
+        bg = rgb(getComputedStyle(e).backgroundColor);
+      const [a, b] = [lum(fg), lum(bg ?? [255, 255, 255])];
+      return { sel, ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) };
+    });
+  }, selectors);
+}
+
+for (const scheme of ['light', 'dark'] as const)
+  test(`text meets WCAG AA contrast (${scheme} scheme)`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await openApp(page);
+    await example(page, 'euler-line');
+    await tab(page, 'Claims');
+    await claimItem(page, 'GH').getByRole('button', { name: 'Test', exact: true }).click();
+    await expect(page.locator('.verdict-detail')).toBeVisible({ timeout: 60_000 });
+    const found = await contrasts(page, [
+      '.brand',
+      '.tabs [role="tab"]:not([aria-selected="true"])',
+      '.pgroup h4',
+      '.tool .k',
+      '.badge-true',
+      '.verdict-line',
+      '.verdict-detail',
+      '.line-no',
+      '.chip-true',
+      '.statusbar span',
+      '.cmdbar .pr',
+      'h3.sec',
+    ]);
+    for (const c of found) expect(c.ratio, c.sel).toBeGreaterThanOrEqual(4.5);
+  });

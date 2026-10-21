@@ -1,5 +1,27 @@
 /* The canvas and what floats on it, the command line, dialogs (Run 9b, Geomdraw's stage). */
 
+/* The canvas is drawn in its light theme in both schemes, so what floats on it stays light. */
+@media (prefers-color-scheme: dark) {
+  .stage {
+    --panel: #ffffff;
+    --panel2: #f7f7f5;
+    --border: #dcdcd6;
+    --text: #1d1d1b;
+    --muted: #62625d;
+    --accent: #2f5fb3;
+    --accent-soft: #e6edf9;
+    --ok: #2b7530;
+    --ok-soft: #e7f3e8;
+    --amber: #8a5800;
+    --amber-soft: #fbf1dc;
+    --bad: #b3261e;
+    --bad-soft: #fbe9e7;
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+    color: var(--text);
+    color-scheme: light;
+  }
+}
+
 .stage {
   grid-area: stage;
   position: relative;
