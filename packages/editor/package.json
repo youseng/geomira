@@ -5,9 +5,35 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./state": "./src/state.ts",
+    "./edit": "./src/edit.ts",
+    "./result": "./src/result.ts",
+    "./history": "./src/history.ts",
+    "./tool-state": "./src/tool-state.ts",
+    "./tools": "./src/tools.ts",
+    "./machine": "./src/machine.ts",
+    "./choice": "./src/choice.ts",
+    "./create": "./src/create.ts",
+    "./drag": "./src/drag.ts",
+    "./drag-edit": "./src/drag-edit.ts",
+    "./ui-edit": "./src/ui-edit.ts",
+    "./claim-edit": "./src/claim-edit.ts",
+    "./rounding": "./src/rounding.ts",
+    "./names": "./src/names.ts",
+    "./autosave": "./src/autosave.ts",
+    "./share": "./src/share.ts",
+    "./report": "./src/report.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@geomira/claims": "workspace:*",
+    "@geomira/kernel": "workspace:*",
+    "@geomira/lang": "workspace:*",
+    "@geomira/num": "workspace:*",
+    "@geomira/scene": "workspace:*",
+    "lz-string": "1.5.0"
   }
 }
