@@ -100,9 +100,21 @@ test('cancel stops a running test; badges are three-valued', async ({ page }) =>
   await expect(claimItem(page, 'collinear').locator('.badge')).toHaveText('false in this figure');
   await expect(claimItem(page, 'X = A').locator('.badge')).toHaveText(/^undefined: /u);
   const item = claimItem(page, '∠BHC');
-  await item.getByRole('button', { name: 'Test globally', exact: true }).click();
-  await item.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(item.locator('.run')).toContainText(
-    /cancelled after \d+ of 200 figures|Configuration-dependent/u,
+  // Start a global test and cancel it right after React has rendered the Cancel button (one
+  // macrotask later, inside the page), long before the test could finish; the worker reads
+  // messages between slices of ≤ 12 ms.
+  const clicked = await page.evaluate(async () => {
+    const li = [...document.querySelectorAll('.claim')].find((x) => x.textContent.includes('∠BHC'));
+    const button = (label: string) =>
+      [...(li?.querySelectorAll('button') ?? [])].find((b) => b.textContent === label);
+    button('Test globally')?.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const cancel = button('Cancel');
+    cancel?.click();
+    return cancel !== undefined;
+  });
+  expect(clicked).toBe(true);
+  await expect(item.locator('.run')).toHaveText(
+    /^Global test: cancelled after \d+ of 200 figures$/u,
   );
 });
