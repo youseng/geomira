@@ -91,20 +91,127 @@ body {
   min-width: 0;
 }
 
+button,
+select,
+input,
+textarea {
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.app-header {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.toolbar {
+  border-bottom: 1px solid var(--rule);
+  padding: 0.25rem 0.5rem;
+}
+
+.tools {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-bottom: 0.25rem;
+}
+
+.tools button[aria-pressed='true'] {
+  background: #2f81f7;
+  color: #fff;
+  border-color: #2f81f7;
+}
+
+.tool-prompt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.6rem;
+  font-size: 0.85rem;
+}
+
+.tool-text {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.command-bar {
+  position: relative;
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.command-bar input {
+  width: 100%;
+  font-family: ui-monospace, 'DejaVu Sans Mono', monospace;
+}
+
+.completions {
+  position: absolute;
+  z-index: 10;
+  left: 0.5rem;
+  right: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  max-height: 14rem;
+  overflow: auto;
+  font-size: 0.8rem;
+}
+
+.completions li {
+  padding: 0.15rem 0.4rem;
+  cursor: pointer;
+}
+
+.completions li[aria-selected='true'] {
+  background: #ddf4ff;
+}
+
+.completion-label {
+  font-family: ui-monospace, 'DejaVu Sans Mono', monospace;
+}
+
+.command-error,
+.notice,
+.error-banner {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.command-error,
+.notice-refusal,
+.notice-error {
+  color: #9a3412;
+}
+
+.error-banner {
+  background: #ffebe9;
+  color: #82071e;
+}
+
 .side {
-  width: 15rem;
+  width: 24rem;
   padding: 0.5rem;
   border-left: 1px solid var(--rule);
   font-size: 0.8rem;
   overflow: auto;
+  /* Changes inside the panels (test progress, verdicts) lay out the panel alone. */
+  contain: strict;
 }
 
 .side fieldset {
   border: 1px solid var(--rule);
-}
-
-.side label {
-  display: block;
 }
 
 .side output {
@@ -112,19 +219,103 @@ body {
   margin-top: 0.5rem;
 }
 
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.small {
+  padding: 0 0.3rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.2rem;
+  margin-top: 0.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tabs button[aria-selected='true'] {
+  font-weight: 600;
+  border-bottom: 2px solid #2f81f7;
+}
+
+.tab-body {
+  padding-top: 0.5rem;
+}
+
+.text-panel textarea {
+  width: 100%;
+  min-height: 22rem;
+  font-family: ui-monospace, 'DejaVu Sans Mono', monospace;
+  font-size: 0.8rem;
+}
+
+.diagnostics {
+  padding-left: 1rem;
+}
+
+.diag-error {
+  color: #9a3412;
+}
+
+.hint {
+  color: var(--muted);
+}
+
+.dialog {
+  position: fixed;
+  z-index: 20;
+  left: 50%;
+  top: 20%;
+  transform: translateX(-50%);
+  width: min(40rem, calc(100% - 1rem));
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  padding: 0.75rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.dialog h2 {
+  margin-top: 0;
+  font-size: 1rem;
+}
+
+.dialog input,
+.dialog textarea {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
 @media (max-width: 600px) {
   .app-main {
     flex-direction: column;
   }
 
+  .board {
+    flex: 0 0 auto;
+    height: 55vh;
+  }
+
   .side {
     width: auto;
-    max-height: 30%;
+    flex: 1 1 auto;
+    min-height: 0;
     border-left: none;
     border-top: 1px solid var(--rule);
   }
 
   .app-header {
-    flex-wrap: wrap;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .tool-prompt {
+    min-height: 1.2rem;
+    font-size: 0.75rem;
+  }
+
+  .text-panel textarea {
+    min-height: 12rem;
   }
 }

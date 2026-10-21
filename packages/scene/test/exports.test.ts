@@ -10,6 +10,7 @@ import * as display from '../src/display';
 import * as hit from '../src/hit';
 import * as labelText from '../src/label-text';
 import * as labels from '../src/labels';
+import * as labelBox from '../src/label-box';
 import * as style from '../src/style';
 import * as types from '../src/types';
 import * as viewport from '../src/viewport';
@@ -57,6 +58,10 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   },
   './label-text': { module: labelText, names: ['parseLabel'] },
   './labels': { module: labels, names: ['NEAR_PX', 'placeLabels'] },
+  './label-box': {
+    module: labelBox,
+    names: ['LABEL_FONT_PX', 'LABEL_GAP_PX', 'MIN_CLEAR_DEG', 'boxesOverlap', 'labelBox'],
+  },
   './display': { module: display, names: ['ARC_SAGITTA', 'MARGIN_PX', 'MAX_ARC_RADIUS', 'layout'] },
   './hit': { module: hit, names: ['HIT_RADIUS', 'hitItem', 'hitTest'] },
   './bounds': { module: bounds, names: ['sceneBounds'] },

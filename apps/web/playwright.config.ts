@@ -13,10 +13,24 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
+    // Run 8b: the flows run on the desktop, the touch flows on the phone; Run 7's specs on both.
+    {
+      name: 'desktop',
+      use: { ...devices['Desktop Chrome'] },
+      testIgnore: /(mobile|long-task)\.spec/u,
+    },
     {
       name: 'mobile',
       use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 664 }, hasTouch: true },
+      testIgnore: /(flows-[a-z]+|long-task)\.spec/u,
+    },
+    // The main-thread measurement runs after every other test, alone: no other browser or test
+    // worker competes for the CPU while it measures.
+    {
+      name: 'measure',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /long-task\.spec/u,
+      dependencies: ['desktop', 'mobile'],
     },
   ],
   webServer: {

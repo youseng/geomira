@@ -14,6 +14,7 @@
     "./clip": "./src/clip.ts",
     "./label-text": "./src/label-text.ts",
     "./labels": "./src/labels.ts",
+    "./label-box": "./src/label-box.ts",
     "./display": "./src/display.ts",
     "./hit": "./src/hit.ts",
     "./bounds": "./src/bounds.ts"

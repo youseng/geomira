@@ -23,7 +23,11 @@
     "./names": "./src/names.ts",
     "./autosave": "./src/autosave.ts",
     "./share": "./src/share.ts",
-    "./report": "./src/report.ts"
+    "./report": "./src/report.ts",
+    "./command": "./src/command.ts",
+    "./keymap": "./src/keymap.ts",
+    "./panels": "./src/panels.ts",
+    "./restore": "./src/restore.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

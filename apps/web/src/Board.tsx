@@ -1,25 +1,23 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { hitTest } from '@geomira/scene/hit';
+import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { layout } from '@geomira/scene/display';
 import type { Scene } from '@geomira/scene/types';
-import { panViewport, zoomViewport, type Size, type Viewport } from '@geomira/scene/viewport';
+import { zoomViewport, type Size, type Viewport } from '@geomira/scene/viewport';
+import { Gestures } from './gestures';
 import { drawDisplay, LIGHT_THEME, type UiState } from './render';
+import type { EditorStore } from './store';
 
 export interface BoardProps {
   readonly canvasRef: RefObject<HTMLCanvasElement | null>;
+  readonly store: EditorStore;
   readonly scene: Scene;
-  /** The viewport to show; null = let the parent fit it once the size is known. */
-  readonly viewport: Viewport | null;
-  readonly onViewport: (v: Viewport) => void;
+  readonly viewport: Viewport;
+  readonly hover: number | null;
+  readonly selection: readonly number[];
   readonly onSize: (s: Size) => void;
-  readonly selection: ReadonlySet<number>;
-  readonly onSelect: (id: number | null) => void;
 }
 
 /** Wheel steps of 100 (one notch) zoom by this factor. */
 const WHEEL_ZOOM = 1.15;
-/** A pointer that moved less than this many px between down and up is a click. */
-const CLICK_SLOP = 4;
 
 /** The canvas's CSS size, kept in sync with its box; its pixel size is css × dpr (HiDPI). */
 function useSurface(
@@ -52,66 +50,62 @@ function useSurface(
 }
 
 /**
- * The drawing surface: a canvas sized to its box with devicePixelRatio device pixels per CSS
- * pixel (HiDPI). It redraws on every change of scene, viewport, size, hover or selection;
- * dragging pans, the wheel zooms about the cursor, a click selects the topmost hit.
+ * The drawing surface: the display list of the scene in the editor's viewport, drawn by the
+ * canvas renderer (HiDPI) with hover and selection halos. Pointer input goes through
+ * gestures.ts (tools, drags, pan, pinch); the wheel zooms about the cursor. The viewport is
+ * also written to data attributes, so end-to-end tests can aim at world coordinates.
  */
 export function Board(props: BoardProps) {
-  const { canvasRef, scene, viewport, onViewport, onSize, selection, onSelect } = props;
-  const [hover, setHover] = useState<number | null>(null);
-  const drag = useRef<{ x: number; y: number; moved: number } | null>(null);
-
+  const { canvasRef, store, scene, viewport, hover, selection, onSize } = props;
+  const gestures = useMemo(() => new Gestures(store), [store]);
   const size = useSurface(canvasRef, onSize);
-
   const display = useMemo(
-    () => (size === null || viewport === null ? null : layout(scene, { viewport, size })),
+    () => (size === null ? null : layout(scene, { viewport, size })),
     [scene, viewport, size],
   );
-
+  const selected = useMemo(() => new Set(selection), [selection]);
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (display === null || ctx === null || ctx === undefined) return;
-    const ui: UiState = { hover, selection };
+    const ui: UiState = { hover, selection: selected };
     drawDisplay(ctx, display, ui, LIGHT_THEME, window.devicePixelRatio);
-  }, [canvasRef, display, hover, selection]);
-
+  }, [canvasRef, display, hover, selected]);
   const local = (e: { clientX: number; clientY: number }) => {
     const r = canvasRef.current?.getBoundingClientRect();
     return { x: e.clientX - (r?.left ?? 0), y: e.clientY - (r?.top ?? 0) };
   };
-
   return (
     <canvas
       ref={canvasRef}
       className="board"
       aria-label="Geometry canvas"
+      data-cx={viewport.cx}
+      data-cy={viewport.cy}
+      data-zoom={viewport.zoom}
       onPointerDown={(e) => {
+        if (display === null) return;
         e.currentTarget.setPointerCapture(e.pointerId);
-        drag.current = { ...local(e), moved: 0 };
+        gestures.down(e.pointerId, local(e), display);
       }}
       onPointerMove={(e) => {
-        const q = local(e);
-        const d = drag.current;
-        if (d !== null && viewport !== null) {
-          drag.current = { ...q, moved: d.moved + Math.hypot(q.x - d.x, q.y - d.y) };
-          onViewport(panViewport(viewport, q.x - d.x, q.y - d.y));
-        } else if (display !== null) {
-          setHover(hitTest(display, q).hits[0]?.id ?? null);
-        }
+        if (display !== null) gestures.move(e.pointerId, local(e), display);
       }}
       onPointerUp={(e) => {
-        const d = drag.current;
-        drag.current = null;
-        if (d !== null && d.moved < CLICK_SLOP && display !== null)
-          onSelect(hitTest(display, local(e)).hits[0]?.id ?? null);
+        if (display !== null) gestures.up(e.pointerId, local(e), display);
+      }}
+      onPointerCancel={(e) => {
+        gestures.cancel(e.pointerId);
       }}
       onPointerLeave={() => {
-        setHover(null);
+        gestures.leave();
       }}
       onWheel={(e) => {
-        if (viewport === null || size === null) return;
+        if (size === null) return;
         const factor = WHEEL_ZOOM ** (-e.deltaY / 100);
-        onViewport(zoomViewport({ viewport, size }, local(e), factor));
+        store.apply({
+          kind: 'viewport',
+          viewport: zoomViewport({ viewport, size }, local(e), factor),
+        });
       }}
     />
   );

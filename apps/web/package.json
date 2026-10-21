@@ -11,6 +11,8 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@geomira/claims": "workspace:*",
+    "@geomira/editor": "workspace:*",
     "@geomira/kernel": "workspace:*",
     "@geomira/lang": "workspace:*",
     "@geomira/num": "workspace:*",

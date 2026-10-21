@@ -1,54 +1,94 @@
-import type { Registry } from '@geomira/kernel/registry';
+import type { EditorState } from '@geomira/editor/state';
+import { assertNever } from '@geomira/num/assert';
+import type { Scene } from '@geomira/scene/types';
 import type { FrameTimes } from './bench';
-import { setLayerVisible, type Figure } from './figure';
+import { ClaimsPanel } from './panels/ClaimsPanel';
+import { HelpPanel } from './panels/HelpPanel';
+import { LayersPanel } from './panels/LayersPanel';
+import { ObjectsPanel } from './panels/ObjectsPanel';
+import { StylePanel } from './panels/StylePanel';
+import { TextPanel } from './panels/TextPanel';
+import type { EditorStore } from './store';
+import type { TestRuns } from './test-runs';
+
+export const TABS = ['Text', 'Objects', 'Claims', 'Style', 'Help'] as const;
+export type Tab = (typeof TABS)[number];
 
 export interface SidePanelProps {
-  readonly figure: Figure;
-  readonly registry: Registry;
-  readonly onFigure: (f: Figure) => void;
-  readonly selection: ReadonlySet<number>;
+  readonly store: EditorStore;
+  readonly state: EditorState;
+  readonly scene: Scene;
+  readonly runs: TestRuns;
   readonly times: FrameTimes | null;
+  readonly tab: Tab;
+  readonly onTab: (t: Tab) => void;
+}
+
+function Summary({ scene, state }: { scene: Scene; state: EditorState }) {
+  const selected = state.doc.objects
+    .filter((o) => state.selection.includes(o.id))
+    .map((o) => o.name);
+  return (
+    <>
+      <p>
+        {scene.primitives.length} drawn · {scene.coincident.length} coincident images hidden ·{' '}
+        {scene.unavailable.length} undefined
+      </p>
+      {selected.length > 0 && <p>Selected: {selected.join(', ')}</p>}
+    </>
+  );
+}
+
+function Body({
+  tab,
+  store,
+  state,
+  runs,
+}: Pick<SidePanelProps, 'tab' | 'store' | 'state' | 'runs'>) {
+  switch (tab) {
+    case 'Text':
+      return <TextPanel store={store} state={state} />;
+    case 'Objects':
+      return <ObjectsPanel store={store} state={state} />;
+    case 'Claims':
+      return <ClaimsPanel store={store} state={state} runs={runs} />;
+    case 'Style':
+      return <StylePanel store={store} state={state} />;
+    case 'Help':
+      return <HelpPanel />;
+    default:
+      return assertNever(tab, 'tab');
+  }
 }
 
 /**
- * Layers (toggles are document edits), what the scene drew and hid, the Undefined objects
- * with their reasons (never drawn as garbage), the selection, and measured frame times.
+ * The panels (SPEC §15): the layers and a summary of the scene always on top, then Text,
+ * Objects, Claims, Style and Help as tabs. On a phone the panel sits under the canvas.
  */
-export function SidePanel({ figure, registry, onFigure, selection, times }: SidePanelProps) {
-  const selected = figure.doc.objects.filter((o) => selection.has(o.id)).map((o) => o.name);
-  const { scene } = figure;
+export function SidePanel(props: SidePanelProps) {
+  const { store, state, scene, runs, times, tab, onTab } = props;
   return (
     <aside className="side" aria-label="Figure">
-      <fieldset>
-        <legend>Layers</legend>
-        {figure.doc.layers.map((l) => (
-          <label key={l.id}>
-            <input
-              type="checkbox"
-              checked={l.visible}
-              onChange={(e) => {
-                onFigure(setLayerVisible(figure, registry, l.id, e.target.checked));
-              }}
-            />
-            {l.name}
-            {l.rule === undefined ? '' : ' (derived)'}
-          </label>
+      <LayersPanel store={store} state={state} />
+      <Summary scene={scene} state={state} />
+      <div className="tabs" role="tablist" aria-label="Panels">
+        {TABS.map((t) => (
+          <button
+            key={t}
+            type="button"
+            role="tab"
+            aria-selected={tab === t}
+            onClick={() => {
+              onTab(t);
+            }}
+          >
+            {t}
+          </button>
         ))}
-      </fieldset>
-      <p>
-        {scene.primitives.length} drawn · {scene.coincident.length} coincident images hidden ·{' '}
-        {figure.diagnostics.length} diagnostics
-      </p>
-      {selected.length > 0 && <p>Selected: {selected.join(', ')}</p>}
-      {scene.unavailable.length > 0 && (
-        <ul className="unavailable" aria-label="Undefined objects">
-          {scene.unavailable.map((u) => (
-            <li key={u.id}>
-              {u.name}: undefined ({u.reason})
-            </li>
-          ))}
-        </ul>
-      )}
+      </div>
+      <div className="tab-body" role="tabpanel" aria-label={`${tab} panel`}>
+        <Body tab={tab} store={store} state={state} runs={runs} />
+      </div>
       {times !== null && (
         <output data-testid="frame-times" data-json={JSON.stringify(times)}>
           {times.objects} objects: drag frame median {times.drag.median.toFixed(2)} ms (p95{' '}
