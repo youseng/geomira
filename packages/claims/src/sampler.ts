@@ -13,7 +13,8 @@
  *   - GLOBAL: the same similarity with σ = 0.3·size; gliders uniform over their range
  *     (circle gliders uniform in angle, then converted to (u : v)); params uniform; the
  *     sample may be MIRRORED (x ↦ −x about c, before the similarity) WITHOUT flipping any
- *     selector. Gliders named by an `in_order` hypothesis on one object are drawn sorted.
+ *     selector. Gliders of one form named by an `in_order` hypothesis on one object (on a
+ *     line, by (u : v) or by angle) are drawn sorted.
  * Every sample is rounded to a coarse rational grid (size / 2^10 for lengths, 2^−10 for
  * the dimensionless glider parameters, range / 2^10 for params) so that the exact rungs
  * can run on it; the same rounded document is evaluated by every rung and is the
@@ -208,17 +209,32 @@ function addFrac(min: Rational, max: Rational, frac: Rational): Rational {
 function orderedAssignments(ctx: Context, group: OrderedGroup): Assignment[] {
   const first = group.inputs[0];
   if (first === undefined) return [];
-  if (group.form === 'stereo') {
-    const phis = group.inputs.map(() => ctx.rng.uniform(0, 2 * Math.PI)).sort((x, y) => x - y);
-    return group.inputs.map((input, i) => ({ input, values: stereo(phis[i] ?? 0) }));
+  const sorted = (lo: number, hi: number) =>
+    group.inputs.map(() => ctx.rng.uniform(lo, hi)).sort((x, y) => x - y);
+  switch (group.form) {
+    case 'stereo': {
+      const phis = sorted(0, 2 * Math.PI);
+      return group.inputs.map((input, i) => ({ input, values: stereo(phis[i] ?? 0) }));
+    }
+    case 'angle-glider': {
+      const thetas = sorted(0, 360);
+      return group.inputs.map((input, i) => ({
+        input,
+        values: [dyadic(thetas[i] ?? 0, -GRID_BITS)],
+      }));
+    }
+    case 'line-glider': {
+      const t0 = toNumber(readFree(ctx.prep.doc, first)?.[0] ?? fromInteger(0));
+      const [lo, hi, spread] = lineRange(ctx, first, t0);
+      const ts = sorted(lo, hi);
+      return group.inputs.map((input, i) => ({
+        input,
+        values: [dyadic(ts[i] ?? 0, tExponent(spread))],
+      }));
+    }
+    default:
+      return assertNever(group.form, 'ordered group');
   }
-  const t0 = toNumber(readFree(ctx.prep.doc, first)?.[0] ?? fromInteger(0));
-  const [lo, hi, spread] = lineRange(ctx, first, t0);
-  const ts = group.inputs.map(() => ctx.rng.uniform(lo, hi)).sort((x, y) => x - y);
-  return group.inputs.map((input, i) => ({
-    input,
-    values: [dyadic(ts[i] ?? 0, tExponent(spread))],
-  }));
 }
 
 /**
