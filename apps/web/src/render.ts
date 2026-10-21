@@ -8,7 +8,8 @@
 import { assertNever } from '@geomira/num/assert';
 import type { DisplayList } from '@geomira/scene/display';
 import type { PlacedLabel } from '@geomira/scene/labels';
-import type { Dash, DisplayItem, Path } from '@geomira/scene/types';
+import { dashPattern } from '@geomira/scene/style';
+import type { DisplayItem, Path } from '@geomira/scene/types';
 
 /** The subset of CanvasRenderingContext2D the renderer uses (tests record it). */
 export type Canvas2D = Pick<
@@ -68,19 +69,6 @@ export const NO_UI: UiState = { hover: null, selection: new Set() };
 
 /** Halo widths around hovered and selected items, CSS px on each side. */
 const HALO = 4;
-
-function dashPattern(dash: Dash, width: number): number[] {
-  switch (dash) {
-    case 'solid':
-      return [];
-    case 'dashed':
-      return [6 + 2 * width, 4 + 2 * width];
-    case 'dotted':
-      return [Math.max(1, width), 2 + 2 * width];
-    default:
-      return assertNever(dash, 'dash');
-  }
-}
 
 /** Traces one stroked path (dots are drawn by drawDot). */
 export function tracePath(ctx: Canvas2D, p: Path): void {
@@ -163,12 +151,26 @@ function drawItem(ctx: Canvas2D, item: DisplayItem, theme: Theme): void {
   }
 }
 
-function drawLabel(ctx: Canvas2D, l: PlacedLabel, theme: Theme): void {
+/**
+ * Sets the canvas font only when it changes: the font setter parses its string, and labels
+ * switch between two sizes (note F of Run 9a: hundreds of labels on every drag frame).
+ */
+class FontState {
+  private current = '';
+  constructor(private readonly ctx: Canvas2D) {}
+  set(font: string): void {
+    if (font === this.current) return;
+    this.ctx.font = font;
+    this.current = font;
+  }
+}
+
+function drawLabel(ctx: Canvas2D, l: PlacedLabel, theme: Theme, fonts: FontState): void {
   const size = theme.fontSize;
   const small = Math.round(size * 0.7);
   const fontOf = (pos: string) => `${String(pos === 'base' ? size : small)}px ${theme.fontFamily}`;
   const widths = l.runs.map((r) => {
-    ctx.font = fontOf(r.pos);
+    fonts.set(fontOf(r.pos));
     return ctx.measureText(r.text).width;
   });
   const total = widths.reduce((a, w) => a + w, 0);
@@ -184,7 +186,7 @@ function drawLabel(ctx: Canvas2D, l: PlacedLabel, theme: Theme): void {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
   for (const [i, r] of l.runs.entries()) {
-    ctx.font = fontOf(r.pos);
+    fonts.set(fontOf(r.pos));
     const dy = r.pos === 'sub' ? size * 0.25 : r.pos === 'sup' ? -size * 0.4 : 0;
     ctx.fillText(r.text, x, y + dy);
     x += widths[i] ?? 0;
@@ -217,6 +219,7 @@ export function drawDisplay(
   }
   for (const item of display.items) halo(ctx, item, ui, theme);
   for (const item of display.items) drawItem(ctx, item, theme);
-  for (const l of display.labels) drawLabel(ctx, l, theme);
+  const fonts = new FontState(ctx);
+  for (const l of display.labels) drawLabel(ctx, l, theme, fonts);
   ctx.globalAlpha = 1;
 }

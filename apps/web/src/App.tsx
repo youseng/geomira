@@ -1,12 +1,22 @@
-import { Component, useCallback, useRef, useState, type ReactNode, type RefObject } from 'react';
+import {
+  Component,
+  memo,
+  useCallback,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import type { Size } from '@geomira/scene/viewport';
 import { Board } from './Board';
 import { CommandBar } from './CommandBar';
 import { ErrorBanner, TextDialog } from './Dialogs';
+import { ExportDialog } from './ExportDialog';
 import { Header } from './Header';
 import { useAutosave, useFitOnOpen, useInternalErrors, useShortcuts, useStartup } from './hooks';
 import { reportOf, useFit, useHeader, useKeyActions, usePage, type Dialog } from './page';
 import { SidePanel, type Tab } from './SidePanel';
+import { useSettled } from './settled';
 import type { EditorStore, Notice } from './store';
 import { ToolBar } from './ToolBar';
 
@@ -48,8 +58,25 @@ function NoticeLine({ notice, onClose }: { notice: Notice | null; onClose: () =>
   );
 }
 
-function DialogView({ dialog, onClose }: { dialog: Dialog; onClose: () => void }) {
+function DialogView(p: {
+  dialog: Dialog;
+  onClose: () => void;
+  store: EditorStore;
+  size: Size | null;
+  onError: (m: string) => void;
+}) {
+  const { dialog, onClose } = p;
   if (dialog === null) return null;
+  if (dialog.kind === 'export')
+    return (
+      <ExportDialog
+        state={p.store.current()}
+        registry={p.store.env.registry}
+        size={p.size}
+        onClose={onClose}
+        onError={p.onError}
+      />
+    );
   const share = dialog.kind === 'share';
   return (
     <TextDialog
@@ -61,6 +88,10 @@ function DialogView({ dialog, onClose }: { dialog: Dialog; onClose: () => void }
     />
   );
 }
+
+/** The bars do not change during a drag: they render the settled state (note F of Run 9a). */
+const Tools = memo(ToolBar);
+const Commands = memo(CommandBar);
 
 /** Keyboard shortcuts; "/" focuses the command bar, "?" shows the help. */
 function usePageShortcuts(
@@ -97,7 +128,7 @@ function useApp() {
   usePageShortcuts(store, fit, commandRef, setTab);
   const canvas = useCallback(() => canvasRef.current, []);
   const header = useHeader({ store, runs: page.runs, snap, size, ready, fit, canvas, setDialog });
-  return { page, canvasRef, commandRef, setSize, tab, setTab, dialog, setDialog, header };
+  return { page, canvasRef, commandRef, size, setSize, tab, setTab, dialog, setDialog, header };
 }
 
 /**
@@ -106,9 +137,11 @@ function useApp() {
  * packages/claims (badges here, tests in a Web Worker).
  */
 export function App() {
-  const { page, canvasRef, commandRef, setSize, tab, setTab, dialog, setDialog, header } = useApp();
+  const { page, canvasRef, commandRef, size, setSize, tab, setTab, dialog, setDialog, header } =
+    useApp();
   const { store, snap, scene } = page;
   const { state } = snap;
+  const settled = useSettled(state);
   return (
     <div className="app">
       <Header {...header.props} />
@@ -127,8 +160,8 @@ export function App() {
           store.setNotice(null);
         }}
       />
-      <ToolBar store={store} state={state} />
-      <CommandBar store={store} inputRef={commandRef} />
+      <Tools store={store} state={settled} />
+      <Commands store={store} inputRef={commandRef} />
       <main className="app-main">
         <Board
           canvasRef={canvasRef}
@@ -153,6 +186,9 @@ export function App() {
       </main>
       <DialogView
         dialog={dialog}
+        store={store}
+        size={size}
+        onError={page.onInternal}
         onClose={() => {
           setDialog(null);
         }}

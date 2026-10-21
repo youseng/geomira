@@ -12,9 +12,10 @@
  * (any document may hold any number), so nothing here assumes the language's checks.
  */
 import type { DocObject, Style } from '@geomira/kernel/document';
+import { assertNever } from '@geomira/num/assert';
 import type { DocIndex } from './doc-index';
 import { parseLabel } from './label-text';
-import type { DrawStyle, Label, ShapeKind } from './types';
+import type { Dash, DrawStyle, Label, ShapeKind } from './types';
 
 /** Widths above this many CSS px are drawn at this width. */
 export const MAX_WIDTH = 64;
@@ -97,4 +98,21 @@ export function labelOf(name: string, style: Style, kind: ShapeKind, shown?: str
     angle,
     dist: Math.min(MAX_LABEL_DIST, finiteAtLeast0(style.labelDist) ?? fallback),
   };
+}
+
+/**
+ * The dash pattern of a stroke of `width` CSS px: alternating on and off lengths in CSS px
+ * (empty: solid). The canvas renderer and every exporter draw dashes with it.
+ */
+export function dashPattern(dash: Dash, width: number): number[] {
+  switch (dash) {
+    case 'solid':
+      return [];
+    case 'dashed':
+      return [6 + 2 * width, 4 + 2 * width];
+    case 'dotted':
+      return [Math.max(1, width), 2 + 2 * width];
+    default:
+      return assertNever(dash, 'dash');
+  }
 }

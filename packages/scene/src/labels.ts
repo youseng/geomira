@@ -135,10 +135,17 @@ function centroid(pts: readonly Vec2[]): Vec2 {
   return { x: s.x / pts.length, y: s.y / pts.length };
 }
 
+/** A point farther than this from a segment's carrier line is surely not near it (cheap test). */
+const CARRIER_PX = NEAR_PX + 1;
+
 function segmentDirections(c: Vec2, a: Vec2, b: Vec2, out: number[]): void {
   const d = { x: b.x - a.x, y: b.y - a.y };
   const len2 = d.x * d.x + d.y * d.y;
   if (!(len2 > 0)) return;
+  // The distance to the segment is at least the distance to its carrier: reject far points
+  // first, with a pixel to spare, so the exact test below decides every point it could accept.
+  const cross = (c.x - a.x) * d.y - (c.y - a.y) * d.x;
+  if (cross * cross > CARRIER_PX * CARRIER_PX * len2) return;
   const t = Math.max(0, Math.min(1, ((c.x - a.x) * d.x + (c.y - a.y) * d.y) / len2));
   const q = { x: a.x + t * d.x, y: a.y + t * d.y };
   if (Math.hypot(c.x - q.x, c.y - q.y) > NEAR_PX) return;
@@ -148,25 +155,72 @@ function segmentDirections(c: Vec2, a: Vec2, b: Vec2, out: number[]): void {
   if ((1 - t) * len > NEAR_PX) out.push(phi);
 }
 
-/** Directions (radians) of the curves of `items` that pass within NEAR_PX of c. */
-function blocked(c: Vec2, items: readonly DisplayItem[], self: number): number[] {
+/** A drawn curve's path with its screen bounding box grown by NEAR_PX (labels avoid curves). */
+interface CurvePath {
+  readonly id: number;
+  readonly path: Path;
+  readonly box: Rect;
+}
+
+function grownBox(p: Path): Rect {
+  if (p.kind === 'poly') {
+    const xs = p.pts.map((q) => q.x);
+    const ys = p.pts.map((q) => q.y);
+    return {
+      minX: Math.min(...xs) - NEAR_PX,
+      maxX: Math.max(...xs) + NEAR_PX,
+      minY: Math.min(...ys) - NEAR_PX,
+      maxY: Math.max(...ys) + NEAR_PX,
+    };
+  }
+  const r = p.r + NEAR_PX;
+  return { minX: p.c.x - r, maxX: p.c.x + r, minY: p.c.y - r, maxY: p.c.y + r };
+}
+
+/**
+ * The paths a point label avoids (every stroke of every item but points), each with its grown
+ * box. A point outside a path's box is farther than NEAR_PX from it (a segment lies in its
+ * box; an arc in its circle's), so blocked() skips that path without changing its result.
+ */
+function curvePaths(items: readonly DisplayItem[]): CurvePath[] {
+  return items.flatMap((item) =>
+    item.kind === 'point'
+      ? []
+      : item.paths.flatMap((path) =>
+          path.kind === 'dot' || (path.kind === 'poly' && path.pts.length === 0)
+            ? []
+            : [{ id: item.id, path, box: grownBox(path) }],
+        ),
+  );
+}
+
+/** Whether c can be within NEAR_PX of the circle of an arc (a cheap test, a pixel to spare). */
+function nearRing(c: Vec2, p: Extract<Path, { kind: 'arc' }>): boolean {
+  const [dx, dy] = [c.x - p.c.x, c.y - p.c.y];
+  const d2 = dx * dx + dy * dy;
+  const inner = Math.max(0, p.r - CARRIER_PX);
+  const outer = p.r + CARRIER_PX;
+  return d2 >= inner * inner && d2 <= outer * outer;
+}
+
+/** Directions (radians) of the curves that pass within NEAR_PX of c. */
+function blocked(c: Vec2, curves: readonly CurvePath[], self: number): number[] {
   const out: number[] = [];
-  for (const item of items) {
-    if (item.id === self || item.kind === 'point') continue;
-    for (const p of item.paths) {
-      if (p.kind === 'poly') {
-        for (let i = 0; i + 1 < p.pts.length; i++) {
-          const [a, b] = [p.pts[i], p.pts[i + 1]];
-          if (a !== undefined && b !== undefined) segmentDirections(c, a, b, out);
-        }
-      } else if (p.kind === 'arc') {
-        const a = Math.atan2(p.c.y - c.y, c.x - p.c.x);
-        if (
-          Math.abs(Math.hypot(c.x - p.c.x, c.y - p.c.y) - p.r) <= NEAR_PX &&
-          inSpan(a, p.from, p.to)
-        )
-          out.push(a + Math.PI / 2, a - Math.PI / 2);
+  for (const { id, path: p, box } of curves) {
+    if (id === self || c.x < box.minX || c.x > box.maxX || c.y < box.minY || c.y > box.maxY)
+      continue;
+    if (p.kind === 'poly') {
+      for (let i = 0; i + 1 < p.pts.length; i++) {
+        const [a, b] = [p.pts[i], p.pts[i + 1]];
+        if (a !== undefined && b !== undefined) segmentDirections(c, a, b, out);
       }
+    } else if (p.kind === 'arc' && nearRing(c, p)) {
+      const a = Math.atan2(p.c.y - c.y, c.x - p.c.x);
+      if (
+        Math.abs(Math.hypot(c.x - p.c.x, c.y - p.c.y) - p.r) <= NEAR_PX &&
+        inSpan(a, p.from, p.to)
+      )
+        out.push(a + Math.PI / 2, a - Math.PI / 2);
     }
   }
   return out;
@@ -184,8 +238,8 @@ function gap(a: number, b: number): number {
  * decides; rounding keeps that decision free of float noise); higher scores first, ties in
  * preference order. The first is the direction a lone label takes.
  */
-function autoAngles(c: Vec2, items: readonly DisplayItem[], self: number): readonly Ranked[] {
-  const dirs = blocked(c, items, self);
+function autoAngles(c: Vec2, curves: readonly CurvePath[], self: number): readonly Ranked[] {
+  const dirs = blocked(c, curves, self);
   const ranked = PREFERRED.map((deg, order) => {
     const a = (deg * Math.PI) / 180;
     const g = dirs.reduce((m, d) => Math.min(m, gap(a, d)), Math.PI);
@@ -246,12 +300,12 @@ function placeAuto(
   view: View,
   p: Primitive,
   item: DisplayItem,
-  items: readonly DisplayItem[],
+  curves: readonly CurvePath[],
   taken: readonly Rect[],
 ): PlacedLabel | undefined {
   const anchor = anchorOf(view, item);
   if (anchor === undefined) return undefined;
-  const ranked = autoAngles(anchor, items, item.id);
+  const ranked = autoAngles(anchor, curves, item.id);
   const best = ranked[0]?.score ?? 45;
   const first = placedAt(p, item, anchor, ranked[0]?.deg ?? 45);
   for (const r of ranked) {
@@ -282,10 +336,11 @@ export function placeLabels(
     if (l !== undefined) placed.set(item.id, l);
   }
   const taken = [...placed.values()].map(labelBox);
+  const curves = curvePaths(items);
   for (const item of items) {
     const p = byId.get(item.id);
     if (p === undefined || !automatic(p, item)) continue;
-    const l = placeAuto(view, p, item, items, taken);
+    const l = placeAuto(view, p, item, curves, taken);
     if (l === undefined) continue;
     placed.set(item.id, l);
     taken.push(labelBox(l));

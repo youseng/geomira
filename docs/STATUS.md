@@ -1,5 +1,413 @@
 # STATUS
 
+## Run 9a: ACCEPTED (2026-10-21)
+
+packages/export (SPEC §14) with the Export dialog, the TeX/Asymptote CI job and the full UI drag
+frame. Base check first: Run 8b was ACCEPTED (merged as PR #12, `main` = 9ae22fe; the `run-8a`
+and `run-8b` tags are now placed, so the add-only guard compares with `run-8b`).
+`pnpm install && pnpm verify` was green locally on 9ae22fe (1741 tests), and ci, deploy and
+nightly were green in CI on that commit
+(https://github.com/youseng/geomira/actions/runs/39569865242,
+https://github.com/youseng/geomira/actions/runs/39569865316,
+https://github.com/youseng/geomira/actions/runs/39570555586).
+
+Every criterion holds on 5004ef7, the last code commit. The tex job is green on all examples:
+every example and the three export fixtures compile as TikZ standalone, TikZ snippet and
+standalone Asymptote, and every Asymptote variable matches the kernel to ≤ 1e-6·scale (largest
+error 2.48e-9 of the scale). It also runs 60 random documents: 54 compiled and checked, and 6
+whose random `@viewport` the scene refuses are reported as refused.
+tex: **https://github.com/youseng/geomira/actions/runs/39586451254 success**. Golden
+snapshots of every example and fixture are committed: the text formats in packages/export, and
+the PNG of every example as a Playwright baseline. In CI on 5004ef7, verify and the Playwright
+suite (49 tests) are green: ci **https://github.com/youseng/geomira/actions/runs/39586450521
+success**, deploy **https://github.com/youseng/geomira/actions/runs/39586450482 success**.
+Locally, verify is green on fc6601f, the full suite (41 tests) passed on 0d4d3ff, and the 8 new
+PNG goldens passed twice after their baselines were created. The full UI drag frame at 300
+objects: app work median 4.3–5.8 ms in CI against 8 ms, from 27 ms locally before this run
+(numbers below).
+
+## Done (each item → the test file that proves it)
+
+0. **Constructive mappings in the registry (step 1, 9b34bc7, ADR-0014 decision 9).**
+   `ExportMapping = 'numeric' | { constructive: ExportOp }` in packages/kernel `tool.ts`. Every
+   tool with a constructive Asymptote form names its op (midpoint, foot, circumcenter, centroid,
+   orthocenter, incenter, intersect, line, segment, ray, circle, circumcircle, incircle,
+   polygon, reflect, rotate, homothety, translate, spiral, compose, inverse, apply, add, sub,
+   mul, div, neg). docs/tools.md is regenerated from the registry.
+   → `packages/kernel/test/export-mapping.test.ts` (the exact constructive list),
+   `packages/kernel/test/registry.test.ts`, line 98 (changed under ADR-0014; see below).
+1. **texText escaping table (item 1).** `packages/export/src/tex-text.ts`:
+   - `TEX_TABLE` covers the ASCII specials, Greek, primes, ∠ ∡ ⟂ ∥ ≤ ≥ ≠ ° — – → · × − ±, ℓ,
+     sub/superscript digits, √(…), and whitespace.
+   - Neighbouring math characters are merged into one formula.
+   - Anything else becomes `?` with a warning naming the character, code point and index.
+     → `packages/export/test/tex-text.test.ts`:
+   - one test per mapped character, generated from the table;
+   - the table is exactly the listed set;
+   - the unknown-character warning path: an unknown character becomes `?` with a warning
+     naming it; control characters are unknown; a character outside the BMP is one unknown
+     character.
+     The warning is shown in the dialog and in TikZ/Asymptote comments
+     (`packages/export/test/formats.test.ts`, the e2e warning flow).
+2. **Names map to math (note D).** `tex-label.ts`:
+   - Names become math: `M_a`→`$M_{a}$`, `A_{12}`→`$A_{12}$`, `H'`→`$H^{\prime}$`, Greek.
+   - `A*`→`$A^{*}$`; the star is configurable (option `star`, e.g. `\ast`).
+   - Other labels and text objects are written as prose.
+     → `packages/export/test/tex-label.test.ts`: 2000 random names of the ADR-0009 grammar read
+     back to the scene's label runs. That they compile is shown by
+     `tests/fixtures/export/display.geo`, which has every name form (M_a, M_{ab}, H', A_1'', P1,
+     ω, x_a, ν, images with `*`); tex.yml compiles it with pdflatex (TikZ) and asy.
+3. **SVG, PNG, TikZ snippet and standalone, Asymptote standalone and aops (item 2).**
+   - Formats: `svg.ts`, `png.ts`, `tikz.ts` and `asy*.ts`, all over the same export frame
+     (`frame.ts`: the canvas's scene and display list for a view).
+   - Note A, one test per format that the exported objects equal the drawn objects (hidden
+     objects, coincident images, off-view objects, image-only view)
+     → `packages/export/test/drawn-set.test.ts`.
+   - Note B, mark_angle, mark_right, mark_segment and text in every format, images too
+     → `packages/export/test/display-values.test.ts`.
+   - Format details → `svg-tikz.test.ts`, `asy.test.ts`, `png-utf8.test.ts` (pHYs, the
+     `GEOMIRA` iTXt chunk with the figure text, read back), `color.test.ts`,
+     `frame-paint.test.ts`; `apps/web/test/export-theme.test.ts` (export theme = canvas theme).
+4. **Constructive Asymptote (note C).**
+   - Every op in the brief maps constructively, including line∩line, line∩circle and
+     circle∩circle. For those, helpers pick the selector's candidate: other(P), along/orient,
+     and near/far_from/sides on unbounded lines.
+   - Anything else is written numerically, marked `// numeric`.
+     → `asy-map.test.ts` (mapping and refusals), `asy-fallback.test.ts` (numeric forms of every
+     kind), `asy-coverage.test.ts` (every variant, helper and op is used by an input that tex.yml
+     compiles and checks, so the coordinate check covers every constructive mapping),
+     `check.test.ts` (the check itself).
+5. **olympiad.asy and the aops dialect (item 2), ADR-0014 decisions 14–15.**
+   - Source found: "Olympiad Asymptote Package / By Maria Monks and AoPS community / Last
+     Updated: 08/26/2007". No licence is stated anywhere I could find, so it is **not
+     vendored**.
+   - The aops dialect imports olympiad and calls only `foot(P, A, B)`, `circumcenter(A, B, C)`
+     and `incenter(A, B, C)`, which are documented publicly. Everything else uses the `gm`
+     helpers.
+   - aops is **snapshot-tested only** (`packages/export/test/__snapshots__/*/aops.asy`).
+     `docs/audit-checklist.md` has the manual AoPS check item. (As an extra local check, I
+     compiled the euler-line aops file once against a third-party copy of olympiad.asy; that
+     copy is not in the repository and is not part of any test.)
+6. **tex.yml (item 3).**
+   - The image (`.github/tex/Dockerfile`) is TeX Live + Asymptote + Node 22, with base images
+     from mirror.gcr.io and corepack pnpm.
+   - The job runs `pnpm export:tex tests/fixtures/out-export --fuzz 60`
+     (`scripts/export-tex.ts`): for every example and fixture, pdflatex on the standalone TikZ
+     and the snippet, then `asy -f pdf` on the standalone Asymptote plus a `write()` per
+     variable, then the coordinate check (≤ `EXPORT_TOL`·scale = 1e-6·scale, in num's
+     `tolerance.ts`).
+   - The same Asymptote check runs on 60 random documents.
+   - The compiled files are uploaded as an artifact.
+   - Golden snapshots: `packages/export/test/snapshots.test.ts` covers 11 inputs × 5 text
+     outputs (figure.svg, snippet.tikz.tex, standalone.tex, standalone.asy, aops.asy).
+     `apps/web/e2e/flows-export.spec.ts` "PNG golden: <example>" covers the 8 examples' 1× PNG
+     against `flows-export.spec.ts-snapshots/`.
+7. **Export dialog (note E).** `apps/web/src/ExportDialog.tsx`:
+   - Format, TikZ form, Asymptote dialect and pixel ratio.
+   - Copy and Download, the warnings, and the AoPS note.
+   - No export logic: it calls `exportAs`, and for PNG it draws the planned display list with
+     the canvas renderer.
+     → `apps/web/e2e/flows-export.spec.ts`: SVG; PNG size and text; PNG 1× pixel for pixel the
+     screen's canvas; TikZ; Asymptote standalone and AoPS; the warning; the PNG goldens.
+8. **Full UI drag frame (note F), ADR-0014 decisions 19–20.**
+   - `apps/web/e2e/drag-frame.spec.ts` uses a Chromium trace with a `performance.mark` per
+     dispatched pointermove, after a real mouse press on a free point of the 300-object figure.
+   - It reports app, raster and total, and asserts that the app median is ≤ 8 ms.
+   - Fixes, each keeping results identical:
+     - `apps/web/src/settled.ts`: the panels show the pre-drag state until the drag ends;
+     - label placement pre-tests in `packages/scene/src/labels.ts`;
+     - the `syncDerived` early exit (`packages/kernel/test/derived-imageless.test.ts`);
+     - the canvas font is set only on change.
+   - Numbers are below.
+
+## Not done
+
+Nothing in Run 9a's scope. Not started (later runs): anything outside SPEC §14 and notes A–J.
+
+## Known bugs
+
+None known. Found and fixed during the run:
+
+- **Sampler noise (c741314, ADR-0015).** CI found it: the deploy e2e on 53e6b05 failed with
+  "Mixed (local test, n = 200, exact over Q: 199 true, 1 false)"
+  (https://github.com/youseng/geomira/actions/runs/39578959350).
+  - Cause: the local sampler added noise AFTER the random similarity. When the similarity
+    shrank the figure, the noise relative to the sampled figure doubled and crossed the
+    configuration's boundary.
+  - Reproduction: the acute triangle A(1, 3), B(0, 0), C(4, 0) with
+    ∠BHC + ∠BAC = 180. The claim tested Mixed for 14 of seeds 0–299; this also happened on
+    base 9ae22fe, so it predates this run.
+  - Fix: the noise is now drawn in the user's figure and mapped with it. Now 0 of 300.
+  - `packages/claims/test/sampler-relative-noise.test.ts` failed before the fix (20,000
+    samples all acute; seeds 91, 98, 115, 123 hold).
+- **Before the commits:**
+  - Asymptote has no `xxpart` or `alpha(pen)`, and `gm_circle(pair, int)` was ambiguous
+    (renamed `gm_circler`).
+  - The picture shrank to its content (fixed with an invisible view box before the clip).
+  - The script's asy output overwrote the TikZ PDF.
+  - All of these were caught by compiling locally.
+- **CI-only failures, all fixed:**
+  - The tex image failed with public.ecr.aws 429 (159d311), then with a corepack/yarn symlink
+    error (7cfa073, 53e6b05, 0d4d3ff).
+  - ci failed on export branch coverage, 84.34% < 85% (53e6b05, 0d4d3ff); fixed with more
+    tests in fc6601f.
+  - `export:tex` counted refused random documents as passed (fixed in 5004ef7: they are
+    reported separately, and a refused example fails).
+
+## Uncertain
+
+- **olympiad.asy signatures (ADR-0014 decision 15).** The AoPS pages answered this environment
+  with HTTP 403. `foot(P, A, B)`, `circumcenter(A, B, C)` and `incenter(A, B, C)` were read
+  from search excerpts of the AoPS wiki page "Asymptote: Useful commands and their Output" and
+  the forum's olympiad.asy tutorial. Please confirm with the audit item.
+- **AoPS preamble.** The aops dialect writes no `texpreamble`. Whether AoPS's LaTeX has amssymb
+  (for `\measuredangle`) is on the audit checklist.
+- **Drag-frame reading (ADR-0014 decision 19).**
+  - In headless Chromium without a GPU, the canvas's software raster runs on the main thread
+    (~11–16 ms here).
+  - The budget is asserted on the app's work, and the total is reported.
+  - Please confirm this reading of SPEC §17, or say if the budget should include the raster.
+- **Label fonts (decision 2).** TeX labels use Computer Modern at 11 pt (the canvas uses 15 px,
+  about 11.25 bp). Positions and sides are the canvas's, glyph widths are TeX's, so long
+  labels may sit slightly differently.
+- No contest problems or new mathematical facts were used. ADR-0015's test uses the orthocentre
+  identity ∠BHC + ∠A = 180° for acute triangles, already in Run 5's tests.
+
+## Changed frozen tests
+
+Compared with `run-8b`: `add-only: frozen tests compared with run-8b, 0 violation(s)`.
+
+- `packages/kernel/test/registry.test.ts` line 98, under
+  [ADR-0014](adr/0014-export.md) decision 18 (commit 9b34bc7 cites it). It asserted
+  `expect(t.export).toBe('numeric')` for every tool; it now asserts
+  `t.export === 'numeric' || typeof t.export.constructive === 'string'`. The new
+  `export-mapping.test.ts` pins exactly which tools are constructive.
+- Lines only added:
+  - `packages/num/test/exports.test.ts` (`'EXPORT_TOL'`);
+  - `packages/scene/test/exports.test.ts` (`'dashPattern'`).
+- `apps/web/playwright.config.ts` (config, not a test): the desktop and mobile projects ignore
+  the new `drag-frame.spec.ts`, which runs alone in the new `measure-drag` project after
+  `measure`. Run 7's and Run 8b's specs run where they did.
+
+## Acceptance command output
+
+### Local, fc6601f (`pnpm install && pnpm verify`; 5004ef7 adds e2e baselines, the script and docs)
+
+```
+All matched files use Prettier code style!
+✔ no dependency violations found (450 modules, 2547 dependencies cruised)
+ok   tolerance: 638 files scanned, 0 violation(s)
+ok   file-length: 638 files scanned, 0 violation(s)
+ok   test-count: 2086 tests, floor 1741, 0 violation(s)
+ok   disabled-tests: 638 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-8b, 0 violation(s)
+ok   forbidden-words: 638 files scanned, 0 violation(s)
+ Test Files  189 passed (189)
+      Tests  2086 passed (2086)
+ claims/src        |   95.57 |    87.43 |   99.45 |   97.81 |
+ editor/src        |   93.51 |    87.11 |   98.66 |   97.16 |
+ export/src        |   95.62 |     87.5 |   99.03 |   96.55 |
+ kernel/src        |   98.48 |     95.8 |   99.73 |   98.96 |
+ kernel/src/tools  |   99.33 |    98.32 |     100 |   99.73 |
+ lang/src          |   97.65 |    92.99 |   99.72 |   98.53 |
+ scene/src         |   97.63 |    90.48 |     100 |   98.33 |
+Statements   : 97.02% ( 9233/9516 )
+Branches     : 91.76% ( 7535/8211 )
+Lines        : 98.28% ( 7701/7835 )
+verify exit=0
+```
+
+On 5004ef7: `pnpm rules` → `test-count: 2086 tests, floor 2086`, all other checks as above
+(646 files scanned); `pnpm lint` clean.
+
+### tex job in CI, 5004ef7 (`pnpm export:tex tests/fixtures/out-export --fuzz 60`)
+
+```
+ok   euler-line: TikZ (standalone, snippet), Asymptote; 8 variables (5 constructive), largest error 2.16e-17 of the scale
+ok   feuerbach: TikZ (standalone, snippet), Asymptote; 8 variables (2 constructive), largest error 0.00e+0 of the scale
+ok   incenter-excenter: TikZ (standalone, snippet), Asymptote; 8 variables (4 constructive), largest error 0.00e+0 of the scale
+ok   miquel: TikZ (standalone, snippet), Asymptote; 11 variables (5 constructive), largest error 1.10e-16 of the scale
+ok   nine-point-circle: TikZ (standalone, snippet), Asymptote; 15 variables (11 constructive), largest error 0.00e+0 of the scale
+ok   radical-axes: TikZ (standalone, snippet), Asymptote; 9 variables (3 constructive), largest error 2.46e-17 of the scale
+ok   reflection-layer: TikZ (standalone, snippet), Asymptote; 10 variables (7 constructive), largest error 2.20e-16 of the scale
+ok   simson: TikZ (standalone, snippet), Asymptote; 10 variables (6 constructive), largest error 0.00e+0 of the scale
+ok   fixture-constructions: TikZ (standalone, snippet), Asymptote; 73 variables (68 constructive), largest error 2.48e-9 of the scale
+ok   fixture-display: TikZ (standalone, snippet), Asymptote; 24 variables (21 constructive), largest error 0.00e+0 of the scale
+ok   fixture-numeric: TikZ (standalone, snippet), Asymptote; 14 variables (5 constructive), largest error 3.47e-18 of the scale
+ok   fuzz-0: Asymptote; 9 variables (1 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-1: Asymptote; 2 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-2: Asymptote; 4 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-3: Asymptote; 7 variables (1 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-4: Asymptote; 11 variables (2 constructive), largest error 6.75e-17 of the scale
+refused fuzz-5: zoomed in beyond the precision of the coordinates
+ok   fuzz-6: Asymptote; 8 variables (1 constructive), largest error 6.99e-18 of the scale
+ok   fuzz-7: Asymptote; 4 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-8: Asymptote; 4 variables (1 constructive), largest error 0.00e+0 of the scale
+refused fuzz-9: zoomed in beyond the precision of the coordinates
+ok   fuzz-10: Asymptote; 5 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-11: Asymptote; 7 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-12: Asymptote; 10 variables (1 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-13: Asymptote; 5 variables (0 constructive), largest error 6.73e-17 of the scale
+ok   fuzz-14: Asymptote; 14 variables (0 constructive), largest error 1.28e-16 of the scale
+ok   fuzz-15: Asymptote; 13 variables (1 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-16: Asymptote; 8 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-17: Asymptote; 7 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-18: Asymptote; 12 variables (3 constructive), largest error 9.35e-17 of the scale
+ok   fuzz-19: Asymptote; 7 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-20: Asymptote; 5 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-21: Asymptote; 8 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-22: Asymptote; 7 variables (1 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-23: Asymptote; 8 variables (2 constructive), largest error 3.27e-17 of the scale
+ok   fuzz-24: Asymptote; 3 variables (1 constructive), largest error 0.00e+0 of the scale
+refused fuzz-25: zoomed in beyond the precision of the coordinates
+ok   fuzz-26: Asymptote; 5 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-27: Asymptote; 13 variables (1 constructive), largest error 1.50e-16 of the scale
+ok   fuzz-28: Asymptote; 8 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-29: Asymptote; 3 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-30: Asymptote; 2 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-31: Asymptote; 13 variables (2 constructive), largest error 1.25e-16 of the scale
+ok   fuzz-32: Asymptote; 7 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-33: Asymptote; 4 variables (1 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-34: Asymptote; 8 variables (1 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-35: Asymptote; 14 variables (1 constructive), largest error 1.20e-17 of the scale
+ok   fuzz-36: Asymptote; 4 variables (0 constructive), largest error 9.10e-17 of the scale
+ok   fuzz-37: Asymptote; 17 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-38: Asymptote; 5 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-39: Asymptote; 9 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-40: Asymptote; 12 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-41: Asymptote; 4 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-42: Asymptote; 17 variables (12 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-43: Asymptote; 8 variables (0 constructive), largest error 0.00e+0 of the scale
+refused fuzz-44: zoomed in beyond the precision of the coordinates
+ok   fuzz-45: Asymptote; 15 variables (1 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-46: Asymptote; 8 variables (0 constructive), largest error 0.00e+0 of the scale
+refused fuzz-47: zoomed in beyond the precision of the coordinates
+ok   fuzz-48: Asymptote; 11 variables (1 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-49: Asymptote; 7 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-50: Asymptote; 19 variables (3 constructive), largest error 1.76e-16 of the scale
+ok   fuzz-51: Asymptote; 8 variables (0 constructive), largest error 0.00e+0 of the scale
+refused fuzz-52: zoomed in beyond the precision of the coordinates
+ok   fuzz-53: Asymptote; 4 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-54: Asymptote; 12 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-55: Asymptote; 3 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-56: Asymptote; 2 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-57: Asymptote; 5 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-58: Asymptote; 10 variables (0 constructive), largest error 0.00e+0 of the scale
+ok   fuzz-59: Asymptote; 23 variables (0 constructive), largest error 0.00e+0 of the scale
+71 inputs: 65 compiled and checked, 6 random documents refused by exportFrame, 0 failed
+```
+
+### Drag frame (note F): before and after
+
+Medians over 120 frames at 300 objects (ms; app = main-thread work except the software canvas
+raster):
+
+| where          | commit           | app                 | raster    | total       |
+| -------------- | ---------------- | ------------------- | --------- | ----------- |
+| local, 3 runs  | 53e6b05 (before) | 26.95, 27.27, 27.28 | 16.6–16.8 | 44.25–45.53 |
+| local, 3 runs  | 0d4d3ff (after)  | 6.28–7.21           | 15–18     | 22–26       |
+| CI, ci job     | fc6601f          | 4.27 (p95 6.55)     | 10.86     | 15.39       |
+| CI, deploy job | fc6601f          | 5.6 (p95 8.2)       | 13.42     | 19.2        |
+| CI, ci job     | 5004ef7          | 5.81 (p95 8.02)     | 14.63     | 20.55       |
+
+Before, the Text panel printed and parsed the whole document on every frame and React rewrote
+its textarea.
+
+### Playwright in CI (ci job, 5004ef7, `pnpm e2e`, durations removed)
+
+```
+✓   1 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: euler-line
+✓   3 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: nine-point-circle
+✓   4 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: reflection-layer
+✓   2 [mobile] › e2e/mobile.spec.ts:50:1 › pan with one finger, pinch with two
+✓   6 [mobile] › e2e/mobile.spec.ts:80:1 › drag a point with a finger; the text follows
+✓   7 [mobile] › e2e/mobile.spec.ts:90:1 › the panels work on a phone: tabs, objects, claims, command bar
+✓   8 [mobile] › e2e/shell.spec.ts:3:1 › shows the title and an empty canvas
+frame time (mobile): {"objects":300,"drag":{"frames":120,"median":4.7000000000116415,"p95":7.5,"max":362.29999999998836},"pan":{"frames":120,"median":3,"p95":3.7000000000116415,"max":380.0999999999767}}
+✓   5 [mobile] › e2e/scene.spec.ts:28:1 › frame time at 300 objects (SPEC §17: drag frame ≤ 8 ms)
+✓   9 [desktop] › e2e/flows-build.spec.ts:8:1 › triangle and circumcircle by mouse and by command bar give the identical text
+✓  10 [mobile] › e2e/scene.spec.ts:50:3 › HiDPI › the canvas has devicePixelRatio device pixels per CSS pixel
+✓  12 [mobile] › e2e/scene.spec.ts:61:1 › hiding the source layer draws the coincident images (image only view)
+✓  11 [desktop] › e2e/flows-build.spec.ts:44:1 › dragging a free point moves it, rounds it at the end, and undo returns
+✓  13 [mobile] › e2e/scene.spec.ts:71:1 › pan, zoom and fit change the picture; fit restores it
+✓  15 [desktop] › e2e/flows-claims.spec.ts:15:1 › local test, then global test, then open the counterexample
+✓  16 [desktop] › e2e/flows-claims.spec.ts:53:1 › with assume lines the global test follows the local test by itself
+✓  17 [desktop] › e2e/flows-claims.spec.ts:68:1 › a figure that violates an assume line says so at that line, and the tests still run
+✓  14 [desktop] › e2e/flows-build.spec.ts:69:1 › 50 random undo/redo steps: every step shows its text; redoing all returns the original
+✓  18 [desktop] › e2e/flows-claims.spec.ts:89:1 › cancel stops a running test; badges are three-valued
+✓  20 [desktop] › e2e/flows-export.spec.ts:34:1 › SVG: the canvas picture as SVG, shown and downloaded
+✓  19 [desktop] › e2e/flows-build.spec.ts:116:1 › a derived layer from a transform, its images, and dragging an image moves its source
+✓  21 [desktop] › e2e/flows-export.spec.ts:45:1 › PNG: the canvas size times the pixel ratio, with the figure text inside
+✓  22 [desktop] › e2e/flows-build.spec.ts:134:1 › command bar: completions from the registry; shortcuts and help from the keymap
+✓  23 [desktop] › e2e/flows-export.spec.ts:67:1 › PNG at 1×: pixel for pixel the canvas on the screen
+✓  24 [desktop] › e2e/flows-persist.spec.ts:8:1 › text panel: two-way, with per-line diagnostics
+✓  25 [desktop] › e2e/flows-export.spec.ts:102:1 › TikZ: snippet and standalone document, copy and download
+✓  26 [desktop] › e2e/flows-persist.spec.ts:28:1 › objects panel lists Undefined reasons; style panel edits the text
+✓  27 [desktop] › e2e/flows-export.spec.ts:123:1 › Asymptote: standalone with helpers, and the AoPS form with olympiad.asy
+✓  29 [desktop] › e2e/flows-export.spec.ts:146:1 › a character TeX cannot write is reported in the TeX formats, not in SVG
+✓  30 [desktop] › e2e/flows-export.spec.ts:188:3 › PNG golden: euler-line
+✓  28 [desktop] › e2e/flows-persist.spec.ts:43:1 › opening a share link keeps the autosave; Restore previous figure brings it back
+✓  31 [desktop] › e2e/flows-export.spec.ts:188:3 › PNG golden: feuerbach
+✓  33 [desktop] › e2e/flows-export.spec.ts:188:3 › PNG golden: incenter-excenter
+✓  32 [desktop] › e2e/flows-persist.spec.ts:77:1 › a damaged share link is refused with its reason; the autosave opens instead
+✓  34 [desktop] › e2e/flows-export.spec.ts:188:3 › PNG golden: miquel
+✓  35 [desktop] › e2e/flows-persist.spec.ts:94:1 › the debug report is reachable from the page and from an internal error
+✓  37 [desktop] › e2e/scene.spec.ts:19:3 › screenshot baseline: euler-line
+✓  36 [desktop] › e2e/flows-export.spec.ts:188:3 › PNG golden: nine-point-circle
+✓  38 [desktop] › e2e/scene.spec.ts:19:3 › screenshot baseline: nine-point-circle
+✓  39 [desktop] › e2e/flows-export.spec.ts:188:3 › PNG golden: radical-axes
+✓  40 [desktop] › e2e/scene.spec.ts:19:3 › screenshot baseline: reflection-layer
+✓  41 [desktop] › e2e/flows-export.spec.ts:188:3 › PNG golden: reflection-layer
+✓  43 [desktop] › e2e/flows-export.spec.ts:188:3 › PNG golden: simson
+✓  44 [desktop] › e2e/shell.spec.ts:3:1 › shows the title and an empty canvas
+frame time (desktop): {"objects":300,"drag":{"frames":120,"median":3.5,"p95":6,"max":584.2000000000116},"pan":{"frames":120,"median":1.900000000023283,"p95":2.400000000023283,"max":465.69999999995343}}
+✓  42 [desktop] › e2e/scene.spec.ts:28:1 › frame time at 300 objects (SPEC §17: drag frame ≤ 8 ms)
+✓  45 [desktop] › e2e/scene.spec.ts:50:3 › HiDPI › the canvas has devicePixelRatio device pixels per CSS pixel
+✓  46 [desktop] › e2e/scene.spec.ts:61:1 › hiding the source layer draws the coincident images (image only view)
+✓  47 [desktop] › e2e/scene.spec.ts:71:1 › pan, zoom and fit change the picture; fit restores it
+main thread during a test (measure): {"tasks":15347,"maxTask":6.1,"longTasks":[],"pingGaps":15290,"maxPingGap":6.2}
+✓  48 [measure] › e2e/long-task.spec.ts:53:1 › the main thread never blocks for more than 16 ms during a local and a global test
+full UI drag frame (measure-drag): {"objects":300,"app":{"frames":120,"median":5.81,"p95":8.02,"max":11.37},"raster":{"frames":120,"median":14.63,"p95":19.31,"max":19.5},"total":{"frames":120,"median":20.55,"p95":25.81,"max":27.84}}
+✓  49 [measure-drag] › e2e/drag-frame.spec.ts:86:1 › a full UI drag frame at 300 objects (SPEC §17: ≤ 8 ms)
+49 passed
+```
+
+### CI on GitHub
+
+| commit           | what                                               | ci                             | deploy                            | tex                            |
+| ---------------- | -------------------------------------------------- | ------------------------------ | --------------------------------- | ------------------------------ |
+| 159d311          | steps 1–2, tex.yml (9b34bc7, 72ec0bc with it)      | cancelled (next push)          | success 39578379420               | failure 39578379298 (ECR 429)  |
+| 7cfa073          | tex image from mirror.gcr.io                       | cancelled (next push)          | success 39578689225               | failure 39578689252 (corepack) |
+| 53e6b05          | step 3: Export dialog                              | failure 39578959338 (coverage) | failure 39578959350 (sampler bug) | failure 39578959291 (corepack) |
+| 0d4d3ff          | step 4: drag frame                                 | failure 39581898070 (coverage) | success 39581898095               | failure 39581898175 (corepack) |
+| c741314, fc6601f | sampler fix (ADR-0015); export tests, corepack fix | success 39583876332            | success 39583876372               | success 39583876263            |
+| 5004ef7          | PNG goldens, refused fuzz reported                 | **success 39586450521**        | success 39586450482               | **success 39586451254**        |
+
+Run URLs are `https://github.com/youseng/geomira/actions/runs/<id>`. The nightly is not waited
+for (note I). The STATUS commit after 5004ef7 changes only docs/STATUS.md; its CI run is on the
+pull request.
+
+## Requests
+
+- Please confirm the readings under "Uncertain", in particular the drag-frame reading and the
+  olympiad.asy signatures (audit checklist item).
+- The `run-9a` tag is for the maintainer to place on the merge.
+- Formatting: new files were formatted with Prettier, and every non-whitespace change it made
+  was reviewed. No `eslint --fix` or other automatic fix was run on source files (note G); lint
+  findings were fixed by hand.
+- No runtime dependency was added. The tex image installs Node 22 from the official image
+  (CI only).
+
+## Notes for later runs
+
+- A new constructive tool needs an ExportOp, its case in `asy-map.ts`, a helper if needed and a
+  line in `tests/fixtures/export/constructions.geo`; `asy-coverage.test.ts` fails until the
+  fixture uses it.
+- Golden snapshots: `vitest run packages/export -u` for the text formats, and
+  `playwright test flows-export --update-snapshots` for the PNGs. Review the diff.
+
+---
+
 ## Run 8b: ACCEPTED (2026-10-21)
 
 apps/web UI (SPEC §15, §16) over packages/editor, scene and claims. Base check first: Run 8a was

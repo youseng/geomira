@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" stroke-linecap="round" stroke-linejoin="round">
+<title>Nine-point circle</title>
+<rect width="640" height="480" fill="#fbfbf8"/>
+<g data-id="4" data-name="abc">
+<polygon points="280,79.289 40,399.289 600,399.289" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
+<polyline points="280,79.289 40,399.289" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+<polyline points="40,399.289 600,399.289" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+<polyline points="600,399.289 280,79.289" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="15" data-name="ν">
+<path d="M441.421,259.289 A141.421 141.421 0 1 0 158.579,259.289 A141.421 141.421 0 1 0 441.421,259.289" fill="none" stroke="#0000FF" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="1" data-name="A">
+<circle cx="280" cy="79.289" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="2" data-name="B">
+<circle cx="40" cy="399.289" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="3" data-name="C">
+<circle cx="600" cy="399.289" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="5" data-name="H">
+<circle cx="280" cy="159.289" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="6" data-name="M_a">
+<circle cx="320" cy="399.289" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="7" data-name="M_b">
+<circle cx="440" cy="239.289" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="8" data-name="M_c">
+<circle cx="160" cy="239.289" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="9" data-name="D">
+<circle cx="280" cy="399.289" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="10" data-name="E">
+<circle cx="320" cy="119.289" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="11" data-name="F">
+<circle cx="241.6" cy="130.489" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="12" data-name="X">
+<circle cx="280" cy="119.289" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="13" data-name="Y">
+<circle cx="160" cy="279.289" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="14" data-name="Z">
+<circle cx="440" cy="279.289" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g font-family="&quot;DejaVu Serif&quot;, serif">
+<text data-id="1" x="286.364" y="69.925" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">A</tspan></text>
+<text data-id="2" x="33.636" y="389.925" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">B</tspan></text>
+<text data-id="3" x="606.364" y="389.925" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">C</tspan></text>
+<text data-id="5" x="286.364" y="149.925" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">H</tspan></text>
+<text data-id="6" x="313.636" y="389.925" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">M</tspan><tspan font-size="11" dy="3.75">a</tspan></text>
+<text data-id="7" x="446.364" y="229.925" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">M</tspan><tspan font-size="11" dy="3.75">b</tspan></text>
+<text data-id="8" x="153.636" y="229.925" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">M</tspan><tspan font-size="11" dy="3.75">c</tspan></text>
+<text data-id="9" x="286.364" y="389.925" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">D</tspan></text>
+<text data-id="10" x="326.364" y="109.925" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">E</tspan></text>
+<text data-id="11" x="235.236" y="121.125" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">F</tspan></text>
+<text data-id="12" x="273.636" y="109.925" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">X</tspan></text>
+<text data-id="13" x="166.364" y="269.925" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">Y</tspan></text>
+<text data-id="14" x="433.636" y="269.925" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">Z</tspan></text>
+</g>
+</svg>

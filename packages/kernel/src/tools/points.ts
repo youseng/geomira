@@ -132,7 +132,7 @@ export const POINT_TOOLS: readonly ToolSpec[] = [
     outputKinds: ['point'],
     compute: midpoint,
     degenerate: ['midpoint(A, A) = A'],
-    export: 'numeric',
+    export: { constructive: 'midpoint' },
     doc: 'The midpoint of A and B.',
     examples: [
       {
@@ -167,7 +167,7 @@ export const POINT_TOOLS: readonly ToolSpec[] = [
       'P on the line → P',
       'a segment or ray is extended to its carrier line',
     ],
-    export: 'numeric',
+    export: { constructive: 'foot' },
     doc: 'foot(P, l) or foot(P, A, B): the orthogonal projection of P on the line.',
     examples: [
       {

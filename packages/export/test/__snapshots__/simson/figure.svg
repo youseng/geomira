@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" stroke-linecap="round" stroke-linejoin="round">
+<title>Simson line</title>
+<rect width="640" height="480" fill="#fbfbf8"/>
+<g data-id="4" data-name="abc">
+<polygon points="293.459,66.541 134.214,278.868 505.786,278.868" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
+<polyline points="293.459,66.541 134.214,278.868" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+<polyline points="134.214,278.868 505.786,278.868" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+<polyline points="505.786,278.868 293.459,66.541" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="5" data-name="ω">
+<path d="M507.673,252.327 A187.673 187.673 0 1 0 132.327,252.327 A187.673 187.673 0 1 0 507.673,252.327" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="10" data-name="s">
+<polyline points="97.585,548 302.918,-68" fill="none" stroke="#FF0000" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="1" data-name="A">
+<circle cx="293.459" cy="66.541" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="2" data-name="B">
+<circle cx="134.214" cy="278.868" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="3" data-name="C">
+<circle cx="505.786" cy="278.868" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="6" data-name="P">
+<circle cx="187.295" cy="119.623" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="7" data-name="D">
+<circle cx="187.295" cy="278.868" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="8" data-name="E">
+<circle cx="266.918" cy="40" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="9" data-name="F">
+<circle cx="229.761" cy="151.472" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g font-family="&quot;DejaVu Serif&quot;, serif">
+<text data-id="1" x="287.095" y="57.177" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">A</tspan></text>
+<text data-id="2" x="127.85" y="297.232" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">B</tspan></text>
+<text data-id="3" x="512.15" y="297.232" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">C</tspan></text>
+<text data-id="6" x="180.931" y="110.259" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">P</tspan></text>
+<text data-id="7" x="180.931" y="269.504" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">D</tspan></text>
+<text data-id="8" x="260.554" y="30.636" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">E</tspan></text>
+<text data-id="9" x="223.397" y="142.108" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">F</tspan></text>
+</g>
+</svg>

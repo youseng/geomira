@@ -319,3 +319,35 @@ textarea {
     min-height: 12rem;
   }
 }
+
+/* The Export dialog (Run 9a): formats as radio rows, the file's text below. */
+.export-dialog {
+  top: 6%;
+  max-height: 88vh;
+  overflow: auto;
+}
+
+.export-dialog [role='radiogroup'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.export-dialog input[type='radio'] {
+  width: auto;
+  margin: 0;
+}
+
+.export-warnings {
+  margin: 0 0 0.5rem;
+  padding-left: 1.25rem;
+  color: #9a3412;
+}
+
+.export-dialog textarea {
+  font-family: ui-monospace, 'DejaVu Sans Mono', monospace;
+  font-size: 0.8rem;
+  white-space: pre;
+  overflow-x: auto;
+}

@@ -276,11 +276,20 @@ function duplicateName(objects: readonly DocObject[]): string | undefined {
  * the held sources are not imaged (their existing images stay; see Held).
  */
 export function syncDerived(doc: Document, registry: Registry, held?: Held): EditResult<Synced> {
-  const { doc: pruned, removed } = prune(doc, registry);
+  // Without rules and images there is nothing to prune or add; skip the static kinds of every
+  // object (the editor syncs after every drag frame, note F of Run 9a). Order and names are
+  // still checked below, exactly as in the general case.
+  const imageless =
+    ruleLayers(doc).length === 0 && doc.objects.every((o) => o.managedBy === undefined);
+  const { doc: pruned, removed } = imageless
+    ? { doc, removed: dependents(doc, []) }
+    : prune(doc, registry);
   const fresh = new Set<number>();
   let cur = pruned;
   for (let pass = 0; pass <= cur.layers.length; pass += 1) {
-    const r = addMissing(cur, registry, fresh, held);
+    const r = imageless
+      ? { ok: true as const, doc: cur, n: 0 }
+      : addMissing(cur, registry, fresh, held);
     if (!r.ok) return r;
     cur = r.doc;
     if (r.n === 0) {

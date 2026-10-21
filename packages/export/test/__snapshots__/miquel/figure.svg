@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" stroke-linecap="round" stroke-linejoin="round">
+<title>Miquel point</title>
+<rect width="640" height="480" fill="#fbfbf8"/>
+<g data-id="4" data-name="abc">
+<polygon points="289.113,40.012 121.968,262.872 511.972,262.872" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
+<polyline points="289.113,40.012 121.968,262.872" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+<polyline points="121.968,262.872 511.972,262.872" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+<polyline points="511.972,262.872 289.113,40.012" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="8" data-name="a">
+<path d="M422.841,171.937 A131.937 131.937 0 1 0 158.966,171.937 A131.937 131.937 0 1 0 422.841,171.937" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="9" data-name="b">
+<path d="M252.179,268.095 A65.21 65.21 0 1 0 121.758,268.095 A65.21 65.21 0 1 0 252.179,268.095" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="10" data-name="c">
+<path d="M518.242,303.729 A136.271 136.271 0 1 0 245.7,303.729 A136.271 136.271 0 1 0 518.242,303.729" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="1" data-name="A">
+<circle cx="289.113" cy="40.012" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="2" data-name="B">
+<circle cx="121.968" cy="262.872" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="3" data-name="C">
+<circle cx="511.972" cy="262.872" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="5" data-name="D">
+<circle cx="251.969" cy="262.872" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="6" data-name="E">
+<circle cx="422.828" cy="173.728" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="7" data-name="F">
+<circle cx="163.754" cy="207.157" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="11" data-name="M">
+<circle cx="245.921" cy="295.969" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g font-family="&quot;DejaVu Serif&quot;, serif">
+<text data-id="1" x="282.749" y="30.648" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">A</tspan></text>
+<text data-id="2" x="115.604" y="253.508" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">B</tspan></text>
+<text data-id="3" x="518.336" y="253.508" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">C</tspan></text>
+<text data-id="5" x="245.605" y="253.508" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">D</tspan></text>
+<text data-id="6" x="429.192" y="164.364" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">E</tspan></text>
+<text data-id="7" x="157.39" y="197.793" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">F</tspan></text>
+<text data-id="11" x="239.557" y="286.605" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">M</tspan></text>
+</g>
+</svg>

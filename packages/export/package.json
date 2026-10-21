@@ -5,7 +5,27 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./tex-text": "./src/tex-text.ts",
+    "./tex-label": "./src/tex-label.ts",
+    "./color": "./src/color.ts",
+    "./paint": "./src/paint.ts",
+    "./frame": "./src/frame.ts",
+    "./svg": "./src/svg.ts",
+    "./tikz": "./src/tikz.ts",
+    "./asy": "./src/asy.ts",
+    "./asy-map": "./src/asy-map.ts",
+    "./asy-plan": "./src/asy-plan.ts",
+    "./check": "./src/check.ts",
+    "./png": "./src/png.ts",
+    "./formats": "./src/formats.ts",
+    "./utf8": "./src/utf8.ts"
+  },
+  "dependencies": {
+    "@geomira/kernel": "workspace:*",
+    "@geomira/lang": "workspace:*",
+    "@geomira/num": "workspace:*",
+    "@geomira/scene": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" stroke-linecap="round" stroke-linejoin="round">
+<title>Incenter–excenter lemma</title>
+<rect width="640" height="480" fill="#fbfbf8"/>
+<g data-id="4" data-name="abc">
+<polygon points="302.895,41.216 200.264,178.057 439.736,178.057" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
+<polyline points="302.895,41.216 200.264,178.057" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+<polyline points="200.264,178.057 439.736,178.057" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+<polyline points="439.736,178.057 302.895,41.216" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="7" data-name="ω">
+<path d="M440.952,160.952 A120.952 120.952 0 1 0 199.048,160.952 A120.952 120.952 0 1 0 440.952,160.952" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="1" data-name="A">
+<circle cx="302.895" cy="41.216" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="2" data-name="B">
+<circle cx="200.264" cy="178.057" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="3" data-name="C">
+<circle cx="439.736" cy="178.057" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="5" data-name="I">
+<circle cx="308.764" cy="123.807" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="6" data-name="I_a">
+<circle cx="331.236" cy="440" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="8" data-name="M">
+<circle cx="320" cy="281.903" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g font-family="&quot;DejaVu Serif&quot;, serif">
+<text data-id="1" x="296.531" y="31.852" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">A</tspan></text>
+<text data-id="2" x="193.9" y="196.421" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">B</tspan></text>
+<text data-id="3" x="446.1" y="196.421" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">C</tspan></text>
+<text data-id="5" x="315.128" y="114.443" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">I</tspan></text>
+<text data-id="6" x="337.6" y="430.636" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">I</tspan><tspan font-size="11" dy="3.75">a</tspan></text>
+<text data-id="8" x="326.364" y="272.539" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">M</tspan></text>
+</g>
+</svg>

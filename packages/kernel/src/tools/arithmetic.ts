@@ -47,7 +47,7 @@ function spec(
     outputKinds: ['number'],
     compute,
     degenerate: extra,
-    export: 'numeric',
+    export: { constructive: op },
     doc: `a ${symbol} b on numbers (exact when both are exact).`,
     examples: [{ args: ['2/3', '3/4'] }],
   };
@@ -68,7 +68,7 @@ export const ARITHMETIC_TOOLS: readonly ToolSpec[] = [
     outputKinds: ['number'],
     compute: neg,
     degenerate: [],
-    export: 'numeric',
+    export: { constructive: 'neg' },
     doc: '−a (exact when a is exact).',
     examples: [{ args: ['2/3'] }],
   },

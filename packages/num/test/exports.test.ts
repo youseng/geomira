@@ -19,6 +19,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     names: [
       'BAND',
       'EPS',
+      'EXPORT_TOL',
       'FALSE_ABS',
       'FALSE_FACTOR',
       'FLOOR_DELTA',

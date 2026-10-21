@@ -57,8 +57,46 @@ export interface Signature {
   readonly radical?: boolean;
 }
 
-/** How exporters draw a tool's result (ADR-0003: every Run 2 tool is 'numeric'). */
-export type ExportMapping = 'numeric';
+/**
+ * A construction the Asymptote exporter writes by name (SPEC §14, ADR-0014): one helper
+ * function or builtin per op, the variant chosen by the argument kinds and count of the
+ * overload a call resolves to (foot(P, l) or foot(P, A, B); intersect of lines or curves;
+ * reflect(l) or reflect(P), or the image sugar reflect(X, …)).
+ */
+export type ExportOp =
+  | 'midpoint'
+  | 'foot'
+  | 'circumcenter'
+  | 'centroid'
+  | 'orthocenter'
+  | 'incenter'
+  | 'intersect'
+  | 'line'
+  | 'segment'
+  | 'ray'
+  | 'circle'
+  | 'circumcircle'
+  | 'incircle'
+  | 'polygon'
+  | 'reflect'
+  | 'rotate'
+  | 'homothety'
+  | 'translate'
+  | 'spiral'
+  | 'compose'
+  | 'inverse'
+  | 'apply'
+  | 'add'
+  | 'sub'
+  | 'mul'
+  | 'div'
+  | 'neg';
+
+/**
+ * How exporters write a tool's result: 'numeric' (the value's coordinates), or
+ * constructively (ADR-0014; ADR-0003 item 11 had every tool 'numeric' until the export run).
+ */
+export type ExportMapping = 'numeric' | { readonly constructive: ExportOp };
 
 /**
  * An example argument, as exact text: a point `[x, y]`, a number `"2/3"`, a line-like

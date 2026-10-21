@@ -16,3 +16,4 @@ reports/
 docs/tools.md
 # Generated from the grammar, notation tables and registry (pnpm docs:lang); a test checks it byte for byte.
 docs/language.md
+packages/export/test/__snapshots__/

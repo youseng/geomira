@@ -13,6 +13,7 @@
   "dependencies": {
     "@geomira/claims": "workspace:*",
     "@geomira/editor": "workspace:*",
+    "@geomira/export": "workspace:*",
     "@geomira/kernel": "workspace:*",
     "@geomira/lang": "workspace:*",
     "@geomira/num": "workspace:*",

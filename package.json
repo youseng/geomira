@@ -15,6 +15,7 @@
     "docs:tools": "tsx scripts/gen-tool-docs.ts",
     "docs:exactness": "tsx scripts/exactness-report.ts",
     "docs:lang": "tsx scripts/gen-language-docs.ts",
+    "export:tex": "tsx scripts/export-tex.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "mutation:num": "stryker run stryker.num.json",

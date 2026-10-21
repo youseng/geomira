@@ -19,6 +19,7 @@ import { EXAMPLES } from './examples';
 import { figureOf, viewportFor } from './figure';
 import type { HeaderProps } from './Header';
 import { LIGHT_THEME } from './render';
+import { useSettled } from './settled';
 import { EditorStore, useSnapshot, type Snapshot } from './store';
 import { TestRuns } from './test-runs';
 import { TestHost } from './worker/host';
@@ -28,7 +29,8 @@ const BENCH_FRAMES = 120;
 /** The test worker starts this long after the page (ms). */
 const WARM_MS = 300;
 
-export type Dialog = { readonly kind: 'share' | 'report'; readonly text: string } | null;
+export type Dialog =
+  { readonly kind: 'share' | 'report'; readonly text: string } | { readonly kind: 'export' } | null;
 
 export function reportOf(store: EditorStore): string {
   const agent = typeof navigator === 'undefined' ? 'unknown' : navigator.userAgent;
@@ -137,7 +139,9 @@ export function useHeader(env: HeaderEnv) {
   const state = snap.state;
   const [exampleId, setExampleId] = useState('');
   const [times, setTimes] = useState<FrameTimes | null>(null);
-  const printed = useMemo(() => print(state.doc), [state.doc]);
+  // The text of the settled state: a drag frame does not print the document (note F).
+  const settled = useSettled(state);
+  const printed = useMemo(() => print(settled.doc), [settled.doc]);
   const open = (text: string, origin: 'file' | 'autosave') => {
     setTimes(null);
     runs.clear();
@@ -175,6 +179,9 @@ export function useHeader(env: HeaderEnv) {
     },
     onReport: () => {
       env.setDialog({ kind: 'report', text: reportOf(store) });
+    },
+    onExport: () => {
+      env.setDialog({ kind: 'export' });
     },
     onMeasure: () => {
       const ctx = env.canvas()?.getContext('2d');

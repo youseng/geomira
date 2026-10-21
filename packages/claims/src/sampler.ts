@@ -2,7 +2,8 @@
  * Samplers (SPEC §10.4). A sample is the user's document with its FREE inputs rewritten
  * (free.ts); images in derived layers and every other object are recomputed by evaluate.
  *   - LOCAL: a random similarity z ↦ s·R·(z − c) + c + b of the free points (c their
- *     centroid, s = 2^u with |u| ≤ 1), plus Gaussian noise σ = 0.02·scale; explicit radii
+ *     centroid, s = 2^u with |u| ≤ 1) applied to the points moved by Gaussian noise
+ *     σ = 0.02·scale (so the noise is relative to the sampled figure, ADR-0015); explicit radii
  *     are multiplied by s; glider parameters are perturbed locally (by an arc or a length
  *     of about σ); params by 2% of their range; no mirroring. It cannot cross a
  *     configuration boundary on purpose.
@@ -123,8 +124,11 @@ function sampleInput(ctx: Context, input: FreeInput, v: readonly Rational[]): Ra
   const g = () => ctx.rng.gaussian();
   switch (input.kind) {
     case 'point': {
-      const [x, y] = mapPoint(ctx.sim, at(0), at(1));
-      return [dyadic(x + ctx.sigma * g(), ctx.k), dyadic(y + ctx.sigma * g(), ctx.k)];
+      // The noise is drawn in the user's figure and mapped with it, so it is σ relative to the
+      // sampled figure whatever the similarity's size (ADR-0015).
+      const nx = at(0) + ctx.sigma * g();
+      const [x, y] = mapPoint(ctx.sim, nx, at(1) + ctx.sigma * g());
+      return [dyadic(x, ctx.k), dyadic(y, ctx.k)];
     }
     case 'radius': {
       const r = dyadic(at(0) * ctx.sim.s, ctx.k);
