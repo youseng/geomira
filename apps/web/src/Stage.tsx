@@ -3,7 +3,7 @@ import { claimRows, type ClaimRow } from '@geomira/editor/panels';
 import type { EditorState } from '@geomira/editor/state';
 import type { Scene } from '@geomira/scene/types';
 import type { FrameTimes } from './bench';
-import { Glyph, SrOnly } from './icons';
+import { SrOnly, ZoomIcon } from './icons';
 import { MathText } from './MathText';
 import { useSettled } from './settled';
 import type { EditorStore, Notice } from './store';
@@ -62,7 +62,7 @@ export function ZoomControls(p: {
           p.onZoom(1.25);
         }}
       >
-        <Glyph>+</Glyph>
+        <ZoomIcon kind="in" />
         <SrOnly>Zoom in</SrOnly>
       </button>
       <button
@@ -72,11 +72,11 @@ export function ZoomControls(p: {
           p.onZoom(0.8);
         }}
       >
-        <Glyph>{'−'}</Glyph>
+        <ZoomIcon kind="out" />
         <SrOnly>Zoom out</SrOnly>
       </button>
       <button type="button" title="Fit the figure (0)" onClick={p.onFit}>
-        <Glyph>{'⤢'}</Glyph>
+        <ZoomIcon kind="fit" />
         <SrOnly>Fit</SrOnly>
       </button>
     </div>

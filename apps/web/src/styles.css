@@ -24,7 +24,9 @@
   --info-soft: #e6edf9;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
   --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, 'DejaVu Sans Mono', monospace;
-  --serif: 'Latin Modern Roman', 'CMU Serif', 'Times New Roman', 'Liberation Serif', Times, serif;
+  --serif: 'Latin Modern Roman', 'CMU Serif', 'Liberation Serif', 'Times New Roman', Times, serif;
+  --math:
+    'Geomira Math', 'Latin Modern Roman', 'CMU Serif', 'Liberation Serif', 'Times New Roman', serif;
   color-scheme: light;
 }
 

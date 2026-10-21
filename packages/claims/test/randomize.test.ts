@@ -59,14 +59,12 @@ function angles(doc: Document): { a: number; b: number; c: number } {
   };
 }
 
-function literal(doc: Document, name: string): readonly Rational[] {
+/** The literal arguments of an object's call (undefined where an argument is not a literal). */
+function literal(doc: Document, name: string): readonly (Rational | undefined)[] {
   const o = doc.objects.find((x) => x.name === name);
   const e = o === undefined ? undefined : exprAt(o.def, []);
   if (e?.kind !== 'call') throw new Error(`${name} is not a call`);
-  return e.args.map((a) => {
-    if (a.kind !== 'lit') throw new Error(`${name} is not a free point`);
-    return a.value;
-  });
+  return e.args.map((a) => (a.kind === 'lit' ? a.value : undefined));
 }
 
 describe('randomFigure (Run 9b, ADR-0016)', () => {
@@ -104,8 +102,8 @@ describe('randomFigure (Run 9b, ADR-0016)', () => {
       const doc = figureOf(randomFigure(f.doc, REGISTRY, 'right', seed)).doc;
       const [A, B, C] = ['A', 'B', 'C'].map((x) => literal(doc, x));
       const d = (
-        p: readonly Rational[] | undefined,
-        q: readonly Rational[] | undefined,
+        p: readonly (Rational | undefined)[] | undefined,
+        q: readonly (Rational | undefined)[] | undefined,
         i: number,
       ) => sub(p?.[i] ?? { num: 0n, den: 1n }, q?.[i] ?? { num: 0n, den: 1n });
       const dot = add(mul(d(B, A, 0), d(C, A, 0)), mul(d(B, A, 1), d(C, A, 1)));
@@ -227,6 +225,51 @@ describe('randomFigure (Run 9b, ADR-0016)', () => {
       expect(v !== undefined && v.num >= 0n && v.num <= v.den).toBe(true);
       expect(v !== undefined && 1000n % v.den === 0n).toBe(true);
     }
+  });
+
+  it('rounds every kind of free input: radii, line and angle gliders, stereographic ones, params', () => {
+    const f = obtuseTriangle()
+      .def('O', 'midpoint', 'B', 'C')
+      .def('w', 'circle', 'O', n(3))
+      .def('P', 'on', 'w', n(30))
+      .def('l', 'line', 'A', 'B')
+      .def('Q', 'on', 'l', n('0.25'))
+      .def('k', 'circle', 'A', 'B', 'C')
+      .def('R', 'on', 'k', n(2), n(1))
+      .def('t', 'param', n(-1), n(1), n(0));
+    const grid = (x: Rational, digits: number) => 10n ** BigInt(digits) % x.den === 0n;
+    for (let seed = 0; seed < 25; seed++) {
+      const r = figureOf(randomFigure(f.doc, REGISTRY, 'acute', seed));
+      for (const name of ['w', 'P', 'Q', 'R', 't']) expect(r.changed, name).toContain(f.id(name));
+      const [, radius] = literal(r.doc, 'w');
+      const [, theta] = literal(r.doc, 'P');
+      const [, u, v] = literal(r.doc, 'R');
+      const [, tq] = literal(r.doc, 'Q');
+      const [lo, hi, k] = literal(r.doc, 't');
+      expect(radius !== undefined && radius.num > 0n && grid(radius, 2)).toBe(true);
+      expect(theta !== undefined && grid(theta, 1)).toBe(true);
+      expect(tq !== undefined && grid(tq, 3)).toBe(true);
+      expect(u !== undefined && v !== undefined && grid(u, 3) && grid(v, 3)).toBe(true);
+      expect([lo, hi]).toEqual([
+        { num: -1n, den: 1n },
+        { num: 1n, den: 1n },
+      ]);
+      expect(k !== undefined && k.num >= -k.den && k.num <= k.den && grid(k, 4)).toBe(true);
+      const values = floats(r.doc);
+      for (const o of f.doc.objects) expect(values.get(o.id)?.kind, o.name).not.toBe('undefined');
+    }
+  });
+
+  it('refuses a figure without an evaluation context, and an assumption it cannot read', () => {
+    // A figure beyond the float range has no evaluation context.
+    const huge = new Figure().point('A', 0, 0).point('B', '1' + '0'.repeat(120), 0);
+    const r = randomFigure(huge.doc, REGISTRY, 'any', 1);
+    expect(r.kind).toBe('refused');
+    // An assumption the claims package refuses is reported as such.
+    const f = obtuseTriangle();
+    f.assume('isosceles', 'A', 'B', 'C');
+    const s = randomFigure(f.doc, REGISTRY, 'acute', 1);
+    expect(s.kind === 'refused' && s.reason.startsWith('assume isosceles: ')).toBe(true);
   });
 
   it('every type over many seeds gives a valid figure of that type', () => {

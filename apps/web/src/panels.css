@@ -81,9 +81,9 @@ h3.sec {
   cursor: default;
 }
 
+/* Math in the panels and chips: the canvas's label face (render.ts LIGHT_THEME). */
 .math {
-  font-family: var(--serif);
-  font-style: italic;
+  font-family: var(--math);
 }
 
 .math sub,

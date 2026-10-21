@@ -168,6 +168,36 @@ export function ToolIcon({ tool }: { tool: ToolId }) {
   );
 }
 
+const ZOOM_PARTS = {
+  in: <path d="M12 6 V18 M6 12 H18" />,
+  out: <path d="M6 12 H18" />,
+  fit: <path d="M6 18 L18 6 M12.5 6 H18 V11.5 M6 12.5 V18 H11.5" />,
+} as const;
+
+/**
+ * The canvas's zoom and fit icons, drawn as paths (not text): they float on the canvas, and a
+ * text glyph would look different with every platform's font.
+ */
+export function ZoomIcon({ kind }: { kind: keyof typeof ZOOM_PARTS }) {
+  return (
+    <svg
+      className="icon"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {ZOOM_PARTS[kind]}
+    </svg>
+  );
+}
+
 /** A glyph of the top bar or the canvas controls (text, hidden from assistive technology). */
 export function Glyph({ children }: { children: string }) {
   return (
