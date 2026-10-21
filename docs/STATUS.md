@@ -33,6 +33,21 @@ pull-request run 39615115561 too), deploy
 **https://github.com/youseng/geomira/actions/runs/39615115526 success**; in CI the long task
 max is 3.8 ms and the drag-frame app work median 3.56 ms.
 
+### Two follow-ups before merge (ADR-0016 decisions 23–24)
+
+(1) The center tools name what they build by olympiad convention when the name is free: O, G,
+I, H, N, I_a / I_b / I_c (by the vertex picked first), ω for the circumcircle and the
+incircle; a taken name falls back to the usual rule. (2) All interface text is in American
+spelling, matching the language's tool names (Circumcenter, Incenter, Centers, "Circle
+(center, point)", Color, canceled, the kernel's Undefined reasons, the export warnings);
+accessible names change with it. The maintainer kept the blue (#1f6fd1) and the faint tint
+of coloured polygons. Eleven frozen test lines changed under decision 24 (below). On
+dac75db: verify green locally (2146 tests); the full Playwright suite locally: 59 passed and
+the 3 phone canvas baselines (CI's renders) differ here as before, the measurements passed on
+their own (long task max 6.3 ms, drag-frame app work median 6.18 ms). CI on dac75db: ci
+**https://github.com/youseng/geomira/actions/runs/39620072941 success**, tex
+**https://github.com/youseng/geomira/actions/runs/39620072975 success**.
+
 ### Side by side: Geomdraw (left) and Geomira (right)
 
 The main screen (the nine-point circle; Geomdraw's screenshot 02 at 1280 × 720):
@@ -101,18 +116,21 @@ The phone layout (390 × 664 at 2×; Geomdraw's screenshot 06):
 9. **No later-run features (item 9).** None of What's special?, Steps, Findings, Solution,
    Bash, Inversion, Coords, symbolic checks, problem library: no stub, no dead button. The
    Centers group, first left out, is added at the maintainer's request (item 10).
-10. **Centers group (addition 1, decision 21).** Centroid (key 1), Circumcentre (2), Incentre
-    (3), Orthocentre (4), Nine-point centre (5) — Geomdraw's numbers — and Excentre (6) in a
-    new group "Centers" after Circles; Circumcircle (7), Incircle (8), Excircle (9) and
-    Nine-point circle (Shift+N, shown "⇧N") in Circles. Each picks A, B, C by clicking (an
-    existing point, or a new one where you click) and writes the kernel call
-    (`D = circumcenter(A, B, C)`). Geomdraw's icons and corner letters (G, O, I, H, N, Iₐ).
-    → `packages/editor/test/centres.test.ts` (one scenario per tool: the call, the value
-    against the triangle's coordinates, one history entry; keys; from an empty canvas; a
-    collinear pick gives an undefined circle), `apps/web/e2e/flows-centres.spec.ts` (the
-    circumcentre from an empty canvas and the incircle on the same points by clicks, the same
-    text as by command; the keys 2, Shift+N, n), `apps/web/test/design.test.tsx` (corner
-    letters, ⇧N), `packages/editor/test/tool-groups.test.ts` (the group order).
+10. **Centers group (addition 1, decisions 21, 23).** Centroid (key 1), Circumcenter (2),
+    Incenter (3), Orthocenter (4), Nine-point center (5) — Geomdraw's numbers — and Excenter
+    (6) in a new group "Centers" after Circles; Circumcircle (7), Incircle (8), Excircle (9)
+    and Nine-point circle (Shift+N, shown "⇧N") in Circles. Each picks A, B, C by clicking
+    (an existing point, or a new one where you click) and writes the kernel call under its
+    olympiad name when free (`O = circumcenter(A, B, C)`, `I_b = excenter(B, A, C)`,
+    `ω = incircle(A, B, C)`), else the usual name. Geomdraw's icons and corner letters (G, O,
+    I, H, N, Iₐ). → `packages/editor/test/centers.test.ts` (one scenario per tool: the name,
+    the call, the value against the triangle's coordinates, one history entry; names taken by
+    an object, a claim or a layer fall back; I_b and I_c by the first vertex, none for a
+    vertex named A_1; keys; from an empty canvas; a collinear pick gives an undefined circle),
+    `apps/web/e2e/flows-centers.spec.ts` (O from an empty canvas and ω on the same points by
+    clicks, the same text as by command; the keys 2, Shift+N, n),
+    `apps/web/test/design.test.tsx` (corner letters, ⇧N),
+    `packages/editor/test/tool-groups.test.ts` (the group order).
 11. **Named colours (addition 2, decision 20).** `@geomira/scene/palette`: black #111111, red
     #b3261e, blue #1f6fd1, green #2e7d32, orange #d9730d, purple #7b3fa0, brown #8d5a3b, teal
     #00897b, gray/grey #777777, resolved by the layout for items and labels; hex and every
@@ -126,6 +144,13 @@ The phone layout (390 × 664 at 2×; Geomdraw's screenshot 06):
     Asymptote export follows. → `packages/scene/test/palette.test.ts` (outline, coloured fill,
     hits, label), `display.test.ts` and `hit.test.ts` (changed lines below), the regenerated
     canvas, PNG and page baselines.
+13. **American spelling (follow-up, decision 24).** Every user-visible string: tool labels,
+    prompts and help, the Style panel's Color, "canceled after", the kernel's Undefined
+    reasons and tool docs (docs/tools.md regenerated), the viewport messages, the export
+    warnings and the comments an export writes, the landing page's "license". Not the code's
+    identifiers, the maintainer's documents, or the EBNF comment that ADR-0009 carries
+    verbatim. → the changed frozen lines below, `flows-centers.spec.ts`, `flows-build.spec.ts`
+    (the help lists "Circle (center, point)"), the export goldens.
 
 ## Not done
 
@@ -163,17 +188,15 @@ None known. Found and fixed during the run:
 - **The side-by-side images contain Geomdraw's screenshots** (from the reference zip, which
   itself is not unzipped into the repository). If they should not be committed, they can be
   replaced by links.
-- **Polygon fill (addition 3).** No style field named fill exists; "keep any existing style
-  field that sets a fill working" is read as: a polygon with a `color` keeps its tint at the
-  theme's 0.08, an uncoloured one is an outline. Say if coloured polygons should be outlines
-  too, or if a `fill=` style key is wanted (a language change).
-- **Palette values.** Blue is #1f6fd1 as asked (Geomdraw's highlight blue; Geomdraw's own
-  `COLORS.blue` is #1f5fbf); the others are Geomdraw's `COLORS`. Black #111111 differs from
-  the default ink #1b1f24, which frozen tests pin.
-- **Names and spelling of the centre tools.** A centre takes the next free capital (D after
-  A, B, C), not O, G, I, H, N: the editor's naming is unchanged. Tool labels spell "centre"
-  as the rest of the interface; the group is "Centers" as asked. The circumcircle tool writes
-  `circumcircle(A, B, C)`, beside Circle (3 points), which writes `circle(A, B, C)`.
+- **Settled by the maintainer:** the blue stays #1f6fd1 and coloured polygons keep their
+  faint tint; the center tools take olympiad names and the interface is in American
+  spelling (decisions 23–24).
+- **Excenter names.** I_a, I_b, I_c come from the lowercase name of the vertex picked first,
+  so the excenter opposite a vertex P is I_p; a vertex whose name is not one Latin letter
+  (A_1) asks for no conventional name. The excircle and the nine-point circle keep the usual
+  names (c, c_1, …), as the request listed only the circumcircle and the incircle for ω.
+- **The circumcircle tool** writes `circumcircle(A, B, C)`, beside Circle (3 points), which
+  writes `circle(A, B, C)`.
 - **Keys.** Geomdraw types its centres as G then a digit; G is the glider here, so the digit
   alone selects the centre. Shift+N for the nine-point circle because every lowercase letter
   is taken.
@@ -200,12 +223,58 @@ committed tree; the one modified line is in commit 2723282, which cites ADR-0016
   teal is #00897B), `apps/web/test/render.test.ts` (red is #b3261e on the canvas),
   `apps/web/e2e/flows-export.spec.ts` (red is B3261E in TikZ). The scene and editor surface
   tests gain `./palette` and `keyCap`.
+- **Modified for the follow-ups (11 lines, commit dac75db, citing ADR-0016; decision 24)**:
+  the American spelling of the strings they pin: `packages/kernel/test/glider.test.ts` (2:
+  "the center"), `packages/kernel/test/docs.test.ts` (1: "circle center"),
+  `packages/export/test/formats.test.ts` (1) and `svg-tikz.test.ts` (2: "the color …", "the
+  center of the view"), `packages/export/test/frame-paint.test.ts` (1: "finite center"),
+  `apps/web/e2e/flows-build.spec.ts` (2: "Circle (center, point)"),
+  `apps/web/e2e/flows-persist.spec.ts` (1: the Color label), `apps/web/e2e/flows-claims.spec.ts`
+  (1: "canceled after"). Also the degenerate-case keys in four kernel test helpers (5 lines),
+  which must equal the registry's declared cases. No assertion was weakened.
 - **Baselines** (not test code): Run 7's canvas baselines and Run 9a's PNG goldens regenerated
   for the new look; the SVG goldens change in their `<g font-family …>` line only.
 - `apps/web/playwright.config.ts` (config): the `pages` project, `pages-smoke` ignored by the
   desktop and mobile projects, no local server when `GEOMIRA_PAGES_URL` is set.
 
 ## Acceptance command output
+
+### The follow-ups: local, dac75db (`pnpm verify`; then `pnpm build` and `pnpm e2e`)
+
+```
+All matched files use Prettier code style!
+✔ no dependency violations found (474 modules, 2661 dependencies cruised)
+ok   tolerance: 685 files scanned, 0 violation(s)
+ok   file-length: 685 files scanned, 0 violation(s)
+ok   test-count: 2146 tests, floor 2143, 0 violation(s)
+ok   disabled-tests: 685 files scanned, 0 violation(s)
+ok   forbidden-words: 685 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-9a, 0 violation(s)   (pnpm rules after the commit citing ADR-0016)
+ Test Files  198 passed (198)
+      Tests  2146 passed (2146)
+Statements   : 96.98% ( 9432/9725 )
+Branches     : 91.62% ( 7659/8359 )
+Functions    : 99.58% ( 2160/2169 )
+Lines        : 98.3% ( 7868/8004 )
+verify exit=0 after the commit (typecheck, lint, depcruise, rules, test:coverage)
+```
+
+```
+✘   7 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: euler-line
+✘   9 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: nine-point-circle
+✘  11 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: reflection-layer
+✓  19 [desktop] › e2e/flows-build.spec.ts:135:1 › command bar: completions from the registry; shortcuts and help from the keymap
+✓  21 [desktop] › e2e/flows-centers.spec.ts:17:1 › the circumcenter O and the incircle ω by clicks; the same text as by command
+✓  24 [desktop] › e2e/flows-centers.spec.ts:59:1 › the center tools have their keys: 2 is the circumcenter, Shift+N the nine-point circle
+✓  27 [desktop] › e2e/flows-claims.spec.ts:89:1 › cancel stops a running test; badges are three-valued
+✓  44 [desktop] › e2e/flows-persist.spec.ts:28:1 › objects panel lists Undefined reasons; style panel edits the text
+3 failed (the phone canvas baselines, CI's renders: they differ in this container only)
+59 passed
+main thread during a test (measure): {"tasks":25788,"maxTask":6.3,"longTasks":[],"pingGaps":25713,"maxPingGap":6.7}  (measure projects run alone: 2 passed)
+full UI drag frame (measure-drag): {"objects":300,"app":{"frames":120,"median":6.18,"p95":10.35,"max":19.68},"raster":{"frames":120,"median":14.2,"p95":21.03,"max":24.15},"total":{"frames":120,"median":20.98,"p95":30.8,"max":41.27}}
+```
+
+`docs/test-count.txt` is raised to 2146.
 
 ### The additions: local, c10cb19 (`pnpm verify`; then `pnpm build` and `pnpm e2e`)
 
@@ -421,7 +490,7 @@ for. The smoke job runs only after a deploy from `main`, i.e. on the merge.
 
 - Please confirm the readings under "Uncertain" (right triangles in Randomize, the triangle,
   the pinned colours and sizes, the committed side-by-side images; and for the additions: the
-  fill of coloured polygons, the palette values, the centre tools' names, spelling and keys).
+  center tools' keys and the excenter's names).
 - The `run-9b` tag is for the maintainer to place on the merge.
 - Local screenshots: this container has the Inter font, which `system-ui` picks; the baselines
   were rendered with a fontconfig that hides it (as on CI). The phone canvas baselines are CI's.
