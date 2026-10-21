@@ -35,7 +35,7 @@ describe('hitTest: same paths as drawn, top first', () => {
     const off = hitTest(d, { x: at(-1, 0).x, y: at(-1, 0).y + HIT_RADIUS + 1 });
     expect(off.hits.map((h) => h.name)).not.toContain('l');
     const inner = hitTest(d, at(-0.5, 0.6));
-    expect(inner.hits.map((h) => [h.name, h.part])).toEqual([['p', 'fill']]);
+    expect(inner.hits.map((h) => [h.name, h.part])).toEqual([]); // an outline (ADR-0016)
   });
 
   it('virtual hits: the intersection of two curves near the cursor, else a point on a curve', () => {

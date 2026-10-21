@@ -20,6 +20,7 @@ import type { HitResult } from '@geomira/scene/hit';
 import { chooseSelectors } from './choice';
 import { createdPoint, gliderAt } from './create';
 import { applyEdit } from './edit';
+import { conventionalName, preferredName } from './conventional-names';
 import { freshName, type NameKind } from './names';
 import { done, refuse, type EditResult } from './result';
 import type { EditorEnv, EditorState } from './state';
@@ -98,8 +99,14 @@ function valueKind(state: EditorState, def: Expr, env: EditorEnv): string | unde
   return r.tool.compute(FloatField, vals, state.values.ctx).kind;
 }
 
-function add(state: EditorState, def: Expr, kind: NameKind, env: EditorEnv): EditResult {
-  const name = freshName(state.doc, nameKind(state, def, env, kind));
+function add(
+  state: EditorState,
+  def: Expr,
+  kind: NameKind,
+  env: EditorEnv,
+  wanted?: string,
+): EditResult {
+  const name = preferredName(state.doc, nameKind(state, def, env, kind), wanted);
   return applyEdit(state, { kind: 'add', object: { name, def, layers: [state.activeLayer] } }, env);
 }
 
@@ -149,8 +156,11 @@ function build(
   switch (b.kind) {
     case 'none':
       return done({ ...state, toolState: reset(state) });
-    case 'call':
-      return withTool(add(state, call(b.tool, picks.map(ref)), b.name, env), reset(state));
+    case 'call': {
+      const first = state.doc.objects.find((o) => o.id === picks[0])?.name;
+      const wanted = conventionalName(b.prefer, first);
+      return withTool(add(state, call(b.tool, picks.map(ref)), b.name, env, wanted), reset(state));
+    }
     case 'claim': {
       const claim = { kind: state.toolState.claimKind, args: picks.map(ref) };
       return withTool(applyEdit(state, { kind: 'addClaim', claim }, env), reset(state));

@@ -11,6 +11,7 @@ async function openEuler(page: Page): Promise<void> {
   await openApp(page);
   await page.getByLabel('Example').selectOption('euler-line');
   await page.getByRole('button', { name: 'Export', exact: true }).click();
+  await page.getByRole('button', { name: 'SVG', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Export' })).toBeVisible();
 }
 
@@ -105,7 +106,7 @@ test('TikZ: snippet and standalone document, copy and download', async ({ page, 
   await format(page, 'TikZ');
   const snippet = await content(page).inputValue();
   expect(snippet).toContain('\\begin{tikzpicture}');
-  expect(snippet).toMatch(/\\definecolor\{gmc\d+\}\{HTML\}\{FF0000\}/u);
+  expect(snippet).toMatch(/\\definecolor\{gmc\d+\}\{HTML\}\{B3261E\}/u); // red, ADR-0016
   expect(snippet).not.toContain('\\documentclass');
   await page.getByRole('button', { name: 'Copy', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
@@ -150,6 +151,7 @@ test('a character TeX cannot write is reported in the TeX formats, not in SVG', 
   await command(page, 'P = (0, 0)');
   await command(page, 't = text((1, 1), "café")');
   await page.getByRole('button', { name: 'Export', exact: true }).click();
+  await page.getByRole('button', { name: 'SVG', exact: true }).click();
   const warnings = page.getByRole('list', { name: 'Export warnings' });
   await expect(warnings).toHaveCount(0);
   await expect(content(page)).toHaveValue(/café/u);
@@ -192,6 +194,7 @@ for (const id of PNG_GOLDEN)
       await document.fonts.ready;
     });
     await page.getByRole('button', { name: 'Export', exact: true }).click();
+    await page.getByRole('button', { name: 'SVG', exact: true }).click();
     await format(page, 'PNG');
     await page.getByRole('radiogroup', { name: 'Pixel ratio' }).getByLabel('1×').check();
     // The file is named after the figure's title, e.g. "incenter-excenter-lemma.png".

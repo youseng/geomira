@@ -32,7 +32,7 @@ describe('exportAs (what the Export dialog calls)', () => {
   it('the TeX formats report the characters and colours they could not write; SVG only colours', () => {
     const tex = warningMessages(exportAs(f, { format: 'tikz', standalone: true }, REGISTRY));
     expect(tex).toEqual([
-      'the colour "nope" of B cannot be read: drawn in the default ink',
+      'the color "nope" of B cannot be read: drawn in the default ink',
       'the label of t has a character TeX cannot write ("ü", U+00FC): written as ?',
     ]);
     expect(warningMessages(exportAs(f, { format: 'svg' }, REGISTRY))).toEqual([tex[0]]);

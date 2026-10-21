@@ -11,7 +11,8 @@ const reports = runRules({
   root,
   git: realGit,
   countTests: countVitestTests,
-  exclude: [FIXTURE_DIR],
+  // docs/design/ holds the maintainer's design reference (Run 9b): not the project's files.
+  exclude: [FIXTURE_DIR, 'docs/design/'],
 });
 console.warn(formatReport(reports));
 const failed = reports.filter((r) => r.violations.length > 0).length;

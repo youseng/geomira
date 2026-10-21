@@ -122,6 +122,7 @@ test('a derived layer from a transform, its images, and dragging an image moves 
   await tab(page, 'Objects');
   await page.getByRole('button', { name: 't', exact: true }).click();
   await expectLines(page, '@layer image = image(t, main)');
+  await tab(page, 'Layers');
   await expect(page.getByLabel('image', { exact: true })).toBeChecked();
   // C* = (1, -3), the mirror image of C in AB; dragging it moves C (drag-through, SPEC §8.4).
   await tool(page, 'Move');
@@ -146,11 +147,11 @@ test('command bar: completions from the registry; shortcuts and help from the ke
   await page.getByLabel('Geometry canvas').click();
   await page.keyboard.press('c');
   const tools = page.getByRole('toolbar', { name: 'Tools' });
-  await expect(tools.getByRole('button', { name: 'Circle (centre, point)' })).toHaveAttribute(
+  await expect(tools.getByRole('button', { name: 'Circle (center, point)' })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
   await tab(page, 'Help');
-  await expect(page.getByRole('tabpanel')).toContainText('Circle (centre, point)');
+  await expect(page.getByRole('tabpanel')).toContainText('Circle (center, point)');
   await expect(page.getByRole('tabpanel')).toContainText('Ctrl+Shift+Z');
 });

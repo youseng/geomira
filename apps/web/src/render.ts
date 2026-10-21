@@ -50,13 +50,22 @@ export interface Theme {
   readonly fontSize: number;
 }
 
+/**
+ * The canvas (Run 9b, Geomdraw's look): near-white paper and near-black ink (the values the
+ * exports pin), Geomdraw's highlight blue for hover and its selection blue (a light ring at
+ * the halo's opacity), italic serif labels.
+ * "Geomira Math" is the italic face of the first serif the platform has (styles.css,
+ * @font-face with local() sources); the families after it are the upright fallbacks.
+ * packages/export draws with the same values (EXPORT_THEME, checked by a test).
+ */
 export const LIGHT_THEME: Theme = {
   background: '#fbfbf8',
   foreground: '#1b1f24',
-  hover: '#f0a020',
-  selection: '#2f81f7',
+  hover: '#1f6fd1',
+  selection: '#2f5fb3',
   fillAlpha: 0.08,
-  fontFamily: '"DejaVu Serif", serif',
+  fontFamily:
+    '"Geomira Math", "Latin Modern Roman", "CMU Serif", "Liberation Serif", "Times New Roman", serif',
   fontSize: 15,
 };
 

@@ -17,7 +17,8 @@
     "./verdict-line": "./src/verdict-line.ts",
     "./rungs": "./src/rungs.ts",
     "./constants": "./src/constants.ts",
-    "./check": "./src/check.ts"
+    "./check": "./src/check.ts",
+    "./randomize": "./src/randomize.ts"
   },
   "dependencies": {
     "@geomira/kernel": "workspace:*",

@@ -248,7 +248,7 @@ function viewport(
     if (x === undefined) {
       fail(
         c,
-        '@viewport takes three numbers: centre x, centre y and zoom',
+        '@viewport takes three numbers: center x, center y and zoom',
         'write @viewport 0 0 50',
       );
       return undefined;

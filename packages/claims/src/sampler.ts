@@ -25,6 +25,12 @@ import { GLOBAL_SIGMA, GRID_BITS, LOCAL_SIGMA, SIMILARITY_OCTAVES } from './cons
 import { readFree, writeFree, type Assignment, type FreeInput } from './free';
 import { freeKey, type OrderedGroup, type Prepared } from './prepare';
 
+/** What the sampler reads of a prepared document (a claim's, or a figure's for Randomize). */
+export type SamplerFigure = Pick<
+  Prepared,
+  'doc' | 'free' | 'ordered' | 'baseCtx' | 'gliderObjects'
+>;
+
 export type Regime = 'local' | 'global';
 
 interface Similarity {
@@ -43,7 +49,7 @@ export function dyadic(x: number, k: number): Rational {
   return k >= 0 ? rational(m << BigInt(k)) : rational(m, 1n << BigInt(-k));
 }
 
-function centroid(prep: Prepared): readonly [number, number] {
+function centroid(prep: SamplerFigure): readonly [number, number] {
   let [sx, sy, n] = [0, 0, 0];
   for (const input of prep.free) {
     if (input.kind !== 'point') continue;
@@ -54,7 +60,7 @@ function centroid(prep: Prepared): readonly [number, number] {
   return n === 0 ? [0, 0] : [sx / n, sy / n];
 }
 
-function similarity(rng: Rng, prep: Prepared, mirrored: boolean): Similarity {
+function similarity(rng: Rng, prep: SamplerFigure, mirrored: boolean): Similarity {
   const theta = rng.uniform(0, 2 * Math.PI);
   const scale = prep.baseCtx.scale;
   return {
@@ -83,7 +89,7 @@ function gridExponent(scale: number): number {
 }
 
 interface Context {
-  readonly prep: Prepared;
+  readonly prep: SamplerFigure;
   readonly regime: Regime;
   readonly rng: Rng;
   readonly sim: Similarity;
@@ -207,7 +213,7 @@ function orderedAssignments(ctx: Context, group: OrderedGroup): Assignment[] {
  * only.
  */
 export function drawSample(
-  prep: Prepared,
+  prep: SamplerFigure,
   regime: Regime,
   seed: Seed,
   mirrored: boolean,

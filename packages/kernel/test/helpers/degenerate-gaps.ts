@@ -37,7 +37,7 @@ export const GAP_CASES: Record<string, Record<string, () => void>> = {
       }
       expect(at(ModPField, 'power', pt(3, -4), C5)).toEqual({ kind: 'number', v: 0n });
     },
-    'P = the centre → −r²': () => {
+    'P = the center → −r²': () => {
       for (const F of ORDERED) {
         expect(plain(F, at(F, 'power', O0, C5))).toBe(-25);
         expect(plain(F, at(F, 'power', C, circ(C, num('3/2'))))).toBe(-9 / 4);

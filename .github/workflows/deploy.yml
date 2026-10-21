@@ -1,7 +1,8 @@
 name: deploy
 
 # Builds the static site with the GitHub Pages base path (/<repo>/), checks it with
-# Playwright under that base path, and deploys it from the default branch.
+# Playwright under that base path, deploys it from the default branch, and runs the smoke test
+# (e2e/pages-smoke.spec.ts) against the deployed Pages URL (Run 9b).
 
 on:
   push:
@@ -53,9 +54,31 @@ jobs:
     permissions:
       pages: write
       id-token: write
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+  smoke:
+    needs: deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GEOMIRA_PAGES_URL: ${{ needs.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright browser
+        run: pnpm --filter @geomira/web exec playwright install --with-deps chromium
+      - name: Smoke test of the deployed site
+        run: pnpm --filter @geomira/web exec playwright test --project=pages

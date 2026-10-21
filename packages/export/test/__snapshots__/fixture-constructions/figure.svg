@@ -3,19 +3,16 @@
 <title>Export: constructions</title>
 <rect width="640" height="480" fill="#fbfbf8"/>
 <g data-id="20" data-name="t">
-<polygon points="274.468,212.693 426.007,212.693 299.725,86.411" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
 <polyline points="274.468,212.693 426.007,212.693" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="426.007,212.693 299.725,86.411" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="299.725,86.411 274.468,212.693" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 </g>
 <g data-id="52" data-name="t1">
-<polygon points="274.468,212.693 309.439,387.545 426.007,212.693" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
 <polyline points="274.468,212.693 309.439,387.545" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="309.439,387.545 426.007,212.693" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="426.007,212.693 274.468,212.693" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 </g>
 <g data-id="60" data-name="t2">
-<polygon points="274.468,212.693 426.007,212.693 299.725,338.975" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
 <polyline points="274.468,212.693 426.007,212.693" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="426.007,212.693 299.725,338.975" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="299.725,338.975 274.468,212.693" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
@@ -185,7 +182,7 @@
 <g data-id="73" data-name="D">
 <circle cx="287.097" cy="174.808" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
 </g>
-<g font-family="&quot;DejaVu Serif&quot;, serif">
+<g font-family="&quot;Geomira Math&quot;, &quot;Latin Modern Roman&quot;, &quot;CMU Serif&quot;, &quot;Liberation Serif&quot;, &quot;Times New Roman&quot;, serif" font-style="italic">
 <text data-id="1" x="280.832" y="203.329" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">A</tspan></text>
 <text data-id="2" x="432.371" y="231.057" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">B</tspan></text>
 <text data-id="3" x="293.361" y="77.047" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">C</tspan></text>

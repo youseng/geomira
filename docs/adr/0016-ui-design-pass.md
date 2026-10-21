@@ -1,0 +1,270 @@
+# ADR-0016: The UI design pass in Geomdraw's look; Randomize (Run 9b)
+
+Status: accepted (Run 9b). Restyles apps/web after the maintainer's earlier prototype Geomdraw
+(docs/design/geomdraw-reference.zip: its layout, CSS variables, colours, type and tool icons;
+none of its JavaScript). Extends ADR-0013 (the web app: decisions 11 and 13 on internal errors
+and accessible names) and ADR-0014 decision 3 (the export theme follows the canvas). Adds
+Randomize to packages/claims and packages/editor, moves the exact decimal helpers of
+packages/editor into packages/num, and changes one line of a frozen test (decision 14).
+
+## Context
+
+Run 9b's brief: Geomdraw's layout (brand; an icon top bar with undo/redo, claim box + Test,
+View / Examples / Export menus, settings and help; a left tool palette with icons in labelled
+groups, tooltips and shortcut letters; the right panel with tabs Text, Objects, Layers, Claims,
+Style, Help; zoom and fit floating on the canvas; the status line; the command line), its
+canvas style (italic serif labels with real subscripts, small points, thin strokes, its colours
+for highlighted and selected objects) with the scene laws and the export theme kept in sync,
+claim cards, live claim chips, developer items out of the main UI, a phone layout, a Randomize
+button with a triangle type that samples through packages/claims, accessibility (accessible
+names equal to the old labels, visible focus, WCAG AA), a README with a landing section and a
+smoke test of the deployed site. Presentation only: no new geometry, editor, claims or export
+behaviour, and no logic in apps/web. The frozen tests of Runs 7–9a pin parts of the old look:
+the export theme's values (`frame-paint.test.ts`, `svg-tikz.test.ts`, `export-theme.test.ts`),
+the canvas font string (`render.test.ts`: `15px <family>`), the dot radius 3.5 px and the stroke
+width 1.5 px (scene and export tests), the brand markup (`App.test.tsx`: `<h1>Geomira</h1>`),
+and the end-to-end selectors.
+
+## Decision
+
+### Layout and look (apps/web: styles.css, stage.css, dialogs.css, panels.css, claims.css, phone.css)
+
+1. **Geomdraw's grid and tokens.** A grid of top bar, palette (96 px), stage, command line and
+   side panel (360 px); Geomdraw's CSS variables (bg, panel, border, text, muted, accent, ok,
+   amber, bad, info and their soft tints, the dark-scheme set) with three text colours darkened
+   for WCAG AA on their tints (muted #62625d, ok #2b7530, amber #8a5800; the ratios are in
+   STATUS); system-ui for the interface, Geomdraw's serif stack for math, a monospace stack for
+   code and verdict details; `:focus-visible` draws a 2 px accent outline everywhere.
+2. **Icons are data** (`icons.tsx`): Geomdraw's 24 × 24 tool icons written as static SVG, one per
+   tool of the editor's tool table (`Record<ToolId, …>`, so a new tool does not compile without
+   one), plus Unicode glyphs in the top bar (↶ ↷ ⚄ ◇ ▤ ⤓ ⚙ ?). Icons designed here where
+   Geomdraw had none: point on object, polygon, layer from transform, text, claim.
+3. **Tool groups are editor data** (`@geomira/editor/tool-groups`): Points, Lines, Circles,
+   Transform, Marks, Measure / Claim, each tool in exactly one group (a Record over ToolId),
+   in the tool table's order. Geomdraw's "Centers" group was first left out (no centre tools
+   in the editor); the maintainer's follow-up adds it with its tools (decision 21).
+4. **Canvas overlays** (`Stage.tsx`): the active tool's controls (claim kind, text, Finish,
+   Cancel picks) top left with notices and internal errors under them; a developer box top right;
+   live claim chips bottom left; zoom, zoom out and fit bottom right (a column on the desktop, a
+   row on the phone); the status line (the tool's prompt) in a 22 px strip under the canvas, in
+   the canvas's colour, so it reads as Geomdraw's status line without lying on the canvas.
+   Under `prefers-color-scheme: dark` the stage keeps the light tokens: the canvas is drawn in its
+   light theme in both schemes, and dark overlay text on it would fail contrast (2.6:1).
+
+### Accessible names and the frozen selectors (note 7 of the run)
+
+5. **Names are visually hidden text, not aria-label.** Every icon button keeps its old label as
+   its accessible name through a visually hidden span (`SrOnly`): Undo, Redo, Zoom in, Zoom out,
+   Fit, Settings, Help, and every tool's label. aria-label would make the button match
+   `getByLabel`, and the text tool's label "Text" would then collide with the text panel's field
+   (`getByLabel('Text', { exact: true })` in the frozen helpers; ADR-0013 decision 13 records the
+   same care). Labels shown beside a glyph on the desktop (Randomize, View, Export) are visually
+   hidden on the phone, never `display: none`, so names do not change with the layout.
+6. **The brand** is one heading whose text is "Geomira" (the frozen shell tests read it); the
+   logotype, "Geom" upright and "ira" italic as Geomdraw's brand, is CSS generated content with
+   empty alternative text (`content: 'Geom' / ''`), so the accessible name stays "Geomira".
+7. **Menus are disclosures** (`Menu.tsx`): a button with aria-expanded and a popover of ordinary
+   buttons and checkboxes, so each entry keeps the role and name it had as a bar button. The
+   Examples menu is the page's native select (label "Example") laid invisibly over its button,
+   so `selectOption` keeps working and the platform's own list opens on a phone.
+8. **Moved controls.** Share link and Restore previous figure → the Export menu (with the four
+   formats, each opening the Export dialog on that format); Debug report → the Help menu (every
+   internal-error message keeps "Copy debug report", ADR-0013 decision 11); Measure frame time and
+   the object counts → the Settings menu, both on from the start with `?dev=1`; the layers →
+   the Layers tab, which also states "n coincident images hidden" (SPEC §13); Fit and zoom → the
+   canvas.
+9. **The claim boxes' button reads "▸Test"** (a glyph before the word), never exactly "Test":
+   Run 8b's frozen long-task spec clicks the first button whose text content is "Test", which
+   must stay a claim card's.
+
+### Canvas style and the export theme (note 2 of the run)
+
+10. **Italic serif labels.** The label family becomes `"Geomira Math", "Latin Modern Roman",
+"CMU Serif", "Liberation Serif", "Times New Roman", serif`, where "Geomira Math" is an
+    @font-face of local() italic faces (Latin Modern, CMU, Liberation Serif, Times New Roman,
+    DejaVu, FreeSerif, in that order; Liberation Serif is the CI machines' and comes before Times
+    so the screenshot baselines are deterministic). The renderer's font string stays
+    `15px <family>` (frozen `render.test.ts`); the board redraws once the face has loaded. The
+    export theme follows (EXPORT_THEME.fontFamily, checked by the web test), and SVG labels are
+    written with `font-style="italic"` (TeX formats already set labels as math). Real sub- and
+    superscripts were already drawn (scene label runs); the panels show names the same way
+    (`MathText`, the scene's label grammar on each point name).
+11. **Colours.** Hover and selection take Geomdraw's highlight blue (#1f6fd1) and selection blue
+    (#2f5fb3, a light ring at the halo's opacity). Ink #1b1f24, paper #fbfbf8 and the fill alpha
+    0.08 stay: frozen export tests pin them, and they are within a hair of Geomdraw's #111111
+    and white. The dot radius 3.5 px and stroke width 1.5 px stay for the same reason (frozen
+    scene and export tests); they are already small and thin at Geomdraw's scale.
+12. **Fit margin.** The desktop layout fits a figure with a 72 px margin (`WIDE_FIT_MARGIN`), so
+    labels at its edge stay clear of the floating zoom column; the phone layout (zoom buttons in
+    a row) keeps FIT_MARGIN = 40, as does the export's default view.
+
+### Claims (note 3 of the run)
+
+13. **Cards and chips.** A card per claim: the statement in italic math (keyword "claim"
+    kept, so the frozen `claimItem(page, 'claim')` finds it), its pill for the current figure with
+    the unchanged badge texts ("true in this figure", "false …", "undefined: <reason>"; ✓ ✗ ?
+    are CSS), Test and Test globally, the verdict line (SPEC §10.5 wording, unchanged) and its
+    monospace detail line; results for an earlier figure are greyed (opacity) under the note
+    "These results are for an earlier version of the figure." with Re-test. Global findings are
+    the info colour, never the failure colour. Live chips (bottom left of the canvas) show every
+    claim's pill; they read the settled state, so a drag frame evaluates no claim (note F of Run
+    9a), and a click opens the Claims panel. The claim box (top bar; on the phone the Claims
+    panel) adds `claim …` as one edit through the command path and starts its local test.
+
+### Frozen tests changed (CLAUDE.md add-only rule)
+
+14. **Modified line (1):** `packages/export/test/frame-paint.test.ts`, the theme's
+    `fontFamily` (decision 10: the italic label family the brief asks for; Prettier writes the
+    new value on two lines); nothing else in that test changes. **Added lines (11, no line removed):** `scene.spec.ts` opens Settings before
+    Measure frame time and the Layers tab before reading the coincident count; `mobile.spec.ts`
+    and `flows-build.spec.ts` open the Layers tab before using a layer's checkbox;
+    `flows-export.spec.ts` chooses SVG in the Export menu after each click on Export (3);
+    `flows-persist.spec.ts` opens the Export menu before Share link and before each Restore
+    previous figure (3), and the Help menu before Debug report. The export golden files
+    (`packages/export/test/__snapshots__/*/figure.svg`) change in their font line only; the
+    screenshot and PNG baselines are regenerated for the new look.
+
+### Randomize (note 6 of the run)
+
+15. **`@geomira/claims/randomize`**: `randomFigure(doc, registry, type, seed)` draws a new figure
+    of the same construction with the GLOBAL sampler (sampler.ts, never mirrored here) and accepts
+    it with the tester's own hypothesis check: the document's `assume` lines plus the type on the
+    triangle, the first three free points in construction order: acute → acute(A, B, C); obtuse →
+    angle(B, A, C) > 100 (at the first vertex); right → no hypothesis can say it (right angles are
+    constructed, never assumed, SPEC §6.2, §10.3), so C is moved onto the perpendicular to AB at A
+    exactly over Q, a special position of this figure only; any → the document's hypotheses
+    only. Typed choices also ask the other angles to exceed 15°, as the `triangle` sugar does
+    (ADR-0009 decision 11). A sample is accepted only if every object defined now stays defined.
+    Free inputs are rounded to short exact decimals (points and radii to 10^(⌊log10 scale⌋ − 2))
+    before the check, so the text reads `A = (1.23, -0.5)`. Refusals carry their reason (no free
+    input; a typed choice without three free points; no accepted sample in 500 attempts).
+16. **`@geomira/editor/randomize`** turns it into one batch of `redefine` edits (one history
+    entry; undo returns exactly) and refuses during a drag. apps/web draws the seed from Web
+    Crypto (host code, as ADR-0013 decision 9), applies the edit and fits the view.
+17. **`@geomira/num/decimal`**: the exact decimal helpers (pow10, floorLog10, roundTo,
+    decimalText) move from editor's rounding.ts, which re-exports them unchanged.
+
+### Phone (note 5 of the run)
+
+18. At ≤ 760 px wide: the top bar shows glyphs only (the claim box and the triangle type are
+    hidden; Randomize uses the last type chosen); under the canvas the tab row, then the tool
+    strip (groups side by side, their labels vertical), then the command line. A tab opens its
+    panel as a drawer from the top bar to the tool strip ("Hide panels" closes it), so the canvas
+    keeps its size.
+
+### What floats on the canvas renders alike everywhere
+
+19. Run 7's frozen canvas screenshots take the canvas's box, overlays included, with a
+    tolerance of 0.2 % of the pixels, and machines resolve `system-ui` to different fonts (this
+    development container has Inter; the CI machines do not). So nothing in the canvas's box is
+    set in the platform's interface font: the status line lies under the canvas (decision 4), the
+    chips and claim cards set math in the canvas's own label face (`--math`, decision 10), and
+    the zoom and fit buttons draw SVG icons, not text glyphs. The floating buttons have no hover
+    restyle: repainting them after a hover changes the anti-aliasing of their corners, which Run
+    7's fit test (two pictures of the canvas compared byte for byte) would see. The page-level
+    baselines of this run (main screen, Claims panel, phone) contain interface text and are
+    rendered as on the CI machines (STATUS says how). The CI machines resolve the label face to
+    another installed italic than this container (the chips' text is wider there), which stays
+    within the desktop tolerances but not on the phone's narrow canvas: the three phone canvas
+    baselines of Run 7's spec are CI's own renders (CI is the reference, CLAUDE.md).
+
+### The maintainer's additions before merge
+
+20. **Named colours and polygon outlines** (`@geomira/scene/palette`, display.ts, labels.ts).
+    A style colour that is one of Geomdraw's names (black #111111, red #b3261e, blue #1f6fd1
+    — Geomdraw's highlight blue, as the maintainer asked —, green #2e7d32, orange #d9730d,
+    purple #7b3fa0, brown #8d5a3b, teal #00897b, gray and grey #777777; case and surrounding
+    spaces ignored) is resolved to that hex by the layout, for the display item and its label;
+    every other colour (hex, rgb(), other CSS names) is passed on exactly as written. The
+    document and the scene keep the name; the canvas and every export read the hex from the
+    display list, so they cannot disagree (a web test compares the canvas's colours with the
+    SVG's). Polygons are drawn as outlines, as in Geomdraw: a polygon has a fill only when its
+    style gives it a colour (colour is the only existing style field that set a fill, and a
+    coloured polygon keeps its tint at the theme's fillAlpha). What is drawn is what is hit
+    (law L8): an outline polygon is hit on its edges only. The label of a polygon stays at the
+    centroid of its clipped region, now a field of the display item (`region`) separate from
+    `fill`. The constructive Asymptote export writes `fill(…)` only for a filled polygon.
+21. **The Centers group and the triangle circles** (`@geomira/editor` tools-centres.ts, data
+    like every tool): centroid, circumcentre, incentre, orthocentre, nine-point centre and
+    excentre in a new group "Centers" after Circles; circumcircle, incircle, excircle and
+    nine-point circle in Circles. Each picks three points A, B, C (existing or created by the
+    click, as every point pick) and builds the kernel call of the same name; the excentre and
+    excircle are opposite the first pick (SPEC §11's `excenter(A,B,C)`). Keys: Geomdraw's
+    numbers for its five numbered centres (centroid 1, circumcentre 2, incentre 3, orthocentre
+    4, nine-point centre 5), 6 the excentre, 7 the circumcircle, 8 the incircle, 9 the excircle
+    (0 stays Fit), and Shift+N the nine-point circle: every lowercase letter is taken. A
+    button shows a Shift key as "⇧N" (`keyCap`). Icons: Geomdraw's triangle with its accent
+    dot and corner letter (G, O, I, H, N, Iₐ) for the centres, its incircle, excircle and
+    nine-point circle icons, and a circumcircle icon designed here (a circle through a
+    triangle's vertices). The tool table's types and helpers move to tool-ui.ts (tools.ts
+    re-exports the types) so each file stays under 400 lines. Names and spelling: decisions
+    23 and 24.
+22. **Frozen tests changed by decisions 20–21** (each line cites this ADR in its commit):
+    `packages/scene/test/display.test.ts` (the polygon's `fill` length becomes its `region`
+    length, plus an added line that its `fill` is null); `packages/scene/test/hit.test.ts` (a
+    click inside the uncoloured polygon hits nothing, where it hit its fill);
+    `packages/export/test/svg-tikz.test.ts` (2 lines: teal is #00897B, not the CSS #008080);
+    `apps/web/test/render.test.ts` (the canvas's red stroke is #b3261e, not "red");
+    `apps/web/e2e/flows-export.spec.ts` (the TikZ colour of red is B3261E, not FF0000). The
+    export golden files change in their colours and lose the fills of uncoloured polygons; the
+    screenshot and PNG baselines are regenerated, and the three phone canvas baselines are
+    again CI's own renders (decision 19).
+
+23. **Olympiad names for the centre tools** (`conventional-names.ts`, data in
+    tools-centers.ts: `Build.prefer`). When free, the circumcenter is O, the centroid G, the
+    incenter I, the orthocenter H, the nine-point center N, the excenter I_a, I_b or I_c (the
+    lowercase name of the vertex picked first; a first vertex whose name is not one Latin
+    letter asks for no name), and the circumcircle and the incircle ω. A name is free when no
+    object, claim or layer has it; a taken name falls back to the usual rule (the next free
+    capital, or c, c_1, … for circles). The excircle and the nine-point circle keep the usual
+    rule, as asked. The preference lives in its own module so the public `./names` surface
+    (frozen) is unchanged.
+24. **American spelling in all interface text**, matching the language's tool names
+    (circumcenter, ninepoint_center): the tool labels, prompts and help (Circumcenter,
+    Incenter, Orthocenter, Nine-point center, Excenter, "Circle (center, point)", "mirror line
+    or center"), the Style panel's Color, "canceled after" on a canceled test, the Undefined
+    reasons and tool documentation of the kernel ("P is the center", "circle center …"), the
+    language's and the scene's viewport messages, the export warnings ("the color … cannot be
+    read") and the comments an export writes into its file, and the landing page ("MIT
+    license"). Accessible names change with the labels. Not changed: identifiers and code
+    comments (`kind: 'cancelled'`, `ExportWarning` kind `'colour'`, not shown), the
+    maintainer's documents (SPEC, ADRs, STATUS), and the EBNF comment on `@viewport` ("centre
+    x, centre y, zoom"), which ADR-0009 carries verbatim (a test checks it). The palette accepts both
+    gray and grey. Frozen lines changed (commit citing this ADR): `packages/kernel/test`
+    glider.test.ts (2) and docs.test.ts (1); `packages/export/test` formats.test.ts (1),
+    frame-paint.test.ts (1) and svg-tikz.test.ts (2); `apps/web/e2e` flows-build.spec.ts (2:
+    "Circle (center, point)"), flows-persist.spec.ts (1: the Color label) and
+    flows-claims.spec.ts (1: "canceled after"). Also changed, in test helpers rather than test
+    files: the degenerate-case keys in `packages/kernel/test/helpers/` (degenerate-branch,
+    -circles, -gaps and -transforms: 5 lines), which must equal the registry's declared cases.
+    The export goldens change in those comments and warnings; docs/tools.md is regenerated.
+
+## Consequences
+
+- apps/web gains no decision: the groups, Randomize, the claim and verdict texts and the badges
+  are the packages'. A new tool needs an icon (the compiler asks) and a group (the Record).
+- Screenshots and PNG goldens depend on the label face: CI and the development machine both use
+  Liberation Serif Italic; a machine with Latin Modern or CMU draws those (as Geomdraw did).
+- The developer readouts no longer take space in the panels; `?dev=1` restores them at once.
+
+## Alternatives considered
+
+- **aria-label on icon buttons** (the brief's wording): breaks the frozen text-panel selector
+  for the Text tool; visually hidden text gives the same accessible name.
+- **Changing the canvas font string to `italic 15px …`**: modifies `render.test.ts`; the italic
+  face as its own family needs no change there.
+- **Geomdraw's ink and paper**: modifies six frozen export assertions for a difference of a few
+  levels of grey; kept for the next run that may need it.
+- **Smaller dots and strokes**: modify frozen scene and export tests; not needed for the look.
+- **An Export button that opens the dialog directly**: fewer test lines, but Share and Restore
+  would need another place than Geomdraw's Export menu.
+- **A Centers group with the triangle centres** was first left out as editor behaviour; the
+  maintainer asked for it in this PR (decision 21).
+- **Named colours as the CSS keywords** (red = #FF0000, as before): canvas and exports already
+  agreed, but not with Geomdraw's palette, which the maintainer asked for.
+- **A `fill` style field for polygons**: no such field exists, and adding one is a language
+  change; the outline default keeps the one field that set a fill (colour) working instead.
+- **Two-key chords for the centres** (Geomdraw's G then a digit): G is the glider here, and
+  the keymap is one key per tool; the digits alone keep Geomdraw's numbers.
+- **Randomize sampling in apps/web**: logic in the UI (note A of Run 8b); and an assumed right
+  angle, which SPEC forbids.

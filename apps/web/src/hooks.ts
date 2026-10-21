@@ -11,12 +11,22 @@ import { emptyDocument } from '@geomira/kernel/document';
 import { print } from '@geomira/lang/print';
 import type { Scene } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
-import { viewportFor } from './figure';
+import { FIT_MARGIN, viewportFor, WIDE_FIT_MARGIN } from './figure';
 import { readSlots } from './persist';
 import type { EditorStore, Notice, Snapshot } from './store';
 
 /** Autosave this long after the last change (ms). */
 export const AUTOSAVE_MS = 200;
+
+/** The phone layout's breakpoint (phone.css). */
+const PHONE = '(max-width: 760px)';
+
+/** The fit margin of the current layout (figure.ts WIDE_FIT_MARGIN). */
+export function fitMargin(): number {
+  return typeof matchMedia === 'function' && !matchMedia(PHONE).matches
+    ? WIDE_FIT_MARGIN
+    : FIT_MARGIN;
+}
 
 /** Opens the share link of the URL, if any: whether one was opened, and why not. */
 function openLink(store: EditorStore, hash: string): { opened: boolean; notice: Notice | null } {
@@ -114,7 +124,10 @@ export function useFitOnOpen(
     if (size === null || openCount === fitted.current) return;
     fitted.current = openCount;
     const doc = store.current().doc;
-    store.apply({ kind: 'viewport', viewport: viewportFor({ doc, scene: sceneOf() }, size) });
+    store.apply({
+      kind: 'viewport',
+      viewport: viewportFor({ doc, scene: sceneOf() }, size, fitMargin()),
+    });
   }, [store, openCount, size, sceneOf]);
 }
 

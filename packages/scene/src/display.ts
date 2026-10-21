@@ -6,6 +6,11 @@
  * and within MARGIN_PX of the surface (law L9). A View with a viewProblem gives an empty
  * list carrying the reason.
  *
+ * Colours (ADR-0016 decision 20): an item's and a label's style colour is resolved through
+ * the named-colour palette (palette.ts), so the canvas and every export draw the same hex.
+ * A polygon is an outline; it has a fill (its clipped interior, drawn at the theme's
+ * fillAlpha) only when its style gives it a colour, as before the outline default.
+ *
  * Paths: a dot (points), a polyline (lines, segments, rays, polygon edges, and arcs whose
  * screen radius exceeds MAX_ARC_RADIUS, sampled finely enough that the chords stay within
  * ARC_SAGITTA of the circle), and an arc (screen centre and radius; `from` < `to` are
@@ -17,6 +22,7 @@ import { assertNever } from '@geomira/num/assert';
 import { clipCircle, clipLine, clipPolygon, inside, type Span } from './clip';
 import { placeLabels, type PlacedLabel } from './labels';
 import { markPaths } from './mark-paths';
+import { paletteColour } from './palette';
 import { MAX_WIDTH } from './style';
 import type { DisplayItem, Path, Primitive, Scene } from './types';
 import { toScreen, viewProblem, worldRect, type Rect, type Vec2, type View } from './viewport';
@@ -81,10 +87,16 @@ function polygonEdges(view: View, pts: readonly Vec2[], rect: Rect): Path[] {
   return out;
 }
 
+/** The clipped interior of a polygon, or null when less than a triangle of it is visible. */
+function polygonRegion(view: View, pts: readonly Vec2[], rect: Rect): Vec2[] | null {
+  const f = clipPolygon(pts, rect);
+  return f.length >= 3 ? f.map((q) => toScreen(view, q)) : null;
+}
+
 function itemOf(view: View, p: Primitive, rect: Rect): DisplayItem | null {
   const s = p.shape;
   let paths: Path[];
-  let fill: Vec2[] | null = null;
+  let region: Vec2[] | null = null;
   switch (s.kind) {
     case 'point':
       paths = dotPaths(view, s.at, p.style.width, rect);
@@ -102,8 +114,7 @@ function itemOf(view: View, p: Primitive, rect: Rect): DisplayItem | null {
       break;
     case 'polygon': {
       paths = polygonEdges(view, s.pts, rect);
-      const f = clipPolygon(s.pts, rect);
-      fill = f.length >= 3 ? f.map((q) => toScreen(view, q)) : null;
+      region = polygonRegion(view, s.pts, rect);
       break;
     }
     case 'angle_mark':
@@ -114,8 +125,10 @@ function itemOf(view: View, p: Primitive, rect: Rect): DisplayItem | null {
     default:
       return assertNever(s, 'shape');
   }
-  if (paths.length === 0 && fill === null) return null;
-  return { id: p.id, name: p.name, kind: s.kind, style: p.style, paths, fill };
+  if (paths.length === 0 && region === null) return null;
+  const style = { ...p.style, color: paletteColour(p.style.color) };
+  const fill = p.style.color === null ? null : region;
+  return { id: p.id, name: p.name, kind: s.kind, style, paths, region, fill };
 }
 
 /** The display list of `scene` in `view` (see the module comment). */

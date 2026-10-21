@@ -24,7 +24,8 @@ export const EXPORT_THEME: ExportTheme = Object.freeze({
   paper: '#fbfbf8',
   fillAlpha: 0.08,
   fontPx: 15,
-  fontFamily: '"DejaVu Serif", serif',
+  fontFamily:
+    '"Geomira Math", "Latin Modern Roman", "CMU Serif", "Liberation Serif", "Times New Roman", serif',
 });
 
 /** A text export: the file's contents, its warnings, the ids of the objects drawn (back to front). */
@@ -50,7 +51,7 @@ export function warningText(w: ExportWarning): string {
     const code = `U+${w.codePoint.toString(16).toUpperCase().padStart(4, '0')}`;
     return `the label of ${w.object} has a character TeX cannot write (${JSON.stringify(w.char)}, ${code}): written as ?`;
   }
-  return `the colour ${JSON.stringify(w.colour)} of ${w.object} cannot be read: drawn in the default ink`;
+  return `the color ${JSON.stringify(w.colour)} of ${w.object} cannot be read: drawn in the default ink`;
 }
 
 export interface Paint {

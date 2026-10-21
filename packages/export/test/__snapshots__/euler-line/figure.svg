@@ -3,13 +3,12 @@
 <title>Euler line</title>
 <rect width="640" height="480" fill="#fbfbf8"/>
 <g data-id="4" data-name="abc">
-<polygon points="280,80 40,400 600,400" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
 <polyline points="280,80 40,400" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="40,400 600,400" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="600,400 280,80" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 </g>
 <g data-id="8" data-name="e">
-<polyline points="357.6,548 234.4,-68" fill="none" stroke="#FF0000" stroke-opacity="1" stroke-width="1.5" stroke-dasharray="9 7"/>
+<polyline points="357.6,548 234.4,-68" fill="none" stroke="#B3261E" stroke-opacity="1" stroke-width="1.5" stroke-dasharray="9 7"/>
 </g>
 <g data-id="1" data-name="A">
 <circle cx="280" cy="80" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
@@ -29,7 +28,7 @@
 <g data-id="7" data-name="H">
 <circle cx="280" cy="160" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
 </g>
-<g font-family="&quot;DejaVu Serif&quot;, serif">
+<g font-family="&quot;Geomira Math&quot;, &quot;Latin Modern Roman&quot;, &quot;CMU Serif&quot;, &quot;Liberation Serif&quot;, &quot;Times New Roman&quot;, serif" font-style="italic">
 <text data-id="1" x="286.364" y="70.636" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">A</tspan></text>
 <text data-id="2" x="33.636" y="390.636" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">B</tspan></text>
 <text data-id="3" x="606.364" y="390.636" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">C</tspan></text>

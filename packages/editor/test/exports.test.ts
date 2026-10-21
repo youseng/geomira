@@ -28,6 +28,8 @@ import * as commandMod from '../src/command';
 import * as keymapMod from '../src/keymap';
 import * as panelsMod from '../src/panels';
 import * as restoreMod from '../src/restore';
+import * as randomizeMod from '../src/randomize';
+import * as toolGroupsMod from '../src/tool-groups';
 
 const SURFACE: Record<string, { module: object; names: string[] }> = {
   './state': {
@@ -95,6 +97,8 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     names: ['claimRows', 'hypothesisRows', 'objectsByLayer', 'statementLines'],
   },
   './restore': { module: restoreMod, names: ['openAtStartup', 'restoreOffer', 'restoredSession'] },
+  './randomize': { module: randomizeMod, names: ['randomizeEdit'] },
+  './tool-groups': { module: toolGroupsMod, names: ['TOOL_GROUPS', 'keyCap', 'toolGroup'] },
 };
 
 describe('@geomira/editor subpath surface', () => {

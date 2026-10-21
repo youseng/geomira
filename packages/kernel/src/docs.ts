@@ -107,7 +107,7 @@ export function formatValue<T>(v: Value<T>, show: (x: T) => string): string {
     }
     case 'circle': {
       const anchor = v.anchor === undefined ? '' : `, anchor ${pair(v.anchor)}`;
-      return `circle centre ${pair(v.c)}, r² = ${show(v.r2)}${anchor}`;
+      return `circle center ${pair(v.c)}, r² = ${show(v.r2)}${anchor}`;
     }
     case 'number':
       return `number ${show(v.v)}`;

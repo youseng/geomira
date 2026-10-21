@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Geomira: dynamic geometry for olympiad problems, with a text format, three-valued claims and TikZ / Asymptote export."
+    />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>Geomira: dynamic geometry for olympiad problems</title>
+    <style>
+      :root {
+        --bg: #f4f4f2;
+        --panel: #ffffff;
+        --border: #dcdcd6;
+        --text: #1d1d1b;
+        --muted: #62625d;
+        --accent: #2f5fb3;
+        --accent-soft: #e6edf9;
+        --serif: 'Latin Modern Roman', 'CMU Serif', 'Times New Roman', 'Liberation Serif', serif;
+        --mono: ui-monospace, 'SF Mono', Consolas, 'DejaVu Sans Mono', monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #111315;
+          --panel: #1a1d20;
+          --border: #30353a;
+          --text: #e6e6e3;
+          --muted: #9a9e9f;
+          --accent: #7aa7ff;
+          --accent-soft: #1f2a3d;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.55 system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+      }
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 32px 16px 48px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 0;
+      }
+      h1::before,
+      h1::after {
+        font-family: var(--serif);
+        font-size: 44px;
+      }
+      h1::before {
+        content: 'Geom' / '';
+        font-weight: 600;
+      }
+      h1::after {
+        content: 'ira' / '';
+        font-style: italic;
+      }
+      .lead {
+        font-size: 20px;
+        color: var(--muted);
+        margin: 8px 0 20px;
+      }
+      .open {
+        display: inline-block;
+        padding: 10px 18px;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .open:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .secondary {
+        margin-left: 14px;
+        color: var(--accent);
+      }
+      figure {
+        margin: 28px 0;
+      }
+      figure img {
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+      }
+      figcaption {
+        color: var(--muted);
+        font-size: 14px;
+        margin-top: 8px;
+      }
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 12px;
+        padding: 0;
+        list-style: none;
+      }
+      .features li {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 14px;
+      }
+      .features b {
+        display: block;
+        margin-bottom: 2px;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 14px;
+        background: var(--accent-soft);
+        padding: 0 4px;
+        border-radius: 4px;
+      }
+      footer {
+        margin-top: 32px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Geomira</h1>
+      <p class="lead">
+        Dynamic geometry for olympiad problems: build a figure with the mouse or in a short text
+        language, drag it, test your claims on many random figures, and export it for a post or a
+        handout.
+      </p>
+      <p>
+        <a class="open" href="./">Open Geomira</a>
+        <a class="secondary" href="https://github.com/youseng/geomira">Source and documentation</a>
+      </p>
+      <figure>
+        <img
+          src="./screenshots/main-desktop.png"
+          width="1280"
+          height="720"
+          alt="Geomira with the nine-point circle: tools on the left, the figure in the middle, its text on the right"
+        />
+        <figcaption>The nine-point circle, with its claims checked live in the figure.</figcaption>
+      </figure>
+      <ul class="features">
+        <li>
+          <b>Text is the figure</b> Every figure is a short text (<code>M_a = midpoint(B, C)</code>)
+          that you can edit, share as a link, and open again exactly.
+        </li>
+        <li>
+          <b>Honest about degeneracy</b> A point that cannot exist is shown as undefined with its
+          reason, never drawn as garbage; a figure never jumps.
+        </li>
+        <li>
+          <b>Claims tested on random figures</b> “Holds in this configuration (local test, n = 200,
+          exact over Q)”: what was checked, with its seed and any counterexample.
+        </li>
+        <li>
+          <b>Exact arithmetic</b> Constructions run over the rationals and modulo a large prime, so
+          many claims are checked exactly rather than to a tolerance.
+        </li>
+        <li>
+          <b>Transformations and layers</b> Reflections, rotations, homotheties and spiral
+          similarities, with layers of images that follow their sources.
+        </li>
+        <li>
+          <b>TikZ and Asymptote</b> SVG, PNG, TikZ and Asymptote exports of what you see, with
+          constructive Asymptote where possible and an AoPS form.
+        </li>
+      </ul>
+      <footer>
+        Free software under the MIT license. It runs in your browser: your figures stay on your
+        machine. <a href="./">Open Geomira</a>.
+      </footer>
+    </main>
+  </body>
+</html>

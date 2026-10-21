@@ -312,7 +312,7 @@ export const TANGENT_CASES: Record<string, Record<string, () => void>> = Object.
   (['tangent_point', 'tangent_from'] as const).map((tool) => [
     tool,
     {
-      'P inside c (or P = the centre) → Undefined': () => {
+      'P inside c (or P = the center) → Undefined': () => {
         for (const F of FIELDS) {
           for (const P of F === ModPField ? [O0] : [pt(1, 1), O0]) {
             expect(reason(choose(F, tool, [P, C5], [ORIENT_P]))).toBe(

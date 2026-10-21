@@ -91,7 +91,7 @@ export const TRANSFORM_CASES: Record<string, Record<string, () => void>> = {
         0, 2,
       ]);
     },
-    'an Undefined centre → Undefined': () => {
+    'an Undefined center → Undefined': () => {
       for (const F of FIELDS) {
         const v = withUndefined(F, (b, O) => b.add('x', T('rotate', B, O, num(90))));
         expect(reason(v)).toBe('undefined: O is undefined');

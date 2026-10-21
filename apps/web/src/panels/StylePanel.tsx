@@ -8,7 +8,7 @@ export interface StylePanelProps {
   readonly state: EditorState;
 }
 
-const COLOURS = ['', 'black', 'gray', 'red', 'blue', 'green', 'orange', 'purple', 'brown'];
+const COLOURS = ['', 'black', 'gray', 'red', 'blue', 'green', 'orange', 'purple', 'brown', 'teal'];
 
 /** A style patch: a field set to undefined is removed (exactOptionalPropertyTypes). */
 type Patch = { readonly [K in keyof Style]?: Style[K] | undefined };
@@ -57,7 +57,7 @@ function ChoiceFields({ s, set }: FieldsProps) {
   return (
     <>
       <label>
-        Colour
+        Color
         <select
           value={s.color ?? ''}
           onChange={(e) => {

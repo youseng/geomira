@@ -8,10 +8,10 @@ pen gm_paper = rgb("FBFBF8");
 // The region the screen draws (the view and a margin): lines are cut to it.
 pair gm_lo = (-20.710764773832476, -21.83208511739212), gm_hi = (26.124978336205576, 15.34680374315355);
 pen gmc0 = rgb("1B1F24");
-pen gmc1 = rgb("0000FF");
+pen gmc1 = rgb("1F6FD1");
 
 // ---- helpers ----
-// A circle: centre c, radius r.
+// A circle: center c, radius r.
 struct gmcircle { pair c; real r; }
 gmcircle gm_mkcircle(pair c, real r) { gmcircle k = new gmcircle; k.c = c; k.r = r; return k; }
 pair gm_incenter(pair a, pair b, pair c) {
@@ -22,7 +22,7 @@ gmcircle gm_incircle(pair a, pair b, pair c) {
   real p = abs(b - c) + abs(c - a) + abs(a - b);
   return gm_mkcircle(gm_incenter(a, b, c), abs(cross(b - a, c - a)) / p);
 }
-// A point as the canvas draws it: a dot of radius r, outlined in the paper colour, opacity a.
+// A point as the canvas draws it: a dot of radius r, outlined in the paper color, opacity a.
 void gm_dot(pair z, real r, pen p, real a) {
   filldraw(circle(z, r), p + opacity(a), gm_paper + opacity(a) + linewidth(0.75));
 }
@@ -39,7 +39,6 @@ gmcircle x_b = gm_mkcircle((6.828427124746191, 4.414213562373096), 4.41421356237
 
 // ---- drawing, back to front as on the screen ----
 // abc
-fill(abc, gmc0 + opacity(0.08));
 draw(abc, gmc0 + linewidth(1.125));
 // ν
 draw(circle(nu.c, nu.r), gmc1 + linewidth(1.125));

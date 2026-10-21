@@ -3,7 +3,6 @@
 <title>Incenter–excenter lemma</title>
 <rect width="640" height="480" fill="#fbfbf8"/>
 <g data-id="4" data-name="abc">
-<polygon points="302.895,41.216 200.264,178.057 439.736,178.057" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
 <polyline points="302.895,41.216 200.264,178.057" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="200.264,178.057 439.736,178.057" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="439.736,178.057 302.895,41.216" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
@@ -29,7 +28,7 @@
 <g data-id="8" data-name="M">
 <circle cx="320" cy="281.903" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
 </g>
-<g font-family="&quot;DejaVu Serif&quot;, serif">
+<g font-family="&quot;Geomira Math&quot;, &quot;Latin Modern Roman&quot;, &quot;CMU Serif&quot;, &quot;Liberation Serif&quot;, &quot;Times New Roman&quot;, serif" font-style="italic">
 <text data-id="1" x="296.531" y="31.852" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">A</tspan></text>
 <text data-id="2" x="193.9" y="196.421" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">B</tspan></text>
 <text data-id="3" x="446.1" y="196.421" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">C</tspan></text>

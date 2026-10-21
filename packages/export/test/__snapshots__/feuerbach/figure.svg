@@ -3,13 +3,12 @@
 <title>Feuerbach</title>
 <rect width="640" height="480" fill="#fbfbf8"/>
 <g data-id="4" data-name="abc">
-<polygon points="291.716,120 242.01,186.274 357.99,186.274" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
 <polyline points="291.716,120 242.01,186.274" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="242.01,186.274 357.99,186.274" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="357.99,186.274 291.716,120" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 </g>
 <g data-id="5" data-name="ν">
-<path d="M325.147,157.279 A29.289 29.289 0 1 0 266.569,157.279 A29.289 29.289 0 1 0 325.147,157.279" fill="none" stroke="#0000FF" stroke-opacity="1" stroke-width="1.5"/>
+<path d="M325.147,157.279 A29.289 29.289 0 1 0 266.569,157.279 A29.289 29.289 0 1 0 325.147,157.279" fill="none" stroke="#1F6FD1" stroke-opacity="1" stroke-width="1.5"/>
 </g>
 <g data-id="6" data-name="i">
 <path d="M320.833,160 A26.274 26.274 0 1 0 268.284,160 A26.274 26.274 0 1 0 320.833,160" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
@@ -29,7 +28,7 @@
 <g data-id="3" data-name="C">
 <circle cx="357.99" cy="186.274" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
 </g>
-<g font-family="&quot;DejaVu Serif&quot;, serif">
+<g font-family="&quot;Geomira Math&quot;, &quot;Latin Modern Roman&quot;, &quot;CMU Serif&quot;, &quot;Liberation Serif&quot;, &quot;Times New Roman&quot;, serif" font-style="italic">
 <text data-id="1" x="298.08" y="110.636" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">A</tspan></text>
 <text data-id="2" x="235.646" y="176.91" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">B</tspan></text>
 <text data-id="3" x="364.354" y="176.91" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">C</tspan></text>

@@ -1,0 +1,331 @@
+/* The canvas and what floats on it, the command line, dialogs (Run 9b, Geomdraw's stage). */
+
+/* The canvas is drawn in its light theme in both schemes, so what floats on it stays light. */
+@media (prefers-color-scheme: dark) {
+  .stage {
+    --panel: #ffffff;
+    --panel2: #f7f7f5;
+    --border: #dcdcd6;
+    --text: #1d1d1b;
+    --muted: #62625d;
+    --accent: #2f5fb3;
+    --accent-soft: #e6edf9;
+    --ok: #2b7530;
+    --ok-soft: #e7f3e8;
+    --amber: #8a5800;
+    --amber-soft: #fbf1dc;
+    --bad: #b3261e;
+    --bad-soft: #fbe9e7;
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+    color: var(--text);
+    color-scheme: light;
+  }
+}
+
+.stage {
+  /* The status line is a strip under the canvas, in the canvas's colour (Geomdraw's look). */
+  --status-h: 22px;
+  grid-area: stage;
+  position: relative;
+  overflow: hidden;
+  background: var(--canvas);
+  min-width: 0;
+  min-height: 0;
+}
+
+.board {
+  position: absolute;
+  inset: 0 0 var(--status-h) 0;
+  display: block;
+  width: 100%;
+  height: calc(100% - var(--status-h));
+  touch-action: none;
+}
+
+/* Top left: the active tool's controls, then notices and internal errors. */
+.stage-top {
+  position: absolute;
+  left: 10px;
+  top: 8px;
+  right: 56px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.stage-top > * {
+  pointer-events: auto;
+  max-width: 100%;
+}
+
+.tool-hint,
+.notice,
+.error-banner,
+.devbox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 9px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  box-shadow: var(--shadow);
+}
+
+.tool-hint select,
+.tool-hint input {
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--panel2);
+  padding: 0 6px;
+}
+
+.tool-text {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.small-tb {
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.notice-refusal,
+.notice-info {
+  background: var(--amber-soft);
+  color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 35%, transparent);
+}
+
+.notice-error,
+.error-banner {
+  background: var(--bad-soft);
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 40%, transparent);
+}
+
+.notice .tb,
+.error-banner button {
+  color: var(--text);
+}
+
+.notice-text {
+  flex: 1 1 200px;
+}
+
+.devbox {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  z-index: 5;
+  max-width: min(360px, calc(100% - 20px));
+  font: 11.5px var(--mono);
+  color: var(--muted);
+}
+
+.devbox p,
+.devbox output {
+  display: block;
+  margin: 0;
+}
+
+/* Bottom left: live claim chips above the status line. */
+.claim-chips {
+  position: absolute;
+  left: 10px;
+  bottom: calc(var(--status-h) + 6px);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  max-width: calc(100% - 70px);
+}
+
+.chip {
+  display: block;
+  max-width: 100%;
+  font: 12.5px var(--mono);
+  padding: 2px 9px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--muted);
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.chip .math {
+  font-size: 13.5px;
+}
+
+.chip::before {
+  font-family: var(--mono);
+  font-style: normal;
+  margin-right: 5px;
+}
+
+.chip-true {
+  background: var(--ok-soft);
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 35%, transparent);
+}
+
+.chip-true::before {
+  content: '✓';
+}
+
+.chip-false {
+  background: var(--bad-soft);
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 45%, transparent);
+  font-weight: 600;
+}
+
+.chip-false::before {
+  content: '✗';
+}
+
+.chip-undefined::before {
+  content: '?';
+}
+
+.statusbar span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--status-h);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 10px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--canvas);
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zoomctl {
+  position: absolute;
+  right: 10px;
+  bottom: calc(var(--status-h) + 6px);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zoomctl button {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/*
+ * No hover restyle: the buttons float on the canvas, and repainting them after a hover changes
+ * the anti-aliasing of their corners in a picture of the canvas (Run 7's fit test compares two).
+ */
+
+/* ---- command line ---- */
+.cmdbar {
+  grid-area: cmd;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  min-width: 0;
+}
+
+.cmdbar .pr {
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+.cmdbar input {
+  flex: 1;
+  height: 28px;
+  border: none;
+  background: none;
+  font: 13px var(--mono);
+  min-width: 0;
+}
+
+.cmdbar input::placeholder {
+  color: var(--muted);
+}
+
+.completions,
+.command-error {
+  position: absolute;
+  left: 30px;
+  bottom: 40px;
+  z-index: 60;
+  margin: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  min-width: min(340px, calc(100vw - 40px));
+  max-width: min(640px, 92vw);
+  max-height: 300px;
+  overflow: auto;
+  padding: 4px;
+  list-style: none;
+}
+
+.completions li {
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.completions li[aria-selected='true'] {
+  background: var(--accent-soft);
+}
+
+.completion-label {
+  font: 600 12.5px var(--mono);
+  white-space: nowrap;
+}
+
+.command-error {
+  color: var(--bad);
+  padding: 6px 10px;
+  font-size: 12.5px;
+}
+
+.command-error p {
+  margin: 0;
+}

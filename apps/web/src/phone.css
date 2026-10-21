@@ -1,0 +1,181 @@
+/*
+ * The phone layout (Run 9b, Geomdraw's narrow screen; 390 × 664 is the reference): an
+ * icon-only top bar, the canvas, the panels' tab row, a horizontal tool strip with vertical
+ * group labels, the command line at the bottom. A tab opens its panel as a drawer over the
+ * canvas. Labels hidden here stay accessible names (visually hidden, never display: none).
+ */
+@media (max-width: 760px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 46px minmax(0, 1fr) 36px 52px 40px;
+    grid-template-areas: 'top' 'stage' 'side' 'pal' 'cmd';
+  }
+
+  .hide-narrow {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .topbar {
+    gap: 3px;
+    padding: 0 6px;
+  }
+
+  .brand h1 {
+    margin-right: 2px;
+  }
+
+  .brand h1::before,
+  .brand h1::after {
+    font-size: 16px;
+  }
+
+  .topbar .tb {
+    padding: 0 7px;
+  }
+
+  .topbar .tb.icon,
+  .topbar .menu-wrap > .tb,
+  .topbar .examples,
+  .topbar .seg .tb:first-child {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 6px;
+  }
+
+  .topbar .menu-wrap > .tb .glyph + .hide-narrow + .glyph,
+  .topbar .examples .glyph:last-of-type {
+    display: none;
+  }
+
+  .claim-form,
+  .triangle-type {
+    display: none;
+  }
+
+  .menu {
+    position: fixed;
+    right: 6px;
+    top: 44px;
+    max-width: calc(100vw - 12px);
+  }
+
+  /* The panels: closed, only the tab row; open, a drawer from the top bar to the tool strip. */
+  .side {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    contain: none;
+    overflow: hidden;
+  }
+
+  .side .tab-body {
+    display: none;
+  }
+
+  .tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0 2px;
+  }
+
+  .tabs [role='tab'] {
+    padding: 9px 6px 6px;
+    font-size: 12.5px;
+  }
+
+  .side.open {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 46px;
+    bottom: 92px;
+    z-index: 70;
+    box-shadow: var(--shadow);
+    border-top: none;
+  }
+
+  .side.open .tab-body {
+    display: block;
+  }
+
+  .side.open .drawer-close {
+    display: inline-flex;
+    margin-left: auto;
+    align-items: center;
+    border: none;
+    background: none;
+    padding: 0 8px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  /* The tool strip: groups side by side, their labels written vertically. */
+  .palette {
+    border-right: none;
+    border-top: 1px solid var(--border);
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px;
+  }
+
+  .palette [role='toolbar'] {
+    display: flex;
+    gap: 10px;
+  }
+
+  .pgroup {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin: 0;
+    flex: none;
+  }
+
+  .palette [role='toolbar'] {
+    align-items: center;
+  }
+
+  /* A long label wraps into a second vertical line instead of growing the strip. */
+  .pgroup h4 {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    margin: 0 2px 0 0;
+    max-height: 42px;
+    white-space: normal;
+    font-size: 8.5px;
+    line-height: 1.1;
+  }
+
+  .pgrid {
+    display: flex;
+    gap: 2px;
+  }
+
+  .tool {
+    width: 42px;
+    height: 42px;
+  }
+
+  .tool .k {
+    display: none;
+  }
+
+  .stage-top {
+    right: 10px;
+  }
+
+  /* Zoom and fit in a row, clear of the fitted figure's margin. */
+  .zoomctl {
+    flex-direction: row;
+  }
+
+  .cmdbar input {
+    font-size: 12px;
+  }
+}

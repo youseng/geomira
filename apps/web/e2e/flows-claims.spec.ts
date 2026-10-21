@@ -115,6 +115,6 @@ test('cancel stops a running test; badges are three-valued', async ({ page }) =>
   });
   expect(clicked).toBe(true);
   await expect(item.locator('.run')).toHaveText(
-    /^Global test: cancelled after \d+ of 200 figures$/u,
+    /^Global test: canceled after \d+ of 200 figures$/u,
   );
 });

@@ -3,7 +3,6 @@
 <title>Miquel point</title>
 <rect width="640" height="480" fill="#fbfbf8"/>
 <g data-id="4" data-name="abc">
-<polygon points="289.113,40.012 121.968,262.872 511.972,262.872" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
 <polyline points="289.113,40.012 121.968,262.872" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="121.968,262.872 511.972,262.872" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="511.972,262.872 289.113,40.012" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
@@ -38,7 +37,7 @@
 <g data-id="11" data-name="M">
 <circle cx="245.921" cy="295.969" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
 </g>
-<g font-family="&quot;DejaVu Serif&quot;, serif">
+<g font-family="&quot;Geomira Math&quot;, &quot;Latin Modern Roman&quot;, &quot;CMU Serif&quot;, &quot;Liberation Serif&quot;, &quot;Times New Roman&quot;, serif" font-style="italic">
 <text data-id="1" x="282.749" y="30.648" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">A</tspan></text>
 <text data-id="2" x="115.604" y="253.508" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">B</tspan></text>
 <text data-id="3" x="518.336" y="253.508" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">C</tspan></text>

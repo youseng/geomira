@@ -238,10 +238,10 @@ describe('the drag map: cursor → parameter', () => {
   it('degenerate cases: the centre, a form that does not fit, a point, no anchor', () => {
     const why = (v: object) => ('reason' in v ? v.reason : 'defined');
     expect(why(dragParameter(FloatField, C5, O, 'stereo', CTX))).toBe(
-      'the cursor is at the centre: no nearest point',
+      'the cursor is at the center: no nearest point',
     );
     expect(why(gliderParameter(FloatField, C5, O, 'angle', CTX))).toBe(
-      'the point is the centre: it has no angle',
+      'the point is the center: it has no angle',
     );
     expect(why(dragParameter(FloatField, SEG, O, 'stereo', CTX))).toBe(
       'a glider on a line takes one parameter t',

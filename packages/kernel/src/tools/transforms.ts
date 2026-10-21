@@ -275,7 +275,7 @@ export const TRANSFORM_TOOLS: readonly ToolSpec[] = [
     degenerate: [
       'θ a multiple of 360° → the identity',
       'θ not a multiple of 90° → Inexact over Q and mod p',
-      'an Undefined centre → Undefined',
+      'an Undefined center → Undefined',
     ],
     doc:
       'rotate(O, θ): the rotation by θ degrees counter-clockwise about O. rotate(X, O, θ) is ' +
@@ -292,7 +292,7 @@ export const TRANSFORM_TOOLS: readonly ToolSpec[] = [
     build: homothetyBuild,
     degenerate: ['k = 0 → Undefined', 'k = 1 → the identity; k = −1 → the half turn about O'],
     doc:
-      'homothety(O, k): the homothety with centre O and ratio k (negative k allowed). ' +
+      'homothety(O, k): the homothety with center O and ratio k (negative k allowed). ' +
       'homothety(X, O, k) is the image of X.',
     examples: [
       { args: [P('1', '1'), '2'] },

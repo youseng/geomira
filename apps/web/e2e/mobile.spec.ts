@@ -97,6 +97,7 @@ test('the panels work on a phone: tabs, objects, claims, command bar', async ({ 
   await expect(page.locator('.badge')).toHaveText('false in this figure');
   await tab(page, 'Help');
   await expect(page.getByRole('tabpanel')).toContainText('Undo');
+  await tab(page, 'Layers');
   await page.getByLabel('main').uncheck();
   await expect(page.getByLabel('main')).not.toBeChecked();
   const canvas = await page.getByLabel('Geometry canvas').boundingBox();

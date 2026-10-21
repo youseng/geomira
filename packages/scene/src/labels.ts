@@ -19,6 +19,7 @@
  */
 import { clipLine } from './clip';
 import { boxesOverlap, labelBox, MIN_CLEAR_DEG } from './label-box';
+import { paletteColour } from './palette';
 import type { LabelRun } from './label-text';
 import type { DisplayItem, Path, Primitive, Scene } from './types';
 import type { Rect, Vec2, View } from './viewport';
@@ -122,8 +123,8 @@ function anchorOf(view: View, item: DisplayItem): Vec2 | undefined {
         ? markAnchor(item.paths)
         : item.kind === 'circle'
           ? circleAnchor(view, item.paths)
-          : item.kind === 'polygon' && item.fill !== null
-            ? centroid(item.fill)
+          : item.kind === 'polygon' && item.region !== null
+            ? centroid(item.region)
             : first?.kind === 'poly'
               ? polyMiddle(view, first.pts)
               : undefined;
@@ -270,7 +271,7 @@ function placedAt(p: Primitive, item: DisplayItem, anchor: Vec2, angle: number):
     angle,
     align: cos > TILT ? 'left' : cos < -TILT ? 'right' : 'center',
     baseline: sin > TILT ? 'bottom' : sin < -TILT ? 'top' : 'middle',
-    color: p.style.color,
+    color: paletteColour(p.style.color),
     opacity: p.style.opacity,
   };
 }

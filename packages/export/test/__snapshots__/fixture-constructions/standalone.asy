@@ -20,7 +20,7 @@ gmline gm_mkline(pair p, pair d, bool haslo, real lo, bool hashi, real hi) {
 gmline gm_line(pair a, pair b) { return gm_mkline(a, b - a, false, 0, false, 0); }
 gmline gm_segment(pair a, pair b) { return gm_mkline(a, b - a, true, 0, true, 1); }
 gmline gm_ray(pair a, pair b) { return gm_mkline(a, b - a, true, 0, false, 0); }
-// A circle: centre c, radius r.
+// A circle: center c, radius r.
 struct gmcircle { pair c; real r; }
 gmcircle gm_mkcircle(pair c, real r) { gmcircle k = new gmcircle; k.c = c; k.r = r; return k; }
 gmcircle gm_circle(pair o, pair a) { return gm_mkcircle(o, abs(a - o)); }
@@ -66,7 +66,7 @@ pair[] gm_cc(gmcircle a, gmcircle b) {
   pair n = (-d.y, d.x) / sqrt(s);
   return new pair[] {a.c + x * d - h * n, a.c + x * d + h * n};
 }
-// other(P): the reflection of P in the line of centres
+// other(P): the reflection of P in the line of centers
 pair gm_cc_other(gmcircle a, gmcircle b, pair p) { return reflect(a.c, b.c) * p; }
 // Selectors on a pair of candidates (index 0, 1).
 pair gm_low(pair[] x, int s) { return s > 0 ? x[1] : x[0]; }
@@ -100,7 +100,7 @@ path gm_path(gmline l) {
   }
   return t0 <= t1 ? (l.p + t0 * l.d)--(l.p + t1 * l.d) : nullpath;
 }
-// A point as the canvas draws it: a dot of radius r, outlined in the paper colour, opacity a.
+// A point as the canvas draws it: a dot of radius r, outlined in the paper color, opacity a.
 void gm_dot(pair z, real r, pen p, real a) {
   filldraw(circle(z, r), p + opacity(a), gm_paper + opacity(a) + linewidth(0.75));
 }
@@ -182,13 +182,10 @@ pair D = gm_midpoint(H_d, A);
 
 // ---- drawing, back to front as on the screen ----
 // t
-fill(t, gmc0 + opacity(0.08));
 draw(t, gmc0 + linewidth(1.125));
 // t1
-fill(t1, gmc0 + opacity(0.08));
 draw(t1, gmc0 + linewidth(1.125));
 // t2
-fill(t2, gmc0 + opacity(0.08));
 draw(t2, gmc0 + linewidth(1.125));
 // w
 draw(circle(w.c, w.r), gmc0 + linewidth(1.125));

@@ -27,6 +27,7 @@ for (const id of SCREENSHOTS) {
 
 test('frame time at 300 objects (SPEC §17: drag frame ≤ 8 ms)', async ({ page }, info) => {
   await open(page, 'stress-300');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: 'Measure frame time' }).click();
   const out = page.getByTestId('frame-times');
   await expect(out).toBeVisible();
@@ -60,6 +61,7 @@ test.describe('HiDPI', () => {
 
 test('hiding the source layer draws the coincident images (image only view)', async ({ page }) => {
   await open(page, 'reflection-layer');
+  await page.getByRole('tab', { name: 'Layers', exact: true }).click();
   const panel = page.getByLabel('Figure');
   await expect(panel).toContainText('coincident images hidden');
   const before = await panel.textContent();
