@@ -213,11 +213,20 @@ function place(
   fresh.add(img.id);
 }
 
+/**
+ * Sources a rule leaves unimaged in one sync: `held(layerId, x)` true → layer layerId does not
+ * image x in this call. The language passes its exclusion lists BY NAME, so an excluded image
+ * that the same call creates (an image of an object defined later in the text) is not imaged
+ * before its name resolves to an id.
+ */
+export type Held = (layerId: string, source: DocObject) => boolean;
+
 /** One pass over the rules: the images that are missing now (chains need another pass). */
 function addMissing(
   doc: Document,
   registry: Registry,
   fresh: Set<number>,
+  held: Held | undefined,
 ): EditResult<{ readonly n: number }> {
   const kinds = objectKinds(doc, registry);
   const objects = [...doc.objects];
@@ -226,7 +235,7 @@ function addMissing(
   for (const l of ruleLayers(doc)) {
     const have = new Set(doc.objects.filter((o) => o.managedBy === l.id).map(sourceOf));
     for (const x of doc.objects) {
-      if (!imagedBy(l.rule, x, kinds) || have.has(x.id)) continue;
+      if (!imagedBy(l.rule, x, kinds) || have.has(x.id) || held?.(l.id, x) === true) continue;
       const name = x.name + l.rule.suffix;
       if (names.has(name)) {
         return fail(`the image name ${name} of ${x.name} in layer ${l.name} is already used`);
@@ -263,14 +272,15 @@ function duplicateName(objects: readonly DocObject[]): string | undefined {
  * image is created right after the later of its source and its transform (so "adding an
  * object to the source appends its image"), chains included. Degenerate cases: an image
  * name already used by another object → error; a dependency cycle (a rule's transform
- * built from its own images) → error. A synced document is returned unchanged.
+ * built from its own images) → error. A synced document is returned unchanged. With `held`,
+ * the held sources are not imaged (their existing images stay; see Held).
  */
-export function syncDerived(doc: Document, registry: Registry): EditResult<Synced> {
+export function syncDerived(doc: Document, registry: Registry, held?: Held): EditResult<Synced> {
   const { doc: pruned, removed } = prune(doc, registry);
   const fresh = new Set<number>();
   let cur = pruned;
   for (let pass = 0; pass <= cur.layers.length; pass += 1) {
-    const r = addMissing(cur, registry, fresh);
+    const r = addMissing(cur, registry, fresh, held);
     if (!r.ok) return r;
     cur = r.doc;
     if (r.n === 0) {

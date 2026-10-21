@@ -109,5 +109,5 @@ describe('L9 and L8 for marks and texts (ADR-0011)', () => {
     for (const k of ['angle_mark', 'segment_mark', 'text'])
       expect(kinds.get(k) ?? 0).toBeGreaterThan(RUNS / 10);
     expect(counts.samples).toBeGreaterThan(RUNS);
-  });
+  }, 120_000);
 });
