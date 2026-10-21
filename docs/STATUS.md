@@ -18,6 +18,16 @@ long task stays at most 16 ms (CI: 3.3 ms) and the full UI drag frame's app work
 8 ms (CI median 5.52 ms). CI on GitHub: ci **https://github.com/youseng/geomira/actions/runs/39605322287 success**, deploy **https://github.com/youseng/geomira/actions/runs/39605322376 success**, tex
 **https://github.com/youseng/geomira/actions/runs/39604348357 success (999d446, the last export change)**.
 
+### The maintainer's three additions before merge (ADR-0016 decisions 20–22)
+
+Asked after the run was accepted, in the same PR: (1) a Centers group of GUI tools and the
+triangle circles, (2) named colours in Geomdraw's palette, (3) polygons as outlines. All three
+are done (items 10–12 below), with six frozen lines changed under ADR-0016 decision 22. On
+c10cb19: verify green locally (2143 tests), the full Playwright suite green locally (64 tests,
+below), every baseline regenerated (the three phone canvas baselines are CI's renders again,
+from ci 39613683770's report: only those three differed there, as in decision 19), long task max 6.8 ms (budget 16) and drag-frame app work
+median 5.81 ms locally (budget 8). CI: pending (filled in by the last commit).
+
 ### Side by side: Geomdraw (left) and Geomira (right)
 
 The main screen (the nine-point circle; Geomdraw's screenshot 02 at 1280 × 720):
@@ -85,7 +95,32 @@ The phone layout (390 × 664 at 2×; Geomdraw's screenshot 06):
    deploy. → `pages-smoke.spec.ts`.
 9. **No later-run features (item 9).** None of What's special?, Steps, Findings, Solution,
    Bash, Inversion, Coords, symbolic checks, problem library: no stub, no dead button. The
-   Centers group is left out (no centre tools in the editor; decision 3).
+   Centers group, first left out, is added at the maintainer's request (item 10).
+10. **Centers group (addition 1, decision 21).** Centroid (key 1), Circumcentre (2), Incentre
+    (3), Orthocentre (4), Nine-point centre (5) — Geomdraw's numbers — and Excentre (6) in a
+    new group "Centers" after Circles; Circumcircle (7), Incircle (8), Excircle (9) and
+    Nine-point circle (Shift+N, shown "⇧N") in Circles. Each picks A, B, C by clicking (an
+    existing point, or a new one where you click) and writes the kernel call
+    (`D = circumcenter(A, B, C)`). Geomdraw's icons and corner letters (G, O, I, H, N, Iₐ).
+    → `packages/editor/test/centres.test.ts` (one scenario per tool: the call, the value
+    against the triangle's coordinates, one history entry; keys; from an empty canvas; a
+    collinear pick gives an undefined circle), `apps/web/e2e/flows-centres.spec.ts` (the
+    circumcentre from an empty canvas and the incircle on the same points by clicks, the same
+    text as by command; the keys 2, Shift+N, n), `apps/web/test/design.test.tsx` (corner
+    letters, ⇧N), `packages/editor/test/tool-groups.test.ts` (the group order).
+11. **Named colours (addition 2, decision 20).** `@geomira/scene/palette`: black #111111, red
+    #b3261e, blue #1f6fd1, green #2e7d32, orange #d9730d, purple #7b3fa0, brown #8d5a3b, teal
+    #00897b, gray/grey #777777, resolved by the layout for items and labels; hex and every
+    other colour exactly as written; the text keeps the name. The Style panel also offers teal.
+    → `packages/scene/test/palette.test.ts`, `packages/export/test/palette.test.ts` (SVG, TikZ
+    and Asymptote write the palette hex), `apps/web/test/palette.test.ts` (the canvas sets the
+    same colours as the SVG), the regenerated export goldens.
+12. **Polygons as outlines (addition 3, decision 20).** An uncoloured polygon is drawn and hit
+    on its edges only; a coloured one keeps its tint (colour is the one style field that set a
+    fill). Its label stays at the centroid of its region in both cases. The constructive
+    Asymptote export follows. → `packages/scene/test/palette.test.ts` (outline, coloured fill,
+    hits, label), `display.test.ts` and `hit.test.ts` (changed lines below), the regenerated
+    canvas, PNG and page baselines.
 
 ## Not done
 
@@ -123,6 +158,20 @@ None known. Found and fixed during the run:
 - **The side-by-side images contain Geomdraw's screenshots** (from the reference zip, which
   itself is not unzipped into the repository). If they should not be committed, they can be
   replaced by links.
+- **Polygon fill (addition 3).** No style field named fill exists; "keep any existing style
+  field that sets a fill working" is read as: a polygon with a `color` keeps its tint at the
+  theme's 0.08, an uncoloured one is an outline. Say if coloured polygons should be outlines
+  too, or if a `fill=` style key is wanted (a language change).
+- **Palette values.** Blue is #1f6fd1 as asked (Geomdraw's highlight blue; Geomdraw's own
+  `COLORS.blue` is #1f5fbf); the others are Geomdraw's `COLORS`. Black #111111 differs from
+  the default ink #1b1f24, which frozen tests pin.
+- **Names and spelling of the centre tools.** A centre takes the next free capital (D after
+  A, B, C), not O, G, I, H, N: the editor's naming is unchanged. Tool labels spell "centre"
+  as the rest of the interface; the group is "Centers" as asked. The circumcircle tool writes
+  `circumcircle(A, B, C)`, beside Circle (3 points), which writes `circle(A, B, C)`.
+- **Keys.** Geomdraw types its centres as G then a digit; G is the glider here, so the digit
+  alone selects the centre. Shift+N for the nine-point circle because every lowercase letter
+  is taken.
 - No contest problems or mathematical facts were used.
 
 ## Changed frozen tests
@@ -139,12 +188,74 @@ committed tree; the one modified line is in commit 2723282, which cites ADR-0016
   `flows-persist.spec.ts` (4: the Export menu before Share link and each Restore previous
   figure, the Help menu before Debug report); the surface tests of num, claims and editor gain
   their new subpaths (`./decimal`, `./randomize`, `./tool-groups`).
+- **Modified for the additions (6 lines, commit 18f8a76, citing ADR-0016; decision 22)**:
+  `packages/scene/test/display.test.ts` (the polygon's `fill` length is now its `region`
+  length; one added line: its `fill` is null), `packages/scene/test/hit.test.ts` (a click
+  inside the uncoloured polygon hits nothing), `packages/export/test/svg-tikz.test.ts` (2:
+  teal is #00897B), `apps/web/test/render.test.ts` (red is #b3261e on the canvas),
+  `apps/web/e2e/flows-export.spec.ts` (red is B3261E in TikZ). The scene and editor surface
+  tests gain `./palette` and `keyCap`.
 - **Baselines** (not test code): Run 7's canvas baselines and Run 9a's PNG goldens regenerated
   for the new look; the SVG goldens change in their `<g font-family …>` line only.
 - `apps/web/playwright.config.ts` (config): the `pages` project, `pages-smoke` ignored by the
   desktop and mobile projects, no local server when `GEOMIRA_PAGES_URL` is set.
 
 ## Acceptance command output
+
+### The additions: local, c10cb19 (`pnpm verify`; then `pnpm build` and `pnpm e2e`)
+
+```
+✔ no dependency violations found (473 modules, 2654 dependencies cruised)
+ok   tolerance: 684 files scanned, 0 violation(s)
+ok   file-length: 684 files scanned, 0 violation(s)
+ok   test-count: 2143 tests, floor 2143, 0 violation(s)
+ok   disabled-tests: 684 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-9a, 0 violation(s)
+ok   forbidden-words: 684 files scanned, 0 violation(s)
+ Test Files  198 passed (198)
+      Tests  2143 passed (2143)
+ claims/src        |   95.28 |    86.57 |    99.5 |   97.87 |
+ editor/src        |   93.67 |    87.26 |   98.67 |   97.16 |
+ export/src        |   95.63 |    87.52 |   99.03 |   96.55 |
+ kernel/src        |   98.48 |     95.8 |   99.73 |   98.96 |
+ kernel/src/tools  |   99.33 |    98.32 |     100 |   99.73 |
+ lang/src          |   97.65 |    92.99 |   99.72 |   98.53 |
+ scene/src         |   97.65 |    90.45 |     100 |   98.35 |
+Statements   : 96.98% ( 9415/9708 )
+Branches     : 91.6% ( 7640/8340 )
+Functions    : 99.53% ( 2151/2161 )
+Lines        : 98.29% ( 7854/7990 )
+verify exit=0
+```
+
+```
+(selected lines of the 64; the full list is the same as CI's below plus the two new flows)
+✓   2 [mobile] › e2e/design-mobile.spec.ts:31:1 › screenshot baseline: the phone layout
+✓   3 [mobile] › e2e/design-mobile.spec.ts:38:1 › nothing is clipped: top bar, tabs, tool strip, command line, drawer
+✓   5 [mobile] › e2e/design-mobile.spec.ts:66:1 › Randomize and the menus work on a phone
+frame time (mobile): {"objects":300,"drag":{"frames":120,"median":5.6000000005587935,"p95":12.599999999627471,"max":393.19999999925494},"pan":{"frames":120,"median":3.2000000001862645,"p95":5.7999999998137355,"max":400}}
+✓  11 [mobile] › e2e/scene.spec.ts:28:1 › frame time at 300 objects (SPEC §17: drag frame ≤ 8 ms)
+✓  18 [desktop] › e2e/flows-centres.spec.ts:16:1 › the circumcentre and the incircle by clicks; the same text as by command
+✓  20 [desktop] › e2e/flows-centres.spec.ts:58:1 › the centre tools have their keys: 2 is the circumcentre, Shift+N the nine-point circle
+✓  23 [desktop] › e2e/flows-design.spec.ts:20:1 › screenshot baseline: the main screen (nine-point circle)
+✓  25 [desktop] › e2e/flows-design.spec.ts:28:1 › screenshot baseline: the Claims panel after a local test (seed masked)
+✓  27 [desktop] › e2e/flows-design.spec.ts:45:1 › Randomize draws a new figure of each triangle type as one undoable edit
+✓  29 [desktop] › e2e/flows-design.spec.ts:63:1 › Randomize says why it cannot draw a typed triangle
+✓  30 [desktop] › e2e/flows-design.spec.ts:72:1 › the claim box adds the claim, opens Claims and tests it; the chip follows
+✓  32 [desktop] › e2e/flows-design.spec.ts:104:1 › developer items: behind Settings, or on from the start with ?dev=1
+✓  34 [desktop] › e2e/flows-design.spec.ts:117:1 › icon buttons are named by their old labels; keyboard focus is visible
+✓  36 [desktop] › e2e/flows-design.spec.ts:160:3 › text meets WCAG AA contrast (light scheme)
+✓  38 [desktop] › e2e/flows-design.spec.ts:160:3 › text meets WCAG AA contrast (dark scheme)
+frame time (desktop): {"objects":300,"drag":{"frames":120,"median":4.2000000001862645,"p95":8.299999999813735,"max":694.4000000003725},"pan":{"frames":120,"median":2.199999999254942,"p95":4.8999999994412065,"max":509.20000000018626}}
+✓  57 [desktop] › e2e/scene.spec.ts:28:1 › frame time at 300 objects (SPEC §17: drag frame ≤ 8 ms)
+main thread during a test (measure): {"tasks":12146,"maxTask":6.8,"longTasks":[],"pingGaps":12097,"maxPingGap":6.9}
+✓  63 [measure] › e2e/long-task.spec.ts:53:1 › the main thread never blocks for more than 16 ms during a local and a global test
+full UI drag frame (measure-drag): {"objects":300,"app":{"frames":120,"median":5.81,"p95":9.69,"max":12.25},"raster":{"frames":120,"median":14.54,"p95":21.07,"max":31.18},"total":{"frames":120,"median":20.84,"p95":28.15,"max":40.24}}
+✓  64 [measure-drag] › e2e/drag-frame.spec.ts:86:1 › a full UI drag frame at 300 objects (SPEC §17: ≤ 8 ms)
+64 passed
+```
+
+`docs/test-count.txt` is raised to 2143.
 
 ### Local, 999d446 (`pnpm install && pnpm verify`; 7d95eba changes only e2e baselines and the ADR)
 
@@ -270,6 +381,8 @@ full UI drag frame (measure-drag): {"objects":300,"app":{"frames":120,"median":5
 | eab2c6b | steps 1–5 (Randomize, the UI, specs, README, contrast) | failure 39602546629 (fonts) | failure 39602546767 (fonts) | success 39602546646                              |
 | 999d446 | step 6: overlays that render alike; Randomize coverage | failure 39604348208 (phone) | failure 39604348258 (phone) | success 39604348357                              |
 | 7d95eba | the phone canvas baselines are CI's renders; ADR-0016  | **success 39605322287**     | **success 39605322376**     | (not triggered: nothing under its paths changed) |
+| c10cb19 | the three additions: Centers, palette, outlines        | failure 39613683770 (phone) | failure 39613325998 (phone) | success 39613683880                              |
+| next    | the phone canvas baselines are CI's renders; STATUS    | pending                     | pending                     | pending                                          |
 
 Run URLs are `https://github.com/youseng/geomira/actions/runs/<id>`. The nightly is not waited
 for. The smoke job runs only after a deploy from `main`, i.e. on the merge.
@@ -288,6 +401,7 @@ for. The smoke job runs only after a deploy from `main`, i.e. on the merge.
 
 ## Notes for later runs
 
+- A tool key that is an uppercase letter is Shift+letter; `keyCap` shows it as "⇧N".
 - A new GUI tool needs an icon (`icons.tsx`, the compiler asks) and a group (the Record in
   `tool-groups.ts`).
 - Screenshot baselines with interface text depend on the machine's fonts: render them as CI

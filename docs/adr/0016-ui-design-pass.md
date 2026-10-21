@@ -207,7 +207,8 @@ and the end-to-end selectors.
     `apps/web/test/render.test.ts` (the canvas's red stroke is #b3261e, not "red");
     `apps/web/e2e/flows-export.spec.ts` (the TikZ colour of red is B3261E, not FF0000). The
     export golden files change in their colours and lose the fills of uncoloured polygons; the
-    screenshot and PNG baselines are regenerated.
+    screenshot and PNG baselines are regenerated, and the three phone canvas baselines are
+    again CI's own renders (decision 19).
 
 ## Consequences
 

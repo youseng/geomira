@@ -14,8 +14,10 @@ export it for an AoPS post or a handout.
 - **The text is the figure.** Every figure is a short text (`M_a = midpoint(B, C)`,
   `claim concyclic(M_a, M_b, M_c, D, E, F)`), edited in the Text panel or one line at a time in
   the command line; a share link holds the whole text and opens the same figure again.
-- **Tools in groups** (points, lines, circles, transformations, marks, measures and claims),
-  each with a one-key shortcut; intersections and tangents ask which of two points you mean
+- **Tools in groups** (points, lines, circles, triangle centres, transformations, marks,
+  measures and claims), each with a one-key shortcut: click A, B, C for the circumcentre,
+  incentre, orthocentre, centroid, nine-point centre, excentre, or the circumcircle, incircle,
+  excircle and nine-point circle; intersections and tangents ask which of two points you mean
   and write a selector that keeps that choice when the figure moves.
 - **Honest about degeneracy.** An object that cannot be constructed is shown as undefined with
   its reason (“the circles are apart”), never drawn as garbage, and a point never jumps.
@@ -30,6 +32,9 @@ export it for an AoPS post or a handout.
   similarities; a layer can hold the image of another layer and follows it.
 - **Randomize** draws a new figure of the same construction with an acute, obtuse or right
   triangle (or any), through the claim tester's own sampler.
+- **Colours by name** (`color=red`, `blue`, `green`, `orange`, `purple`, `grey`, …) in
+  Geomdraw's palette, the same on the canvas and in every export; hex colours as written.
+  Polygons are outlines unless they are coloured.
 - **Exports** of what you see: SVG, PNG (with the figure's text inside), TikZ, and Asymptote,
   constructive where possible, with an AoPS form that uses `olympiad.asy`.
 - **On a phone** too: a tool strip, the panels as a drawer, pan, pinch and drag by touch.
@@ -64,7 +69,6 @@ pair G = gm_centroid(A, B, C);
 pair H = gm_orthocenter(A, B, C);
 gmline e = gm_line(O, H);
 
-fill(abc, gmc0 + opacity(0.08));
 draw(abc, gmc0 + linewidth(1.125));
 draw(gm_path(e), gmc1 + linewidth(1.125) + linetype(new real[] {6.75, 5.25}, false));
 gm_dot(A, 0.04375, gmc0, 1);
