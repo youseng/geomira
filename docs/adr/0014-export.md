@@ -150,6 +150,12 @@ how a helper is proved to pick the kernel's candidate, and where a raster is mad
     pdflatex, its standalone Asymptote through `asy -f pdf`, the coordinate check, and the check
     on random documents. Golden snapshots of every example and fixture in every text format are
     committed (`packages/export/test/__snapshots__`), compared byte for byte in `pnpm verify`.
+    The PNG is drawn by the browser's canvas, so its goldens are Playwright baselines
+    (`apps/web/e2e/flows-export.spec.ts-snapshots`, the 1× export of every example, compared as
+    images with Run 7's tolerance); the random documents' only check is that they compile and
+    match the kernel. A random document whose `@viewport` the scene refuses (`viewProblem`,
+    e.g. a centre of 4.5e7 at zoom 1e6) is reported as refused, not compiled; an example or a
+    fixture refused fails the job.
 17. Per format, the exported objects and labels equal the canvas's for the same view (note A),
     including hidden objects, z-order, layers, objects off the view and an image-only view; the
     display values and their images are in every format (note B).

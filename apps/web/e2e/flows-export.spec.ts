@@ -166,3 +166,39 @@ test('a character TeX cannot write is reported in the TeX formats, not in SVG', 
   await expect(content(page)).toHaveValue(/\/\/ Warning: the label of t/u);
   expect(await page.getByRole('dialog', { name: 'Export' }).innerText()).not.toMatch(RESERVED);
 });
+
+/**
+ * Golden PNG per example (Run 9a, item 3): the 1× PNG export of every example, compared as an
+ * image with a committed baseline (the text formats' goldens are in packages/export). The same
+ * small tolerance as Run 7's canvas baselines, for the anti-aliasing of text across font
+ * rasterisers; geometry must match.
+ */
+const PNG_GOLDEN = [
+  'euler-line',
+  'feuerbach',
+  'incenter-excenter',
+  'miquel',
+  'nine-point-circle',
+  'radical-axes',
+  'reflection-layer',
+  'simson',
+];
+
+for (const id of PNG_GOLDEN)
+  test(`PNG golden: ${id}`, async ({ page }) => {
+    const errors = await openApp(page);
+    await page.getByLabel('Example').selectOption(id);
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
+    await page.getByRole('button', { name: 'Export', exact: true }).click();
+    await format(page, 'PNG');
+    await page.getByRole('radiogroup', { name: 'Pixel ratio' }).getByLabel('1×').check();
+    // The file is named after the figure's title, e.g. "incenter-excenter-lemma.png".
+    const wait = page.waitForEvent('download');
+    await page.getByRole('button', { name: /^Download [a-z0-9-]+\.png$/u }).click();
+    const bytes = readFileSync(await (await wait).path());
+    expect(bytes.toString('utf8')).toContain('GEOMIRA');
+    expect(bytes).toMatchSnapshot(`${id}.png`, { maxDiffPixelRatio: 0.002 });
+    expect(errors).toEqual([]);
+  });

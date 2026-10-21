@@ -66,16 +66,25 @@ function snippetDocument(snippet: string): string {
   ].join('\n');
 }
 
-/** Compiles and checks one input; returns its report line, or throws nothing: failures are lines. */
-function check(input: Input, out: string): { ok: boolean; line: string } {
+type Outcome = 'ok' | 'refused' | 'failed';
+
+/**
+ * Compiles and checks one input; returns its report line, or throws nothing: failures are lines.
+ * A figure exportFrame refuses (e.g. a view zoomed in beyond the coordinates' precision) is
+ * 'refused': allowed for a random document, a failure for an example or a fixture.
+ */
+function check(input: Input, out: string): { outcome: Outcome; line: string } {
   const c = evalContextFor(input.doc);
   const ctx = c.ok ? c.ctx : { scale: 1 };
   const values = evaluate(input.doc, registry, FloatField, ctx).values;
   const fr = exportFrame(input.doc, values);
-  if (!fr.ok) return { ok: true, line: `skip ${input.name}: ${fr.problem}` };
+  if (!fr.ok)
+    return input.tikz
+      ? { outcome: 'failed', line: `FAIL ${input.name}: refused: ${fr.problem}` }
+      : { outcome: 'refused', line: `refused ${input.name}: ${fr.problem}` };
   const f = fr.frame;
   const fail = (what: string, log: string) => ({
-    ok: false,
+    outcome: 'failed' as const,
     line: `FAIL ${input.name}: ${what}\n${log.split('\n').slice(-30).join('\n')}`,
   });
   if (input.tikz) {
@@ -94,7 +103,7 @@ function check(input: Input, out: string): { ok: boolean; line: string } {
   if (result.problems.length > 0)
     return fail('coordinates', JSON.stringify(result.problems, null, 1));
   return {
-    ok: true,
+    outcome: 'ok',
     line:
       `ok   ${input.name}: ${input.tikz ? 'TikZ (standalone, snippet), ' : ''}Asymptote; ` +
       `${String(result.checked)} variables (${String(result.constructive)} constructive), ` +
@@ -128,16 +137,18 @@ function main(): void {
     ...geoFiles('tests/fixtures/export', 'fixture-'),
     ...fuzzInputs(opt('--fuzz', 0), opt('--seed', 20261021)),
   ];
-  let failed = 0;
+  const count: Record<Outcome, number> = { ok: 0, refused: 0, failed: 0 };
   for (const input of inputs) {
     const r = check(input, out);
-    if (!r.ok) failed++;
+    count[r.outcome]++;
     process.stdout.write(`${r.line}\n`);
   }
   process.stdout.write(
-    `${String(inputs.length - failed)} of ${String(inputs.length)} inputs passed\n`,
+    `${String(inputs.length)} inputs: ${String(count.ok)} compiled and checked, ` +
+      `${String(count.refused)} random documents refused by exportFrame, ` +
+      `${String(count.failed)} failed\n`,
   );
-  if (failed > 0) process.exitCode = 1;
+  if (count.failed > 0) process.exitCode = 1;
 }
 
 main();
