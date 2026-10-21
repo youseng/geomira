@@ -104,7 +104,8 @@ function itemCode(d: AsyDrawer, item: DisplayItem): string[] {
   ) {
     out.push(`draw(circle(${v.ident}.c, ${v.ident}.r), ${strokePen(d, item, paint)});`);
   } else if (v !== undefined && item.kind === 'polygon') {
-    out.push(`fill(${v.ident}, ${d.pen(paint.hex)}${opac(paint.alpha * d.f.theme.fillAlpha)});`);
+    if (item.fill !== null)
+      out.push(`fill(${v.ident}, ${d.pen(paint.hex)}${opac(paint.alpha * d.f.theme.fillAlpha)});`);
     out.push(`draw(${v.ident}, ${strokePen(d, item, paint)});`);
   } else {
     if (item.fill !== null)

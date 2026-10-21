@@ -8,7 +8,7 @@ pen gm_paper = rgb("FBFBF8");
 // The region the screen draws (the view and a margin): lines are cut to it.
 pair gm_lo = (-3.35, -1.8588834764831845), gm_hi = (6.35, 5.841116523516815);
 pen gmc0 = rgb("1B1F24");
-pen gmc1 = rgb("0000FF");
+pen gmc1 = rgb("1F6FD1");
 
 // ---- helpers ----
 // A circle: centre c, radius r.
@@ -45,7 +45,6 @@ gmcircle nu = gm_mkcircle((1.25, 1.75), 1.7677669529663689); // numeric
 
 // ---- drawing, back to front as on the screen ----
 // abc
-fill(abc, gmc0 + opacity(0.08));
 draw(abc, gmc0 + linewidth(1.125));
 // ν
 draw(circle(nu.c, nu.r), gmc1 + linewidth(1.125));

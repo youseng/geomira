@@ -36,7 +36,8 @@ describe('layout: scene → screen paths', () => {
       ],
       closed: false,
     });
-    expect(d.items[0]?.fill).toHaveLength(3);
+    expect(d.items[0]?.region).toHaveLength(3);
+    expect(d.items[0]?.fill).toBeNull(); // an uncoloured polygon is an outline (ADR-0016)
   });
 
   it('off-surface items are left out; an invalid view gives an empty list with the reason', () => {

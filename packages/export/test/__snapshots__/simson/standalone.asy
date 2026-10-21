@@ -8,7 +8,7 @@ pen gm_paper = rgb("FBFBF8");
 // The region the screen draws (the view and a margin): lines are cut to it.
 pair gm_lo = (-5.809467888754756, -5.070128060534577), gm_hi = (8.809467888754755, 6.534594154601839);
 pen gmc0 = rgb("1B1F24");
-pen gmc1 = rgb("FF0000");
+pen gmc1 = rgb("B3261E");
 
 // ---- helpers ----
 // A line p + t*d, t in [lo, hi] where haslo / hashi (a segment: [0, 1]; a ray: [0, oo)).
@@ -63,7 +63,6 @@ gmline s = gm_line(D, E);
 
 // ---- drawing, back to front as on the screen ----
 // abc
-fill(abc, gmc0 + opacity(0.08));
 draw(abc, gmc0 + linewidth(1.125));
 // ω
 draw(circle(omega.c, omega.r), gmc0 + linewidth(1.125));

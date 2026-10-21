@@ -3,19 +3,16 @@
 <title>Export: constructions</title>
 <rect width="640" height="480" fill="#fbfbf8"/>
 <g data-id="20" data-name="t">
-<polygon points="274.468,212.693 426.007,212.693 299.725,86.411" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
 <polyline points="274.468,212.693 426.007,212.693" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="426.007,212.693 299.725,86.411" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="299.725,86.411 274.468,212.693" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 </g>
 <g data-id="52" data-name="t1">
-<polygon points="274.468,212.693 309.439,387.545 426.007,212.693" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
 <polyline points="274.468,212.693 309.439,387.545" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="309.439,387.545 426.007,212.693" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="426.007,212.693 274.468,212.693" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 </g>
 <g data-id="60" data-name="t2">
-<polygon points="274.468,212.693 426.007,212.693 299.725,338.975" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
 <polyline points="274.468,212.693 426.007,212.693" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="426.007,212.693 299.725,338.975" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="299.725,338.975 274.468,212.693" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>

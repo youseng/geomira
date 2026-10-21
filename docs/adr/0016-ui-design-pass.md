@@ -41,9 +41,8 @@ and the end-to-end selectors.
    Geomdraw had none: point on object, polygon, layer from transform, text, claim.
 3. **Tool groups are editor data** (`@geomira/editor/tool-groups`): Points, Lines, Circles,
    Transform, Marks, Measure / Claim, each tool in exactly one group (a Record over ToolId),
-   in the tool table's order. Geomdraw's "Centers" group is left out: the editor has no centre
-   tools (they are reachable from the command line), and adding tools is editor behaviour
-   outside this run; an empty group would be a dead control.
+   in the tool table's order. Geomdraw's "Centers" group was first left out (no centre tools
+   in the editor); the maintainer's follow-up adds it with its tools (decision 21).
 4. **Canvas overlays** (`Stage.tsx`): the active tool's controls (claim kind, text, Finish,
    Cancel picks) top left with notices and internal errors under them; a developer box top right;
    live claim chips bottom left; zoom, zoom out and fit bottom right (a column on the desktop, a
@@ -169,6 +168,47 @@ and the end-to-end selectors.
     within the desktop tolerances but not on the phone's narrow canvas: the three phone canvas
     baselines of Run 7's spec are CI's own renders (CI is the reference, CLAUDE.md).
 
+### The maintainer's additions before merge
+
+20. **Named colours and polygon outlines** (`@geomira/scene/palette`, display.ts, labels.ts).
+    A style colour that is one of Geomdraw's names (black #111111, red #b3261e, blue #1f6fd1
+    — Geomdraw's highlight blue, as the maintainer asked —, green #2e7d32, orange #d9730d,
+    purple #7b3fa0, brown #8d5a3b, teal #00897b, gray and grey #777777; case and surrounding
+    spaces ignored) is resolved to that hex by the layout, for the display item and its label;
+    every other colour (hex, rgb(), other CSS names) is passed on exactly as written. The
+    document and the scene keep the name; the canvas and every export read the hex from the
+    display list, so they cannot disagree (a web test compares the canvas's colours with the
+    SVG's). Polygons are drawn as outlines, as in Geomdraw: a polygon has a fill only when its
+    style gives it a colour (colour is the only existing style field that set a fill, and a
+    coloured polygon keeps its tint at the theme's fillAlpha). What is drawn is what is hit
+    (law L8): an outline polygon is hit on its edges only. The label of a polygon stays at the
+    centroid of its clipped region, now a field of the display item (`region`) separate from
+    `fill`. The constructive Asymptote export writes `fill(…)` only for a filled polygon.
+21. **The Centers group and the triangle circles** (`@geomira/editor` tools-centres.ts, data
+    like every tool): centroid, circumcentre, incentre, orthocentre, nine-point centre and
+    excentre in a new group "Centers" after Circles; circumcircle, incircle, excircle and
+    nine-point circle in Circles. Each picks three points A, B, C (existing or created by the
+    click, as every point pick) and builds the kernel call of the same name; the excentre and
+    excircle are opposite the first pick (SPEC §11's `excenter(A,B,C)`). Keys: Geomdraw's
+    numbers for its five numbered centres (centroid 1, circumcentre 2, incentre 3, orthocentre
+    4, nine-point centre 5), 6 the excentre, 7 the circumcircle, 8 the incircle, 9 the excircle
+    (0 stays Fit), and Shift+N the nine-point circle: every lowercase letter is taken. A
+    button shows a Shift key as "⇧N" (`keyCap`). Icons: Geomdraw's triangle with its accent
+    dot and corner letter (G, O, I, H, N, Iₐ) for the centres, its incircle, excircle and
+    nine-point circle icons, and a circumcircle icon designed here (a circle through a
+    triangle's vertices). The tool table's types and helpers move to tool-ui.ts (tools.ts
+    re-exports the types) so each file stays under 400 lines. The tool labels spell "centre"
+    as the rest of the interface does; the group keeps the maintainer's and Geomdraw's name.
+22. **Frozen tests changed by decisions 20–21** (each line cites this ADR in its commit):
+    `packages/scene/test/display.test.ts` (the polygon's `fill` length becomes its `region`
+    length, plus an added line that its `fill` is null); `packages/scene/test/hit.test.ts` (a
+    click inside the uncoloured polygon hits nothing, where it hit its fill);
+    `packages/export/test/svg-tikz.test.ts` (2 lines: teal is #00897B, not the CSS #008080);
+    `apps/web/test/render.test.ts` (the canvas's red stroke is #b3261e, not "red");
+    `apps/web/e2e/flows-export.spec.ts` (the TikZ colour of red is B3261E, not FF0000). The
+    export golden files change in their colours and lose the fills of uncoloured polygons; the
+    screenshot and PNG baselines are regenerated.
+
 ## Consequences
 
 - apps/web gains no decision: the groups, Randomize, the claim and verdict texts and the badges
@@ -188,7 +228,13 @@ and the end-to-end selectors.
 - **Smaller dots and strokes**: modify frozen scene and export tests; not needed for the look.
 - **An Export button that opens the dialog directly**: fewer test lines, but Share and Restore
   would need another place than Geomdraw's Export menu.
-- **A Centers group with the triangle centres**: new GUI tools are editor behaviour, not
-  presentation.
+- **A Centers group with the triangle centres** was first left out as editor behaviour; the
+  maintainer asked for it in this PR (decision 21).
+- **Named colours as the CSS keywords** (red = #FF0000, as before): canvas and exports already
+  agreed, but not with Geomdraw's palette, which the maintainer asked for.
+- **A `fill` style field for polygons**: no such field exists, and adding one is a language
+  change; the outline default keeps the one field that set a fill (colour) working instead.
+- **Two-key chords for the centres** (Geomdraw's G then a digit): G is the glider here, and
+  the keymap is one key per tool; the digits alone keep Geomdraw's numbers.
 - **Randomize sampling in apps/web**: logic in the UI (note A of Run 8b); and an assumed right
   angle, which SPEC forbids.

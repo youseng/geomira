@@ -48,7 +48,7 @@ describe('the canvas renderer (a pure function of display list and UI state)', (
     const strokes = rec.calls
       .filter((c) => c[0] === 'set' && c[1] === 'strokeStyle')
       .map((c) => c[2]);
-    const red = strokes.indexOf('red');
+    const red = strokes.indexOf('#b3261e'); // red in the scene's palette (ADR-0016)
     expect(red).toBeGreaterThan(0);
     expect(strokes[red - 1]).toBe(LIGHT_THEME.foreground);
   });

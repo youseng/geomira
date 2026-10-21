@@ -8,7 +8,7 @@ pen gm_paper = rgb("FBFBF8");
 // The region the screen draws (the view and a margin): lines are cut to it.
 pair gm_lo = (-3.35, -1.85), gm_hi = (6.35, 5.85);
 pen gmc0 = rgb("1B1F24");
-pen gmc1 = rgb("FF0000");
+pen gmc1 = rgb("B3261E");
 
 // ---- helpers ----
 // A line p + t*d, t in [lo, hi] where haslo / hashi (a segment: [0, 1]; a ray: [0, oo)).
@@ -54,7 +54,6 @@ gmline e = gm_line(O, H);
 
 // ---- drawing, back to front as on the screen ----
 // abc
-fill(abc, gmc0 + opacity(0.08));
 draw(abc, gmc0 + linewidth(1.125));
 // e
 draw(gm_path(e), gmc1 + linewidth(1.125) + linetype(new real[] {6.75, 5.25}, false));

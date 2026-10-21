@@ -3,7 +3,6 @@
 <title>Miquel point</title>
 <rect width="640" height="480" fill="#fbfbf8"/>
 <g data-id="4" data-name="abc">
-<polygon points="289.113,40.012 121.968,262.872 511.972,262.872" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
 <polyline points="289.113,40.012 121.968,262.872" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="121.968,262.872 511.972,262.872" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="511.972,262.872 289.113,40.012" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>

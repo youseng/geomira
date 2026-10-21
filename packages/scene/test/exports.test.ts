@@ -11,6 +11,7 @@ import * as hit from '../src/hit';
 import * as labelText from '../src/label-text';
 import * as labels from '../src/labels';
 import * as labelBox from '../src/label-box';
+import * as palette from '../src/palette';
 import * as style from '../src/style';
 import * as types from '../src/types';
 import * as viewport from '../src/viewport';
@@ -66,6 +67,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './display': { module: display, names: ['ARC_SAGITTA', 'MARGIN_PX', 'MAX_ARC_RADIUS', 'layout'] },
   './hit': { module: hit, names: ['HIT_RADIUS', 'hitItem', 'hitTest'] },
   './bounds': { module: bounds, names: ['sceneBounds'] },
+  './palette': { module: palette, names: ['NAMED_COLOURS', 'paletteColour'] },
 };
 
 describe('@geomira/scene subpath surface', () => {

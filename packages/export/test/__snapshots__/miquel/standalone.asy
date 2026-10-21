@@ -53,7 +53,6 @@ pair M = gm_cc_other(a, b, F);
 
 // ---- drawing, back to front as on the screen ----
 // abc
-fill(abc, gmc0 + opacity(0.08));
 draw(abc, gmc0 + linewidth(1.125));
 // a
 draw(circle(a.c, a.r), gmc0 + linewidth(1.125));

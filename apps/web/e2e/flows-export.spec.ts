@@ -106,7 +106,7 @@ test('TikZ: snippet and standalone document, copy and download', async ({ page, 
   await format(page, 'TikZ');
   const snippet = await content(page).inputValue();
   expect(snippet).toContain('\\begin{tikzpicture}');
-  expect(snippet).toMatch(/\\definecolor\{gmc\d+\}\{HTML\}\{FF0000\}/u);
+  expect(snippet).toMatch(/\\definecolor\{gmc\d+\}\{HTML\}\{B3261E\}/u); // red, ADR-0016
   expect(snippet).not.toContain('\\documentclass');
   await page.getByRole('button', { name: 'Copy', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();

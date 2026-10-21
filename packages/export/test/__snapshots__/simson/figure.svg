@@ -3,7 +3,6 @@
 <title>Simson line</title>
 <rect width="640" height="480" fill="#fbfbf8"/>
 <g data-id="4" data-name="abc">
-<polygon points="293.459,66.541 134.214,278.868 505.786,278.868" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
 <polyline points="293.459,66.541 134.214,278.868" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="134.214,278.868 505.786,278.868" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 <polyline points="505.786,278.868 293.459,66.541" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
@@ -12,7 +11,7 @@
 <path d="M507.673,252.327 A187.673 187.673 0 1 0 132.327,252.327 A187.673 187.673 0 1 0 507.673,252.327" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
 </g>
 <g data-id="10" data-name="s">
-<polyline points="97.585,548 302.918,-68" fill="none" stroke="#FF0000" stroke-opacity="1" stroke-width="1.5"/>
+<polyline points="97.585,548 302.918,-68" fill="none" stroke="#B3261E" stroke-opacity="1" stroke-width="1.5"/>
 </g>
 <g data-id="1" data-name="A">
 <circle cx="293.459" cy="66.541" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>

@@ -8,7 +8,7 @@ pen gm_paper = rgb("FBFBF8");
 // The region the screen draws (the view and a margin): lines are cut to it.
 pair gm_lo = (-6.328935777509512, -6.214722215136416), gm_hi = (9.328935777509512, 6.214722215136416);
 pen gmc0 = rgb("1B1F24");
-pen gmc1 = rgb("808080");
+pen gmc1 = rgb("777777");
 
 // ---- helpers ----
 // A line p + t*d, t in [lo, hi] where haslo / hashi (a segment: [0, 1]; a ray: [0, oo)).

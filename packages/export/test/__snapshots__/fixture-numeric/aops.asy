@@ -63,10 +63,8 @@ path q = T * p;
 
 // ---- drawing, back to front as on the screen ----
 // p
-fill(p, gmc0 + opacity(0.08));
 draw(p, gmc0 + linewidth(1.125));
 // q
-fill(q, gmc0 + opacity(0.08));
 draw(q, gmc0 + linewidth(1.125));
 // ν
 draw(circle(nu.c, nu.r), gmc0 + linewidth(1.125));

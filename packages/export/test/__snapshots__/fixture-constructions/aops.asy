@@ -181,13 +181,10 @@ pair D = gm_midpoint(H_d, A);
 
 // ---- drawing, back to front as on the screen ----
 // t
-fill(t, gmc0 + opacity(0.08));
 draw(t, gmc0 + linewidth(1.125));
 // t1
-fill(t1, gmc0 + opacity(0.08));
 draw(t1, gmc0 + linewidth(1.125));
 // t2
-fill(t2, gmc0 + opacity(0.08));
 draw(t2, gmc0 + linewidth(1.125));
 // w
 draw(circle(w.c, w.r), gmc0 + linewidth(1.125));

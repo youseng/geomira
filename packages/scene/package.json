@@ -17,7 +17,8 @@
     "./label-box": "./src/label-box.ts",
     "./display": "./src/display.ts",
     "./hit": "./src/hit.ts",
-    "./bounds": "./src/bounds.ts"
+    "./bounds": "./src/bounds.ts",
+    "./palette": "./src/palette.ts"
   },
   "dependencies": {
     "@geomira/kernel": "workspace:*",

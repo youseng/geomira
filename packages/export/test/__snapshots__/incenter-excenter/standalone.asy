@@ -60,7 +60,6 @@ pair M = gm_lc_other(gm_line(A, I), omega, A);
 
 // ---- drawing, back to front as on the screen ----
 // abc
-fill(abc, gmc0 + opacity(0.08));
 draw(abc, gmc0 + linewidth(1.125));
 // ω
 draw(circle(omega.c, omega.r), gmc0 + linewidth(1.125));

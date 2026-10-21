@@ -34,7 +34,7 @@ describe('SVG', () => {
   });
 
   it('draws fills, dashes, widths, colours and opacities as the canvas does', () => {
-    expect(r.text).toContain('fill="#008080" fill-opacity="0.08"');
+    expect(r.text).toContain('fill="#00897B" fill-opacity="0.08"');
     expect(r.text).toMatch(/stroke-width="2" stroke-dasharray="10 8"/u);
     expect(r.text).toMatch(
       /stroke="#FF0000" stroke-opacity="0.5" stroke-width="1.5" stroke-dasharray="1.5 5"/u,
@@ -79,7 +79,7 @@ describe('TikZ', () => {
     );
     for (const m of t.matchAll(/\\definecolor\{gmc\d+\}\{HTML\}\{([^}]*)\}/gu))
       expect(m[1]).toMatch(/^[0-9A-F]{6}$/u);
-    expect(t).toContain('\\definecolor{gmc0}{HTML}{008080}');
+    expect(t).toContain('\\definecolor{gmc0}{HTML}{00897B}');
     expect(t).toMatch(/\\clip \(-?[\d.]+,-?[\d.]+\) rectangle \(-?[\d.]+,-?[\d.]+\);/u);
     expect(t).toContain('\\begin{tikzpicture}[');
     expect(t.trimEnd().endsWith('\\end{tikzpicture}')).toBe(true);

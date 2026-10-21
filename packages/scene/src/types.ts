@@ -115,6 +115,8 @@ export interface DisplayItem {
   readonly style: DrawStyle;
   /** Stroked paths (points: one dot; a text: one dot of radius 0 at its anchor, its handle). */
   readonly paths: readonly Path[];
-  /** A polygon's clipped interior (filled), or null. */
+  /** A polygon's clipped interior (where its label goes), or null. */
+  readonly region: readonly Vec2[] | null;
+  /** The region when it is drawn filled (a coloured polygon, ADR-0016 decision 20), or null. */
   readonly fill: readonly Vec2[] | null;
 }
