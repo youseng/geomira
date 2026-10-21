@@ -19,7 +19,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=node /usr/local/ /usr/local/
+# yarn's links in /usr/local/bin point into the node image's /opt, which is not copied.
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-RUN corepack enable
+RUN rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg && corepack enable pnpm
 
 RUN pdflatex --version | head -n 1 && asy -version 2>&1 | head -n 1 && node --version

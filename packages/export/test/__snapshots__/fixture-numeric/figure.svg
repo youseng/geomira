@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" stroke-linecap="round" stroke-linejoin="round">
+<title>Export: numeric variables</title>
+<rect width="640" height="480" fill="#fbfbf8"/>
+<g data-id="12" data-name="p">
+<polygon points="201.694,395.079 471.185,395.079 600,84.091" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
+<polyline points="201.694,395.079 471.185,395.079" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+<polyline points="471.185,395.079 600,84.091" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+<polyline points="600,84.091 201.694,395.079" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="14" data-name="q">
+<polygon points="208.235,396.609 477.603,388.464 596.959,73.725" fill="#1B1F24" fill-opacity="0.08" stroke="none"/>
+<polyline points="208.235,396.609 477.603,388.464" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+<polyline points="477.603,388.464 596.959,73.725" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+<polyline points="596.959,73.725 208.235,396.609" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="11" data-name="ν">
+<path d="M374.585,327.706 A78.569 78.569 0 1 0 217.447,327.706 A78.569 78.569 0 1 0 374.585,327.706" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="8" data-name="l">
+<polyline points="664.773,-68 48.773,548" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="9" data-name="s">
+<polyline points="309.49,395.079 40,395.079" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="10" data-name="r">
+<polyline points="208.235,396.609 708,381.497" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="1" data-name="A">
+<circle cx="201.694" cy="395.079" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="2" data-name="B">
+<circle cx="471.185" cy="395.079" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="3" data-name="C">
+<circle cx="255.592" cy="179.486" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="6" data-name="X">
+<circle cx="208.235" cy="396.609" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="7" data-name="R">
+<circle cx="207.032" cy="396.343" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="13" data-name="Y">
+<circle cx="272.337" cy="328.471" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g font-family="&quot;DejaVu Serif&quot;, serif">
+<text data-id="1" x="195.33" y="385.715" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">A</tspan></text>
+<text data-id="2" x="464.821" y="385.715" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">B</tspan></text>
+<text data-id="3" x="261.956" y="170.122" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">C</tspan></text>
+<text data-id="6" x="214.599" y="414.973" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">X</tspan></text>
+<text data-id="7" x="200.668" y="414.707" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">R</tspan></text>
+<text data-id="13" x="265.973" y="319.107" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">Y</tspan></text>
+</g>
+</svg>

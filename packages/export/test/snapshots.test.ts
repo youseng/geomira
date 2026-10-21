@@ -13,7 +13,7 @@ import { examples, frameOf, REGISTRY } from './helpers/figure';
 
 const inputs = [
   ...examples(),
-  ...['constructions', 'display'].map((n) => ({
+  ...['constructions', 'display', 'numeric'].map((n) => ({
     name: `fixture-${n}`,
     text: readFileSync(`tests/fixtures/export/${n}.geo`, 'utf8'),
   })),

@@ -83,7 +83,7 @@ const IMAGE_ONLY = HIDDEN.replace('@version 1\n', '@version 1\n@layer main [visi
 describe('the exported objects are the drawn objects (note A)', () => {
   const inputs = [
     ...examples(),
-    ...['constructions', 'display'].map((n) => ({
+    ...['constructions', 'display', 'numeric'].map((n) => ({
       name: n,
       text: readFileSync(`tests/fixtures/export/${n}.geo`, 'utf8'),
     })),

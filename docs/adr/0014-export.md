@@ -132,7 +132,8 @@ how a helper is proved to pick the kernel's candidate, and where a raster is mad
     jrjohansson/ipython-asymptote, examples/olympiad.asy). Neither that file nor anything found
     publicly states a licence; without one, copying is not permitted. **It is not vendored.**
 15. **The `aops` dialect** is the standalone output with `import olympiad;`, no texpreamble
-    (AoPS supplies its own preamble), and olympiad's functions only where they are documented
+    (AoPS's own LaTeX setup is used; whether it has amssymb is an audit item), and olympiad's
+    functions only where they are documented
     publicly: `foot(P, A, B)` (the foot from P to line AB, `pair F = foot(X, A, B);` in the AoPS
     forum's olympiad.asy tutorial), `circumcenter(A, B, C)` and `incenter(A, B, C)` (points of a
     triangle, in the AoPS wiki page "Asymptote: Useful commands and their Output"). The AoPS
@@ -143,7 +144,8 @@ how a helper is proved to pick the kernel's candidate, and where a raster is mad
 
 ### Tests and CI
 
-16. **tex.yml**: the TeX Live + Asymptote image (Run 0) gains Node; the job runs
+16. **tex.yml**: the TeX Live + Asymptote image (Run 0) gains Node 22 (base images from
+    mirror.gcr.io: public.ecr.aws refused a pull with 429 in this run); the job runs
     `scripts/export-tex.ts`: every example and fixture's standalone TikZ and TikZ snippet through
     pdflatex, its standalone Asymptote through `asy -f pdf`, the coordinate check, and the check
     on random documents. Golden snapshots of every example and fixture in every text format are
@@ -156,6 +158,29 @@ how a helper is proved to pick the kernel's candidate, and where a raster is mad
     mapping is 'numeric' or names an op, and the new `export-mapping.test.ts` pins exactly which
     tools are constructive. Lines only added: the `./style` names of scene's export test
     (`dashPattern`) and the `./tolerance` names of num's export test (`EXPORT_TOL`).
+
+### The drag-frame budget (note F of Run 9a)
+
+19. **What a "drag frame" measures** (SPEC §17: ≤ 8 ms at 300 objects). `e2e/drag-frame.spec.ts`
+    traces the full UI frame in Chromium: the real mouse presses on a free point of the
+    300-object figure, then the page dispatches one pointermove per animation frame (marked
+    with `performance.mark`, no Playwright action in the window), and a frame is the sum of the
+    page's main-thread tasks between two marks: the event, the editor's applyEdit, the scene,
+    the layout, React, the canvas drawing calls, the DOM's style, layout and paint, GC.
+    Headless Chromium in CI has no GPU, so it also rasterises the 2D canvas in software ON THE
+    MAIN THREAD (`CanvasResourceProviderSharedImage::ProduceCanvasResource`, about 16 ms for
+    this figure); with a GPU (a desktop browser; also headless with SwiftShader GPU flags) that
+    raster runs in the GPU process. The spec reports `app` (everything but that raster),
+    `raster` and `total`, and asserts the budget on the app's median, the work the app
+    controls. This is a reading of SPEC §17 (Run 7's frame benchmark timed only the
+    JavaScript of evaluate, layout and draw); STATUS asks the maintainer to confirm it.
+20. **Panels settle during a drag** (`apps/web/src/settled.ts`): the side panel, the tool bar and
+    the header's printed text show the state from before the drag and update at its end (or
+    cancel); the canvas draws every frame. Before, the Text panel printed and parsed the whole
+    document on every frame and React rewrote its textarea (27 ms of app work per frame). The
+    other savings keep every result identical: label placement skips curves by cheap exact
+    pre-tests, `syncDerived` skips pruning and adding images when there is no rule and no
+    image, and the canvas font is set only when it changes.
 
 ## Consequences
 

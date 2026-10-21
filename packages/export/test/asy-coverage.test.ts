@@ -72,7 +72,12 @@ const VARIANTS = [
 ];
 
 const fixture = (n: string) => readFileSync(`tests/fixtures/export/${n}.geo`, 'utf8');
-const inputs = [...examples().map((e) => e.text), fixture('constructions'), fixture('display')];
+const inputs = [
+  ...examples().map((e) => e.text),
+  fixture('constructions'),
+  fixture('display'),
+  fixture('numeric'),
+];
 
 describe('the coordinate check covers every constructive mapping', () => {
   const plans = inputs.map((t) => {
