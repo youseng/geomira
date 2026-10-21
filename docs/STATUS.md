@@ -1,5 +1,296 @@
 # STATUS
 
+## Run 8b: ACCEPTED (2026-10-21)
+
+apps/web UI (SPEC §15, §16) over packages/editor, scene and claims. Base check first: Run 8a was
+ACCEPTED (merged as PR #11, `main` = f48f0eb; the `run-8a` tag is not placed, so the add-only
+guard still compares with `run-7`, and Run 8a's test files were treated as frozen too: this run
+only adds lines to them). `pnpm install && pnpm verify` was green locally on f48f0eb (1684
+tests), and ci, deploy and nightly were green in CI on that commit
+(https://github.com/youseng/geomira/actions/runs/39556284269,
+https://github.com/youseng/geomira/actions/runs/39556284361,
+https://github.com/youseng/geomira/actions/runs/39556284327).
+
+Every criterion holds: the Playwright flows are green locally and in CI (34 tests: 18 new, and
+Run 7's 8 on both the desktop and the phone), the long-task measurement is pasted below
+(largest main-thread task during a local and a global test: 2.7 and 5.9 ms in CI, 3.5–11.2 ms
+locally; budget 16 ms; no Long Task), verify is green locally and in CI (table under "CI on GitHub").
+
+## Done (each item → the test file that proves it)
+
+0. **Note C, its own commit 52e1942**: automatic labels of nearby points avoid each other
+   (packages/scene `labels.ts`, new `label-box.ts`): labels with a fixed direction (explicit
+   `label_angle`/`label_dist`, non-point labels) are placed first and never moved; automatic point
+   labels, in draw order, take Run 7's best direction unless its estimated box overlaps an
+   earlier label, then the next ranked direction that keeps ≥ 20° from the curves through the
+   point, else the best one (fallback). Deterministic. → `packages/scene/test/label-collision.test.ts`
+   (boxes, explicit offsets untouched, never onto a curve, fallback, determinism, a property over
+   random point sets), `apps/web/test/label-collision.test.ts` (nine-point circle: M_a and D; every
+   example, desktop and mobile canvases; the mobile-size checks FAIL on the old placement, the
+   desktop-size ones already passed). Updated
+   baseline: nine-point-circle-mobile (the only image whose pixels changed: "M_a" and "D" no
+   longer overlap); all baselines were regenerated again in step 2 for the new layout.
+1. **The panels' logic in the packages (note A), commit cc9ac06**, tests first:
+   - claims `verdict-line.ts`: the SPEC §10.5 wording, exactly "Holds in this configuration
+     (local test, n = 200, exact over Q)"; tones (global verdicts are `info`, never red); the
+     detail line with the seed; never the reserved words. → `packages/claims/test/verdict-line.test.ts`
+     (incl. a real job, and a real orientation-dependent global run).
+   - claims `figure-hypotheses.ts` (note B): every `assume` line on the current figure with the
+     tester's checkAssumption, and "This figure is not acute: ∠B ≈ 104°" etc. →
+     `packages/claims/test/figure-hypotheses.test.ts` (acute, band edge, comparisons of lengths and
+     angles, scalene, convex, inside, in order, undefined arguments, refused kinds, agreement with
+     the tester).
+   - editor `command.ts` (command bar: a line is one replaceText edit, errors on line 1; GUI
+     tools by id or label; completions from the registry, objects, keywords, claim and assumption
+     kinds, tools), `keymap.ts` (shortcuts and help from the tool table), `panels.ts` (objects by
+     layer with Undefined/Inexact reasons, badges by evalClaim, statement lines), `restore.ts`
+     (startup and "Restore previous figure" while a link is open). →
+     `packages/editor/test/command.test.ts`, `keymap.test.ts`, `panels.test.ts`, `restore.test.ts`.
+2. **The web app, commit 057b2f0 (+ 939cf8a stylesheet split, 7804e0d review fixes, 8d637d2
+   a deterministic cancel flow)**: Text (two-way, per-line
+   diagnostics), Objects (by layer, reasons), Layers, Claims (live three-valued badges, local and
+   global verdict lines, the global line by itself after the local one when there are `assume`
+   lines or on demand, Open counterexample, hypotheses at their lines), Style (colour, width,
+   dash, hidden, noimage, label text and offset, z), Help (from the keymap); the GUI tool bar with
+   prompts; the command bar with completions; the canvas (tools by click, drag incl.
+   drag-through, pan, pinch, wheel); the Web Worker host (runJob in 12 ms slices, progress every
+   100 ms, cancel, started ahead of the first test); autosave, share links, Restore previous
+   figure; the debug report from the header and from every internal-error message (note D).
+   → `apps/web/test/test-runs.test.ts` (the run store and the worker messages), the frozen
+   `App.test.tsx`, and the Playwright flows:
+   - `e2e/flows-build.spec.ts`: triangle + circumcircle by mouse and by command bar give the
+     IDENTICAL text; drag (rounded at the end, undo returns; a point that is not free pans
+     instead); 50 random undo/redo steps, every step showing its text, redoing all returns the
+     original; derived layer from a transform (picked in the Objects panel) and drag-through
+     (dragging C* moves C); completions, a shortcut, the help.
+   - `e2e/flows-claims.spec.ts`: local test → "Holds in this configuration (local test, n = 200,
+     exact over Q)"; global test → "Configuration-dependent (global test, n = 200, exact over Q:
+     … fail; no orientation-dependent selector)", tone info and not red; Open counterexample
+     (the text changes, the badge becomes "false in this figure", the verdict is marked as about
+     an earlier figure); with `assume acute` the global test follows by itself ("Holds across the
+     declared configuration (…; n samples rejected by hypotheses; 100 mirrored)"); **note B**:
+     an obtuse figure with `assume acute(A, B, C)` shows "This figure is not acute: ∠B ≈ 108.4°"
+     at the assume line, the tests still run, and the line has no "hard to satisfy"; cancel;
+     three-valued badges.
+   - `e2e/flows-persist.spec.ts`: text panel two-way with diagnostics; objects with Undefined
+     reasons; style incl. noimage written to the text; a share link opened over an autosave
+     leaves the autosave untouched, Restore previous figure brings it back (and again back to the
+     link); a damaged link is refused with its reason and the autosave opens instead; the debug
+     report from the header and from an internal error ("Copy debug report").
+   - `e2e/mobile.spec.ts` (390×664, touch through CDP): one-finger pan, two-finger pinch (zoom ×2
+     exactly), a finger drag of a point, the panels (tabs, objects, claims, help, layers).
+   - `e2e/long-task.spec.ts`: the 16 ms measurement (below).
+3. **ADR-0013** (docs/adr/0013-web-app.md): the decisions above, and one deviation (decision 9).
+4. The test-count floor is raised from 1684 to 1741 (docs/test-count.txt), the Vitest count of
+   this run; the 34 Playwright tests are not part of it.
+
+### Long-task measurement (SPEC §16: the main thread never blocks > 16 ms during a test)
+
+A local test (n = 200) of `claim collinear(O, N, H)` with `assume acute(A, B, C)`, and the global
+test that follows it by itself; measured inside the page with no Playwright action in the window,
+in a Playwright project that runs alone after all others. `maxTask` = the longest task of the
+page's main thread in a Chromium trace (wall clock, ms); `longTasks` = Long Tasks API entries
+(≥ 50 ms); `maxPingGap` = the longest gap of a MessageChannel ping loop (ms).
+
+```
+CI, 660672d (https://github.com/youseng/geomira/actions/runs/39566456359):
+main thread during a test (measure): {"tasks":11759,"maxTask":5.9,"longTasks":[],"pingGaps":11679,"maxPingGap":6}
+CI, 8d637d2 (https://github.com/youseng/geomira/actions/runs/39568173075, the last code commit):
+main thread during a test (measure): {"tasks":9950,"maxTask":2.7,"longTasks":[],"pingGaps":9859,"maxPingGap":2.8}
+local (4 cores), 8d637d2, final run (34 passed):
+main thread during a test (measure): {"tasks":25237,"maxTask":3.8,"longTasks":[],"pingGaps":25168,"maxPingGap":3.7}
+local, 8d637d2, twice under the Pages base path (GEOMIRA_BASE=/geomira/, as deploy.yml):
+{"tasks":16547,"maxTask":4.6,"longTasks":[],"pingGaps":16492,"maxPingGap":4.7}
+{"tasks":16911,"maxTask":3.5,"longTasks":[],"pingGaps":16854,"maxPingGap":3.3}
+local, 7804e0d: {"tasks":14749,"maxTask":5.2,"longTasks":[],"pingGaps":14692,"maxPingGap":5.1}
+local, earlier full runs of the same spec (660672d and before):
+{"tasks":25498,"maxTask":3.5,"longTasks":[],"pingGaps":25437,"maxPingGap":3.6}
+{"tasks":14170,"maxTask":5.1,"longTasks":[],"pingGaps":14114,"maxPingGap":5.3}
+{"tasks":16586,"maxTask":4.4,"longTasks":[],"pingGaps":16531,"maxPingGap":4.5}
+{"tasks":21515,"maxTask":11.2,"longTasks":[],"pingGaps":21457,"maxPingGap":11.4}
+```
+
+Before the measurement got its own project, it ran beside another browser (two Playwright
+workers) and measured 20.3 ms once in 12 repeats (OS contention: the same figure measured ≤ 6 ms
+in six fresh browsers run alone); and before it excluded Playwright's own actions from the
+window and the page started the worker ahead of the first test, its ping loop measured gaps of
+up to 15.9 ms around the click (Playwright's actionability checks run on the page's main thread;
+a trace showed the page's own tasks at ≤ 6 ms). Both are addressed as described (ADR-0013
+decisions 7 and 12).
+
+Information (not a criterion of this run): the editor's drag step at 300 objects (stress-300,
+Node, medians of 120 moves) costs applyEdit dragMove 1.6 ms, buildScene 0.7 ms, layout 3.1 ms,
+print 0.4 ms; Run 7's frame benchmark (SPEC §17 budget 8 ms) still measures the Run 7 path:
+desktop drag median 5.5 ms, mobile 6.1 ms in the final local run; 5.7 ms on the desktop in CI
+(8d637d2).
+
+## Not done
+
+Nothing in Run 8b's scope. Not started (later runs): the views UI and the no-worker 16 ms slicing
+from file:// (v1.1), exports of the display values (export run), the frame benchmark through the
+editor's drag path and React (see the information above).
+
+## Known bugs
+
+None known. Found and fixed during the run:
+
+- (7804e0d, found on review, e2e check first) At startup an invalid share link's notice was
+  cleared by the next successful edit (the fit of the figure that opened instead): error and
+  information notices now stay until dismissed; refusals still clear on the next success. The
+  "Revert text" button took the focus from the text field, whose blur applied the very text it
+  was meant to revert.
+
+- (8d637d2, found by CI) The deploy workflow's e2e run on 660672d failed
+  (https://github.com/youseng/geomira/actions/runs/39566456364): the cancel flow clicked Cancel
+  through Playwright after the global test had already finished, and waited until it timed out
+  (the test's own race; the app was right). The flow now starts the test and cancels it one
+  macrotask later inside the page, and requires "Global test: cancelled after n of 200
+  figures": 20 repeats green locally, the whole suite twice under the Pages base path.
+
+Before the commits:
+
+- The first version of the long-task test measured Playwright's own locator polling (it forces
+  style and layout on the page's main thread) and the worker's creation on the first click; the
+  test now measures with no Playwright action in the window, and the page starts the worker early.
+- The e2e helpers first aimed with the canvas's fractional bounding box while the page maps with
+  its whole-pixel client size (0.2 px off, visible as B = (5, 0.9959)); they now use the page's
+  own mapping. The 0.4 px at most between the canvas bitmap (whole CSS px) and its box is below
+  the drag-end rounding (0.1 px is kept only when nothing moves visibly).
+- A text read right after a command could precede the panel's update (a flaky undo/redo
+  expectation); text assertions now wait for the expected lines.
+
+## Uncertain
+
+- **Entropy (ADR-0013 decision 9, a deviation from note A)**: the worker draws the mod-p rung's
+  randomness from `crypto.getRandomValues` through num's `cryptoSource` itself, instead of the
+  main thread supplying it (a function cannot be posted; a pool would need a bound on the rung's
+  consumption). Please confirm, or say how the main thread should supply it.
+- **Verdict wording (ADR-0013 decision 2)**: the line is the brief's example; counts appear only
+  where they add something (mixed rungs, fewer valid than tested, rejected, mirrored, a
+  shortfall); the seed and tally are in the detail line under it. Please confirm.
+- **"Restore previous figure" while a link is open (decision 8)**: offers the autosave
+  (`current`), and the link's text becomes `previous`.
+- **The 16 ms measurement (decision 12)** is per main-thread task in a trace, with the
+  measurement running alone; the ping loop's gap is reported, not asserted.
+- No mathematical facts were used beyond earlier runs' (no contest problems); the flows use the
+  orthocentre identity ∠BHC + ∠A = 180° for acute triangles, already in Run 5's tests.
+
+## Changed frozen tests
+
+No line of a file frozen at `run-7` was modified or removed (`add-only: frozen tests compared
+with run-7, 0 violation(s)`), and none of Run 8a's test files either. Lines were ADDED to:
+packages/scene/test/exports.test.ts (5: `./label-box`), packages/claims/test/exports.test.ts (7:
+`./verdict-line`, `./figure-hypotheses`), packages/editor/test/exports.test.ts (14: `./command`,
+`./keymap`, `./panels`, `./restore`). The six screenshot baselines of `e2e/scene.spec.ts` were
+regenerated (images, not test code: note C, then the new layout's smaller canvas);
+`apps/web/playwright.config.ts` assigns the new specs to projects (Run 7's specs still run on
+both desktop and mobile).
+
+## Acceptance command output
+
+### Local, 8d637d2 (`pnpm install && pnpm verify`; the STATUS commit after it changes only docs)
+
+```
+All matched files use Prettier code style!
+✔ no dependency violations found (408 modules, 2340 dependencies cruised)
+ok   tolerance: 531 files scanned, 0 violation(s)
+ok   file-length: 531 files scanned, 0 violation(s)
+ok   test-count: 1741 tests, floor 1684, 0 violation(s)
+ok   disabled-tests: 531 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-7, 0 violation(s)
+ok   forbidden-words: 531 files scanned, 0 violation(s)
+ Test Files  168 passed (168)
+      Tests  1741 passed (1741)
+ claims/src        |   95.57 |    87.43 |   99.45 |   97.81 |
+ editor/src        |   93.51 |    87.11 |   98.66 |   97.16 |
+ kernel/src        |   98.48 |    95.78 |   99.73 |   98.96 |
+ lang/src          |   97.65 |    92.99 |   99.72 |   98.53 |
+ scene/src         |   97.67 |    90.34 |     100 |   98.41 |
+Statements   : 97.18% ( 8285/8525 )
+Branches     : 92.24% ( 6756/7324 )
+Lines        : 98.49% ( 6891/6996 )
+verify exit=0
+```
+
+The scene and web laws also pass at NIGHTLY=1 scale locally (`NIGHTLY=1 npx vitest run
+packages/scene apps/web`: 23 files, 115 tests).
+
+### Playwright, local, 8d637d2 (`pnpm build && pnpm e2e`, list reporter, durations removed)
+
+```
+✓   1 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: euler-line
+✓   3 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: nine-point-circle
+✓   4 [mobile] › e2e/scene.spec.ts:19:3 › screenshot baseline: reflection-layer
+✓   2 [mobile] › e2e/mobile.spec.ts:50:1 › pan with one finger, pinch with two
+✓   6 [mobile] › e2e/mobile.spec.ts:80:1 › drag a point with a finger; the text follows
+✓   7 [mobile] › e2e/mobile.spec.ts:90:1 › the panels work on a phone: tabs, objects, claims, command bar
+✓   8 [mobile] › e2e/shell.spec.ts:3:1 › shows the title and an empty canvas
+frame time (mobile): {"objects":300,"drag":{"frames":120,"median":6.099999999627471,"p95":16.90000000037253,"max":298.09999999962747},"pan":{"frames":120,"median":3.5,"p95":6.400000000372529,"max":330.30000000074506}}
+✓   5 [mobile] › e2e/scene.spec.ts:28:1 › frame time at 300 objects (SPEC §17: drag frame ≤ 8 ms)
+✓  10 [mobile] › e2e/scene.spec.ts:50:3 › HiDPI › the canvas has devicePixelRatio device pixels per CSS pixel
+✓  11 [mobile] › e2e/scene.spec.ts:61:1 › hiding the source layer draws the coincident images (image only view)
+✓   9 [desktop] › e2e/flows-build.spec.ts:8:1 › triangle and circumcircle by mouse and by command bar give the identical text
+✓  12 [mobile] › e2e/scene.spec.ts:71:1 › pan, zoom and fit change the picture; fit restores it
+✓  13 [desktop] › e2e/flows-build.spec.ts:44:1 › dragging a free point moves it, rounds it at the end, and undo returns
+✓  15 [desktop] › e2e/flows-claims.spec.ts:15:1 › local test, then global test, then open the counterexample
+✓  16 [desktop] › e2e/flows-claims.spec.ts:53:1 › with assume lines the global test follows the local test by itself
+✓  14 [desktop] › e2e/flows-build.spec.ts:69:1 › 50 random undo/redo steps: every step shows its text; redoing all returns the original
+✓  17 [desktop] › e2e/flows-claims.spec.ts:68:1 › a figure that violates an assume line says so at that line, and the tests still run
+✓  19 [desktop] › e2e/flows-claims.spec.ts:89:1 › cancel stops a running test; badges are three-valued
+✓  18 [desktop] › e2e/flows-build.spec.ts:116:1 › a derived layer from a transform, its images, and dragging an image moves its source
+✓  21 [desktop] › e2e/flows-build.spec.ts:134:1 › command bar: completions from the registry; shortcuts and help from the keymap
+✓  20 [desktop] › e2e/flows-persist.spec.ts:8:1 › text panel: two-way, with per-line diagnostics
+✓  22 [desktop] › e2e/scene.spec.ts:19:3 › screenshot baseline: euler-line
+✓  23 [desktop] › e2e/flows-persist.spec.ts:28:1 › objects panel lists Undefined reasons; style panel edits the text
+✓  24 [desktop] › e2e/scene.spec.ts:19:3 › screenshot baseline: nine-point-circle
+✓  26 [desktop] › e2e/scene.spec.ts:19:3 › screenshot baseline: reflection-layer
+✓  25 [desktop] › e2e/flows-persist.spec.ts:43:1 › opening a share link keeps the autosave; Restore previous figure brings it back
+✓  28 [desktop] › e2e/flows-persist.spec.ts:77:1 › a damaged share link is refused with its reason; the autosave opens instead
+✓  29 [desktop] › e2e/flows-persist.spec.ts:94:1 › the debug report is reachable from the page and from an internal error
+✓  30 [desktop] › e2e/shell.spec.ts:3:1 › shows the title and an empty canvas
+frame time (desktop): {"objects":300,"drag":{"frames":120,"median":5.5,"p95":8.799999999813735,"max":581.7999999998137},"pan":{"frames":120,"median":2.599999999627471,"p95":6.2999999998137355,"max":519.5}}
+✓  27 [desktop] › e2e/scene.spec.ts:28:1 › frame time at 300 objects (SPEC §17: drag frame ≤ 8 ms)
+✓  31 [desktop] › e2e/scene.spec.ts:50:3 › HiDPI › the canvas has devicePixelRatio device pixels per CSS pixel
+✓  32 [desktop] › e2e/scene.spec.ts:61:1 › hiding the source layer draws the coincident images (image only view)
+✓  33 [desktop] › e2e/scene.spec.ts:71:1 › pan, zoom and fit change the picture; fit restores it
+main thread during a test (measure): {"tasks":25237,"maxTask":3.8,"longTasks":[],"pingGaps":25168,"maxPingGap":3.7}
+✓  34 [measure] › e2e/long-task.spec.ts:53:1 › the main thread never blocks for more than 16 ms during a local and a global test
+34 passed
+```
+
+### CI on GitHub
+
+| commit  | what                                         | ci (typecheck, lint, test, rules, e2e)                                  | deploy (build and e2e under the Pages base path)                                                 |
+| ------- | -------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 52e1942 | step 0: note C (labels)                      | https://github.com/youseng/geomira/actions/runs/39559846004 success     | https://github.com/youseng/geomira/actions/runs/39559845971 success                              |
+| 660672d | steps 1–2 and ADR-0013 (pushed together)     | https://github.com/youseng/geomira/actions/runs/39566456359 success     | https://github.com/youseng/geomira/actions/runs/39566456364 **failure** (the cancel flow's race) |
+| 7804e0d | review fixes (notices, Revert text)          | https://github.com/youseng/geomira/actions/runs/39567656690 cancelled   | https://github.com/youseng/geomira/actions/runs/39567656658 success                              |
+| 8d637d2 | deterministic cancel flow (last code commit) | **https://github.com/youseng/geomira/actions/runs/39568173075 success** | https://github.com/youseng/geomira/actions/runs/39568173065 success                              |
+
+The ci run of 7804e0d was cancelled by the workflow's concurrency rule when 8d637d2 was pushed.
+The deploy failure on 660672d is the race fixed in 8d637d2 (see "Known bugs"). The nightly
+workflow's push trigger did not run (no change to scripts/mutation-shards.ts); note G: the
+nightly is not waited for. The STATUS commit after 8d637d2 changes only docs/STATUS.md and
+docs/test-count.txt; its CI run is on the pull request.
+
+## Requests
+
+- Please confirm the readings under "Uncertain" (ADR-0013).
+- The `run-8a` and `run-8b` tags are for the maintainer to place on the merges.
+- Formatting: new files were formatted with Prettier (whitespace only); no `eslint --fix` or other
+  automatic fix was run (note E); lint findings were fixed by hand.
+- No runtime dependency was added (apps/web depends on the workspace packages @geomira/editor
+  and @geomira/claims; zustand was not needed).
+
+## Notes for later runs
+
+- The page's store (`apps/web/src/store.ts`) is the place every new UI feature goes through;
+  logic belongs in the packages (ADR-0013 decision 1).
+- `e2e/helpers.ts` aims at world coordinates through the canvas's data attributes; new flows
+  should assert on the text panel with `expectLines` (it waits for the panel).
+
+---
+
 ## Run 8a: ACCEPTED (2026-10-21)
 
 packages/editor (SPEC §12, §7 GUI choice), preceded by the display values (SPEC §6.2). Base
