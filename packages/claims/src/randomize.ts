@@ -13,9 +13,10 @@
  *   - any: the document's hypotheses only (no triangle needed).
  * Every type but `any` also asks each other angle of the triangle to exceed SHAPE_MIN_DEG,
  * as the `triangle` sugar does (ADR-0009 decision 11), so the new triangle is readable.
- * Free inputs are then rounded to short exact decimals (points and radii to 10^(⌊log10 scale⌋
- * − 2), line parameters and (u : v) to 0.001, angles to 0.1°, params to a thousandth of
- * their range), so the text shows "A = (1.23, -0.5)"; the hypotheses are checked after that.
+ * Free inputs are then rounded to short exact decimals (points and radii to 10^(⌊log10 size⌋
+ * − 2), size the figure's diameter (ADR-0017); line parameters and (u : v) to 0.001, angles
+ * to 0.1°, params to a thousandth of their range), so the text shows "A = (1.23, -0.5)"; the
+ * hypotheses are checked after that.
  * A sample is accepted only when every object that is defined in the current figure stays
  * defined (a new figure, not a degenerate one). Degenerate cases: no free input, fewer than
  * three free points for a typed choice, an invalid figure or assumption, or no accepted
@@ -45,7 +46,7 @@ import type { Value } from '@geomira/kernel/value';
 import { prepareFigure, type PreparedFigure } from './figure-prep';
 import { readFree, writeFree, type Assignment, type FreeInput } from './free';
 import { checkAssumption } from './hypotheses';
-import { drawSample } from './sampler';
+import { drawSample, figureSize } from './sampler';
 
 export type TriangleType = 'acute' | 'obtuse' | 'right' | 'any';
 
@@ -268,7 +269,7 @@ export function randomFigure(
   const fig = prep.figure;
   const current = evalContextFor(doc);
   if (!current.ok) return refused(current.reason);
-  const e = floorLog10(fromNumber(fig.baseCtx.scale)) - 2;
+  const e = floorLog10(fromNumber(figureSize(fig))) - 2;
   const keep = definedIds(evaluate(doc, registry, FloatField, current.ctx).values);
   for (let i = 0; i < attempts; i++) {
     const drawn = decimals(fig, drawSample(fig, 'global', deriveSeed(seed, i), false), e);

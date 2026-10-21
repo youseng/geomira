@@ -2,7 +2,8 @@
  * How firmly a step-2 selector decides (choice.ts, ADR-0012): its deciding distances (of
  * the two candidates and of the witness from the deciding line) against how much each moves
  * when the figure moves as the claim tester's LOCAL regime moves it (noise of LOCAL_SIGMA ×
- * scale on every free input). Each free input is moved by one such deviation, one at a time
+ * the figure's size on every free input: its diameter, as the sampler measures it, so the
+ * choice does not depend on the size of the figure, ADR-0017). Each free input is moved by one such deviation, one at a time
  * (a free point's x and y; a glider's parameter by the same arc or length), and the figure
  * re-evaluated; a distance's deviation is the root sum of squares of its responses. The
  * score of a selector is the smallest |distance| / deviation of its deciding distances (a
@@ -11,6 +12,7 @@
  */
 import { LOCAL_SIGMA } from '@geomira/claims/constants';
 import type { Document } from '@geomira/kernel/document';
+import { figureDiameter } from '@geomira/kernel/figure-size';
 import { evaluate } from '@geomira/kernel/evaluate';
 import { call, lit, type Expr } from '@geomira/kernel/expr';
 import type { Registry } from '@geomira/kernel/registry';
@@ -80,7 +82,8 @@ export function localResponses(
   registry: Registry,
   ctx: EvalContext,
 ): Values[] {
-  const h = LOCAL_SIGMA * ctx.scale;
+  const d = figureDiameter(doc);
+  const h = LOCAL_SIGMA * (d !== undefined && Number.isFinite(d) && d > 0 ? d : ctx.scale);
   const out: Values[] = [];
   for (const o of doc.objects)
     for (const def of moved(o.def, values, h)) {
