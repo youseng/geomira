@@ -144,7 +144,7 @@ function useApp() {
   const onReady = useCallback(() => {
     setReady(true);
   }, []);
-  useStartup(store, onReady);
+  useStartup(store, page.runs, onReady);
   useAutosave(store, snap, ready);
   useFitOnOpen(store, snap.openCount, size, sceneOf);
   useInternalErrors(onInternal);

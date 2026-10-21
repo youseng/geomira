@@ -5,7 +5,9 @@
  * run can also be asked for. A small external store (useSyncExternalStore), so progress
  * re-renders the Claims panel only, never the canvas: the main thread stays free during a
  * test. Each run remembers the document it tested: a verdict about an earlier figure is
- * marked as such, never shown as the current one's.
+ * marked as such, never shown as the current one's. Only the CURRENT job of a claim and regime
+ * writes its run: messages of a superseded job, or of any job after `clear()` (another figure
+ * was opened), are ignored (Run 10 audit).
  */
 import type { TestClaimJob } from '@geomira/claims/job';
 import type { Verdict } from '@geomira/claims/verdict';
@@ -46,6 +48,8 @@ function freshSeed(): number {
 export class TestRuns {
   private snapshot: Snapshot = new Map();
   private readonly listeners = new Set<() => void>();
+  /** The current job of each claim and regime ("claim:regime" → job id). */
+  private current = new Map<string, number>();
 
   constructor(
     private readonly host: JobHost,
@@ -93,11 +97,15 @@ export class TestRuns {
       seed: freshSeed(),
       n: TEST_N,
     };
+    const key = `${String(claim)}:${regime}`;
+    const mine = () => this.current.get(key) === id;
     const id = this.host.start(job, {
       progress: (p) => {
-        this.setRun(claim, regime, { status: 'running', job: id, done: p.done, n: p.n });
+        if (mine())
+          this.setRun(claim, regime, { status: 'running', job: id, done: p.done, n: p.n });
       },
       result: (r) => {
+        if (!mine()) return;
         if (r.kind === 'verdict') {
           this.setRun(claim, regime, { status: 'done', verdict: r.verdict });
           if (regime === 'local' && doc.assumptions.length > 0) this.start(doc, claim, 'global');
@@ -108,10 +116,12 @@ export class TestRuns {
         }
       },
       error: (message) => {
+        if (!mine()) return;
         this.setRun(claim, regime, { status: 'failed', message });
         this.onError(`the test worker failed: ${message}`);
       },
     });
+    this.current.set(key, id);
     this.setRun(claim, regime, { status: 'running', job: id, done: 0, n: TEST_N });
   }
 
@@ -126,6 +136,7 @@ export class TestRuns {
   clear(): void {
     for (const id of this.snapshot.keys()) this.cancel(id);
     this.snapshot = new Map();
+    this.current = new Map();
     for (const l of this.listeners) l();
   }
 }

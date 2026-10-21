@@ -43,8 +43,22 @@ function openLink(store: EditorStore, hash: string): { opened: boolean; notice: 
   };
 }
 
+/**
+ * A share link opened while the page runs (hashchange): it replaces the figure, so the test
+ * runs of the old figure are forgotten (as when an example opens). The notice, if any.
+ */
+export function openLaterLink(
+  store: EditorStore,
+  runs: { clear(): void },
+  hash: string,
+): Notice | null {
+  const l = openLink(store, hash);
+  if (l.opened) runs.clear();
+  return l.notice;
+}
+
 /** Startup: a valid share link, else the autosave, else a new figure; later links too. */
-export function useStartup(store: EditorStore, onReady: () => void): void {
+export function useStartup(store: EditorStore, runs: { clear(): void }, onReady: () => void): void {
   useEffect(() => {
     const link = openLink(store, location.hash);
     if (!link.opened) {
@@ -56,14 +70,14 @@ export function useStartup(store: EditorStore, onReady: () => void): void {
     }
     onReady();
     const onHash = () => {
-      const l = openLink(store, location.hash);
-      if (l.notice !== null) store.setNotice(l.notice);
+      const notice = openLaterLink(store, runs, location.hash);
+      if (notice !== null) store.setNotice(notice);
     };
     addEventListener('hashchange', onHash);
     return () => {
       removeEventListener('hashchange', onHash);
     };
-  }, [store, onReady]);
+  }, [store, runs, onReady]);
 }
 
 /** Saves the figure after changes (the policy is packages/editor's); a link's hash goes once edited. */
