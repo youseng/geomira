@@ -1,5 +1,153 @@
 # STATUS
 
+## Geomdraw-style tools and script (maintainer request, 2026-10-22): NOT ACCEPTED (awaiting CI)
+
+A request from the maintainer between Run 10 and Run 11, not a numbered run: make Geomira's
+tools, UI and constructions work like their earlier Geomdraw (order-free clicks, both tangents,
+a script where `points A B C`, `ABC` and `X, Y = intersect(…)` just work), with Geomira's
+engine underneath. Decisions: [ADR-0024](adr/0024-geomdraw-tool-interaction.md) (GUI tools)
+and [ADR-0025](adr/0025-geomdraw-notation.md) (text). No kernel, claims, scene-builder or export
+behaviour changed: every tool and every short form builds what the language already writes,
+and the printed text is ADR-0009's canonical text.
+
+Base check: Run 10 is ACCEPTED (main = 0bb2f26, tag `run-10a`). `pnpm install && pnpm verify`
+on 0bb2f26: green except one test that timed out under the coverage run's load
+(`sampler-local-10sigma.test.ts`, "four points on a circle", 6.6 s against vitest's 5 s); the
+same file passes alone (10/10 in 15 s). CI was green on 0199115 (Run 10's last code commit).
+
+## Done (each item → the test file that proves it)
+
+1. **Order-free picks** (ADR-0024 item 1): parallel, perpendicular, foot, tangent, polar, power
+   and second intersection take their picks in either order; the call is written in step order.
+   → `packages/editor/test/geomdraw-tools.test.ts` ("order-free tools"),
+   `apps/web/e2e/flows-geomdraw.spec.ts` (a perpendicular, side first).
+2. **Both tangents from an outside point**, one history entry, each with the GUI selector
+   choice (e.g. `on_arc(A, B, C)` / `on_arc(A, B, not C)`), keeping their sides when P is
+   dragged; on the circle the one tangent; inside refused (item 2).
+   → `geomdraw-tools.test.ts`, `flows-geomdraw.spec.ts`, `machine.test.ts` (changed, below).
+3. **Every new intersection** of two curves in one entry; an existing common point makes the
+   other `other(P)` (item 3). → `geomdraw-tools.test.ts`, `machine.test.ts` (changed, below).
+4. **13 new GUI tools** over existing kernel tools, with Geomdraw's icons: second
+   intersection, external bisector, polar, radical axis, circle (center, radius), circle on a
+   diameter, rotate, translate, homothety, spiral similarity, ratio, area, power (item 4).
+   → `packages/editor/test/geomdraw-tools-more.test.ts`; the model-based fuzz runs them all
+   (`packages/editor/test/laws/fuzz.test.ts`, unchanged); `apps/web/test/design.test.tsx`
+   (every tool has an icon, unchanged).
+5. **Typed numbers** for rotate, homothety and the radius, in the tool's hint box (item 5).
+   → `geomdraw-tools-more.test.ts`, `flows-geomdraw.spec.ts` (rotate by 90).
+6. **Keys after Geomdraw** (H parallel, J perpendicular, K circle through 3 points, D diameter
+   circle, X reflect, R rotate, Z homothety, E second intersection, A angle, Q distance; Shift
+   letters for the rest; item 6). → `geomdraw-tools-more.test.ts` ("keys and groups").
+7. **Polygon sides are lines to click**: a click on a triangle's side where a line is wanted
+   makes `segment(A, B)` and picks it; a point clicked on a side is a glider on it (item 8).
+   → `packages/editor/test/polygon-sides.test.ts`, `flows-geomdraw.spec.ts`.
+8. **Live preview** (Geomdraw's rubber band) of what the tool would build at the mouse
+   (item 9). → `packages/editor/test/preview.test.ts`; seen in the page (dashed blue).
+9. **Status line from data** ("Perpendicular: point and line, in either order", item 7).
+   → `flows-geomdraw.spec.ts`.
+10. **The text language reads Geomdraw's notation** (ADR-0025): `point A`, `points A B C`,
+    `A = point()`; `triangle ABC acute` and on existing points; glued names (`AB` line,
+    `ABC` circle, `ABCD` polygon, spread into points where the call takes points:
+    `midpoint(BC)`, `circumcenter(ABC)`, `ratio(AB, AC)`); `X, Y = intersect(…)` and
+    `t1, t2 = tangents(P, ω)`; `@red @dashed @thick …`; `Midpoint(…)`, `Triangle ABC`;
+    Geomdraw's tool names; claims `A, B, C collinear`, `ABCD cyclic`, `AB ⟂ CD`, `AB ∥ CD`,
+    `P on ω`, `ω tangent γ`. Each is read as canonical statements; nothing is printed in these
+    forms, so P1–P3 are untouched (each test re-parses the printed result).
+    → `packages/lang/test/geomdraw-notation.test.ts` (47 tests), `flows-geomdraw.spec.ts`
+    (command bar and claim box); the language laws `packages/lang/test/laws/*` (unchanged).
+11. **Docs**: docs/language.md gains a generated section whose "read as" column is produced by
+    the parser; ADR-0025 carries the additions' grammar verbatim (checked by a test).
+    → `packages/lang/test/docs.test.ts` (unchanged, staleness), `geomdraw-notation.test.ts`.
+
+## Not done
+
+- **The text cannot write semantic selectors** for `X, Y = intersect(…)`: it writes
+  `along(±)` / `orient(±)` (SPEC §7's low-level selectors, never an index). The GUI writes
+  semantic ones (it evaluates the figure); in the text, the claims tester reports when a
+  claim depends on the choice (ORIENTATION-DEPENDENT).
+- **The glider tool (G)** still takes only lines and circles; the point tool and every other
+  tool accept a polygon's side.
+- **No preview on touch screens** (there is no hover); none during a drag.
+- Geomdraw's analysis features (What's special?, the bash assistant, inversion and projective
+  views, the solution editor, the problem library) are Phase 2 in SPEC §1 and were not touched.
+
+## Known bugs
+
+None known. Two local-environment notes (not bugs of this work, both reproduced on the base):
+
+- `sampler-local-10sigma.test.ts` times out (6–6.6 s > 5 s) in the full coverage run in this
+  container, on 0bb2f26 and on this branch; it passes alone.
+- The drag-frame measurement (`drag-frame.spec.ts`, budget 8 ms) gives 8.9–9.9 ms on 0bb2f26 and
+  8.0–10.1 ms on this branch in this container (four runs each, alternated); Run 10 measured
+  about 3.5 ms in CI. CI is the reference.
+
+## Uncertain
+
+- **Keys.** Geomdraw's letters replace Geomira's for the tools both have (parallel H instead
+  of A, perpendicular J instead of K, …): my reading of "make it look like Geomdraw". Say if
+  Geomira's old letters should stay.
+- **Style words**: `@thick` is width 2.5 and `@thin` 1 (Geomira's default stroke is 1.5;
+  Geomdraw used 1.7 and 0.7 against its own default); `@bold` and `@hide` were not added.
+- **`triangle ABC` on existing points** adds the type's `assume` lines even when the current
+  figure does not satisfy them (the tester then rejects samples, as for any hypothesis).
+- No mathematical fact or contest problem was used.
+
+## Changed frozen tests
+
+Compared with `run-10a` (`pnpm rules`: `add-only: frozen tests compared with run-10a, 0
+violation(s)`).
+
+- **Modified under [ADR-0024](adr/0024-geomdraw-tool-interaction.md)** (commit 0afb9bd):
+  `packages/editor/test/machine.test.ts`, two tests whose assertions were the removed
+  click-to-choose interaction. 10 lines removed, 6 added (ADR-0024 item 10 lists them); the test
+  that checked `E = intersect(l, c, opposite_side(B, m))` still checks it, and now also
+  `F = intersect(l, c, same_side(B, m))`.
+- **Modified under [ADR-0025](adr/0025-geomdraw-notation.md)** (commit e6b591b):
+  `apps/web/e2e/flows-design.spec.ts`, one line: the claim box's refused example becomes
+  `O, G, H are collinear` (ADR-0025 reads `O, G, H collinear` as a claim).
+- **Added lines only**: `packages/editor/test/exports.test.ts` (the `./prompt` and `./preview`
+  subpaths).
+- **Baselines** (not test code): `main-desktop`, `claims-desktop` and `main-phone` regenerated
+  for the larger palette, with Inter hidden by fontconfig as on CI (Run 9b's method).
+
+## Acceptance command output
+
+### Local, 8c5c8d0 (`pnpm verify`)
+
+```
+✔ no dependency violations found (525 modules, 2958 dependencies cruised)
+ok   tolerance: 754 files scanned, 0 violation(s)
+ok   file-length: 754 files scanned, 0 violation(s)
+ok   test-count: 2433 tests, floor 2341, 0 violation(s)
+ok   disabled-tests: 754 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-10a, 0 violation(s)
+ok   forbidden-words: 754 files scanned, 0 violation(s)
+ Test Files  1 failed | 236 passed (237)
+      Tests  1 failed | 2432 passed (2433)
+```
+
+The one failure is the timeout above (`sampler-local-10sigma.test.ts`), the same as on the
+base; alone: `Test Files 1 passed (1), Tests 10 passed (10)`. The test-count floor is now 2433.
+
+### Playwright, local (`pnpm build`, then the desktop and mobile projects, Inter hidden)
+
+62 passed and 4 failed on 8c5c8d0: the three phone canvas baselines of `scene.spec.ts` (CI's
+renders; they differ in this container, as in Run 9b and Run 10) and the claim-box flow, whose
+frozen example the commit e6b591b changes under ADR-0025. On e6b591b: `flows-design.spec.ts`
+and `flows-geomdraw.spec.ts` 13 passed; the long-task measurement passed; the drag frame as
+above.
+
+### CI on GitHub
+
+Pending (see the PR).
+
+## Requests
+
+- **Keys and style-word widths**: confirm or change (Uncertain).
+- No runtime dependency was added.
+
+---
+
 ## Run 10: ACCEPTED (2026-10-22)
 
 Audit 1 of 2. The full report is [docs/audit/2026-10-22.md](audit/2026-10-22.md).
