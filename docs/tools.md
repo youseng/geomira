@@ -652,7 +652,8 @@ compose(T1, T2): the map X ↦ T1(T2(X)) (T2 first).
 - Exact run (RationalField): can succeed
 - Export: constructive (compose)
 - Degenerate cases:
-  - a scale factor that vanishes (within EPS) → Undefined
+  - scale factors below EPS (10⁻⁵ · 10⁻⁵) → a valid map: a composition never collapses
+  - a scale factor beyond the double range (floats) → Inexact
   - compose(T, inverse(T)) → the identity
   - two anti-similarities → a direct similarity
 - Examples:

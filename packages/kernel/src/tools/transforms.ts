@@ -150,9 +150,9 @@ function imageSignature(x: Capability, params: readonly Capability[], radical: b
 }
 
 /** A transform value that passed the validity check, or the problem. */
-function finish<T>(F: Field<T>, s: Built<T>, ctx: EvalContext, tool: string): Value<T> {
+function finish<T>(F: Field<T>, s: Built<T>, tool: string): Value<T> {
   if ('kind' in s) return s;
-  return similarityProblem(F, s, ctx, tool) ?? transformOf(s);
+  return similarityProblem(F, s, tool) ?? transformOf(s);
 }
 
 /**
@@ -184,11 +184,11 @@ function mapTool(spec: {
     signatures,
     outputKinds: ['transform', ...IMAGE_KINDS],
     compute: <T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> => {
-      if (arities.has(args.length)) return finish(F, spec.build(F, args, ctx), ctx, spec.name);
+      if (arities.has(args.length)) return finish(F, spec.build(F, args, ctx), spec.name);
       const [X, ...rest] = args;
       if (X === undefined || !arities.has(rest.length) || !IMAGE_KINDS.includes(X.kind))
         return badArgs(spec.name);
-      const t = finish(F, spec.build(F, rest, ctx), ctx, spec.name);
+      const t = finish(F, spec.build(F, rest, ctx), spec.name);
       return t.kind === 'transform' ? applyChecked(F, t.t, X, spec.name) : t;
     },
     degenerate: spec.degenerate,
@@ -208,33 +208,36 @@ function mapAt<T>(
   F: Field<T>,
   args: readonly Value<T>[],
   i: number,
-  ctx: EvalContext,
   tool: string,
-): Similarity<T> | Undefined {
+): Similarity<T> | Undefined | Inexact {
   const v = args[i];
   if (v?.kind !== 'transform') return badArgs(tool);
   const s = v.t;
-  return similarityProblem(F, s, ctx, tool) ?? s;
+  return similarityProblem(F, s, tool) ?? s;
 }
 
-function compose<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
+/**
+ * compose(S, T) = S∘T. A product of valid maps never collapses (ADR-0019); in floats a product
+ * beyond the double range is Inexact.
+ */
+function compose<T>(F: Field<T>, args: readonly Value<T>[]): Value<T> {
   if (args.length !== 2) return badArgs('compose');
-  const [s, t] = [mapAt(F, args, 0, ctx, 'compose'), mapAt(F, args, 1, ctx, 'compose')];
+  const [s, t] = [mapAt(F, args, 0, 'compose'), mapAt(F, args, 1, 'compose')];
   if ('kind' in s) return s;
   if ('kind' in t) return t;
-  return finish(F, composeSimilarities(F, s, t), ctx, 'compose');
+  return finish(F, composeSimilarities(F, s, t), 'compose');
 }
 
-function inverse<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
+function inverse<T>(F: Field<T>, args: readonly Value<T>[]): Value<T> {
   if (args.length !== 1) return badArgs('inverse');
-  const s = mapAt(F, args, 0, ctx, 'inverse');
+  const s = mapAt(F, args, 0, 'inverse');
   return 'kind' in s ? s : transformOf(inverseSimilarity(F, s));
 }
 
-function apply<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
+function apply<T>(F: Field<T>, args: readonly Value<T>[]): Value<T> {
   const [X] = args.slice(1);
   if (args.length !== 2 || X === undefined) return badArgs('apply');
-  const s = mapAt(F, args, 0, ctx, 'apply');
+  const s = mapAt(F, args, 0, 'apply');
   return 'kind' in s ? s : applyChecked(F, s, X, 'apply');
 }
 
@@ -329,7 +332,8 @@ export const TRANSFORM_TOOLS: readonly ToolSpec[] = [
     outputKinds: ['transform'],
     compute: compose,
     degenerate: [
-      'a scale factor that vanishes (within EPS) → Undefined',
+      'scale factors below EPS (10⁻⁵ · 10⁻⁵) → a valid map: a composition never collapses',
+      'a scale factor beyond the double range (floats) → Inexact',
       'compose(T, inverse(T)) → the identity',
       'two anti-similarities → a direct similarity',
     ],

@@ -56,7 +56,7 @@ function preimage(
     const t = values.values.get(id);
     const name = findObject(doc, id)?.name ?? '?';
     if (t?.kind !== 'transform') return `the transformation ${name} is undefined`;
-    const bad = similarityProblem(FloatField, t.t, values.ctx, name);
+    const bad = similarityProblem(FloatField, t.t, name);
     if (bad !== undefined) return bad.reason;
     p = mapPoint(FloatField, inverseSimilarity(FloatField, t.t), p);
   }

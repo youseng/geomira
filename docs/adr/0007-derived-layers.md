@@ -25,7 +25,9 @@ plugs in.
    `applySimilarity` are polynomials in the coordinates (the inverse divides once by |a|²),
    so every map and image is exact over Q and mod p; only `rotate` by an angle off the
    multiples of 90° is Inexact over Q (cos and sin both rational only there).
-2. **Every Transform value is invertible**: its scale factor a is not zero as a
+2. **Every Transform value is invertible** (the test within EPS below is replaced by
+   [ADR-0019](0019-compose-never-collapses.md): only an exactly zero a collapses, and a
+   composition of valid maps never does): its scale factor a is not zero as a
    dimensionless quantity (both components within EPS → Undefined "the map collapses the
    plane (scale factor 0)"). Every tool checks its transform arguments the same way, so a
    hand-built degenerate map is refused, never divided by. Mod p (p ≡ 3 mod 4), a ≠ 0 implies

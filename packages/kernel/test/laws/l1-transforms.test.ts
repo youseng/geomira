@@ -3,7 +3,7 @@
  * documents (helpers/fuzz.ts, degenerate mode: every registry tool, the maps included)
  * plus injected DEGENERATE maps — reflection in a degenerate line, homothety with k = 0
  * and k = 1e-12, rotation about an Undefined centre, spirals with coincident points,
- * compositions that collapse — their images and inverses, and a derived layer of the
+ * compositions of tiny factors (valid maps, ADR-0019) — their images and inverses, and a derived layer of the
  * whole document under one of them (applyDocEdit). Evaluated over Float, Rational and
  * ModP: evaluate never throws, no float value holds NaN or ±Infinity, and every listed
  * degenerate situation is reached.
@@ -32,7 +32,6 @@ const REASONS = [
   'homothety: the ratio k is 0',
   'coincident points: line(A, B)',
   'is undefined',
-  'the map collapses the plane',
   'spiral(A, B, C, D) needs',
   'apply does not accept',
 ];
@@ -80,7 +79,7 @@ function withMaps(rng: Rng, doc: Document): Document {
   const T = () => ref(pick(rng, maps));
   if (maps.length > 0) {
     add(call('compose', [T(), call('homothety', [P(), num('1/100000')])]));
-    // Two valid ratios whose product (10⁻¹⁰) collapses in floats (defined over Q, mod p).
+    // Two valid ratios whose product (10⁻¹⁰) is a valid map in every field (ADR-0019).
     const tiny = () => call('homothety', [P(), num('1/100000')]);
     add(call('compose', [tiny(), tiny()]));
     add(call('compose', [call('homothety', [P(), num('1/100000')]), T()]));
@@ -134,9 +133,6 @@ describe(
         );
         expect(images).toBeGreaterThan(DOCS);
         for (const r of REASONS) {
-          // A scale factor collapses only within EPS of 0, in floats: an exact non-zero
-          // product of non-zero factors never vanishes (over Q and mod p).
-          if (r === 'the map collapses the plane' && F.kind !== 'float') continue;
           expect(reached[r] ?? 0, r).toBeGreaterThan(0);
         }
       });

@@ -155,13 +155,33 @@ export const TRANSFORM_CASES: Record<string, Record<string, () => void>> = {
     },
   },
   compose: {
-    'a scale factor that vanishes (within EPS) → Undefined': () => {
+    'scale factors below EPS (10⁻⁵ · 10⁻⁵) → a valid map: a composition never collapses': () => {
+      // ADR-0019: a map is degenerate where it is built, never because of a product.
       const h = T('homothety', A, num('1/100000'));
-      expect(reason(at(FloatField, 'compose', h, h))).toBe(
-        'undefined: compose: the map collapses the plane (scale factor 0)',
+      for (const F of FIELDS) expect(at(F, 'compose', h, h).kind).toBe('transform');
+      const k = at(FloatField, 'compose', h, h);
+      if (k.kind !== 'transform') throw new Error(k.kind);
+      expect(k.t.a.re * 10_000_000_000).toBeCloseTo(1, 9);
+    },
+    'a scale factor beyond the double range (floats) → Inexact': () => {
+      const map = (a: number) =>
+        ({
+          kind: 'transform',
+          t: { type: 'similarity', anti: false, a: { re: a, im: 0 }, b: { re: 0, im: 0 } },
+        }) as const;
+      const why = {
+        kind: 'inexact',
+        reason: 'compose: the scale factor is beyond the double range',
+      };
+      // |a|² underflows (a = 10⁻¹⁰⁰ each, the product 10⁻²⁰⁰) or overflows (10²⁰⁰).
+      expect(direct('compose', FloatField, [map(10 ** -100), map(10 ** -100)])).toEqual(why);
+      expect(direct('compose', FloatField, [map(10 ** 100), map(10 ** 100)])).toEqual(why);
+      expect(direct('apply', FloatField, [map(10 ** -200), { kind: 'point', x: 1, y: 1 }])).toEqual(
+        {
+          kind: 'inexact',
+          reason: 'apply: the scale factor is beyond the double range',
+        },
       );
-      expect(at(RationalField, 'compose', h, h).kind).toBe('transform');
-      expect(at(ModPField, 'compose', h, h).kind).toBe('transform');
     },
     'compose(T, inverse(T)) → the identity': () => {
       const s = T('spiral', A, B, C, pt(3, -1));
