@@ -85,6 +85,12 @@ export interface Unavailable {
   readonly reason: string;
 }
 
+/** A curve that exists but cannot be placed at the current zoom (ADR-0023): listed, not drawn. */
+export interface Undrawable {
+  readonly id: number;
+  readonly name: string;
+}
+
 export interface Scene {
   /** In draw order (back to front). */
   readonly primitives: readonly Primitive[];

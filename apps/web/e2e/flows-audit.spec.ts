@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { command, dragWorld, expectLines, openApp, tab, textArea, tool } from './helpers';
+import { command, dragWorld, expectLines, openApp, screenOf, tab, textArea, tool } from './helpers';
 
 /**
  * Run 10 audit flows (desktop project).
@@ -68,5 +68,33 @@ test('a locked layer refuses Delete on its objects; the text still edits them', 
   await area.fill((await area.inputValue()).replace('A = (0, 0)', 'A = (1, 1)'));
   await page.getByRole('button', { name: 'Apply text' }).click();
   await expectLines(page, 'A = (1, 1)');
+  expect(errors).toEqual([]);
+});
+
+/**
+ * ADR-0023 (W10 of the audit): a circle of radius 10¹⁶ viewed 20 units wide cannot be placed
+ * within a pixel; it is listed as "not drawable at this zoom" in the Objects panel and counted
+ * in the developer readout, never silently missing.
+ */
+test('a curve that cannot be placed at the zoom is listed, not silently missing', async ({
+  page,
+}) => {
+  const errors = await openApp(page, './?dev=1');
+  for (const line of ['O = (0, 10000000000000000)', 'X = (0, 0)', 'w = circle(O, X)'])
+    await command(page, line);
+  const canvas = page.getByLabel('Geometry canvas');
+  const zoom = async () => Number(await canvas.getAttribute('data-zoom'));
+  for (let i = 0; i < 80 && (await zoom()) < 20; i++) {
+    const p = await screenOf(page, 0, 0);
+    await page.mouse.move(p.x, p.y);
+    await page.mouse.wheel(0, -1000);
+  }
+  expect(await zoom()).toBeGreaterThanOrEqual(20);
+  await expect(page.getByTestId('object-counts')).toContainText('1 not drawable at this zoom');
+  await tab(page, 'Objects');
+  const row = page.locator('.object-row', {
+    has: page.getByRole('button', { name: 'w', exact: true }),
+  });
+  await expect(row).toContainText('not drawable at this zoom');
   expect(errors).toEqual([]);
 });

@@ -19,6 +19,8 @@ export interface SidePanelProps {
   readonly store: EditorStore;
   readonly state: EditorState;
   readonly scene: Scene;
+  /** Ids of the curves not drawable at the current zoom (ADR-0023). */
+  readonly undrawable: readonly number[];
   readonly runs: TestRuns;
   readonly tab: Tab;
   /** Shows a tab (on a phone this also opens the drawer). */
@@ -29,7 +31,10 @@ export interface SidePanelProps {
   readonly onTestClaim: (text: string) => boolean;
 }
 
-type BodyProps = Pick<SidePanelProps, 'tab' | 'store' | 'state' | 'runs' | 'onTestClaim'> & {
+type BodyProps = Pick<
+  SidePanelProps,
+  'tab' | 'store' | 'state' | 'runs' | 'onTestClaim' | 'undrawable'
+> & {
   readonly coincident: number;
   readonly kept: RefObject<TextDraft | null>;
 };
@@ -43,12 +48,13 @@ const Body = memo(function Body({
   onTestClaim,
   coincident,
   kept,
+  undrawable,
 }: BodyProps) {
   switch (tab) {
     case 'Text':
       return <TextPanel store={store} state={state} kept={kept} />;
     case 'Objects':
-      return <ObjectsPanel store={store} state={state} />;
+      return <ObjectsPanel store={store} state={state} undrawable={undrawable} />;
     case 'Layers':
       return <LayersPanel store={store} state={state} coincident={coincident} />;
     case 'Claims':
@@ -70,7 +76,7 @@ const Body = memo(function Body({
  * shown (Run 10 audit, W4).
  */
 export function SidePanel(props: SidePanelProps) {
-  const { store, scene, runs, tab, onTab, open, onClose, onTestClaim } = props;
+  const { store, scene, runs, tab, onTab, open, onClose, onTestClaim, undrawable } = props;
   const state = useSettled(props.state);
   const kept = useRef<TextDraft>(null);
   return (
@@ -103,6 +109,7 @@ export function SidePanel(props: SidePanelProps) {
           onTestClaim={onTestClaim}
           coincident={scene.coincident.length}
           kept={kept}
+          undrawable={undrawable}
         />
       </div>
     </aside>
