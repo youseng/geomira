@@ -29,6 +29,7 @@ import { GLIDER_CASES } from './helpers/degenerate-gliders';
 import { FUNCTION_CASES } from './helpers/degenerate-functions';
 import { GAP_CASES } from './helpers/degenerate-gaps';
 import { INTERSECT_CURVE_CASES, TANGENT_CASES } from './helpers/degenerate-branch';
+import { NEARLY_COINCIDENT_CASES } from './helpers/degenerate-nearly';
 import { TRANSFORM_CASES } from './helpers/degenerate-transforms';
 import { APPLY_DISPLAY_CASES, DISPLAY_CASES } from './helpers/degenerate-display';
 
@@ -157,6 +158,7 @@ const CASES: Record<string, Record<string, () => void>> = {
       ).toBe('point');
     },
     ...INTERSECT_CURVE_CASES,
+    ...NEARLY_COINCIDENT_CASES,
   },
   circumcenter: {
     'coincident vertices → Undefined': () => {

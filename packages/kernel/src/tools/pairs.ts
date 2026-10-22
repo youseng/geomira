@@ -272,11 +272,27 @@ export function lineCirclePair<T>(
   };
 }
 
+/** The count of two circles that nearly coincide, from the half chord h² = D / 4s. */
+function nearlyCoincident<T>(
+  F: Field<T>,
+  s: T,
+  D: T,
+  ctx: EvalContext,
+): { readonly n: 2; readonly D: T } | Undefined {
+  const h2 = F.div(D, F.mul(F.add(s, s), F.add(F.one, F.one)));
+  return F.sign(h2, 'area', ctx) === 1
+    ? { n: 2, D }
+    : undef('ambiguous: the circles nearly coincide');
+}
+
 /**
  * Circle ∩ circle: the count from the gaps r₁ + r₂ − d and d − |r₁ − r₂| (lengths) when
  * the roots are representable, else from the exact sign of
  * D = 2s(r₁² + r₂²) − s² − (r₁² − r₂²)² = 4s·h² (s = d², h the half chord). Degenerate
- * cases: apart / one inside the other → Undefined; tangency (a gap within the band) → 1.
+ * cases: apart / one inside the other → Undefined; tangency (a gap within the band) → 1;
+ * circles that nearly coincide (the internal gap and |r₁ − r₂| both within the band, so
+ * d is too: not a tangency) → the half chord decides: h² > 0 beyond the band → 2, else
+ * Undefined("ambiguous: the circles nearly coincide") (ADR-0027).
  */
 function circlesCount<T>(
   F: Field<T>,
@@ -296,6 +312,7 @@ function circlesCount<T>(
       if (se === -1) return undef(apart);
       if (si === -1) return undef(inside);
       const D = F.mul(F.mul(ext, F.add(F.add(r1, r2), d)), F.mul(int, F.add(d, gap)));
+      if (si !== 1 && F.sign(gap, 'length', ctx) !== 1) return nearlyCoincident(F, s, D, ctx);
       return { n: se === 1 && si === 1 ? 2 : 1, D };
     }
   }

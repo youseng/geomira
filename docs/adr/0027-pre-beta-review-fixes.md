@@ -36,6 +36,17 @@ before it.
    keeps the kernel's context too: calling more figures degenerate is the conservative side.
    Figures of size ≥ 1 are unchanged (the factor is 1).
    → `packages/claims/test/small-figure-claims.test.ts`.
+3. **Circles that nearly coincide are not tangent.** Circle ∩ circle decided tangency on the
+   gaps r₁ + r₂ − d and d − |r₁ − r₂|. When the centres are closer than the band and the radii
+   equal within it, the internal gap is in the band too, and the "double point" on the line of
+   centres lies on neither circle (for circle(A, B, C) and circle(A, B, D) with D 10⁻⁷ above
+   C it was the common centre; near(A) returned it). ADR-0006's jump bound
+   √(2r₁r₂g/|r₁ − r₂|) is infinite there. Now, when the internal gap and |r₁ − r₂| are both
+   within the band, the half chord decides: h² = D/4s > 0 beyond the band → two candidates;
+   otherwise Undefined("ambiguous: the circles nearly coincide"). Genuine tangencies
+   (|r₁ − r₂| beyond the band) are unchanged. Only the float run can reach this: over Q the
+   gaps are exact. → `packages/kernel/test/circles-nearly-coincide.test.ts`, the new
+   degenerate case of `intersect` in `packages/kernel/test/degenerate.test.ts`.
 
 ## Consequences
 
