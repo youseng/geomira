@@ -149,6 +149,18 @@ frozen example the commit e6b591b changes under ADR-0025. On e6b591b: `flows-des
 and `flows-geomdraw.spec.ts` 13 passed; the long-task measurement passed; the drag frame as
 above.
 
+### Local, 146c6e9 (the review before merge, `pnpm verify`)
+
+```
+ok   test-count: 2443 tests, floor 2433, 0 violation(s)
+ok   add-only: frozen tests compared with run-10a, 0 violation(s)
+ Test Files  1 failed | 238 passed (239)
+      Tests  1 failed | 2442 passed (2443)
+```
+
+The one failure is again the local timeout of `sampler-local-10sigma.test.ts`. The test-count
+floor is now 2443.
+
 ### CI on GitHub (a5529ae, PR #16)
 
 - ci **https://github.com/youseng/geomira/actions/runs/39772882094 success**: `pnpm verify`,
