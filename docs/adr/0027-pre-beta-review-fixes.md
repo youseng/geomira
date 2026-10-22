@@ -56,6 +56,13 @@ before it.
    texts, circle centres and radii, and lines over 100 px). The bound is larger than
    ROUNDING_PX because constructions amplify a tiny move; a refused rounding keeps the exact
    float coordinates, as before. → `packages/editor/test/drag-rounding-dependents.test.ts`.
+5. **The GUI choice's other(P) must stay defined, as the kernel decides it.** Tier 1 (SPEC §7)
+   checked that P stays on the call's curves when the figure moves (Run 10 audit). For
+   `tangent_from` the kernel's other(Q) also needs Q on the polar of the external point, so a
+   point at the touch point by coincidence (Q on c by construction, the touch point from
+   P = (0, 25/3) only by chance) was written, and the tangent became Undefined after any drag
+   of P. Now tier 1 runs the kernel's compute with other(P) in each local response and keeps
+   it only when it gives a point every time. → `packages/editor/test/choice-tangent-other.test.ts`.
 
 ## Consequences
 
