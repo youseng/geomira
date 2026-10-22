@@ -30,7 +30,8 @@
     "./restore": "./src/restore.ts",
     "./randomize": "./src/randomize.ts",
     "./tool-groups": "./src/tool-groups.ts",
-    "./prompt": "./src/prompt.ts"
+    "./prompt": "./src/prompt.ts",
+    "./preview": "./src/preview.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

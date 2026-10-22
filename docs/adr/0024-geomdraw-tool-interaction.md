@@ -75,24 +75,44 @@ small prompt; its keys are V P I E M F, L S H J B N T, C K D, X R Z, A Q.
    steps of an order-free tool are joined ("point and line, in either order"). It replaces the
    function apps/web had (note A of Run 8b: no logic in the UI).
 
+8. **Polygon sides are lines to click.** Geomdraw's triangles were three segments, so a
+   perpendicular, a foot or an intersection took a triangle's side in one click; Geomira's
+   triangle is a polygon (ADR-0009 decision 11), whose sides are not objects. Where a tool wants
+   a line (a line, curve or mirror step) and the click is on a side of a polygon
+   `polygon(A, B, C, …)` of named points, the side is created as `segment(A, B)` (its own edit,
+   as a point a click creates), drawn exactly over the edge, and picked; later clicks there hit
+   that segment. A point clicked on a side (or where a side meets a curve) is made the same
+   way: the side's segment first, then the glider on it or the intersection with it.
+9. **Live preview** (`@geomira/editor/preview`, `toolPreview`): while a construction tool needs
+   one more point, the canvas draws what it would build with the point under the mouse (an
+   existing point, else the position a click would create, snapped to a curve or an
+   intersection), dashed in the selection colour at 0.6 opacity, 1 px — Geomdraw's rubber band,
+   for every such tool (lines, circles, centers, measures, a perpendicular once its line is
+   picked, both tangents once the circle is picked, a polygon's next vertex). The values come
+   from the kernel's own tool code over the current values; the preview is never an edit, not
+   in the document, and not hit-tested. Mouse only (a touch has no hover), and never during a
+   drag.
+
 ### Frozen tests changed (CLAUDE.md add-only rule; each commit cites this ADR)
 
-8. `packages/editor/test/machine.test.ts`, two tests whose assertions were the removed
-   behaviour:
-   - "mark_right only on a right angle; tangent …": the five lines asserting the
-     `choosing` state and the click on one tangent are replaced by two assertions that both
-     tangents exist; the existing check that a tangent lies above OP now names `l_2` (the
-     upper one) instead of `l_1`.
-   - "intersection tool: …": the title (which named the click), and the three lines asserting
-     the `choosing` state, a refused panel pick and the choosing click, are replaced by an
-     assertion of the second point, `F = intersect(l, c, same_side(B, m))`. The test's last
-     assertion, `E = intersect(l, c, opposite_side(B, m))`, is unchanged and still holds: the
-     same GUI choice gives the same selector.
+10. `packages/editor/test/machine.test.ts`, two tests whose assertions were the removed
+    behaviour:
 
-   No assertion is weakened: each removed one asserted the old interaction, and the new
-   assertions are stronger (both objects, with exact definitions).
+- "mark_right only on a right angle; tangent …": the five lines asserting the
+  `choosing` state and the click on one tangent are replaced by two assertions that both
+  tangents exist; the existing check that a tangent lies above OP now names `l_2` (the
+  upper one) instead of `l_1`.
+- "intersection tool: …": the title (which named the click), and the three lines asserting
+  the `choosing` state, a refused panel pick and the choosing click, are replaced by an
+  assertion of the second point, `F = intersect(l, c, same_side(B, m))`. The test's last
+  assertion, `E = intersect(l, c, opposite_side(B, m))`, is unchanged and still holds: the
+  same GUI choice gives the same selector.
 
-9. `packages/editor/test/exports.test.ts`: two added lines (the `./prompt` subpath).
+No assertion is weakened: each removed one asserted the old interaction, and the new
+assertions are stronger (both objects, with exact definitions).
+
+11. `packages/editor/test/exports.test.ts`: four added lines (the `./prompt` and `./preview`
+    subpaths).
 
 ## Consequences
 

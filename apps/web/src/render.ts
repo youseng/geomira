@@ -232,3 +232,28 @@ export function drawDisplay(
   for (const l of display.labels) drawLabel(ctx, l, theme, fonts);
   ctx.globalAlpha = 1;
 }
+
+/**
+ * The active tool's live preview (Geomdraw's rubber band, ADR-0024) over a drawn frame: its
+ * paths dashed in the selection colour at 0.6 opacity, 1 px, as Geomdraw drew it. It does not
+ * clear the frame, and nothing in it is hit (it is not in the figure's display list).
+ */
+export function drawPreview(ctx: Canvas2D, display: DisplayList, theme: Theme, dpr: number): void {
+  const scale = Number.isFinite(dpr) && dpr > 0 ? dpr : 1;
+  if (display.problem !== null) return;
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.globalAlpha = 0.6;
+  ctx.strokeStyle = theme.selection;
+  ctx.fillStyle = theme.selection;
+  ctx.lineWidth = 1;
+  for (const item of display.items)
+    for (const p of item.paths) {
+      ctx.beginPath();
+      tracePath(ctx, p);
+      ctx.setLineDash(p.kind === 'dot' ? [] : [4, 4]);
+      if (p.kind === 'dot') ctx.fill();
+      else ctx.stroke();
+    }
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 1;
+}

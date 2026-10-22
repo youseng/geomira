@@ -233,6 +233,7 @@ export function App() {
           viewport={state.viewport}
           hover={state.hover}
           selection={state.selection}
+          toolState={state.toolState}
           onSize={setSize}
           onUndrawable={app.onUndrawable}
         />

@@ -31,6 +31,7 @@ import * as restoreMod from '../src/restore';
 import * as randomizeMod from '../src/randomize';
 import * as toolGroupsMod from '../src/tool-groups';
 import * as promptMod from '../src/prompt';
+import * as previewMod from '../src/preview';
 
 const SURFACE: Record<string, { module: object; names: string[] }> = {
   './state': {
@@ -101,6 +102,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './randomize': { module: randomizeMod, names: ['randomizeEdit'] },
   './tool-groups': { module: toolGroupsMod, names: ['TOOL_GROUPS', 'keyCap', 'toolGroup'] },
   './prompt': { module: promptMod, names: ['toolPrompt'] },
+  './preview': { module: previewMod, names: ['toolPreview'] },
 };
 
 describe('@geomira/editor subpath surface', () => {

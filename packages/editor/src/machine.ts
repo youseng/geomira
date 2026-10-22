@@ -14,6 +14,7 @@ import type { Value, Vec } from '@geomira/kernel/value';
 import { assertNever } from '@geomira/num/assert';
 import type { HitResult } from '@geomira/scene/hit';
 import { createdPoint, gliderAt } from './create';
+import { onSides, polygonSide } from './create-side';
 import { applyEdit } from './edit';
 import { add, build, reset, withTool } from './machine-build';
 import { done, refuse, type EditResult } from './result';
@@ -117,15 +118,31 @@ function click(
     const o = open.find((x) => HIT_KINDS[x.step.pick].includes(h.kind));
     if (o !== undefined) return pushPick(state, tool, h.id, o.index, env);
   }
+  const line = open.find((x) => HIT_KINDS[x.step.pick].includes('line'));
+  const side = line === undefined ? undefined : polygonSide(state, input.hit, input.world);
+  if (line !== undefined && side !== undefined)
+    return created(state, tool, add(state, side, 'line', env), line.index, env);
   const point = open.find((x) => x.step.pick === 'point');
   if (point === undefined) return refuse(state, `${first.step.prompt}: click a ${first.step.pick}`);
-  const def = createdPoint(state, input.hit.virtual, env);
+  const sides = onSides(state, input.hit.virtual, env);
+  if (typeof sides === 'string') return refuse(state, sides);
+  const def = createdPoint(sides.state, sides.virtual, env);
   if (typeof def === 'string') return refuse(state, def);
-  const made = add(state, def, 'point', env);
-  if (!made.ok || made.id === undefined) return made.ok ? refuse(state, 'no point was made') : made;
-  const r = pushPick(made.state, tool, made.id, point.index, env);
-  // A later refusal keeps the new point (its own edit); the tool's picks stay as they were.
-  return r.ok ? r : { ...made, state: { ...made.state, toolState: ts } };
+  return created(sides.state, tool, add(sides.state, def, 'point', env), point.index, env);
+}
+
+/** Picks an object a click just created (its own edit) for step `slot`. */
+function created(
+  state: EditorState,
+  tool: ToolUI,
+  made: EditResult,
+  slot: number,
+  env: EditorEnv,
+): EditResult {
+  if (!made.ok || made.id === undefined) return made.ok ? refuse(state, 'nothing was made') : made;
+  const r = pushPick(made.state, tool, made.id, slot, env);
+  // A later refusal keeps the new object (its own edit); the tool's picks stay as they were.
+  return r.ok ? r : { ...made, state: { ...made.state, toolState: state.toolState } };
 }
 
 function objectInput(state: EditorState, tool: ToolUI, id: number, env: EditorEnv): EditResult {
