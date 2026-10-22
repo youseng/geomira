@@ -116,6 +116,10 @@ export function dragDefinition(
     const r = dragThrough(doc, id, to, values);
     return r.kind === 'edit' && r.edit.kind === 'redefine' ? r.edit.def : notDraggable(o, r);
   }
+  // A text at an object is where its anchor is: drag the anchor as the anchor itself would be
+  // dragged (through T⁻¹ for an image; Run 10 audit: the image's source took the cursor).
+  const anchor = o.def.kind === 'call' && o.def.tool === 'text' ? o.def.args[0] : undefined;
+  if (anchor?.kind === 'ref') return dragDefinition(doc, anchor.id, base, to, values);
   const at = point(fromNumber(to.x), fromNumber(to.y));
   const d = b.def;
   if (d.kind !== 'call') return `${b.name} is not draggable`;
