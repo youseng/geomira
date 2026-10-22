@@ -41,9 +41,34 @@ export function isTestFile(path: string): boolean {
   return /(^|\/)(test|tests|e2e|__tests__)\//.test(path);
 }
 
-/** Test files frozen by the add-only guard: `*.test.ts(x)` and Playwright `*.spec.ts(x)`. */
-export function isFrozenTestFile(path: string): boolean {
-  return /\.(test|spec)\.tsx?$/.test(path);
+/** The first run whose tag freezes helpers, fixtures and corpora too (ADR-0021). */
+const HELPERS_FROZEN_FROM = 10;
+
+/** Whether the add-only guard at `tag` (run-N or run-Nx) freezes everything under test/ and e2e/. */
+export function helpersFrozenAt(tag: string): boolean {
+  const m = /^run-(\d+)[a-z]*$/.exec(tag);
+  return m !== null && Number(m[1]) >= HELPERS_FROZEN_FROM;
+}
+
+/** Snapshot baselines (Vitest, Playwright) and generated test output: never frozen. */
+function isSnapshotOrOutput(path: string): boolean {
+  return (
+    /(^|\/)__snapshots__\//.test(path) ||
+    /\.snap$/.test(path) ||
+    /-snapshots\//.test(path) ||
+    /(^|\/)(test-results|playwright-report|coverage)\//.test(path)
+  );
+}
+
+/**
+ * Files frozen by the add-only guard: `*.test.ts(x)` and Playwright `*.spec.ts(x)`; with
+ * `helpers` (tags from run-10, ADR-0021) also every other file under a `test/` or `e2e/`
+ * directory (helpers, corpora, fixtures), except snapshots and generated output.
+ */
+export function isFrozenTestFile(path: string, helpers: boolean): boolean {
+  if (/\.(test|spec)\.tsx?$/.test(path)) return true;
+  if (!helpers || isSnapshotOrOutput(path)) return false;
+  return /(^|\/)(test|e2e)\//.test(path);
 }
 
 /**

@@ -1,4 +1,4 @@
-import { isFrozenTestFile } from './files';
+import { helpersFrozenAt, isFrozenTestFile } from './files';
 import { violation, type Git, type Violation } from './types';
 
 /** Inputs of rule (e). `adrExists('0007')` tells whether docs/adr/0007-*.md exists. */
@@ -109,7 +109,8 @@ function unjustified(input: AddOnlyInput, tag: string, file: string): string | u
 
 /**
  * Rule (e), the ADD-ONLY GUARD: every frozen test file present at the latest `run-*` tag
- * may only gain lines. A deleted file or any deleted or modified line fails, unless each
+ * may only gain lines (from run-10 every file under test/ and e2e/ except snapshots,
+ * ADR-0021; before it `*.test.ts(x)` and `*.spec.ts(x)` only). A deleted file or any deleted or modified line fails, unless each
  * commit that removed lines cites `ADR-NNNN` for an ADR that exists in docs/adr/.
  * A shallow clone cannot be checked and fails (the guard never switches off silently).
  */
@@ -123,9 +124,10 @@ export function checkAddOnly(input: AddOnlyInput): Violation[] {
   }
   const tag = latestRunTag(input.git, input.root);
   if (tag === undefined) return [];
+  const helpers = helpersFrozenAt(tag);
   const frozen = gitOrThrow(input.git, input.root, ['ls-tree', '-r', '-z', '--name-only', tag])
     .split('\0')
-    .filter((p) => p.length > 0 && isFrozenTestFile(p));
+    .filter((p) => p.length > 0 && isFrozenTestFile(p, helpers));
   const found: Violation[] = [];
   for (const file of frozen) {
     const removed = removedLines(
