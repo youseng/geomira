@@ -47,6 +47,15 @@ before it.
    (|r₁ − r₂| beyond the band) are unchanged. Only the float run can reach this: over Q the
    gaps are exact. → `packages/kernel/test/circles-nearly-coincide.test.ts`, the new
    degenerate case of `intersect` in `packages/kernel/test/degenerate.test.ts`.
+4. **Drag-end rounding checks every object, not only the dragged one.** SPEC §12 rounds the
+   dragged coordinates at drag end; the rounding was refused only when the dragged object or
+   the object it rewrites moved more than ROUNDING_PX. Rounding Q = (1, 0.00045) to (1, 0)
+   crossed l (at y = 0.0003) and flipped `same_side(Q, l)`: X jumped 300 px with no
+   degeneracy. Now the rounding is also refused when any other object changes kind (a point
+   became undefined, or the reverse) or moves more than DEPENDENT_PX = 1 px on screen (points,
+   texts, circle centres and radii, and lines over 100 px). The bound is larger than
+   ROUNDING_PX because constructions amplify a tiny move; a refused rounding keeps the exact
+   float coordinates, as before. → `packages/editor/test/drag-rounding-dependents.test.ts`.
 
 ## Consequences
 

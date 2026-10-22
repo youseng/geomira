@@ -18,6 +18,7 @@ import {
   roundedDefinition,
   withinRounding,
 } from './drag';
+import { dependentsKept } from './drag-dependents';
 import { amendLast, dropLast, record } from './history';
 import { lockedDrag } from './locked';
 import { done, refuse, type EditResult } from './result';
@@ -66,11 +67,14 @@ function end(state: EditorState, drag: DragState, env: EditorEnv): EditResult {
   if (!r.ok) return done(finished);
   const rounded = withDocument(finished, r.doc, env);
   // The object under the cursor and the object rewritten (an image's source, a text's
-  // anchor) both stay within ROUNDING_PX on screen, or the rounding is not applied.
+  // anchor) both stay within ROUNDING_PX on screen, and every other object keeps its kind
+  // and stays within DEPENDENT_PX (no selector flips: ADR-0027), or the rounding is not
+  // applied.
   const zoom = state.viewport.zoom;
-  const kept = [drag.id, drag.base].every((id) =>
-    withinRounding(state.values.values.get(id), rounded.values.values.get(id), zoom),
-  );
+  const [before, after] = [state.values.values, rounded.values.values];
+  const kept =
+    [drag.id, drag.base].every((id) => withinRounding(before.get(id), after.get(id), zoom)) &&
+    dependentsKept(before, after, zoom, new Set([drag.id, drag.base]));
   if (!kept) return done(finished);
   return done({ ...rounded, history: amendLast(state.history, r.doc) });
 }
