@@ -1,6 +1,6 @@
 # STATUS
 
-## Geomdraw-style tools and script (maintainer request, 2026-10-22): NOT ACCEPTED (awaiting CI)
+## Geomdraw-style tools and script (maintainer request, 2026-10-22): ACCEPTED (2026-10-22)
 
 A request from the maintainer between Run 10 and Run 11, not a numbered run: make Geomira's
 tools, UI and constructions work like their earlier Geomdraw (order-free clicks, both tangents,
@@ -137,9 +137,19 @@ frozen example the commit e6b591b changes under ADR-0025. On e6b591b: `flows-des
 and `flows-geomdraw.spec.ts` 13 passed; the long-task measurement passed; the drag frame as
 above.
 
-### CI on GitHub
+### CI on GitHub (a5529ae, PR #16)
 
-Pending (see the PR).
+- ci **https://github.com/youseng/geomira/actions/runs/39772882094 success**: `pnpm verify`,
+  `pnpm build` and `pnpm e2e`, `72 passed (42.1s)`, the three phone canvas baselines and the
+  four `flows-geomdraw.spec.ts` flows included. Measurements there: full UI drag frame
+  `"app":{"frames":120,"median":3.55,"p95":5.72,"max":11.09}` (budget 8 ms); main thread during
+  a test `"maxTask":2.6` (budget 16 ms); frame time at 300 objects, desktop drag median 2.70 ms,
+  mobile 3.40 ms.
+- tex **https://github.com/youseng/geomira/actions/runs/39772882066 success**.
+- deploy https://github.com/youseng/geomira/actions/runs/39772835007: build success; deploy and
+  smoke skipped (they run on main only).
+
+The commit that marks this section ACCEPTED changes only docs/STATUS.md.
 
 ## Requests
 
