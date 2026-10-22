@@ -1,5 +1,194 @@
 # STATUS
 
+## Run 10: NOT ACCEPTED (pending CI on the final commit)
+
+Audit 1 of 2. The full report is [docs/audit/2026-10-22.md](audit/2026-10-22.md).
+
+Base check: Run 9b was ACCEPTED (tag `run-9b` = a0e99f2). `pnpm install && pnpm verify` was
+green locally on it, and CI was green on it (ci 39615104610, deploy 39615104712, tex
+39615115526; re-checked against GitHub).
+
+What the run did:
+
+- **Bugs.** 19 real bugs found and fixed, each with a failing test first, in the same commit.
+- **Tests for clean hunt items.** Four test files cover the hunt items where no bug was found.
+- **Claims mutation (note A).** The score rose from 74.24% (the latest nightly) to **82.40% on
+  cc94fad**, measured by a local incremental run.
+- **Samplers (note B).** The samplers were audited line by line against SPEC §10.4, and the
+  statistical test of note B was added.
+- **ADRs.** Two new: [ADR-0017](adr/0017-sampler-figure-size.md) and
+  [ADR-0018](adr/0018-share-link-checksum-and-limits.md). Five design proposals (P1–P5) were
+  left for the maintainer.
+
+## Done (each item → the test file that proves it)
+
+1. **STATUS.md checked against the code, the tests and CI (item 1).**
+   - All 259 test paths it names exist; one is pasted output from before a rename.
+   - All 145 run ids it cites exist, with the conclusions it states.
+   - Discrepancies are listed in the report's §1. The main one: note A's "73.21%" was Run 7's
+     score; the latest nightly said 74.24%.
+2. **Mechanical checks (item 2).** `pnpm rules`, depcruise and the greps are clean. Every one of the
+   64 tools has degenerate tests, an L3 comparison, docs and an export mapping. The add-only history
+   is judged in report §6. → `pnpm verify` output below.
+3. **Samplers and Randomize use the figure's size, not SPEC §3.1's clamped scale** (ADR-0017). A
+   true theorem was "MIXED 101/99" on a small triangle.
+   → `packages/claims/test/sampler-figure-size.test.ts`, `packages/kernel/test/figure-size.test.ts`,
+   `packages/editor/test/choice-scale.test.ts`.
+4. **`in_order` on angle gliders is sampled ordered.** → `packages/claims/test/sampler-ordered-angle.test.ts`.
+5. **The LOCAL noise of `(u : v)` gliders is an arc of σ.** It caused 6,699 crossings in 20,000 samples
+   before. Note B's test requires 0 crossings in 20,000 LOCAL samples for figures ≥ 10σ inside.
+   → `packages/claims/test/sampler-local-10sigma.test.ts`.
+6. **Test runs.** Only the current job writes its run, and a later share link forgets old runs.
+   → `apps/web/test/test-runs-races.test.ts`.
+7. **Deep nesting.** Parse, applyEdit, decodeShare, addObject and evaluate are total on it (limit 100,
+   ADR-0018), and selector checks are no longer cubic. → `packages/lang/test/nesting.test.ts`,
+   `packages/kernel/test/nesting.test.ts`.
+8. **Share links have a checksum, size limits and a bounded decoder** (ADR-0018).
+   → `packages/editor/test/share-hardening.test.ts`, `packages/editor/test/lz-bounded.test.ts`.
+9. **TikZ and Asymptote stay within TeX's numbers** for figures of any size.
+   → `packages/export/test/tikz-range.test.ts`; `tests/fixtures/export/extreme-{tiny,huge}.geo`,
+   which CI's tex job compiles.
+10. **Exports with hostile text.** SVG is well-formed XML, `invisible` is reserved in Asymptote, and
+    UTF-8 lead bytes are decoded correctly. → `packages/export/test/hostile-text.test.ts`.
+11. **Tool picks reset when an object they name is gone.** → `packages/editor/test/picks-undo.test.ts`.
+12. **Comments of removed objects join the end comment (L5).** → `packages/editor/test/comments-l5.test.ts`.
+13. **A canceled drag does not mark a share-link session edited.** → `apps/web/test/store-edited.test.ts`.
+14. **A press on the canvas applies the text field's edit before the drag starts.**
+    → `apps/web/e2e/flows-audit.spec.ts` (first test).
+15. **A circle's radius is decided as a length by every tool.** → `packages/kernel/test/small-circles.test.ts`.
+16. **A text anchored at an image is dragged through the map.** → `packages/editor/test/drag-text-image.test.ts`.
+17. **GUI choice tier 1 no longer accepts a coincidental incidence.** → `packages/editor/test/choice-tier1.test.ts`.
+18. **A text draft with errors survives a visit to another tab.** → `apps/web/e2e/flows-audit.spec.ts`
+    (second test).
+19. **Claims mutation survivors (note A)**, killed with real tests and not snapshots:
+    `decide-branches`, `flip-test`, `hypotheses-edges`, `kinds-residuals`, `modp-draws`,
+    `verdict-exact` and `verdict-line-exact` (`packages/claims/test/*.test.ts`). The score is 82.40% on
+    cc94fad (1583 detected, 338 undetected). Output below.
+20. **Hunt items found clean, each with a test.**
+    - Extreme values through every tool: `packages/kernel/test/hunt-extreme.test.ts`.
+    - Chirality against mirrored figures: `packages/kernel/test/hunt-chirality.test.ts`.
+    - Huge circles and label offsets under zoom: `packages/scene/test/hunt-extreme.test.ts`.
+    - Derived layers through every edit: `packages/editor/test/hunt-derived.test.ts`.
+    - The other items map to their tests in the report's §7.
+21. **The audit report** → `docs/audit/2026-10-22.md`.
+
+## Not done
+
+- **Num and kernel survivors.** The 77 num and 16 kernel mutation survivors were not worked on.
+  Both packages are above their gates (89.06% and 99.02%); note A gave priority to claims.
+- **Claims survivors.** The remaining 338 claims survivors (mostly message texts and sampler
+  constants inside the Gaussian draws) are listed by file in report §3.
+- **Proposals P1–P5** (report §8) need the maintainer's decision first.
+
+## Known bugs
+
+- **W10: a circle about 10¹⁶ view widths or more in radius is not drawn where it crosses the view.**
+  - Reproduction: `clipCircle({x: 0, y: R − 1}, R, null, [−10, 10]²)` gives a span 2 ulps wide for
+    R = 10¹⁶, and `none` for R = 10¹⁸.
+  - Why it stays: doubles cannot place the circle near the view any closer than that, so not
+    drawing it is the honest result.
+  - What is pinned: `packages/scene/test/hunt-extreme.test.ts` checks that everything stays finite
+    and near the surface.
+  - Whether to list such a circle as "not drawable at this zoom" is request R3.
+- **P2: `rotate(line, O, θ)` with a literal θ keeps its input's chirality flag** (SPEC §4). No flag
+  is right for it unless θ is 0° or 180°, so a claim that depends on it cannot get
+  ORIENTATION-DEPENDENT. This is a specification gap: proposal P2.
+
+## Uncertain
+
+- No mathematical fact or contest problem was used. The 10σ configurations of note B are
+  constructions whose deciding quantity is computed and differentiated numerically in the test
+  itself; none is a theorem taken on trust.
+- **W10's threshold.** Is not drawing an unplaceable circle what SPEC §13 means by "Undefined is
+  shown as undefined"? The circle itself is defined.
+
+## Changed frozen tests
+
+None in this run. `pnpm rules`: `add-only: frozen tests compared with run-9b, 0 violation(s)`.
+Only test files were added, plus import and subpath lines in
+`packages/kernel/test/exports.test.ts`, which add `./figure-size` and `./limits` and remove nothing.
+
+The history of every frozen line changed so far under an ADR is judged in the report's §6:
+
+- run-3b: `l3-plans.ts`, 2 lines. This strengthened the test: two more tools get exact samples.
+- run-9a: `registry.test.ts`, 1 line. Constructive export mappings were added (ADR-0014).
+- run-9b: 24 lines. ADR-0016 changed the palette, the font, polygons drawn as outlines, and
+  American spelling.
+
+Each change was necessary, and none weakened a test.
+
+## Acceptance command output
+
+### Local, 4ea4e6d (`pnpm install && pnpm verify`)
+
+```
+✔ no dependency violations found (504 modules, 2822 dependencies cruised)
+ok   tolerance: 722 files scanned, 0 violation(s)
+ok   file-length: 722 files scanned, 0 violation(s)
+ok   test-count: 2306 tests, floor 2146, 0 violation(s)
+ok   disabled-tests: 722 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-9b, 0 violation(s)
+ok   forbidden-words: 722 files scanned, 0 violation(s)
+ Test Files  227 passed (227)
+      Tests  2306 passed (2306)
+Statements   : 97.02% ( 9645/9941 )
+Branches     : 91.83% ( 7831/8527 )
+Functions    : 99.45% ( 2199/2211 )
+Lines        : 98.29% ( 8031/8170 )
+```
+
+The test-count floor is now 2306 (`docs/test-count.txt`).
+
+### Claims mutation, local incremental (`pnpm exec stryker run stryker.claims.json`, tree clean at cc94fad's claims)
+
+```
+All files             |  82.40 |   84.47 |     1522 |        61 |        291 |       47 |     2678 |
+claims mutation score: 82.40% (1583 detected, 338 undetected; target 75%, gated from v1.1)
+```
+
+### Playwright, local (`pnpm build`, then desktop and mobile projects)
+
+60 passed. Three `scene.spec.ts` phone screenshots fail by about 1% of their pixels, with and
+without this run's changes: this container's fonts differ from CI's (Run 9b, "Notes for later
+runs"). CI is the reference.
+
+### CI on GitHub
+
+CI_TABLE_PLACEHOLDER
+
+## Requests
+
+- **R1: the AoPS manual check.** olympiad.asy is not vendored. Paste
+  `packages/export/test/__snapshots__/euler-line/aops.asy` into AoPS's TeXeR (or a post) between
+  `[asy]` and `[/asy]` and check three things:
+  1. it renders, including `import olympiad;`, the `gm` helpers with `struct`,
+     `labelmargin = 0`, `unitsize`, `foot`, `circumcenter` and `incenter`;
+  2. it matches `asy -f pdf …/euler-line/standalone.asy`;
+  3. `\measuredangle` and `\mathrm` labels render.
+     Details are in report §9.
+- **R2: decide proposals P1–P5** (report §8):
+  - a relative scale-factor test for compose;
+  - the chirality of rotated lines;
+  - the meaning of locked layers;
+  - freezing test helpers;
+  - a nightly on each merge.
+- **R3: W10.** Should an unplaceable huge circle be listed as "not drawable at this zoom"?
+- The `run-10` tag is for the maintainer to place on the merge.
+- Formatting: Prettier `--write` was run only on files written in this run, and its changes were
+  reviewed (whitespace and line breaks). No `eslint --fix` or other automatic fix was run.
+- No runtime dependency was added.
+
+## Notes for later runs
+
+- A fresh clone needs `git fetch --tags` before `pnpm rules` (the add-only guard compares with the
+  latest `run-*` tag).
+- Agent worktrees under `.claude/worktrees` make ESLint run out of memory. Remove them before
+  `pnpm verify`.
+- `pnpm e2e` serves the built app (`vite preview`): run `pnpm build` first, or the specs test the
+  previous build.
+
+---
+
 ## Run 9b: ACCEPTED (2026-10-21)
 
 The UI design pass in the look of the maintainer's Geomdraw, Randomize, the README with a
