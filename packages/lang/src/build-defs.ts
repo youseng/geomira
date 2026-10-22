@@ -15,6 +15,7 @@ import { exprEnv } from './build-env';
 import { addDefinition } from './build-objects';
 import { nameOf, type State } from './build-state';
 import { error, type Span } from './diagnostic';
+import { freePlaces } from './free-points';
 import { expandTriangle, polygonName, type TriangleType } from './triangle';
 
 type Def = Extract<Statement, { kind: 'def' }>;
@@ -44,7 +45,9 @@ export function collectNames(st: State, lines: readonly Line[]): Map<number, str
   for (const l of lines) {
     const s = l.statement;
     if (s?.kind === 'def') note(s.target.name, l.line);
-    if (s?.kind === 'triangle') for (const p of s.points) note(p.name, l.line);
+    if (s?.kind === 'triangle' || s?.kind === 'points')
+      for (const p of s.points) note(p.name, l.line);
+    if (s?.kind === 'branches') for (const t of s.targets) note(t.name, l.line);
   }
   for (const l of lines) {
     const s = l.statement;
@@ -108,7 +111,7 @@ function attrsOf(
   return { style, layers: layers.length === 0 ? [MAIN_LAYER_ID] : layers };
 }
 
-function define(
+export function define(
   st: State,
   target: NameRef,
   node: ExprNode,
@@ -126,8 +129,19 @@ function define(
   return id;
 }
 
+/** A free point at the place drawn for its names (`A = point()`, `points A B`; ADR-0025). */
+export function freePoint(p: NameRef, place: readonly [string, string]): ExprNode {
+  const num = (text: string): ExprNode => ({ kind: 'num', text, span: p.span });
+  return { kind: 'pair', x: num(place[0]), y: num(place[1]), span: p.span };
+}
+
 export function definition(st: State, s: Def, line: number): number | undefined {
-  return define(st, s.target, s.expr, s.attrs, line);
+  const e = s.expr;
+  const bare = e.kind === 'call' && e.tool === 'point' && e.args.length === 0;
+  const place =
+    bare && e.selectors.length === 0 ? freePlaces('point', [s.target.name])[0] : undefined;
+  const expr = place === undefined ? e : freePoint(s.target, place);
+  return define(st, s.target, expr, s.attrs, line);
 }
 
 function triangleType(st: State, s: Tri): { type: TriangleType; types: string[] } | undefined {
@@ -179,11 +193,12 @@ export function triangle(
     return { conditions: [] };
   }
   const ex = expandTriangle(s.points, tt.type, tt.types, s.span);
-  const ids = s.points.map((p, i) => {
-    const [x, y] = ex.points[i] ?? ['0', '0'];
-    const num = (text: string): ExprNode => ({ kind: 'num', text, span: p.span });
-    return define(st, p, { kind: 'pair', x: num(x), y: num(y), span: p.span }, [], line);
-  });
+  // ADR-0025: `triangle ABC` on points that exist draws their triangle; the others are made.
+  const ids = s.points.map((p, i) =>
+    st.ids.has(p.name) && (st.defLines.get(p.name) ?? line) < line
+      ? st.ids.get(p.name)
+      : define(st, p, freePoint(p, ex.points[i] ?? ['0', '0']), [], line),
+  );
   const refs: ExprNode[] = s.points.map((p) => ({ kind: 'name', name: p.name, span: p.span }));
   const span: Span = s.span;
   define(

@@ -17,6 +17,12 @@ export type ExprNode =
       readonly args: readonly ExprNode[];
       readonly selectors: readonly SelectorNode[];
       readonly span: Span;
+      /**
+       * Written as glued point names (ADR-0025): `AB` is line(A, B), `ABC` circle(A, B, C),
+       * `ABCD…` polygon(A, B, C, D, …); as an argument the names are spread when the call
+       * takes the points and not the line, circle or polygon (`midpoint(AB)`).
+       */
+      readonly glued?: boolean;
     }
   /** `(x, y)`: point(x, y). */
   | { readonly kind: 'pair'; readonly x: ExprNode; readonly y: ExprNode; readonly span: Span }
@@ -78,6 +84,21 @@ export type Statement =
       readonly target: NameRef;
       readonly expr: ExprNode;
       readonly attrs: readonly Attr[];
+    }
+  /** `point A`, `points A B C` (ADR-0025): free points at places drawn from the line. */
+  | {
+      readonly kind: 'points';
+      readonly points: readonly NameRef[];
+      readonly attrs: readonly Attr[];
+      readonly span: Span;
+    }
+  /** `X, Y = intersect(a, b)` (ADR-0025): both branches of a two-candidate call. */
+  | {
+      readonly kind: 'branches';
+      readonly targets: readonly NameRef[];
+      readonly expr: ExprNode;
+      readonly attrs: readonly Attr[];
+      readonly span: Span;
     }
   | { readonly kind: 'claim'; readonly claim: Condition; readonly attrs: readonly Attr[] }
   | { readonly kind: 'assume'; readonly condition: Condition }

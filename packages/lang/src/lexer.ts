@@ -11,6 +11,10 @@
  * letter, digit, `_`, `(` or `\` (`l*`, `w*,` and `w*)` are names; `a*b`, `k*2` and
  * `r*(1+r)` are products). `a* b` (a starred name, whitespace, then an operand) is an
  * error: write `a * b`. `Ma` is an error with the hint "did you mean M_a?".
+ *
+ * Geomdraw's capitals (ADR-0025): a capitalised word followed by `(` is a call name
+ * (`Midpoint(A, B)` is midpoint(A, B)), and a capitalised statement keyword starts a line
+ * (`Triangle ABC`); both are lowercased. Neither was a valid point name.
  */
 import { error, type Diagnostic } from './diagnostic';
 import { GREEK, SYMBOL_ESCAPES } from './symbols';
@@ -48,6 +52,9 @@ const PUNCT: Readonly<Record<string, string>> = {
   '≥': '≥',
   '∡': '∡',
   '∠': '∠',
+  '⟂': '⟂',
+  '⊥': '⟂',
+  '∥': '∥',
 };
 const TWO_CHAR: Readonly<Record<string, string>> = { '!=': '≠', '<=': '≤', '>=': '≥' };
 
@@ -191,8 +198,34 @@ function lexNumberToken(c: Cursor): void {
   push(c, 'number', start, c.src.slice(start, r.end));
 }
 
+/** Statement keywords a line may start with in capitals (Geomdraw's `Triangle A B C`). */
+const KEYWORDS: readonly string[] = Object.freeze([
+  'triangle',
+  'point',
+  'points',
+  'claim',
+  'assume',
+  'style',
+  'label',
+]);
+
+/** `Midpoint(` or a capitalised keyword at the start of a line: a lowercase name token. */
+function capitalised(c: Cursor): boolean {
+  const word = /^[A-Z][a-z][A-Za-z0-9_]*/u.exec(c.src.slice(c.i))?.[0];
+  if (word === undefined) return false;
+  const after = c.src.slice(c.i + word.length).trimStart();
+  const lower = word.toLowerCase();
+  const keyword = c.tokens.length === 0 && KEYWORDS.includes(lower) && !after.startsWith('=');
+  if (!after.startsWith('(') && !keyword) return false;
+  const start = c.i;
+  c.i += word.length;
+  push(c, 'name', start, word, lower);
+  return true;
+}
+
 /** A point name: letter, optional index, primes, then glued stars. */
 function lexPoint(c: Cursor): void {
+  if (capitalised(c)) return;
   const start = c.i;
   const m = /^[A-Z](?:[0-9]+|_(?:[0-9]+|[A-Za-z]|\{[A-Za-z0-9]+\}))?'*\**/u.exec(c.src.slice(c.i));
   const text = m?.[0] ?? at(c);

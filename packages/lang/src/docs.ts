@@ -11,6 +11,7 @@ import { formatSignature, type ToolSpec } from '@geomira/kernel/tool';
 import { CLAIM_KINDS } from '@geomira/claims/kinds';
 import { DOCUMENT_VERSION } from '@geomira/kernel/document';
 import { DASHES } from './attr-values';
+import { geomdrawSection } from './geomdraw-docs';
 import { GRAMMAR } from './grammar';
 import { MIGRATIONS } from './migrate';
 import { ASSUMPTION_NOTATION, CLAIM_NOTATION, NOTATION_FIGURE } from './notation';
@@ -32,7 +33,12 @@ const STATEMENTS: readonly (readonly [string, string])[] = [
   ['`assume <condition>`', 'a hypothesis: an open condition (see Assumptions)'],
   [
     '`triangle A B C [type]`',
-    "three free points, `tri_ABC = polygon(A, B, C)` and the type's `assume` lines; types acute, scalene, obtuse_at_<vertex>",
+    "three free points (or the ones that exist), `tri_ABC = polygon(A, B, C)` and the type's `assume` lines; types acute, scalene, obtuse_at_<vertex>",
+  ],
+  ['`points A B C [attrs]`', "free points at places drawn from the names (Geomdraw's notation)"],
+  [
+    '`X, Y = intersect(a, b)`',
+    "both branches of a two-candidate call (Geomdraw's notation, see below)",
   ],
   ['`style X [attrs]`', 'the style of X (also of an image: `style A* [hidden]`)'],
   ['`label X "…"`', 'the label of X'],
@@ -172,6 +178,7 @@ export function renderLanguageDocs(registry: Registry): string {
   const out = [
     ...intro(),
     ...notation(),
+    ...geomdrawSection(registry),
     '## Tools',
     '',
     'Exactness is observed by running each tool\'s examples over RationalField: "can succeed" means some example is exact (otherwise the reason it is not); the last column gives the reason of each example that is Inexact over Q (√ or trigonometry off the rational values).',

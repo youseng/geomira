@@ -43,6 +43,8 @@ export const GREEK: Readonly<Record<string, string>> = Object.freeze({
 export const SYMBOL_ESCAPES: Readonly<Record<string, string>> = Object.freeze({
   angle: '∠',
   measuredangle: '∡',
+  perp: '⟂',
+  parallel: '∥',
   cdot: '·',
   neq: '≠',
   ne: '≠',

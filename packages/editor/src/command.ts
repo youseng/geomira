@@ -33,6 +33,7 @@ const KEYWORDS: readonly string[] = Object.freeze([
   'claim',
   'assume',
   'triangle',
+  'points',
   'style',
   'label',
   '@layer',

@@ -26,6 +26,7 @@ import {
   type Cursor,
 } from './cursor';
 import { parseExpr, parseUnary } from './parse-expr';
+import { geomdrawClaim } from './parse-geomdraw';
 
 type Side =
   | { readonly t: 'seg'; readonly pts: readonly ExprNode[]; readonly span: Span }
@@ -267,6 +268,8 @@ function relation(c: Cursor, l: Side, r: Side, eq: Span): Condition | undefined 
 export function parseClaim(c: Cursor): Condition | undefined {
   const call = kindCall(c, true);
   if (call !== undefined || c.diags.length > 0) return call;
+  const infix = geomdrawClaim(c);
+  if (infix !== undefined) return infix;
   const l = parseSide(c);
   if (l === undefined) return undefined;
   const eq = peek(c);

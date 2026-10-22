@@ -21,6 +21,7 @@ import { callDiagnostics, type KindsOfRef } from '@geomira/kernel/selector-check
 import type { ExprNode, SelectorNode } from './ast';
 import { error, type Diagnostic, type Span } from './diagnostic';
 import { exactLiteral } from './lex-literals';
+import { spreadRuns, TOOL_ALIASES, toolName } from './geomdraw';
 import { makeSelector } from './selectors';
 import { nestedTooDeep } from './parse-expr';
 import { assertNever } from '@geomira/num/assert';
@@ -146,10 +147,10 @@ function unknownTool(name: string, span: Span, env: ExprEnv): undefined {
     );
     return undefined;
   }
-  const near = suggest(
-    name,
-    env.registry.tools.map((t) => t.name),
-  );
+  const near = suggest(name, [
+    ...env.registry.tools.map((t) => t.name),
+    ...Object.keys(TOOL_ALIASES),
+  ]);
   env.diags.push(
     error(
       span,
@@ -165,17 +166,22 @@ function callExpr(
   env: ExprEnv,
   calls: CallSite[],
 ): Expr | undefined {
-  if (env.registry.get(n.tool) === undefined) {
+  const tool = toolName(n.tool, env.registry);
+  if (env.registry.get(tool) === undefined) {
     unknownTool(n.tool, n.span, env);
     return undefined;
   }
   const site = calls.length;
-  const args = n.args.map((a) => toExpr(a, env, calls));
+  const before = env.diags.length;
+  const args = spreadRuns(tool, n.args, env.registry).map((a) => toExpr(a, env, calls));
   const sels = n.selectors.map((s) => toSelector(s, env, calls));
-  if (args.some((x) => x === undefined) || sels.some((x) => x === undefined)) return undefined;
+  if (args.some((x) => x === undefined) || sels.some((x) => x === undefined)) {
+    if (n.glued === true) explainRun(n, env.diags, before);
+    return undefined;
+  }
   let argExprs = args.filter((x): x is Expr => x !== undefined);
   const first = argExprs[0];
-  if (n.tool === 'on' && argExprs.length === 1 && sels.length === 0 && first !== undefined) {
+  if (tool === 'on' && argExprs.length === 1 && sels.length === 0 && first !== undefined) {
     const d = env.gliderDefault(first);
     if (typeof d === 'string') {
       env.diags.push(error(n.span, d, 'write the parameter: on(l, t), on(c, u, v) or on(c, θ)'));
@@ -184,12 +190,27 @@ function callExpr(
     argExprs = [first, ...d];
   }
   const c = call(
-    n.tool,
+    tool,
     argExprs,
     sels.filter((x): x is Selector => x !== undefined),
   );
   calls.splice(site, 0, { call: c, span: n.span });
   return c;
+}
+
+/**
+ * The hints of a glued run's errors say what the run means (ADR-0025): `AB` is line(A, B),
+ * and its length is dist(A, B).
+ */
+function explainRun(n: Extract<ExprNode, { kind: 'call' }>, diags: Diagnostic[], from: number) {
+  const names = n.args.flatMap((a) => (a.kind === 'name' ? [a.name] : []));
+  const list = names.join(', ');
+  const length = names.length === 2 ? `; the length ${names.join('')} is dist(${list})` : '';
+  const meaning = `${names.join('')} is ${n.tool}(${list})${length}`;
+  for (let i = from; i < diags.length; i++) {
+    const d = diags[i];
+    if (d !== undefined) diags[i] = { ...d, hint: `${d.hint} (${meaning})` };
+  }
 }
 
 function toSelector(s: SelectorNode, env: ExprEnv, calls: CallSite[]): Selector | undefined {

@@ -15,6 +15,7 @@ import { byKey, textAttr } from './attr-values';
 import { expression } from './build-defs';
 import type { State } from './build-state';
 import { error } from './diagnostic';
+import { spreadCondition } from './geomdraw';
 
 export interface Deferred {
   readonly kind: 'claim' | 'assume';
@@ -27,7 +28,7 @@ export interface Deferred {
 
 function args(st: State, c: Condition): Expr[] | undefined {
   const out: Expr[] = [];
-  for (const a of c.args) {
+  for (const a of spreadCondition(c.kind, c.args)) {
     const e = expression(st, a);
     if (e === undefined) return undefined;
     out.push(e);

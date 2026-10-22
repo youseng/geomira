@@ -4,8 +4,10 @@
  *   triangle A B C [type] · style X [attrs] · label X "…" · @version N · @title "…" ·
  *   @author "…" · @layer name [attrs] · @layer name = image(T, source) [attrs] ·
  *   @view name attrs · @viewport cx cy zoom · # comment
+ * and Geomdraw's conveniences (ADR-0025): `point A`, `points A B C` (free points) and
+ * `X, Y = intersect(a, b)` (both branches of a two-candidate call).
  */
-import type { ExprNode, Line, NameRef, Statement } from './ast';
+import type { Attr, ExprNode, Line, NameRef, Statement } from './ast';
 import type { Diagnostic } from './diagnostic';
 import {
   atEnd,
@@ -74,6 +76,9 @@ function statement(c: Cursor): Statement | undefined {
       }
       case 'triangle':
         return triangle(c);
+      case 'point':
+      case 'points':
+        return points(c);
       case 'style': {
         next(c);
         const target = nameRef(c, 'object name');
@@ -89,10 +94,11 @@ function statement(c: Cursor): Statement | undefined {
     }
   }
   if ((t?.kind === 'name' || t?.kind === 'point') && isPunct(c, '=', 1)) return definition(c);
+  if ((t?.kind === 'name' || t?.kind === 'point') && isPunct(c, ',', 1)) return branches(c);
   fail(
     c,
     `expected a statement, found ${describe(t)}`,
-    'write name = expression, claim …, assume …, or a directive such as @version 1',
+    'write name = expression, points A B C, claim …, assume …, or a directive such as @version 1',
   );
   return undefined;
 }
@@ -105,6 +111,44 @@ function definition(c: Cursor): Statement | undefined {
   return target === undefined || expr === undefined || attrs === undefined
     ? undefined
     : { kind: 'def', target, expr, attrs };
+}
+
+/** `X, Y = call(…)`: two names, then the call whose two branches they name. */
+function branches(c: Cursor): Statement | undefined {
+  const start = peek(c);
+  const targets: NameRef[] = [];
+  for (;;) {
+    const n = nameRef(c, 'name');
+    if (n === undefined) return undefined;
+    targets.push(n);
+    if (!isPunct(c, ',')) break;
+    next(c);
+  }
+  if (expect(c, '=', 'write X, Y = intersect(a, b)') === undefined || start === undefined)
+    return undefined;
+  const expr = parseExpr(c);
+  const attrs = expr === undefined ? undefined : parseAttrs(c, false);
+  return expr === undefined || attrs === undefined
+    ? undefined
+    : { kind: 'branches', targets, expr, attrs, span: since(c, start) };
+}
+
+/** `point A` / `points A B C [attrs]`: free points (names glued or apart). */
+function points(c: Cursor): Statement | undefined {
+  const start = next(c);
+  const names: NameRef[] = [];
+  for (let t = peek(c); t?.kind === 'point'; t = peek(c)) {
+    next(c);
+    names.push({ name: t.value, span: t });
+  }
+  if (names.length === 0 || start === undefined) {
+    fail(c, `${start?.value ?? 'points'} takes point names`, 'write points A B C');
+    return undefined;
+  }
+  const attrs = parseAttrs(c, false);
+  return attrs === undefined
+    ? undefined
+    : { kind: 'points', points: names, attrs, span: since(c, start) };
 }
 
 function claim(c: Cursor): Statement | undefined {
@@ -131,10 +175,35 @@ function triangle(c: Cursor): Statement | undefined {
     );
     return undefined;
   }
-  const attrs = parseAttrs(c, false);
-  return attrs === undefined
+  const words = triangleWords(c, points);
+  const attrs = words === undefined ? undefined : parseAttrs(c, false);
+  return attrs === undefined || words === undefined
     ? undefined
-    : { kind: 'triangle', points, attrs, span: since(c, start) };
+    : { kind: 'triangle', points, attrs: [...words, ...attrs], span: since(c, start) };
+}
+
+/**
+ * Geomdraw's bare triangle types (ADR-0025): `triangle ABC acute`, `scalene`, `obtuse` (at the
+ * first vertex) or `obtuse_at_B`, each the attribute of that name. A right angle is
+ * constructed, never assumed (SPEC §6.2).
+ */
+function triangleWords(c: Cursor, points: readonly NameRef[]): Attr[] | undefined {
+  const out: Attr[] = [];
+  for (let t = peek(c); t?.kind === 'name'; t = peek(c)) {
+    next(c);
+    if (t.value === 'right') {
+      fail(
+        c,
+        'a right angle is constructed, never assumed',
+        'build C on the perpendicular: C = on(perp(A, AB), 3)',
+        t,
+      );
+      return undefined;
+    }
+    const key = t.value === 'obtuse' ? `obtuse_at_${points[0]?.name ?? 'A'}` : t.value;
+    out.push({ key, values: null, span: t });
+  }
+  return out;
 }
 
 function label(c: Cursor): Statement | undefined {

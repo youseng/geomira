@@ -10,6 +10,7 @@ import type { Registry } from '@geomira/kernel/registry';
 import type { Line, Statement } from './ast';
 import { buildDeferred, type Deferred } from './build-claims';
 import { collectNames, collectStyles, definition, triangle } from './build-defs';
+import { branchesStatement, pointsStatement } from './build-geomdraw';
 import { directives } from './build-layers';
 import { newState, type State } from './build-state';
 import { attach, defer, finish, take } from './comments';
@@ -83,6 +84,12 @@ function lineStep(st: State, l: Line, s: Statement, p: Pass): CommentAnchor | 't
   switch (s.kind) {
     case 'def': {
       const id = definition(st, s, l.line);
+      return id === undefined ? undefined : { kind: 'object', id };
+    }
+    case 'points':
+    case 'branches': {
+      const id =
+        s.kind === 'points' ? pointsStatement(st, s, l.line) : branchesStatement(st, s, l.line);
       return id === undefined ? undefined : { kind: 'object', id };
     }
     case 'triangle': {
