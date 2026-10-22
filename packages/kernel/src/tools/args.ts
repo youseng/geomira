@@ -3,6 +3,7 @@
  * arguments matching a signature; these helpers narrow the Value union without casts,
  * and a direct call with other arguments gets Undefined (never a throw).
  */
+import { isInexact } from '@geomira/num/field';
 import type { Field } from '@geomira/num/field';
 import type { EvalContext } from '../tool';
 import { isZeroVec } from '../geom';
@@ -85,16 +86,21 @@ export function degenerateLine<T>(
 }
 
 /**
- * A circle's squared radius is positive (r2 > 0, SPEC §4). Circles built by the v1 tools
- * always satisfy this; the check keeps every division and square root total for any
- * Circle value. Degenerate: r2 zero (as an area) or negative → Undefined.
+ * A circle's squared radius is positive (r2 > 0, SPEC §4). The check keeps every division and
+ * square root total for any Circle value, and decides the RADIUS as a length, as circle(O, A)
+ * and circle(O, r) do when they build one (Run 10 audit: an area test of r² refused radii up
+ * to about 3·10⁻⁵·scale that those tools accept). Degenerate: r2 negative, or a radius within
+ * EPS·scale (exact fields: r2 exactly 0) → Undefined.
  */
 export function degenerateCircle<T>(
   F: Field<T>,
   c: Circle<T>,
   ctx: EvalContext,
 ): Undefined | undefined {
-  return F.isZero(c.r2, 'area', ctx) || F.sign(c.r2, 'area', ctx) === -1
-    ? undef('the circle has no positive radius')
-    : undefined;
+  const bad = undef('the circle has no positive radius');
+  if (F.sign(c.r2, 'area', ctx) === -1) return bad;
+  if (F.kind !== 'float') return F.isZero(c.r2, 'area', ctx) ? bad : undefined;
+  if (!(F.toNumber(c.r2) > 0)) return bad;
+  const r = F.sqrt(c.r2);
+  return isInexact(r) || F.isZero(r, 'length', ctx) ? bad : undefined;
 }
