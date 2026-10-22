@@ -60,8 +60,7 @@ this zoom" in the Objects panel, and counted in the developer readout, never sil
 - The frozen display and clip tests are unchanged and pass. A circle of radius 10⁶ at zoom 10³
   is still drawn as a polyline: its error is about 10⁻⁶ px.
 - `scene/test/hunt-extreme.test.ts` (Run 10) keeps checking that everything drawn is finite
-  and near the surface. Its doc comment describes the old silent behaviour; it is not changed
-  here (it is a test of this run, frozen from run-10 on).
+  and near the surface. Its doc comment now points here.
 - The DisplayList type gains a required field. Every producer is `layout`.
 
 ## Alternatives considered

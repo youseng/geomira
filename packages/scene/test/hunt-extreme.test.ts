@@ -5,8 +5,8 @@
  *     number of the display list and of a hit test is finite, and every drawn vertex lies within
  *     a few margins of the surface;
  *   - an explicit label offset (angle 30°, 25 px) stays 25 px at 30° at every zoom.
- * The circle is not drawn at all once its radius exceeds ~1e16 view widths: doubles cannot
- * place it near the view any closer than that (docs/audit/2026-10-22.md, W10).
+ * Once the radius exceeds ~1e16 view widths, doubles cannot place the circle near the view
+ * within a pixel: it is not drawn and is listed as undrawable (ADR-0023, placement.test.ts).
  */
 import { describe, expect, it } from 'vitest';
 import { layout, MARGIN_PX, type DisplayList } from '../src/display';
