@@ -1,6 +1,6 @@
 # STATUS
 
-## Run 10: NOT ACCEPTED (pending CI on the final commit)
+## Run 10: ACCEPTED (2026-10-22)
 
 Audit 1 of 2. The full report is [docs/audit/2026-10-22.md](audit/2026-10-22.md).
 
@@ -154,7 +154,20 @@ runs"). CI is the reference.
 
 ### CI on GitHub
 
-CI_TABLE_PLACEHOLDER
+| commit  | what                                              | ci                      | deploy                  | tex                     |
+| ------- | ------------------------------------------------- | ----------------------- | ----------------------- | ----------------------- |
+| e54616a | fixes through E4 (GUI choice tier 1)              | success 39730252050     | success 39730252042     | success 39730252197     |
+| 2344498 | W4, the hunt tests, the report, STATUS (all code) | **success 39732465095** | **success 39732465114** | **success 39732465158** |
+
+On 2344498: ci **https://github.com/youseng/geomira/actions/runs/39732465095 success**, deploy
+**https://github.com/youseng/geomira/actions/runs/39732465114 success**, tex
+**https://github.com/youseng/geomira/actions/runs/39732465158 success**. Other run URLs are
+`https://github.com/youseng/geomira/actions/runs/<id>`. On 2344498 the ci run is
+`pnpm verify`, `pnpm build` and `pnpm e2e` (desktop and phone projects, `flows-audit.spec.ts`
+included). The tex run compiles the fixtures (`extreme-tiny.geo`, `extreme-huge.geo` included) and
+the exports. The earlier ci runs that were cancelled (ci run numbers 139, 140, 141, 144 and 145) were superseded by
+the next push. The commit that marks this run ACCEPTED changes only docs/STATUS.md and the
+report; its runs are on the PR. The nightly is not waited for.
 
 ## Requests
 
