@@ -119,15 +119,20 @@ export const MAP_TOOLS: readonly ToolUI[] = [
     'Ratio k',
     '2',
   ),
-  call(
-    'spiral',
-    'Spiral similarity',
-    'S',
-    'spiral',
-    'point',
-    [FIGURE('object to map'), P('A'), P('B'), P('the image of A'), P('the image of B')],
-    'The image of an object under the spiral similarity taking A to C and B to D.',
-  ),
+  {
+    // A point may be picked twice: spiral(X, A, B, A, C) is the spiral similarity about A
+    // taking B to C, the olympiad's usual one.
+    ...call(
+      'spiral',
+      'Spiral similarity',
+      'S',
+      'spiral',
+      'point',
+      [FIGURE('object to map'), P('A'), P('B'), P('the image of A'), P('the image of B')],
+      'The image of an object under the spiral similarity taking A to C and B to D (A may be its own image: the spiral about A).',
+    ),
+    repeats: true,
+  },
 ];
 
 /** Measures beside distance and angle (the Measure / Claim group). */

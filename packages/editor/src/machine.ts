@@ -42,6 +42,17 @@ const HIT_KINDS: Readonly<Record<PickKind, readonly string[]>> = Object.freeze({
   transform: [],
 });
 
+/** What a pick kind asks the user to click, in words ("a point, line, circle or polygon"). */
+const PICK_WORDS: Readonly<Record<PickKind, string>> = Object.freeze({
+  point: 'point',
+  line: 'line',
+  circle: 'circle',
+  curve: 'line or circle',
+  figure: 'point, line, circle or polygon',
+  mirror: 'line or point',
+  transform: 'transform',
+});
+
 /** Whether an object's value fits a pick kind (panel choices). */
 function fits(v: Value<number> | undefined, pick: PickKind): boolean {
   const k = v?.kind;
@@ -123,7 +134,8 @@ function click(
   if (line !== undefined && side !== undefined)
     return created(state, tool, add(state, side, 'line', env), line.index, env);
   const point = open.find((x) => x.step.pick === 'point');
-  if (point === undefined) return refuse(state, `${first.step.prompt}: click a ${first.step.pick}`);
+  if (point === undefined)
+    return refuse(state, `${first.step.prompt}: click a ${PICK_WORDS[first.step.pick]}`);
   const sides = onSides(state, input.hit.virtual, env);
   if (typeof sides === 'string') return refuse(state, sides);
   const def = createdPoint(sides.state, sides.virtual, env);
@@ -151,7 +163,8 @@ function objectInput(state: EditorState, tool: ToolUI, id: number, env: EditorEn
   if (first === undefined) return refuse(state, 'nothing to pick');
   const v = state.values.values.get(id);
   const o = open.find((x) => fits(v, x.step.pick));
-  if (o === undefined) return refuse(state, `${first.step.prompt}: pick a ${first.step.pick}`);
+  if (o === undefined)
+    return refuse(state, `${first.step.prompt}: pick a ${PICK_WORDS[first.step.pick]}`);
   return pushPick(state, tool, id, o.index, env);
 }
 

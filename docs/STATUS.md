@@ -59,6 +59,18 @@ same file passes alone (10/10 in 15 s). CI was green on 0199115 (Run 10's last c
     the parser; ADR-0025 carries the additions' grammar verbatim (checked by a test).
     → `packages/lang/test/docs.test.ts` (unchanged, staleness), `geomdraw-notation.test.ts`.
 
+12. **Review before merge (the maintainer's request).** Every new and changed tool was driven
+    through realistic and degenerate clicks (wrong kinds, repeated points, non-numbers,
+    zero and negative values, points off the curves). Two defects were fixed: the spiral
+    similarity refused a repeated point, so the spiral about A taking B to C
+    (`spiral(X, A, B, A, C)`) could not be clicked; and a refused pick named the internal pick
+    kind ("click a figure"). → `packages/editor/test/new-tools-review.test.ts`.
+13. **Undefined objects in exports** ([ADR-0026](adr/0026-undefined-objects-in-exports.md)):
+    no coordinates are invented for them; every format lists each one with its reason (the
+    Export dialog, and `% Warning:` / `// Warning:` lines in TikZ and Asymptote). Defined
+    objects Asymptote cannot construct keep their coordinates (`// numeric`).
+    → `packages/export/test/undefined-objects.test.ts`.
+
 ## Not done
 
 - **The text cannot write semantic selectors** for `X, Y = intersect(…)`: it writes
@@ -99,7 +111,7 @@ violation(s)`).
 
 - **Modified under [ADR-0024](adr/0024-geomdraw-tool-interaction.md)** (commit 0afb9bd):
   `packages/editor/test/machine.test.ts`, two tests whose assertions were the removed
-  click-to-choose interaction. 10 lines removed, 6 added (ADR-0024 item 10 lists them); the test
+  click-to-choose interaction. 10 lines removed, 6 added (ADR-0024 item 11 lists them); the test
   that checked `E = intersect(l, c, opposite_side(B, m))` still checks it, and now also
   `F = intersect(l, c, same_side(B, m))`.
 - **Modified under [ADR-0025](adr/0025-geomdraw-notation.md)** (commit e6b591b):

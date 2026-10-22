@@ -93,9 +93,14 @@ small prompt; its keys are V P I E M F, L S H J B N T, C K D, X R Z, A Q.
    in the document, and not hit-tested. Mouse only (a touch has no hover), and never during a
    drag.
 
+10. **Review before merge.** The spiral similarity may pick a point twice (`ToolUI.repeats`), so
+    `spiral(X, A, B, A, C)`, the spiral about A taking B to C, can be clicked; and a refused
+    pick names what to click ("object to rotate: click a point, line, circle or polygon"),
+    not the pick kind's internal name ("figure", "mirror", "curve").
+
 ### Frozen tests changed (CLAUDE.md add-only rule; each commit cites this ADR)
 
-10. `packages/editor/test/machine.test.ts`, two tests whose assertions were the removed
+11. `packages/editor/test/machine.test.ts`, two tests whose assertions were the removed
     behaviour:
 
 - "mark_right only on a right angle; tangent …": the five lines asserting the
@@ -111,7 +116,7 @@ small prompt; its keys are V P I E M F, L S H J B N T, C K D, X R Z, A Q.
 No assertion is weakened: each removed one asserted the old interaction, and the new
 assertions are stronger (both objects, with exact definitions).
 
-11. `packages/editor/test/exports.test.ts`: four added lines (the `./prompt` and `./preview`
+12. `packages/editor/test/exports.test.ts`: four added lines (the `./prompt` and `./preview`
     subpaths).
 
 ## Consequences

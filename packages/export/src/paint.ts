@@ -43,7 +43,9 @@ export type ExportWarning =
       readonly char: string;
       readonly codePoint: number;
     }
-  | { readonly kind: 'colour'; readonly object: string; readonly colour: string };
+  | { readonly kind: 'colour'; readonly object: string; readonly colour: string }
+  /** A visible object whose value is undefined here: it has no position, so it is not drawn. */
+  | { readonly kind: 'undefined'; readonly object: string; readonly reason: string };
 
 /** The warning as one sentence (the UI and the `% Warning` lines show it). */
 export function warningText(w: ExportWarning): string {
@@ -51,6 +53,8 @@ export function warningText(w: ExportWarning): string {
     const code = `U+${w.codePoint.toString(16).toUpperCase().padStart(4, '0')}`;
     return `the label of ${w.object} has a character TeX cannot write (${JSON.stringify(w.char)}, ${code}): written as ?`;
   }
+  if (w.kind === 'undefined')
+    return `${w.object} is undefined in this figure (${w.reason}): not drawn`;
   return `the color ${JSON.stringify(w.colour)} of ${w.object} cannot be read: drawn in the default ink`;
 }
 
