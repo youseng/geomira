@@ -7,6 +7,10 @@
  *      every free input is replaced by a uniform value mod p (the rung tests the algebraic
  *      identity, independent of this figure and of the hypotheses).
  *   3. NUMERIC: floats with the noise floor (three perturbations of size FLOOR_DELTA·scale).
+ *      A figure smaller than the evaluation scale (SPEC §3.1 clamps it to ≥ 1) has its claim
+ *      arguments scaled up to that scale first, and its perturbations are FLOOR_DELTA times
+ *      its own size: the claim is judged relative to the figure at every size (ADR-0027);
+ *      the figure itself is still evaluated with the kernel's context.
  * Before any rung, the float figure decides: an Undefined argument or a degenerate (or
  * ambiguous) NDG item → the claim is not true or false in this figure.
  */
@@ -18,6 +22,8 @@ import { fromNumber, rational, toNumber } from '@geomira/num/rational';
 import { uniformBigInt, type EntropySource, type Rng } from '@geomira/num/rng';
 import { FLOOR_DELTA, FLOOR_SAMPLES } from '@geomira/num/tolerance';
 import { evalContextFor } from '@geomira/kernel/context';
+import { figureDiameter } from '@geomira/kernel/figure-size';
+import { applySimilarity, similarity } from '@geomira/kernel/similarity';
 import type { Document } from '@geomira/kernel/document';
 import { evaluate } from '@geomira/kernel/evaluate';
 import type { EvalContext } from '@geomira/kernel/tool';
@@ -28,7 +34,7 @@ import { readFree, writeFree, type Assignment, type FreeInput } from './free';
 import { checkAssumption } from './hypotheses';
 import { fitsParam, formatClaimMessage, paramAt } from './kind';
 import { freeKey, type Prepared } from './prepare';
-import { truncate } from './probes';
+import { truncate, withoutProbes } from './probes';
 
 export type RungName = 'exact over Q' | 'exact mod p' | 'numeric';
 
@@ -210,6 +216,24 @@ function perturbed(prep: Prepared, doc: Document, rng: Rng, scale: number): Docu
   return writeFree(doc, out);
 }
 
+/**
+ * The factor the numeric rung scales a figure's claim arguments by before judging them: the
+ * evaluation scale over the figure's size (probes excluded) when the size is below it (SPEC
+ * §3.1's clamp to ≥ 1), so a small figure is judged as the same figure at size 1; else 1.
+ * Degenerate cases: no size (a single point, no free point) or a non-finite one → 1.
+ */
+function judgingFactor(doc: Document, ctx: EvalContext): number {
+  const d = figureDiameter(withoutProbes(doc));
+  return d !== undefined && Number.isFinite(d) && d > 0 && d < ctx.scale ? ctx.scale / d : 1;
+}
+
+/** The claim's arguments scaled by k about the origin (numbers are dimensionless: kept). */
+function scaledArgs(args: readonly Value<number>[], k: number): Value<number>[] {
+  if (k === 1) return [...args];
+  const s = similarity(false, { re: k, im: 0 }, { re: 0, im: 0 });
+  return args.map((v) => (v.kind === 'number' ? v : applySimilarity(FloatField, s, v)));
+}
+
 function numericRung(
   prep: Prepared,
   doc: Document,
@@ -217,14 +241,16 @@ function numericRung(
   args: Value<number>[],
   rng: Rng,
 ): SampleOutcome {
+  const k = judgingFactor(doc, ctx);
   const others: (Value<number>[] | Undefined)[] = [];
-  for (let k = 0; k < FLOOR_SAMPLES; k++) {
-    const p = perturbed(prep, doc, rng, ctx.scale);
+  for (let i = 0; i < FLOOR_SAMPLES; i++) {
+    const p = perturbed(prep, doc, rng, ctx.scale / k);
     const values = evaluate(truncate(p, prep.claimClosure), prep.registry, FloatField, ctx).values;
     const a = claimArgs(prep, FloatField, values);
-    others.push(Array.isArray(a) ? a : a.kind === 'undefined' ? a : undef(a.reason));
+    others.push(Array.isArray(a) ? scaledArgs(a, k) : a.kind === 'undefined' ? a : undef(a.reason));
   }
-  return fromDecision(floatDecide(prep.kind, { args, perturbed: others }, ctx), 'numeric', prep);
+  const e = { args: scaledArgs(args, k), perturbed: others };
+  return fromDecision(floatDecide(prep.kind, e, ctx), 'numeric', prep);
 }
 
 /** The outcome of the claim in one figure (a sample or the current figure). */
