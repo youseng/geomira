@@ -35,10 +35,13 @@ gmcircle gm_circumcircle(pair a, pair b, pair c) {
   pair o = gm_circumcenter(a, b, c);
   return gm_mkcircle(o, abs(a - o));
 }
-// line meets circle: {along(-), along(+)}
+// The kernel decides tangency within this band (a length, BAND times the figure scale).
+real gm_band = 8.062257748298549e-7;
+// line meets circle: {along(-), along(+)}; a gap r - |f - c| within the band: the foot, twice
 pair[] gm_lc(gmline l, gmcircle k) {
   pair f = gm_foot(k.c, l);
-  real h = sqrt(max(0, k.r^2 - abs(f - k.c)^2));
+  real e = abs(f - k.c);
+  real h = abs(k.r - e) <= gm_band ? 0 : sqrt(max(0, k.r^2 - e^2));
   return new pair[] {f - h * unit(l.d), f + h * unit(l.d)};
 }
 // other(P): the second intersection, 2F - P (Vieta)

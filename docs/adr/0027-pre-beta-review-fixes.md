@@ -63,6 +63,16 @@ before it.
    P = (0, 25/3) only by chance) was written, and the tangent became Undefined after any drag
    of P. Now tier 1 runs the kernel's compute with other(P) in each local response and keeps
    it only when it gives a point every time. → `packages/editor/test/choice-tangent-other.test.ts`.
+6. **The Asymptote helpers count as the kernel does.** ADR-0014's gm_lc and gm_cc always
+   returned f ± √(max(0, r² − h²)), while the kernel returns the double point when the gap is
+   within BAND·scale: a gap of 10⁻⁷·scale became an offset of about 10⁻³·scale, and the
+   exported point was 1.1·10⁻⁴ of the scale from the kernel's (EXPORT_TOL is 10⁻⁶). The file
+   now declares `real gm_band` (BAND·scale of the figure's context, from packages/num) when an
+   intersection of curves is constructive, and both helpers take h = 0 within it, with the
+   nearly-coincident exception of item 3 for circles. The golden snapshots that contain these
+   helpers (incenter-excenter, miquel, fixture-constructions; standalone and aops) change by
+   the helper text only, under this ADR. → `packages/export/test/asy-near-tangent.test.ts`,
+   the fixture `tests/fixtures/export/near-tangent.geo` (compiled and checked by tex.yml).
 
 ## Consequences
 

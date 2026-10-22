@@ -22,12 +22,17 @@ gmcircle gm_circumcircle(pair a, pair b, pair c) {
   pair o = gm_circumcenter(a, b, c);
   return gm_mkcircle(o, abs(a - o));
 }
-// circle meets circle: {orient(-), orient(+)}
+// The kernel decides tangency within this band (a length, BAND times the figure scale).
+real gm_band = 8.062257748298549e-7;
+// circle meets circle: {orient(-), orient(+)}; a gap within the band: the double point,
+// twice, unless the circles nearly coincide (the internal gap and |r1 - r2| both within it)
 pair[] gm_cc(gmcircle a, gmcircle b) {
   pair d = b.c - a.c;
-  real s = dot(d, d);
+  real s = dot(d, d), dr = abs(a.r - b.r);
   real x = (s + a.r^2 - b.r^2) / (2 * s);
-  real h = sqrt(max(0, a.r^2 - x^2 * s));
+  bool inner = abs(sqrt(s) - dr) <= gm_band, outer = abs(a.r + b.r - sqrt(s)) <= gm_band;
+  bool touch = !(inner && dr <= gm_band) && (inner || outer);
+  real h = touch ? 0 : sqrt(max(0, a.r^2 - x^2 * s));
   pair n = (-d.y, d.x) / sqrt(s);
   return new pair[] {a.c + x * d - h * n, a.c + x * d + h * n};
 }

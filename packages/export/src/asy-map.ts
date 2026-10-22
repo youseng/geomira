@@ -193,7 +193,8 @@ function intersect(
     return p?.type === 'pair' ? call(`${prefix}_other`, 'pair', [helper], [...pair, p]) : undefined;
   }
   if ((sel.kind === 'along' && circles) || (sel.kind === 'orient' && !circles)) return undefined;
-  return selected(sel, call(prefix, 'pair', [helper], pair), bounded, arg);
+  // The candidate list counts as the kernel does, with the band (asy-helpers.ts).
+  return selected(sel, call(prefix, 'pair', [helper, 'band'], pair), bounded, arg);
 }
 
 type PointOp = 'midpoint' | 'foot' | 'circumcenter' | 'incenter' | 'centroid' | 'orthocenter';

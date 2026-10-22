@@ -48,20 +48,26 @@ gmcircle gm_incircle(pair a, pair b, pair c) {
 }
 // line meets line
 pair gm_meet(gmline l, gmline m) { return l.p + cross(m.p - l.p, m.d) / cross(l.d, m.d) * l.d; }
-// line meets circle: {along(-), along(+)}
+// The kernel decides tangency within this band (a length, BAND times the figure scale).
+real gm_band = 0.0000012;
+// line meets circle: {along(-), along(+)}; a gap r - |f - c| within the band: the foot, twice
 pair[] gm_lc(gmline l, gmcircle k) {
   pair f = gm_foot(k.c, l);
-  real h = sqrt(max(0, k.r^2 - abs(f - k.c)^2));
+  real e = abs(f - k.c);
+  real h = abs(k.r - e) <= gm_band ? 0 : sqrt(max(0, k.r^2 - e^2));
   return new pair[] {f - h * unit(l.d), f + h * unit(l.d)};
 }
 // other(P): the second intersection, 2F - P (Vieta)
 pair gm_lc_other(gmline l, gmcircle k, pair p) { return 2 * gm_foot(k.c, l) - p; }
-// circle meets circle: {orient(-), orient(+)}
+// circle meets circle: {orient(-), orient(+)}; a gap within the band: the double point,
+// twice, unless the circles nearly coincide (the internal gap and |r1 - r2| both within it)
 pair[] gm_cc(gmcircle a, gmcircle b) {
   pair d = b.c - a.c;
-  real s = dot(d, d);
+  real s = dot(d, d), dr = abs(a.r - b.r);
   real x = (s + a.r^2 - b.r^2) / (2 * s);
-  real h = sqrt(max(0, a.r^2 - x^2 * s));
+  bool inner = abs(sqrt(s) - dr) <= gm_band, outer = abs(a.r + b.r - sqrt(s)) <= gm_band;
+  bool touch = !(inner && dr <= gm_band) && (inner || outer);
+  real h = touch ? 0 : sqrt(max(0, a.r^2 - x^2 * s));
   pair n = (-d.y, d.x) / sqrt(s);
   return new pair[] {a.c + x * d - h * n, a.c + x * d + h * n};
 }
