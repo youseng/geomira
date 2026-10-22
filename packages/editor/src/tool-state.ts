@@ -10,6 +10,7 @@ export type ToolId =
   | 'point'
   | 'glider'
   | 'intersection'
+  | 'second_intersection'
   | 'midpoint'
   | 'line'
   | 'segment'
@@ -18,8 +19,13 @@ export type ToolId =
   | 'perpendicular'
   | 'perp_bisector'
   | 'bisector'
+  | 'ext_bisector'
+  | 'polar'
+  | 'radical_axis'
   | 'circle'
+  | 'circle_radius'
   | 'circle3'
+  | 'diameter_circle'
   | 'circumcircle'
   | 'incircle'
   | 'excircle'
@@ -33,6 +39,10 @@ export type ToolId =
   | 'tangent'
   | 'foot'
   | 'reflect'
+  | 'rotate'
+  | 'translate'
+  | 'homothety'
+  | 'spiral'
   | 'polygon'
   | 'mark_angle'
   | 'mark_right'
@@ -40,29 +50,29 @@ export type ToolId =
   | 'text'
   | 'measure_distance'
   | 'measure_angle'
+  | 'measure_ratio'
+  | 'measure_area'
+  | 'measure_power'
   | 'claim'
   | 'derived_layer';
 
-/**
- * A branchable call waiting for the user to click the candidate they mean (intersection of
- * two curves with two candidates, a tangent from a point outside a circle).
- */
-export interface Choosing {
-  readonly tool: 'intersect' | 'tangent_from';
-  readonly args: readonly number[];
-}
-
 export interface ToolState {
-  /** Objects picked for the active tool, in order. */
+  /** Objects picked for the active tool, in the order they were picked. */
   readonly picks: readonly number[];
-  /** Set when the tool waits for a click on one of two candidates. */
-  readonly choosing: Choosing | null;
+  /**
+   * The step each pick fills: picks[i] fills step slots[i]. A tool whose picks come in a
+   * fixed order fills 0, 1, 2, …; an order-free tool (ToolUI.anyOrder) fills the step its
+   * click fits, so a line may be picked before the point (ADR-0024).
+   */
+  readonly slots: readonly number[];
   /** The claim kind of the claim tool (a CLAIM_KINDS name). */
   readonly claimKind: string;
+  /** The text of the number a tool asks for (rotate's angle, homothety's ratio, a radius). */
+  readonly value: string;
 }
 
 export const DEFAULT_CLAIM_KIND = 'collinear';
 
-export function idleTool(claimKind: string = DEFAULT_CLAIM_KIND): ToolState {
-  return { picks: [], choosing: null, claimKind };
+export function idleTool(claimKind: string = DEFAULT_CLAIM_KIND, value = ''): ToolState {
+  return { picks: [], slots: [], claimKind, value };
 }

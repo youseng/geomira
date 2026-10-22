@@ -228,24 +228,20 @@ describe('construction tools', () => {
     expect(defText(t, 'l_1')).toBe('tangent(C, c)');
     let u = useTool(editorOf(`${FIG}\nP = (6, 0)`), 'tangent');
     u = run(u, click(u, 6, 0), { kind: 'object', id: idOf(u, 'c') });
-    expect(u.toolState.choosing).toEqual({
-      tool: 'tangent_from',
-      args: [idOf(u, 'P'), idOf(u, 'c')],
-    });
-    u = input(u, click(u, 1.6, 3));
+    // ADR-0024: both tangents are built at once (no click chooses one), l_2 the upper one.
     expect(defText(u, 'l_1')).toMatch(/^tangent_from\(P, c, /u);
-    const v = u.values.values.get(idOf(u, 'l_1'));
+    expect(defText(u, 'l_2')).toMatch(/^tangent_from\(P, c, /u);
+    const v = u.values.values.get(idOf(u, 'l_2'));
     expect(v?.kind === 'line' && v.p.y > 0).toBe(true);
   });
 
-  it('intersection tool: one candidate at once, two wait for the click that chooses', () => {
+  it('intersection tool: one candidate at once, and both of two at once (ADR-0024)', () => {
     let s = useTool(editorOf(`${FIG}\nm = line(A, C)`), 'intersection');
     s = run(s, { kind: 'object', id: idOf(s, 'l') }, { kind: 'object', id: idOf(s, 'm') });
     expect(defText(s, 'D')).toBe('intersect(l, m)');
     s = run(s, { kind: 'object', id: idOf(s, 'l') }, { kind: 'object', id: idOf(s, 'c') });
-    expect(s.toolState.choosing?.tool).toBe('intersect');
-    refused(s, { kind: 'object', id: idOf(s, 'A') }, 'nothing to pick');
-    s = input(s, click(s, -3, 0.5));
+    // ADR-0024: every new intersection is built at once, each by the GUI choice.
+    expect(defText(s, 'F')).toBe('intersect(l, c, same_side(B, m))');
     // A point and a line of the construction decide (SPEC §7 order: before along(±)).
     expect(defText(s, 'E')).toBe('intersect(l, c, opposite_side(B, m))');
   });

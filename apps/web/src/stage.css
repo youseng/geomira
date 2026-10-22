@@ -91,6 +91,16 @@
   gap: 4px;
 }
 
+.tool-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tool-value input {
+  width: 64px;
+}
+
 .small-tb {
   height: 26px;
   padding: 0 8px;

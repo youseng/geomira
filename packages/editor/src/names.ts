@@ -14,6 +14,7 @@ export type NameKind =
   | 'polygon'
   | 'distance'
   | 'angle'
+  | 'number'
   | 'mark'
   | 'text'
   | 'transform'
@@ -25,6 +26,7 @@ const BASES: Readonly<Record<Exclude<NameKind, 'point'>, string>> = Object.freez
   polygon: 'poly',
   distance: 'd',
   angle: 'α',
+  number: 'k',
   mark: 'mk',
   text: 'txt',
   transform: 'f',

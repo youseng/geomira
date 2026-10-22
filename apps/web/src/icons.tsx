@@ -30,6 +30,12 @@ const TOOL_PARTS: Readonly<Record<ToolId, readonly ReactNode[]>> = {
     <line key="1" x1="3" y1="7" x2="21" y2="17" />,
     <circle key="2" cx="12" cy="12" r="2.4" className="icon-accent" stroke="none" />,
   ],
+  second_intersection: [
+    <circle key="0" cx="12" cy="13" r="7" />,
+    <line key="1" x1="2" y1="9.5" x2="22" y2="15" />,
+    <circle key="2" cx="5.4" cy="11.3" r="1.9" fill="currentColor" stroke="none" />,
+    <circle key="3" cx="18.6" cy="14.6" r="2.4" className="icon-accent" stroke="none" />,
+  ],
   midpoint: [
     <line key="0" x1="4" y1="18" x2="20" y2="6" />,
     <circle key="1" cx="4" cy="18" r="1.9" fill="currentColor" stroke="none" />,
@@ -79,11 +85,26 @@ const TOOL_PARTS: Readonly<Record<ToolId, readonly ReactNode[]>> = {
     <line key="1" x1="3" y1="19" x2="15" y2="5" />,
     <line key="2" x1="3" y1="19" x2="21" y2="10" strokeDasharray="2.5 2" />,
   ],
+  ext_bisector: [
+    <line key="0" x1="8" y1="19" x2="21" y2="19" />,
+    <line key="1" x1="8" y1="19" x2="15" y2="6" />,
+    <line key="2" x1="2" y1="9" x2="18" y2="21" strokeDasharray="2.5 2" />,
+  ],
   tangent: [
     <circle key="0" cx="9" cy="15" r="6" />,
     <circle key="1" cx="21" cy="4" r="1.9" fill="currentColor" stroke="none" />,
     <line key="2" x1="21" y1="4" x2="3.5" y2="11.5" />,
     <line key="3" x1="21" y1="4" x2="13.5" y2="20.5" />,
+  ],
+  polar: [
+    <circle key="0" cx="9" cy="12" r="6" />,
+    <line key="1" x1="14.5" y1="3" x2="14.5" y2="21" />,
+    <circle key="2" cx="21" cy="12" r="1.9" fill="currentColor" stroke="none" />,
+  ],
+  radical_axis: [
+    <circle key="0" cx="7" cy="12" r="5" />,
+    <circle key="1" cx="17" cy="12" r="5" />,
+    <line key="2" x1="12" y1="3" x2="12" y2="21" />,
   ],
   polygon: [
     <path key="0" d="M4 19 L20 19 L17 7 L7 5 Z" />,
@@ -97,11 +118,22 @@ const TOOL_PARTS: Readonly<Record<ToolId, readonly ReactNode[]>> = {
     <circle key="1" cx="12" cy="12" r="1.9" fill="currentColor" stroke="none" />,
     <circle key="2" cx="20" cy="12" r="1.9" fill="currentColor" stroke="none" />,
   ],
+  circle_radius: [
+    <circle key="0" cx="12" cy="12" r="8" />,
+    <circle key="1" cx="12" cy="12" r="1.9" fill="currentColor" stroke="none" />,
+    <line key="2" x1="12" y1="12" x2="17.7" y2="6.3" />,
+  ],
   circle3: [
     <circle key="0" cx="12" cy="12" r="8" />,
     <circle key="1" cx="4.4" cy="9.6" r="1.9" fill="currentColor" stroke="none" />,
     <circle key="2" cx="16" cy="5.1" r="1.9" fill="currentColor" stroke="none" />,
     <circle key="3" cx="14.1" cy="19.7" r="1.9" fill="currentColor" stroke="none" />,
+  ],
+  diameter_circle: [
+    <circle key="0" cx="12" cy="12" r="8" />,
+    <line key="1" x1="4" y1="12" x2="20" y2="12" />,
+    <circle key="2" cx="4" cy="12" r="1.9" fill="currentColor" stroke="none" />,
+    <circle key="3" cx="20" cy="12" r="1.9" fill="currentColor" stroke="none" />,
   ],
   circumcircle: [
     <circle key="0" cx="12" cy="12" r="9" />,
@@ -149,6 +181,30 @@ const TOOL_PARTS: Readonly<Record<ToolId, readonly ReactNode[]>> = {
     <circle key="2" cx="18" cy="9" r="2.4" className="icon-accent" stroke="none" />,
     <path key="3" d="M7 15 Q12 19 17 15" />,
   ],
+  rotate: [
+    <circle key="0" cx="12" cy="12" r="1.9" fill="currentColor" stroke="none" />,
+    <path key="1" d="M19 12 A7 7 0 1 0 15.5 18.1" />,
+    <path key="2" d="M15.5 18.1 L19 18.8 M15.5 18.1 L15.6 14.6" />,
+  ],
+  translate: [
+    <circle key="0" cx="5" cy="17" r="1.9" fill="currentColor" stroke="none" />,
+    <circle key="1" cx="18" cy="6" r="2.4" className="icon-accent" stroke="none" />,
+    <path key="2" d="M7 15.4 L16 7.6" />,
+    <path key="3" d="M16 7.6 L12.4 8 M16 7.6 L15.6 11.2" />,
+  ],
+  homothety: [
+    <circle key="0" cx="3" cy="19" r="1.9" fill="currentColor" stroke="none" />,
+    <line key="1" x1="3" y1="19" x2="21" y2="5" />,
+    <line key="2" x1="3" y1="19" x2="21" y2="19" />,
+    <circle key="3" cx="11" cy="13" r="1.9" fill="currentColor" stroke="none" />,
+    <circle key="4" cx="19" cy="6.6" r="2.4" className="icon-accent" stroke="none" />,
+    <circle key="5" cx="11" cy="19" r="1.9" fill="currentColor" stroke="none" />,
+    <circle key="6" cx="19" cy="19" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  spiral: [
+    <path key="0" d="M12 12 C14 10 16 13 14 15 C11 18 6 15 7 10 C8 5 15 4 18 7" />,
+    <circle key="1" cx="18" cy="7" r="2.4" className="icon-accent" stroke="none" />,
+  ],
   derived_layer: [
     <path key="0" d="M3 9 L12 4.5 L21 9 L12 13.5 Z" />,
     <path key="1" d="M3 14 L12 18.5 L21 14" />,
@@ -180,6 +236,18 @@ const TOOL_PARTS: Readonly<Record<ToolId, readonly ReactNode[]>> = {
     <line key="0" x1="4" y1="19" x2="21" y2="19" />,
     <line key="1" x1="4" y1="19" x2="15" y2="6" />,
     <path key="2" d="M13 19 A9 9 0 0 0 9.8 12.1" />,
+  ],
+  measure_ratio: [
+    <line key="0" x1="3" y1="8" x2="11" y2="8" />,
+    <line key="1" x1="13" y1="16" x2="21" y2="16" />,
+    <path key="2" d="M15 4 L9 20" />,
+  ],
+  measure_area: [<path key="0" d="M4 19 L20 19 L10 6 Z" fill="currentColor" fillOpacity=".22" />],
+  measure_power: [
+    <circle key="0" cx="14" cy="12" r="7" />,
+    <circle key="1" cx="2" cy="12" r="1.9" fill="currentColor" stroke="none" />,
+    <line key="2" x1="2" y1="12" x2="21" y2="12" />,
+    <circle key="3" cx="7" cy="12" r="2.4" className="icon-accent" stroke="none" />,
   ],
   claim: [
     <circle key="0" cx="5" cy="17" r="1.9" fill="currentColor" stroke="none" />,

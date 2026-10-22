@@ -8,10 +8,25 @@
  * intersection, with the GUI selector choice of SPEC §7), a line, a circle, a curve (line or
  * circle), a figure (point, line, circle, polygon: what a map can image), a mirror (line or
  * point), a transform (from the objects panel: maps are not drawn).
+ *
+ * Keys follow the maintainer's Geomdraw where it has one (H parallel, J perpendicular, K circle
+ * through three points, X reflect, Q distance, A angle; ADR-0024); the tools it has no letter
+ * for take a Shift letter. Tools whose picks differ in kind (a point and a line, a point and a
+ * circle) take them in either order (`anyOrder`), as Geomdraw's did.
  */
 import type { ToolId } from './tool-state';
-import { call, L, P, type ToolUI } from './tool-ui';
+import { anyOrder, C, call, L, P, type ToolUI } from './tool-ui';
 import { CENTER_TOOLS, TRIANGLE_CIRCLE_TOOLS } from './tools-centers';
+import {
+  CIRCLE_RADIUS,
+  DIAMETER_CIRCLE,
+  EXT_BISECTOR,
+  MAP_TOOLS,
+  MEASURE_TOOLS,
+  POLAR,
+  RADICAL_AXIS,
+  SECOND_INTERSECTION,
+} from './tools-more';
 
 export type { Build, PickKind, ToolStep, ToolUI } from './tool-ui';
 
@@ -44,13 +59,14 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     id: 'intersection',
     label: 'Intersection',
     key: 'i',
-    help: 'Intersect two curves; with two candidates, click the one you mean.',
+    help: 'Intersect two curves: every common point that is not a point yet is created.',
     steps: [
       { pick: 'curve', prompt: 'first curve' },
       { pick: 'curve', prompt: 'second curve' },
     ],
     build: { kind: 'intersection' },
   },
+  SECOND_INTERSECTION,
   call(
     'midpoint',
     'Midpoint',
@@ -81,29 +97,33 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
   call(
     'ray',
     'Ray',
-    'r',
+    'L',
     'ray',
     'line',
     [P('start'), P('a point it passes through')],
     'The ray from a point through another.',
   ),
-  call(
-    'parallel',
-    'Parallel',
-    'a',
-    'parallel',
-    'line',
-    [P('point'), L('line')],
-    'The parallel to a line through a point.',
+  anyOrder(
+    call(
+      'parallel',
+      'Parallel',
+      'h',
+      'parallel',
+      'line',
+      [P('point'), L('line')],
+      'The parallel to a line through a point (click them in either order).',
+    ),
   ),
-  call(
-    'perpendicular',
-    'Perpendicular',
-    'k',
-    'perp',
-    'line',
-    [P('point'), L('line')],
-    'The perpendicular to a line through a point.',
+  anyOrder(
+    call(
+      'perpendicular',
+      'Perpendicular',
+      'j',
+      'perp',
+      'line',
+      [P('point'), L('line')],
+      'The perpendicular to a line through a point (click them in either order).',
+    ),
   ),
   call(
     'perp_bisector',
@@ -123,6 +143,7 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     [P('point on the first arm'), P('vertex'), P('point on the second arm')],
     'The bisector of angle ABC (at B).',
   ),
+  EXT_BISECTOR,
   call(
     'circle',
     'Circle (center, point)',
@@ -132,38 +153,45 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     [P('center'), P('point on the circle')],
     'The circle with a center through a point.',
   ),
+  CIRCLE_RADIUS,
   call(
     'circle3',
     'Circle (3 points)',
-    'o',
+    'k',
     'circle',
     'circle',
     [P('first point'), P('second point'), P('third point')],
     'The circle through three points.',
   ),
+  DIAMETER_CIRCLE,
   ...TRIANGLE_CIRCLE_TOOLS,
   ...CENTER_TOOLS,
   {
     id: 'tangent',
     label: 'Tangent',
     key: 't',
-    help: 'The tangent at a point of a circle, or from an outside point (click the one you mean).',
-    steps: [P('point'), { pick: 'circle', prompt: 'circle' }],
+    help: 'The tangent at a point of a circle, or both tangents from an outside point (click the point and the circle in either order).',
+    steps: [P('point'), C('circle')],
+    anyOrder: true,
     build: { kind: 'tangent' },
   },
-  call(
-    'foot',
-    'Foot',
-    'f',
-    'foot',
-    'point',
-    [P('point'), L('line')],
-    'The foot of the perpendicular from a point to a line.',
+  POLAR,
+  RADICAL_AXIS,
+  anyOrder(
+    call(
+      'foot',
+      'Foot',
+      'f',
+      'foot',
+      'point',
+      [P('point'), L('line')],
+      'The foot of the perpendicular from a point to a line (click them in either order).',
+    ),
   ),
   call(
     'reflect',
     'Reflect',
-    'e',
+    'x',
     'reflect',
     'point',
     [
@@ -172,6 +200,7 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     ],
     'The mirror image of an object in a line or a point.',
   ),
+  ...MAP_TOOLS,
   {
     id: 'polygon',
     label: 'Polygon',
@@ -184,7 +213,7 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
   call(
     'mark_angle',
     'Angle mark',
-    'q',
+    'M',
     'mark_angle',
     'mark',
     [P('point on the first arm'), P('vertex'), P('point on the second arm')],
@@ -211,7 +240,7 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
   {
     id: 'text',
     label: 'Text',
-    key: 'x',
+    key: 'T',
     help: 'A text at a point: pick the point, then type the text.',
     steps: [P('where the text goes')],
     build: { kind: 'text' },
@@ -219,7 +248,7 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
   call(
     'measure_distance',
     'Distance',
-    'd',
+    'q',
     'dist',
     'distance',
     [P('first point'), P('second point')],
@@ -228,16 +257,17 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
   call(
     'measure_angle',
     'Angle',
-    'z',
+    'a',
     'angle',
     'angle',
     [P('point on the first arm'), P('vertex'), P('point on the second arm')],
     'The angle ABC in degrees.',
   ),
+  ...MEASURE_TOOLS,
   {
     id: 'claim',
     label: 'Claim',
-    key: 'h',
+    key: 'H',
     help: 'A claim of the chosen kind about the objects you pick.',
     steps: [],
     build: { kind: 'claim' },
@@ -245,7 +275,7 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
   {
     id: 'derived_layer',
     label: 'Layer from transform',
-    key: 'j',
+    key: 'J',
     help: 'A new layer holding the image of the active layer under a transformation.',
     steps: [{ pick: 'transform', prompt: 'the transformation (from the objects panel)' }],
     build: { kind: 'derivedLayer' },

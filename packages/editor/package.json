@@ -29,7 +29,8 @@
     "./panels": "./src/panels.ts",
     "./restore": "./src/restore.ts",
     "./randomize": "./src/randomize.ts",
-    "./tool-groups": "./src/tool-groups.ts"
+    "./tool-groups": "./src/tool-groups.ts",
+    "./prompt": "./src/prompt.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
