@@ -4,7 +4,9 @@
  * exactly what is drawn). Shapes are clipped in world coordinates to the visible rectangle
  * grown by MARGIN_PX (clip.ts), then mapped by the viewport, so every coordinate is finite
  * and within MARGIN_PX of the surface (law L9). A View with a viewProblem gives an empty
- * list carrying the reason.
+ * list carrying the reason. A circle or line that may pass through the view but cannot be
+ * placed within half a pixel at its zoom (placement.ts) is not drawn and is listed in
+ * `undrawable` instead (ADR-0023).
  *
  * Colours (ADR-0016 decision 20): an item's and a label's style colour is resolved through
  * the named-colour palette (palette.ts), so the canvas and every export draw the same hex.
@@ -23,8 +25,9 @@ import { clipCircle, clipLine, clipPolygon, inside, type Span } from './clip';
 import { placeLabels, type PlacedLabel } from './labels';
 import { markPaths } from './mark-paths';
 import { paletteColour } from './palette';
+import { curvePlacement } from './placement';
 import { MAX_WIDTH } from './style';
-import type { DisplayItem, Path, Primitive, Scene } from './types';
+import type { DisplayItem, Path, Primitive, Scene, Undrawable } from './types';
 import { toScreen, viewProblem, worldRect, type Rect, type Vec2, type View } from './viewport';
 
 export type { DisplayItem, Path } from './types';
@@ -36,6 +39,11 @@ export interface DisplayList {
   readonly labels: readonly PlacedLabel[];
   /** Why nothing is drawn (an invalid view), or null. */
   readonly problem: string | null;
+  /**
+   * Curves that may pass through the view but cannot be placed within PLACEMENT_PX at its
+   * zoom (placement.ts, ADR-0023): not drawn, and listed as "not drawable at this zoom".
+   */
+  readonly undrawable: readonly Undrawable[];
 }
 
 /** Shapes are clipped this far outside the surface, so no stroke or dot is cut visibly. */
@@ -134,12 +142,19 @@ function itemOf(view: View, p: Primitive, rect: Rect): DisplayItem | null {
 /** The display list of `scene` in `view` (see the module comment). */
 export function layout(scene: Scene, view: View): DisplayList {
   const problem = viewProblem(view) ?? null;
-  if (problem !== null) return { view, items: [], labels: [], problem };
+  if (problem !== null) return { view, items: [], labels: [], problem, undrawable: [] };
   const rect = worldRect(view, MARGIN_PX);
   const items: DisplayItem[] = [];
+  const undrawable: Undrawable[] = [];
   for (const p of scene.primitives) {
+    const s = p.shape;
+    const curve = s.kind === 'circle' || s.kind === 'line';
+    if (curve && curvePlacement(s, rect, view.viewport.zoom) === 'unplaceable') {
+      if (!undrawable.some((u) => u.id === p.id)) undrawable.push({ id: p.id, name: p.name });
+      continue;
+    }
     const item = itemOf(view, p, rect);
     if (item !== null) items.push(item);
   }
-  return { view, items, labels: placeLabels(scene, items, view), problem: null };
+  return { view, items, labels: placeLabels(scene, items, view), problem: null, undrawable };
 }

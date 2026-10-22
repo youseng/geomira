@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import type { Scene } from '@geomira/scene/types';
+import type { Scene, Undrawable } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
 import { Board } from './Board';
 import { CommandBar } from './CommandBar';
@@ -131,6 +131,20 @@ function useStable<A extends unknown[], R>(f: (...a: A) => R): (...a: A) => R {
   return useCallback((...a: A) => ref.current(...a), []);
 }
 
+/**
+ * The ids of the curves the board cannot place at its zoom (ADR-0023), kept as the same array
+ * while they do not change, so the memoised panels are not redrawn on every frame.
+ */
+function useUndrawable() {
+  const [ids, setIds] = useState<readonly number[]>([]);
+  const onUndrawable = useCallback((u: readonly Undrawable[]) => {
+    setIds((prev) =>
+      prev.length === u.length && u.every((x, i) => x.id === prev[i]) ? prev : u.map((x) => x.id),
+    );
+  }, []);
+  return { undrawable: ids, onUndrawable };
+}
+
 /** The page's state, effects and actions. */
 function useApp() {
   const page = usePage();
@@ -144,7 +158,7 @@ function useApp() {
   const onReady = useCallback(() => {
     setReady(true);
   }, []);
-  useStartup(store, onReady);
+  useStartup(store, page.runs, onReady);
   useAutosave(store, snap, ready);
   useFitOnOpen(store, snap.openCount, size, sceneOf);
   useInternalErrors(onInternal);
@@ -163,6 +177,7 @@ function useApp() {
   });
   return {
     ...{ page, canvasRef, commandRef, setSize, panels, dialog, setDialog, header, size },
+    ...useUndrawable(),
     onTestClaim,
     openClaims,
   };
@@ -219,9 +234,15 @@ export function App() {
           hover={state.hover}
           selection={state.selection}
           onSize={setSize}
+          onUndrawable={app.onUndrawable}
         />
         <StageTop app={app} />
-        <DevBox scene={scene} stats={header.stats} times={header.times} />
+        <DevBox
+          scene={scene}
+          undrawable={app.undrawable.length}
+          stats={header.stats}
+          times={header.times}
+        />
         <ClaimChips store={store} state={state} onOpen={app.openClaims} />
         <ZoomControls onZoom={header.props.onZoom} onFit={header.props.onFit} />
         <Status state={settled} />
@@ -232,6 +253,7 @@ export function App() {
           store={store}
           state={state}
           scene={scene}
+          undrawable={app.undrawable}
           runs={page.runs}
           tab={panels.tab}
           onTab={panels.showTab}

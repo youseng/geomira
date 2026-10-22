@@ -7,6 +7,9 @@
  *   call    = tool "(" [ arg { "," arg } ] ")"   (selectors are the trailing arguments)
  *   arg     = string | expr                      (a string only as a whole argument: ADR-0011)
  * Operators are left-associative; `-` binds tighter than `*`, which binds tighter than `+`.
+ * Nesting (parentheses, calls, negations) deeper than MAX_EXPR_DEPTH is a diagnostic, so the
+ * recursive descent never overflows the call stack (parse is total, SPEC §11.3); long
+ * operator chains are bounded when converted (build-expr.ts).
  */
 import type { ExprNode, SelectorNode } from './ast';
 import { join } from './diagnostic';
@@ -23,6 +26,7 @@ import {
   type Cursor,
 } from './cursor';
 import { selectorSyntax } from './selectors';
+import { MAX_EXPR_DEPTH } from '@geomira/kernel/limits';
 
 const ADDITIVE: Readonly<Record<string, 'add' | 'sub'>> = { '+': 'add', '-': 'sub' };
 const MULTIPLICATIVE: Readonly<Record<string, 'mul' | 'div'>> = {
@@ -31,7 +35,32 @@ const MULTIPLICATIVE: Readonly<Record<string, 'mul' | 'div'>> = {
   '/': 'div',
 };
 
+/** The diagnostic of an expression nested deeper than MAX_EXPR_DEPTH. */
+export function nestedTooDeep(): { message: string; hint: string } {
+  return {
+    message: `the expression is nested more than ${String(MAX_EXPR_DEPTH)} levels deep`,
+    hint: 'write intermediate objects (k = …, then use k)',
+  };
+}
+
+/** Runs `f` one nesting level deeper, or fails when the limit is reached. */
+function nested(c: Cursor, f: () => ExprNode | undefined): ExprNode | undefined {
+  if (c.depth >= MAX_EXPR_DEPTH) {
+    const d = nestedTooDeep();
+    fail(c, d.message, d.hint);
+    return undefined;
+  }
+  c.depth += 1;
+  const e = f();
+  c.depth -= 1;
+  return e;
+}
+
 export function parseExpr(c: Cursor): ExprNode | undefined {
+  return nested(c, () => parseSum(c));
+}
+
+function parseSum(c: Cursor): ExprNode | undefined {
   let left = parseProduct(c);
   for (;;) {
     const t = peek(c);
@@ -66,7 +95,7 @@ export function parseUnary(c: Cursor): ExprNode | undefined {
       next(c);
       return { kind: 'num', text: `-${n.text}`, span: join(t, n) };
     }
-    const operand = parseUnary(c);
+    const operand = nested(c, () => parseUnary(c));
     return operand === undefined
       ? undefined
       : { kind: 'neg', operand, span: join(t, operand.span) };

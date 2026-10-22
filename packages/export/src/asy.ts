@@ -23,19 +23,19 @@ import type { AsyDialect, AsyType } from './asy-map';
 import { planAsy, exactNum, type AsyDecl, type AsyPlan } from './asy-plan';
 import { AsyDrawer, drawingCode } from './asy-draw';
 import type { ExportFrame } from './frame';
-import { num, paintOf, uniqueWarnings, type ExportText } from './paint';
-import { unitBp, warningLines } from './tex-common';
+import { paintOf, uniqueWarnings, type ExportText } from './paint';
+import { measureText, unitBp, warningLines } from './tex-common';
 
 export interface AsyExport extends ExportText {
   readonly plan: AsyPlan;
 }
 
 function header(f: ExportFrame, dialect: AsyDialect, d: AsyDrawer): string[] {
-  const unit = num(unitBp(f), 6);
+  const unit = measureText(unitBp(f));
   const r = worldRect(f.view, MARGIN_PX);
   const paper = paintOf(f.theme.paper, 1, f.theme, 'the paper', d.warnings).hex;
   return [
-    `// GEOMIRA export: Asymptote (${dialect}). One unit is ${unit}bp (${num(f.view.viewport.zoom, 6)} px on screen).`,
+    `// GEOMIRA export: Asymptote (${dialect}). One unit is ${unit}bp (${measureText(f.view.viewport.zoom)} px on screen).`,
     ...(dialect === 'aops'
       ? [
           '// For AoPS: uses olympiad.asy (foot, circumcenter, incenter); checked by hand, not compiled in CI.',

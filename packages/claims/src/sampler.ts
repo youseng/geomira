@@ -1,17 +1,21 @@
 /**
  * Samplers (SPEC §10.4). A sample is the user's document with its FREE inputs rewritten
  * (free.ts); images in derived layers and every other object are recomputed by evaluate.
+ * Lengths are measured in the figure's SIZE (`figureSize`): the diameter of its free points
+ * and explicit radii, as SPEC §3.1 defines the scale but without its clamp to 1, so a figure
+ * of any size is sampled as the same figure at size 1 would be (ADR-0017).
  *   - LOCAL: a random similarity z ↦ s·R·(z − c) + c + b of the free points (c their
  *     centroid, s = 2^u with |u| ≤ 1) applied to the points moved by Gaussian noise
- *     σ = 0.02·scale (so the noise is relative to the sampled figure, ADR-0015); explicit radii
+ *     σ = 0.02·size (so the noise is relative to the sampled figure, ADR-0015); explicit radii
  *     are multiplied by s; glider parameters are perturbed locally (by an arc or a length
  *     of about σ); params by 2% of their range; no mirroring. It cannot cross a
  *     configuration boundary on purpose.
- *   - GLOBAL: the same similarity with σ = 0.3·scale; gliders uniform over their range
+ *   - GLOBAL: the same similarity with σ = 0.3·size; gliders uniform over their range
  *     (circle gliders uniform in angle, then converted to (u : v)); params uniform; the
  *     sample may be MIRRORED (x ↦ −x about c, before the similarity) WITHOUT flipping any
- *     selector. Gliders named by an `in_order` hypothesis on one object are drawn sorted.
- * Every sample is rounded to a coarse rational grid (scale / 2^10 for lengths, 2^−10 for
+ *     selector. Gliders of one form named by an `in_order` hypothesis on one object (on a
+ *     line, by (u : v) or by angle) are drawn sorted.
+ * Every sample is rounded to a coarse rational grid (size / 2^10 for lengths, 2^−10 for
  * the dimensionless glider parameters, range / 2^10 for params) so that the exact rungs
  * can run on it; the same rounded document is evaluated by every rung and is the
  * counterexample document.
@@ -20,10 +24,12 @@ import { assertNever } from '@geomira/num/assert';
 import { fromInteger, rational, toNumber, ZERO, type Rational } from '@geomira/num/rational';
 import { createRng, type Rng, type Seed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
+import { figureDiameter } from '@geomira/kernel/figure-size';
 import type { Value } from '@geomira/kernel/value';
 import { GLOBAL_SIGMA, GRID_BITS, LOCAL_SIGMA, SIMILARITY_OCTAVES } from './constants';
 import { readFree, writeFree, type Assignment, type FreeInput } from './free';
 import { freeKey, type OrderedGroup, type Prepared } from './prepare';
+import { withoutProbes } from './probes';
 
 /** What the sampler reads of a prepared document (a claim's, or a figure's for Randomize). */
 export type SamplerFigure = Pick<
@@ -60,9 +66,18 @@ function centroid(prep: SamplerFigure): readonly [number, number] {
   return n === 0 ? [0, 0] : [sx / n, sy / n];
 }
 
-function similarity(rng: Rng, prep: SamplerFigure, mirrored: boolean): Similarity {
+/**
+ * The figure's size: the kernel's figureDiameter of the user's objects (probes excluded),
+ * i.e. the scale of SPEC §3.1 without its clamp to ≥ 1. Degenerate cases: no free point and
+ * no radius, or a single point → the evaluation scale (ADR-0017).
+ */
+export function figureSize(prep: SamplerFigure): number {
+  const d = figureDiameter(withoutProbes(prep.doc));
+  return d !== undefined && Number.isFinite(d) && d > 0 ? d : prep.baseCtx.scale;
+}
+
+function similarity(rng: Rng, prep: SamplerFigure, scale: number, mirrored: boolean): Similarity {
   const theta = rng.uniform(0, 2 * Math.PI);
-  const scale = prep.baseCtx.scale;
   return {
     s: 2 ** rng.uniform(-SIMILARITY_OCTAVES, SIMILARITY_OCTAVES),
     cos: Math.cos(theta),
@@ -90,6 +105,8 @@ function gridExponent(scale: number): number {
 
 interface Context {
   readonly prep: SamplerFigure;
+  /** figureSize(prep). */
+  readonly size: number;
   readonly regime: Regime;
   readonly rng: Rng;
   readonly sim: Similarity;
@@ -105,7 +122,7 @@ function gliderObject(ctx: Context, input: FreeInput): Value<number> | undefined
 function lineRange(ctx: Context, input: FreeInput, t0: number): readonly [number, number, number] {
   const l = gliderObject(ctx, input);
   const len = l?.kind === 'line' ? Math.hypot(l.d.x, l.d.y) : 0;
-  const spread = len > 0 ? ctx.prep.baseCtx.scale / len : 1;
+  const spread = len > 0 ? ctx.size / len : 1;
   const lo = l?.kind === 'line' && l.lo !== null ? l.lo : t0 - 2 * spread;
   const hi = l?.kind === 'line' && l.hi !== null ? l.hi : t0 + 2 * spread;
   return [lo, hi, spread];
@@ -121,7 +138,7 @@ function stereo(phi: number): Rational[] {
 
 function radiusOf(ctx: Context, input: FreeInput): number {
   const c = gliderObject(ctx, input);
-  return c?.kind === 'circle' ? Math.sqrt(c.r2) : ctx.prep.baseCtx.scale;
+  return c?.kind === 'circle' ? Math.sqrt(c.r2) : ctx.size;
 }
 
 function sampleInput(ctx: Context, input: FreeInput, v: readonly Rational[]): Rational[] {
@@ -142,9 +159,7 @@ function sampleInput(ctx: Context, input: FreeInput, v: readonly Rational[]): Ra
     }
     case 'line-glider': {
       const [lo, hi, spread] = lineRange(ctx, input, at(0));
-      const t = local
-        ? at(0) + (ctx.sigma / ctx.prep.baseCtx.scale) * spread * g()
-        : ctx.rng.uniform(lo, hi);
+      const t = local ? at(0) + (ctx.sigma / ctx.size) * spread * g() : ctx.rng.uniform(lo, hi);
       return [dyadic(t, tExponent(spread))];
     }
     case 'stereo': {
@@ -194,17 +209,32 @@ function addFrac(min: Rational, max: Rational, frac: Rational): Rational {
 function orderedAssignments(ctx: Context, group: OrderedGroup): Assignment[] {
   const first = group.inputs[0];
   if (first === undefined) return [];
-  if (group.form === 'stereo') {
-    const phis = group.inputs.map(() => ctx.rng.uniform(0, 2 * Math.PI)).sort((x, y) => x - y);
-    return group.inputs.map((input, i) => ({ input, values: stereo(phis[i] ?? 0) }));
+  const sorted = (lo: number, hi: number) =>
+    group.inputs.map(() => ctx.rng.uniform(lo, hi)).sort((x, y) => x - y);
+  switch (group.form) {
+    case 'stereo': {
+      const phis = sorted(0, 2 * Math.PI);
+      return group.inputs.map((input, i) => ({ input, values: stereo(phis[i] ?? 0) }));
+    }
+    case 'angle-glider': {
+      const thetas = sorted(0, 360);
+      return group.inputs.map((input, i) => ({
+        input,
+        values: [dyadic(thetas[i] ?? 0, -GRID_BITS)],
+      }));
+    }
+    case 'line-glider': {
+      const t0 = toNumber(readFree(ctx.prep.doc, first)?.[0] ?? fromInteger(0));
+      const [lo, hi, spread] = lineRange(ctx, first, t0);
+      const ts = sorted(lo, hi);
+      return group.inputs.map((input, i) => ({
+        input,
+        values: [dyadic(ts[i] ?? 0, tExponent(spread))],
+      }));
+    }
+    default:
+      return assertNever(group.form, 'ordered group');
   }
-  const t0 = toNumber(readFree(ctx.prep.doc, first)?.[0] ?? fromInteger(0));
-  const [lo, hi, spread] = lineRange(ctx, first, t0);
-  const ts = group.inputs.map(() => ctx.rng.uniform(lo, hi)).sort((x, y) => x - y);
-  return group.inputs.map((input, i) => ({
-    input,
-    values: [dyadic(ts[i] ?? 0, tExponent(spread))],
-  }));
 }
 
 /**
@@ -219,15 +249,16 @@ export function drawSample(
   mirrored: boolean,
 ): Document {
   const rng = createRng(seed);
-  const sim = similarity(rng, prep, regime === 'global' && mirrored);
-  const scale = prep.baseCtx.scale;
+  const size = figureSize(prep);
+  const sim = similarity(rng, prep, size, regime === 'global' && mirrored);
   const ctx: Context = {
     prep,
+    size,
     regime,
     rng,
     sim,
-    sigma: (regime === 'local' ? LOCAL_SIGMA : GLOBAL_SIGMA) * scale,
-    k: gridExponent(scale),
+    sigma: (regime === 'local' ? LOCAL_SIGMA : GLOBAL_SIGMA) * size,
+    k: gridExponent(size),
   };
   const out: Assignment[] = [];
   for (const input of prep.free) {

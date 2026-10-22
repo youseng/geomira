@@ -123,10 +123,14 @@ function diag(message: string, hint: string): SelectorDiagnostic {
   return { message, hint };
 }
 
-/** The checks of a branchable call whose argument kinds are known. */
+/**
+ * The checks of a branchable call whose argument kinds are known. `show` gives the call's
+ * text, formatted only when a diagnostic is reported (formatting every nested call eagerly
+ * made the language's checks cubic in the nesting depth, Run 10 audit).
+ */
 function branchChecks(
   e: CallExpr,
-  text: string,
+  show: () => string,
   shapes: readonly BranchShape[],
 ): SelectorDiagnostic[] {
   const out: SelectorDiagnostic[] = [];
@@ -135,7 +139,7 @@ function branchChecks(
     const two = shapes.filter((s) => s.candidates === 2).map((s) => s.describe);
     out.push(
       diag(
-        `${text}: ${[...new Set(two)].join(' or ')} can have two candidates and the call has no selector`,
+        `${show()}: ${[...new Set(two)].join(' or ')} can have two candidates and the call has no selector`,
         `add a selector, e.g. other(P), near(P), same_side(Q, l)${lowHint(shapes)}`,
       ),
     );
@@ -145,7 +149,7 @@ function branchChecks(
       const use = lowHint(shapes);
       out.push(
         diag(
-          `${text}: ${low}(±) does not apply to ${[...new Set(shapes.map((s) => s.describe))].join(' or ')}`,
+          `${show()}: ${low}(±) does not apply to ${[...new Set(shapes.map((s) => s.describe))].join(' or ')}`,
           use === '' ? `remove ${low}(±)` : `use${use.slice(3)} instead`,
         ),
       );
@@ -153,11 +157,11 @@ function branchChecks(
   }
   if (kinds.includes('other') && !shapes.some((s) => s.other)) {
     out.push(
-      diag(`${text}: other(P) does not apply: the objects meet only once`, 'remove other(P)'),
+      diag(`${show()}: other(P) does not apply: the objects meet only once`, 'remove other(P)'),
     );
   }
   if (kinds.filter((k) => k === 'other').length > 1) {
-    out.push(diag(`${text}: other(·) appears more than once`, 'keep one other(P)'));
+    out.push(diag(`${show()}: other(·) appears more than once`, 'keep one other(P)'));
   }
   return out;
 }
@@ -171,13 +175,13 @@ function checkCall(
 ): SelectorDiagnostic[] {
   const tool = registry.get(e.tool);
   if (tool === undefined) return [];
-  const text = show(e);
+  const text = () => show(e);
   if (tool.candidates === undefined) {
     return e.selectors.length === 0
       ? []
       : [
           diag(
-            `${text}: ${e.tool} takes no selectors`,
+            `${text()}: ${e.tool} takes no selectors`,
             `remove the selectors: only ${choosers(registry)} choose among candidates`,
           ),
         ];
@@ -191,7 +195,7 @@ function checkCall(
   const lastKinds = last === undefined ? undefined : staticKinds(last, kindsOfRef, registry);
   const indexed = index === undefined ? [] : shapesOf(tool, index, registry);
   return lastKinds?.includes('number') === true && indexed.length > 0
-    ? [diag(`${text}: ${bareIndexMessage(e.tool, indexed)}`, 'replace the index by a selector')]
+    ? [diag(`${text()}: ${bareIndexMessage(e.tool, indexed)}`, 'replace the index by a selector')]
     : [];
 }
 

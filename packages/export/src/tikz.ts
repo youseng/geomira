@@ -8,9 +8,11 @@
  * radii, dash patterns and mark sizes are the canvas's pixels in bp. Labels are nodes
  * anchored where the canvas anchors them (labelSide), their TeX from tex-label.ts.
  *
- * Coordinates are world coordinates, except when one of them would exceed TeX's largest
- * dimension (the view far from the origin): then all are relative to the view's centre,
- * which a comment states.
+ * Coordinates are world coordinates, except where TeX's fixed-point numbers cannot hold them
+ * (|x| ≤ 16383.99, resolution 2^−16): a view less than 1 or more than 1000 world units wide is
+ * written in world units × a power of ten (the unit divided by it), so the unit stays a few bp
+ * and coordinates a few hundred; and when a coordinate or a dimension would exceed 15000 (the
+ * view far from the origin), all are relative to the view's centre. Comments state both.
  */
 import { assertNever } from '@geomira/num/assert';
 import { dashPattern } from '@geomira/scene/style';
@@ -29,6 +31,7 @@ import {
   BP_PER_PX,
   labelSide,
   labelTex,
+  measureText,
   unitBp,
   warningLines,
   world,
@@ -37,6 +40,18 @@ import {
 
 /** Coordinates are made relative to the view's centre when one exceeds this many bp. */
 const MAX_DIMENSION_BP = 15000;
+/** ... or when a coordinate NUMBER would exceed this (TeX's numbers stop at 16383.99). */
+const MAX_NUMBER = 15000;
+
+/**
+ * The power of ten the world coordinates are multiplied by: 1 for a view 1 to 1000 world
+ * units wide, else the one that makes its width 100 to 1000 units (Run 10 audit: a fitted
+ * figure 0.001 wide had x=300000bp, beyond TeX's largest dimension; one 10^9 wide x=0bp).
+ */
+function coordinateScale(f: ExportFrame): number {
+  const span = Math.max(f.view.size.width, f.view.size.height) / f.view.viewport.zoom;
+  return span >= 1 && span <= 1000 ? 1 : 10 ** (2 - Math.floor(Math.log10(span)));
+}
 
 /** One TikZ picture under construction: colours by first use, coordinates, warnings. */
 class Writer {
@@ -44,13 +59,21 @@ class Writer {
   readonly warnings: ExportWarning[] = [];
   readonly digits: number;
   readonly origin: Vec2;
+  /** Coordinates are world coordinates × scale (coordinateScale); one unit is `unit` bp. */
+  readonly scale: number;
+  readonly unit: number;
 
   constructor(readonly f: ExportFrame) {
-    this.digits = worldDigits(f);
-    const { viewport } = f.view;
-    const far =
-      (Math.abs(viewport.cx) + f.view.size.width / viewport.zoom) * unitBp(f) > MAX_DIMENSION_BP ||
-      (Math.abs(viewport.cy) + f.view.size.height / viewport.zoom) * unitBp(f) > MAX_DIMENSION_BP;
+    this.scale = coordinateScale(f);
+    this.unit = unitBp(f) / this.scale;
+    // As worldDigits: the last digit is at most 0.01 bp on paper.
+    this.digits =
+      this.scale === 1 ? worldDigits(f) : Math.max(0, Math.ceil(Math.log10(this.unit * 100)));
+    const { viewport, size } = f.view;
+    const reach = (c: number, extent: number) => Math.abs(c) + extent / viewport.zoom;
+    const far = [reach(viewport.cx, size.width), reach(viewport.cy, size.height)].some(
+      (r) => r * unitBp(f) > MAX_DIMENSION_BP || r * this.scale > MAX_NUMBER,
+    );
     this.origin = far ? { x: viewport.cx, y: viewport.cy } : { x: 0, y: 0 };
   }
 
@@ -67,12 +90,13 @@ class Writer {
   at(s: Vec2): string {
     const w = world(this.f, s);
     const d = this.digits;
-    return `(${num(w.x - this.origin.x, d)},${num(w.y - this.origin.y, d)})`;
+    const k = this.scale;
+    return `(${num((w.x - this.origin.x) * k, d)},${num((w.y - this.origin.y) * k, d)})`;
   }
 
   /** A length of `px` CSS pixels in world units. */
   len(px: number): string {
-    return num(px / this.f.view.viewport.zoom, this.digits + 1);
+    return num((px / this.f.view.viewport.zoom) * this.scale, this.digits + 1);
   }
 }
 
@@ -149,7 +173,7 @@ function labelLines(w: Writer): string[] {
 
 function picture(f: ExportFrame): { lines: string[]; warnings: ExportWarning[] } {
   const w = new Writer(f);
-  const unit = `${num(unitBp(f), 6)}bp`;
+  const unit = `${num(w.unit, 6)}bp`;
   const { width, height } = f.view.size;
   const body = [
     `\\clip ${w.at({ x: 0, y: height })} rectangle ${w.at({ x: width, y: 0 })};`,
@@ -158,8 +182,13 @@ function picture(f: ExportFrame): { lines: string[]; warnings: ExportWarning[] }
   ];
   const warnings = uniqueWarnings(w.warnings);
   const header = [
-    `% GEOMIRA export: TikZ. One unit is ${unit} (${num(f.view.viewport.zoom, 6)} px on screen).`,
+    `% GEOMIRA export: TikZ. One unit is ${unit} (${measureText(f.view.viewport.zoom)} px on screen).`,
     '% Needs \\usepackage{tikz} and \\usepackage{amssymb}.',
+    ...(w.scale === 1
+      ? []
+      : [
+          `% Coordinates are world coordinates × ${String(w.scale)} (TeX's numbers stay in range).`,
+        ]),
     ...(w.origin.x === 0 && w.origin.y === 0
       ? []
       : [

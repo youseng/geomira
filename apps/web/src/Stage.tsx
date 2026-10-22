@@ -106,16 +106,19 @@ export function NoticeLine({ notice, onClose }: { notice: Notice | null; onClose
 /** Developer readouts (Settings or ?dev=1): object counts and the frame-time measurement. */
 export function DevBox(p: {
   readonly scene: Scene;
+  /** Curves not drawable at the current zoom (ADR-0023). */
+  readonly undrawable: number;
   readonly stats: boolean;
   readonly times: FrameTimes | null;
 }) {
-  const { scene, stats, times } = p;
+  const { scene, undrawable, stats, times } = p;
   if (!stats && times === null) return null;
   return (
     <div className="devbox">
       {stats && (
         <p data-testid="object-counts">
-          {scene.primitives.length} drawn · {scene.unavailable.length} undefined
+          {scene.primitives.length} drawn · {scene.unavailable.length} undefined · {undrawable} not
+          drawable at this zoom
         </p>
       )}
       {times !== null && (

@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useRef, type RefObject } from 'react';
 import type { EditorState } from '@geomira/editor/state';
 import { assertNever } from '@geomira/num/assert';
 import type { Scene } from '@geomira/scene/types';
@@ -7,7 +7,7 @@ import { HelpPanel } from './panels/HelpPanel';
 import { LayersPanel } from './panels/LayersPanel';
 import { ObjectsPanel } from './panels/ObjectsPanel';
 import { StylePanel } from './panels/StylePanel';
-import { TextPanel } from './panels/TextPanel';
+import { TextPanel, type TextDraft } from './panels/TextPanel';
 import { useSettled } from './settled';
 import type { EditorStore } from './store';
 import type { TestRuns } from './test-runs';
@@ -19,6 +19,8 @@ export interface SidePanelProps {
   readonly store: EditorStore;
   readonly state: EditorState;
   readonly scene: Scene;
+  /** Ids of the curves not drawable at the current zoom (ADR-0023). */
+  readonly undrawable: readonly number[];
   readonly runs: TestRuns;
   readonly tab: Tab;
   /** Shows a tab (on a phone this also opens the drawer). */
@@ -29,17 +31,30 @@ export interface SidePanelProps {
   readonly onTestClaim: (text: string) => boolean;
 }
 
-type BodyProps = Pick<SidePanelProps, 'tab' | 'store' | 'state' | 'runs' | 'onTestClaim'> & {
+type BodyProps = Pick<
+  SidePanelProps,
+  'tab' | 'store' | 'state' | 'runs' | 'onTestClaim' | 'undrawable'
+> & {
   readonly coincident: number;
+  readonly kept: RefObject<TextDraft | null>;
 };
 
 /** The tab's panel; memoised, so a drag frame (with the settled state unchanged) skips it. */
-const Body = memo(function Body({ tab, store, state, runs, onTestClaim, coincident }: BodyProps) {
+const Body = memo(function Body({
+  tab,
+  store,
+  state,
+  runs,
+  onTestClaim,
+  coincident,
+  kept,
+  undrawable,
+}: BodyProps) {
   switch (tab) {
     case 'Text':
-      return <TextPanel store={store} state={state} />;
+      return <TextPanel store={store} state={state} kept={kept} />;
     case 'Objects':
-      return <ObjectsPanel store={store} state={state} />;
+      return <ObjectsPanel store={store} state={state} undrawable={undrawable} />;
     case 'Layers':
       return <LayersPanel store={store} state={state} coincident={coincident} />;
     case 'Claims':
@@ -57,11 +72,13 @@ const Body = memo(function Body({ tab, store, state, runs, onTestClaim, coincide
  * The panels (SPEC §15; Geomdraw's right column): Text, Objects, Layers, Claims, Style and Help
  * as tabs. On a phone the tab row sits above the tool strip and a tab opens the panel as a
  * drawer over the canvas. During a drag they show the state from before it and update at drag
- * end (settled.ts, note F of Run 9a).
+ * end (settled.ts, note F of Run 9a). The text panel's draft is kept here while another tab is
+ * shown (Run 10 audit, W4).
  */
 export function SidePanel(props: SidePanelProps) {
-  const { store, scene, runs, tab, onTab, open, onClose, onTestClaim } = props;
+  const { store, scene, runs, tab, onTab, open, onClose, onTestClaim, undrawable } = props;
   const state = useSettled(props.state);
+  const kept = useRef<TextDraft>(null);
   return (
     <aside className={open ? 'side open' : 'side'} aria-label="Figure">
       <div className="tabs" role="tablist" aria-label="Panels">
@@ -91,6 +108,8 @@ export function SidePanel(props: SidePanelProps) {
           runs={runs}
           onTestClaim={onTestClaim}
           coincident={scene.coincident.length}
+          kept={kept}
+          undrawable={undrawable}
         />
       </div>
     </aside>

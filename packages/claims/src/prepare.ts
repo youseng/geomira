@@ -32,9 +32,18 @@ export interface PreparedHypothesis {
   readonly dim: MeasureDim;
 }
 
+/** The glider forms an in_order group can have (every glider: SPEC §10.4). */
+export type OrderedForm = 'line-glider' | 'stereo' | 'angle-glider';
+
+const ORDERED_FORMS: readonly string[] = ['line-glider', 'stereo', 'angle-glider'];
+
+function isOrderedForm(kind: string): kind is OrderedForm {
+  return ORDERED_FORMS.includes(kind);
+}
+
 /** Gliders of one object named by an in_order hypothesis: sampled with sorted parameters. */
 export interface OrderedGroup {
-  readonly form: 'line-glider' | 'stereo';
+  readonly form: OrderedForm;
   readonly inputs: readonly FreeInput[];
 }
 
@@ -74,11 +83,16 @@ export function freeKey(id: number, path: readonly number[]): string {
   return `${String(id)}:${path.join('.')}`;
 }
 
-/** Probes of the first argument of every two-argument glider (to read its object's kind). */
+/**
+ * Probes of the object of every glider: on(obj, p) to read its kind (line or circle), and
+ * both forms for the samplers' local steps (a line's |d|, a circle's radius).
+ */
 export function gliderExprs(doc: Document): { key: string; expr: Expr }[] {
   return doc.objects.flatMap((o) =>
     callsOf(o.def)
-      .filter(({ call }) => call.tool === 'on' && call.args.length === 2)
+      .filter(
+        ({ call }) => call.tool === 'on' && (call.args.length === 2 || call.args.length === 3),
+      )
       .flatMap(({ call, path }) =>
         call.args[0] === undefined ? [] : [{ key: freeKey(o.id, path), expr: call.args[0] }],
       ),
@@ -96,12 +110,7 @@ export function orderedGroups(
     const pointsArgs = h.args.slice(0, -1);
     const inputs = pointsArgs.map((a) =>
       a.kind === 'ref'
-        ? free.find(
-            (x) =>
-              x.id === a.id &&
-              x.path.length === 0 &&
-              (x.kind === 'line-glider' || x.kind === 'stereo'),
-          )
+        ? free.find((x) => x.id === a.id && x.path.length === 0 && isOrderedForm(x.kind))
         : undefined,
     );
     const objs = inputs.map((x) => {
@@ -114,8 +123,9 @@ export function orderedGroups(
       (x, i) => x?.kind === first.kind && objs[i] !== undefined && exprEquals(objs[i], firstObj),
     );
     const distinct = new Set(inputs.map((x) => x?.id)).size === inputs.length;
-    if (same && distinct && (first.kind === 'line-glider' || first.kind === 'stereo')) {
-      out.push({ form: first.kind, inputs: inputs.filter((x): x is FreeInput => x !== undefined) });
+    const form = first.kind;
+    if (same && distinct && isOrderedForm(form)) {
+      out.push({ form, inputs: inputs.filter((x): x is FreeInput => x !== undefined) });
     }
   }
   return out;

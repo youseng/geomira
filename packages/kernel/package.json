@@ -16,6 +16,8 @@
     "./tool": "./src/tool.ts",
     "./registry": "./src/registry.ts",
     "./context": "./src/context.ts",
+    "./figure-size": "./src/figure-size.ts",
+    "./limits": "./src/limits.ts",
     "./evaluate": "./src/evaluate.ts",
     "./docs": "./src/docs.ts",
     "./glider": "./src/glider.ts",

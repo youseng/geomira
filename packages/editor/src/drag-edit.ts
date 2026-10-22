@@ -19,6 +19,7 @@ import {
   withinRounding,
 } from './drag';
 import { amendLast, dropLast, record } from './history';
+import { lockedDrag } from './locked';
 import { done, refuse, type EditResult } from './result';
 import { withDocument, type DragState, type EditorEnv, type EditorState } from './state';
 
@@ -33,6 +34,8 @@ function start(state: EditorState, id: number): EditResult {
   if (state.drag !== null) return refuse(state, 'a drag is already in progress');
   const base = dragBase(state.doc, id, state.values);
   if (typeof base === 'string') return refuse(state, base);
+  const locked = lockedDrag(state.doc, [id, base]);
+  if (locked !== undefined) return refuse(state, locked);
   const drag: DragState = { id, base, before: state.doc, moved: false };
   return done({ ...state, drag });
 }

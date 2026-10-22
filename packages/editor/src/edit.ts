@@ -32,6 +32,8 @@ import {
 import { definitionProblem, dependentsProblem, styleProblem } from './checks';
 import { dragEdit, type DragEdit } from './drag-edit';
 import { record, redo, undo } from './history';
+import { textComments } from './comments';
+import { lockedChange } from './locked';
 import { textOrder } from './order';
 import { LOG_LENGTH, withDocument, type EditorEnv, type EditorState } from './state';
 import { refuse, viewportProblem, type EditResult } from './result';
@@ -227,10 +229,20 @@ function labelOf(state: EditorState, e: DocumentEdit | { kind: 'batch'; label: s
   return name === undefined ? e.kind : `${e.kind} ${name}`;
 }
 
-/** Commits a document step, in text order (order.ts), as one history entry. */
+/**
+ * A GUI edit's step, refused when it touches a locked layer (ADR-0020). The text
+ * (replaceText) is exempt: it is how a locked figure is still edited.
+ */
+function guarded(doc: Document, step: Step, text: boolean): Step {
+  if (!step.ok || text) return step;
+  const locked = lockedChange(doc, step.doc);
+  return locked === undefined ? step : { ok: false, error: locked };
+}
+
+/** Commits a document step, in text form (order.ts, comments.ts), as one history entry. */
 function commit(state: EditorState, step: Step, label: string, env: EditorEnv): EditResult {
   if (!step.ok) return refuse(state, step.error, step.diagnostics);
-  const doc = textOrder(step.doc);
+  const doc = textComments(textOrder(step.doc));
   const next = withDocument(state, doc, env);
   const history = record(state.history, label, state.doc, doc);
   const extra = {
@@ -285,7 +297,12 @@ function apply(state: EditorState, e: Edit, env: EditorEnv): EditResult {
       return state.drag === null ? historyStep(state, e.kind, env) : refuse(state, DRAGGING);
     case 'batch':
       return state.drag === null
-        ? commit(state, batchStep(state.doc, e.edits, env), labelOf(state, e), env)
+        ? commit(
+            state,
+            guarded(state.doc, batchStep(state.doc, e.edits, env), false),
+            labelOf(state, e),
+            env,
+          )
         : refuse(state, DRAGGING);
     case 'add':
     case 'remove':
@@ -311,7 +328,12 @@ function apply(state: EditorState, e: Edit, env: EditorEnv): EditResult {
     case 'replaceText':
     case 'docViewport':
       return state.drag === null
-        ? commit(state, docStep(state.doc, e, env), labelOf(state, e), env)
+        ? commit(
+            state,
+            guarded(state.doc, docStep(state.doc, e, env), e.kind === 'replaceText'),
+            labelOf(state, e),
+            env,
+          )
         : refuse(state, DRAGGING);
     default:
       return assertNever(e, 'edit');

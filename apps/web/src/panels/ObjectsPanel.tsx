@@ -7,6 +7,8 @@ import type { EditorStore } from '../store';
 export interface ObjectsPanelProps {
   readonly store: EditorStore;
   readonly state: EditorState;
+  /** Ids of the curves the canvas cannot place at its zoom (ADR-0023). */
+  readonly undrawable: readonly number[];
 }
 
 function statusText(r: ObjectRow): string {
@@ -22,7 +24,7 @@ function statusText(r: ObjectRow): string {
   }
 }
 
-function Row({ row, store, state }: { row: ObjectRow } & ObjectsPanelProps) {
+function Row({ row, store, state, undrawable }: { row: ObjectRow } & ObjectsPanelProps) {
   const selected = state.selection.includes(row.id);
   const pick = () => {
     // A tool waiting for a pick takes the object (transforms are picked here: maps are not drawn).
@@ -39,6 +41,7 @@ function Row({ row, store, state }: { row: ObjectRow } & ObjectsPanelProps) {
         {statusText(row)}
         {row.hidden ? ' · hidden' : ''}
         {row.managed ? ' · image' : ''}
+        {undrawable.includes(row.id) ? ' · not drawable at this zoom' : ''}
       </span>
     </li>
   );
@@ -47,9 +50,10 @@ function Row({ row, store, state }: { row: ObjectRow } & ObjectsPanelProps) {
 /**
  * Objects by layer (SPEC §15): every object with its definition and its value's kind; an
  * Undefined or Inexact value is listed with its reason (shown as undefined, never as a
- * wrong figure). A click selects the object, or gives it to a tool that waits for a pick.
+ * wrong figure), and a curve the canvas cannot place at its zoom as "not drawable at this
+ * zoom" (ADR-0023). A click selects the object, or gives it to a tool that waits for a pick.
  */
-export function ObjectsPanel({ store, state }: ObjectsPanelProps) {
+export function ObjectsPanel({ store, state, undrawable }: ObjectsPanelProps) {
   const groups = useMemo(() => objectsByLayer(state), [state]);
   return (
     <div className="objects">
@@ -64,7 +68,7 @@ export function ObjectsPanel({ store, state }: ObjectsPanelProps) {
           ) : (
             <ul>
               {g.rows.map((r) => (
-                <Row key={r.id} row={r} store={store} state={state} />
+                <Row key={r.id} row={r} store={store} state={state} undrawable={undrawable} />
               ))}
             </ul>
           )}

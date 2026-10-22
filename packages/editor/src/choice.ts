@@ -25,6 +25,7 @@ import type { Registry } from '@geomira/kernel/registry';
 import { formatExpr, formatSelector, type EvaluatedSelector } from '@geomira/kernel/selector';
 import type { Value, Vec } from '@geomira/kernel/value';
 import { FloatField } from '@geomira/num/float-field';
+import { requireOnCircle, requireOnLine } from '@geomira/kernel/incidence';
 import { pointsCoincide } from '@geomira/scene/coincide';
 import { arcOptions, side, sideOptions, type ChoiceCtx } from './options';
 import { firmness, localResponses, type Values } from './robust';
@@ -73,6 +74,27 @@ function at(c: ChoiceCtx, id: number): V | undefined {
   return v?.kind === 'point' ? v : undefined;
 }
 
+/**
+ * Whether point `id` stays on every curve of the call in each figure of the local responses
+ * (each free input moved by one local deviation). other(P) needs P on both curves BY
+ * CONSTRUCTION: a point there by coincidence leaves them as soon as the figure moves, and the
+ * written selector would make the result Undefined (Run 10 audit).
+ */
+function staysOn(c: ChoiceCtx, id: number, responses: readonly Values[]): boolean {
+  return responses.every((r) => {
+    const p = r.get(id);
+    if (p?.kind !== 'point') return false;
+    return c.argIds.every((a) => {
+      const curve = r.get(a);
+      if (curve?.kind === 'circle')
+        return requireOnCircle(FloatField, p, curve, c.ctx, '') === undefined;
+      if (curve?.kind === 'line')
+        return requireOnLine(FloatField, p, curve, c.ctx, '') === undefined;
+      return true;
+    });
+  });
+}
+
 function tier1(c: ChoiceCtx, pts: readonly number[]): Selector | undefined {
   const other = c.cands[1 - c.clicked];
   if (c.cands.length !== 2 || other === undefined) return undefined;
@@ -84,9 +106,11 @@ function tier1(c: ChoiceCtx, pts: readonly number[]): Selector | undefined {
     const p = at(c, id);
     return p !== undefined && pointsCoincide(p, other, c.ctx);
   });
+  if (near.length === 0) return undefined;
+  const responses = localResponses(c.doc, c.values.values, c.registry, c.ctx);
   for (const id of near.sort((a, b) => d(a) - d(b))) {
     const s: Selector = { kind: 'other', p: ref(id) };
-    if (picks(c, s)) return s;
+    if (picks(c, s) && staysOn(c, id, responses)) return s;
   }
   return undefined;
 }

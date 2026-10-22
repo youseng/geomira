@@ -25,7 +25,15 @@ export function utf8Decode(b: Uint8Array): string {
   for (let i = 0; i < b.length;) {
     const x = b[i] ?? 0;
     const n =
-      x < 0x80 ? 0 : x >= 0xf0 && x < 0xf8 ? 3 : x >= 0xe0 ? 2 : x >= 0xc2 && x < 0xe0 ? 1 : -1;
+      x < 0x80
+        ? 0
+        : x >= 0xf0 && x < 0xf8
+          ? 3
+          : x >= 0xe0 && x < 0xf0
+            ? 2
+            : x >= 0xc2 && x < 0xe0
+              ? 1
+              : -1;
     if (n < 0) {
       s += '�';
       i++;

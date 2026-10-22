@@ -18,10 +18,10 @@ import {
   type Complex,
 } from '@geomira/num/complex';
 import type { Field } from '@geomira/num/field';
-import type { ToleranceContext } from '@geomira/num/tolerance';
 import {
   undef,
   type AngleMark,
+  type Inexact,
   type Arc,
   type Circle,
   type Line,
@@ -50,20 +50,29 @@ export function transformOf<T>(s: Similarity<T>): Transform<T> {
 }
 
 /**
- * Why `s` is not an invertible similarity, or undefined when it is: the scale factor a is
- * zero when BOTH its components are zero as dimensionless quantities (F.isZero: within EPS
- * in FloatField, exact elsewhere). Mod p (p ≡ 3 mod 4), |a|² = 0 only for a = 0, so a
- * valid a is always a valid divisor. Every Transform value a tool returns passes this.
+ * Why `s` is not an invertible similarity, or undefined when it is (ADR-0019, replacing
+ * ADR-0007 decision 2's test within EPS). A map is degenerate where it is BUILT: homothety
+ * with k = 0, spiral with coincident points, a mirror without direction. Products and
+ * inverses of valid maps are valid (|a₁a₂| = |a₁||a₂| > 0), so the scale factor a itself
+ * collapses only when it is exactly 0 (a hand-built value). Degenerate cases:
+ *   - a = 0 exactly (every field) → Undefined "the map collapses the plane (scale factor 0)";
+ *   - FloatField, a ≠ 0 but |a|² not a positive finite double (|a| below about 10⁻¹⁶² or
+ *     above 10¹⁵⁴: products of many tiny or huge maps) → Inexact, since the inverse is not
+ *     representable; never "collapses".
+ * Mod p (p ≡ 3 mod 4), |a|² = 0 only for a = 0, so a valid a is always a valid divisor.
  */
 export function similarityProblem<T>(
   F: Field<T>,
   s: Similarity<T>,
-  ctx: ToleranceContext,
   tool: string,
-): Undefined | undefined {
-  return F.isZero(s.a.re, 'dimensionless', ctx) && F.isZero(s.a.im, 'dimensionless', ctx)
-    ? undef(`${tool}: the map collapses the plane (scale factor 0)`)
-    : undefined;
+): Undefined | Inexact | undefined {
+  if (F.eq(s.a.re, F.zero) && F.eq(s.a.im, F.zero))
+    return undef(`${tool}: the map collapses the plane (scale factor 0)`);
+  if (F.kind !== 'float') return undefined;
+  const n = F.toNumber(cAbs2(F, s.a));
+  return n > 0 && Number.isFinite(n)
+    ? undefined
+    : { kind: 'inexact', reason: `${tool}: the scale factor is beyond the double range` };
 }
 
 /** The image of a position: a·ẑ + b. */

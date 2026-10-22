@@ -12,11 +12,13 @@ export interface Cursor {
   /** The column after the last character of the line (for "expected … at the end"). */
   readonly end: number;
   i: number;
+  /** Nesting of the expression parser (parse-expr.ts bounds it by MAX_EXPR_DEPTH). */
+  depth: number;
   readonly diags: Diagnostic[];
 }
 
 export function cursor(tokens: readonly Token[], line: number, end: number): Cursor {
-  return { tokens, line, end, i: 0, diags: [] };
+  return { tokens, line, end, i: 0, depth: 0, diags: [] };
 }
 
 export function peek(c: Cursor, k = 0): Token | undefined {

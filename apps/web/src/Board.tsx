@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type RefObject } from 'react';
-import { layout } from '@geomira/scene/display';
-import type { Scene } from '@geomira/scene/types';
+import { layout, type DisplayList } from '@geomira/scene/display';
+import type { Scene, Undrawable } from '@geomira/scene/types';
 import { zoomViewport, type Size, type Viewport } from '@geomira/scene/viewport';
 import { Gestures } from './gestures';
 import { drawDisplay, LIGHT_THEME, type UiState } from './render';
@@ -14,6 +14,8 @@ export interface BoardProps {
   readonly hover: number | null;
   readonly selection: readonly number[];
   readonly onSize: (s: Size) => void;
+  /** The curves of the current display that cannot be placed at its zoom (ADR-0023). */
+  readonly onUndrawable: (u: readonly Undrawable[]) => void;
 }
 
 /** Wheel steps of 100 (one notch) zoom by this factor. */
@@ -70,6 +72,23 @@ function useLabelFace(): number {
   return loaded;
 }
 
+/** The display list of the scene in the view; reports its undrawable curves (ADR-0023). */
+function useDisplay(
+  scene: Scene,
+  viewport: Viewport,
+  size: Size | null,
+  onUndrawable: (u: readonly Undrawable[]) => void,
+): DisplayList | null {
+  const display = useMemo(
+    () => (size === null ? null : layout(scene, { viewport, size })),
+    [scene, viewport, size],
+  );
+  useEffect(() => {
+    if (display !== null) onUndrawable(display.undrawable);
+  }, [display, onUndrawable]);
+  return display;
+}
+
 /**
  * The drawing surface: the display list of the scene in the editor's viewport, drawn by the
  * canvas renderer (HiDPI) with hover and selection halos. Pointer input goes through
@@ -77,13 +96,10 @@ function useLabelFace(): number {
  * also written to data attributes, so end-to-end tests can aim at world coordinates.
  */
 export function Board(props: BoardProps) {
-  const { canvasRef, store, scene, viewport, hover, selection, onSize } = props;
+  const { canvasRef, store, scene, viewport, hover, selection, onSize, onUndrawable } = props;
   const gestures = useMemo(() => new Gestures(store), [store]);
   const size = useSurface(canvasRef, onSize);
-  const display = useMemo(
-    () => (size === null ? null : layout(scene, { viewport, size })),
-    [scene, viewport, size],
-  );
+  const display = useDisplay(scene, viewport, size, onUndrawable);
   const selected = useMemo(() => new Set(selection), [selection]);
   const fonts = useLabelFace();
   useEffect(() => {
@@ -106,6 +122,10 @@ export function Board(props: BoardProps) {
       data-zoom={viewport.zoom}
       onPointerDown={(e) => {
         if (display === null) return;
+        // Leave a focused field first, so its blur (the text panel applies its draft) comes
+        // before the press starts a drag, which would refuse the text (Run 10 audit).
+        const focused = document.activeElement;
+        if (focused instanceof HTMLElement && focused !== e.currentTarget) focused.blur();
         e.currentTarget.setPointerCapture(e.pointerId);
         gestures.down(e.pointerId, local(e), display);
       }}
