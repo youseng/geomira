@@ -17,8 +17,16 @@ What the run did:
 - **Samplers (note B).** The samplers were audited line by line against SPEC §10.4, and the
   statistical test of note B was added.
 - **ADRs.** Two new: [ADR-0017](adr/0017-sampler-figure-size.md) and
-  [ADR-0018](adr/0018-share-link-checksum-and-limits.md). Five design proposals (P1–P5) were
-  left for the maintainer.
+  [ADR-0018](adr/0018-share-link-checksum-and-limits.md).
+- **The maintainer's decisions, implemented in the same PR.** Each has its tests first and its
+  own ADR:
+  - P1: [ADR-0019](adr/0019-compose-never-collapses.md);
+  - P3: [ADR-0020](adr/0020-locked-layers.md);
+  - P4: [ADR-0021](adr/0021-add-only-covers-helpers.md);
+  - P5: [ADR-0022](adr/0022-nightly-on-main.md);
+  - W10: [ADR-0023](adr/0023-not-drawable-at-this-zoom.md).
+
+  P2 (the chirality of rotated lines) is left to audit 2, as decided.
 
 ## Done (each item → the test file that proves it)
 
@@ -70,7 +78,31 @@ What the run did:
     - Huge circles and label offsets under zoom: `packages/scene/test/hunt-extreme.test.ts`.
     - Derived layers through every edit: `packages/editor/test/hunt-derived.test.ts`.
     - The other items map to their tests in the report's §7.
-21. **The audit report** → `docs/audit/2026-10-22.md`.
+21. **The audit report** → `docs/audit/2026-10-22.md` (its §12 covers the decisions below).
+22. **P1: a composition of valid maps never collapses** (ADR-0019). A map is degenerate only where
+    it is built. Only an exactly zero scale factor collapses, and in floats a product beyond
+    the double range is Inexact. compose is now associative as a tool in every field.
+    → `packages/kernel/test/laws/l13-compose-collapse.test.ts` (new law, and the audit's case
+    h₁ = h₂ = homothety(O, 10⁻⁵), h₃ = homothety(O, 10⁵)), plus `helpers/degenerate-transforms.ts`
+    (compose's declared cases).
+23. **P3: locked layers** (ADR-0020). Objects in a locked layer cannot be dragged, edited or
+    removed through the GUI: tools, the palette, drag (drag-through included), Delete, the
+    objects panel. Nothing can be added to a locked layer, and a locked derived layer's rule
+    cannot change. The text panel, the command bar, undo and redo still apply. The Layers
+    panel has a "locked" checkbox.
+    → `packages/editor/test/locked-layers.test.ts`, `apps/web/e2e/flows-audit.spec.ts` (third test).
+24. **P4: the add-only guard freezes every file under test/ and e2e/ from run-10**, except
+    snapshots and generated output (ADR-0021). Existing helpers are frozen from the next tag.
+    → `scripts/check-rules/add-only-helpers.test.ts`.
+25. **P5: the nightly runs tests and incremental mutation on every push to main** (ADR-0022).
+    The schedule and the concurrency rule are kept. Other branches run the test job only, and
+    only when the nightly's configuration changes. → `scripts/nightly-scope.test.ts`. On this
+    branch's push of 015613a, the nightly's `scope` job ran the test job and skipped plan and
+    mutation (run 39736888673).
+26. **W10: curves that cannot be placed at the zoom are listed as "not drawable at this zoom"**
+    in the Objects panel and counted in the developer readout, never silently missing
+    (ADR-0023). → `packages/scene/test/placement.test.ts`, `apps/web/e2e/flows-audit.spec.ts`
+    (fourth test).
 
 ## Not done
 
@@ -78,35 +110,44 @@ What the run did:
   Both packages are above their gates (89.06% and 99.02%); note A gave priority to claims.
 - **Claims survivors.** The remaining 338 claims survivors (mostly message texts and sampler
   constants inside the Gaussian draws) are listed by file in report §3.
-- **Proposals P1–P5** (report §8) need the maintainer's decision first.
+- **P2, the chirality of rotated lines.** Left to audit 2, as the maintainer decided.
 
 ## Known bugs
 
-- **W10: a circle about 10¹⁶ view widths or more in radius is not drawn where it crosses the view.**
-  - Reproduction: `clipCircle({x: 0, y: R − 1}, R, null, [−10, 10]²)` gives a span 2 ulps wide for
-    R = 10¹⁶, and `none` for R = 10¹⁸.
-  - Why it stays: doubles cannot place the circle near the view any closer than that, so not
-    drawing it is the honest result.
-  - What is pinned: `packages/scene/test/hunt-extreme.test.ts` checks that everything stays finite
-    and near the surface.
-  - Whether to list such a circle as "not drawable at this zoom" is request R3.
 - **P2: `rotate(line, O, θ)` with a literal θ keeps its input's chirality flag** (SPEC §4). No flag
   is right for it unless θ is 0° or 180°, so a claim that depends on it cannot get
-  ORIENTATION-DEPENDENT. This is a specification gap: proposal P2.
+  ORIENTATION-DEPENDENT. This is a specification gap: proposal P2, which audit 2 will implement.
 
 ## Uncertain
 
 - No mathematical fact or contest problem was used. The 10σ configurations of note B are
   constructions whose deciding quantity is computed and differentiated numerically in the test
   itself; none is a theorem taken on trust.
-- **W10's threshold.** Is not drawing an unplaceable circle what SPEC §13 means by "Undefined is
-  shown as undefined"? The circle itself is defined.
+- **ADR-0023's threshold.** A curve is listed when its computed points may be off by more than
+  half a pixel (PLACEMENT_PX). The constant is a choice; a value between ¼ and 1 px gives the same
+  result for every case in the tests.
 
 ## Changed frozen tests
 
-None in this run. `pnpm rules`: `add-only: frozen tests compared with run-9b, 0 violation(s)`.
-Only test files were added, plus import and subpath lines in
-`packages/kernel/test/exports.test.ts`, which add `./figure-size` and `./limits` and remove nothing.
+`pnpm rules`: `add-only: frozen tests compared with run-9b, 0 violation(s)`.
+
+- **Modified under [ADR-0019](adr/0019-compose-never-collapses.md) (commit 134335d):**
+  `packages/kernel/test/laws/l1-transforms.test.ts`, 6 lines removed or reworded:
+  - "the map collapses the plane" is removed from the reasons the fuzz must reach, together with
+    the float-only special case (three lines). No document built by tools can reach it any more:
+    its tiny compositions are valid maps by decision.
+  - Two comments and the header line are reworded.
+
+  The new law l13-compose-collapse.test.ts requires the opposite, and more strongly: both
+  groupings defined and equal in every field.
+
+- **Helper (not frozen at run-9b, listed for completeness, same commit):**
+  `packages/kernel/test/helpers/degenerate-transforms.ts`. compose's first declared case is
+  renamed, and it now requires a valid map in all three fields, where it required Undefined in
+  floats. An Inexact case is added.
+- **Additions only:** `packages/kernel/test/exports.test.ts` (the `./figure-size` and `./limits`
+  subpaths), `apps/web/e2e/flows-audit.spec.ts` (new in this run) and
+  `scripts/check-rules/add-only.ts`'s scope (code, not a test).
 
 The history of every frozen line changed so far under an ADR is judged in the report's §6:
 
@@ -119,25 +160,33 @@ Each change was necessary, and none weakened a test.
 
 ## Acceptance command output
 
-### Local, 4ea4e6d (`pnpm install && pnpm verify`)
+### Local, 6622559 (`pnpm install && pnpm verify`, with the maintainer's decisions)
 
 ```
-✔ no dependency violations found (504 modules, 2822 dependencies cruised)
-ok   tolerance: 722 files scanned, 0 violation(s)
-ok   file-length: 722 files scanned, 0 violation(s)
-ok   test-count: 2306 tests, floor 2146, 0 violation(s)
-ok   disabled-tests: 722 files scanned, 0 violation(s)
+✔ no dependency violations found (509 modules, 2849 dependencies cruised)
+ok   tolerance: 736 files scanned, 0 violation(s)
+ok   file-length: 736 files scanned, 0 violation(s)
+ok   test-count: 2341 tests, floor 2306, 0 violation(s)
+ok   disabled-tests: 736 files scanned, 0 violation(s)
 ok   add-only: frozen tests compared with run-9b, 0 violation(s)
-ok   forbidden-words: 722 files scanned, 0 violation(s)
- Test Files  227 passed (227)
-      Tests  2306 passed (2306)
-Statements   : 97.02% ( 9645/9941 )
-Branches     : 91.83% ( 7831/8527 )
-Functions    : 99.45% ( 2199/2211 )
-Lines        : 98.29% ( 8031/8170 )
+ok   forbidden-words: 736 files scanned, 0 violation(s)
+ Test Files  232 passed (232)
+      Tests  2341 passed (2341)
+Statements   : 97.05% ( 9725/10020 )
+Branches     : 91.9% ( 7897/8593 )
+Functions    : 99.46% ( 2215/2227 )
+Lines        : 98.31% ( 8094/8233 )
 ```
 
-The test-count floor is now 2306 (`docs/test-count.txt`).
+The test-count floor is now 2341 (`docs/test-count.txt`). Before the decisions, the same command
+on 4ea4e6d gave 2306 tests in 227 files.
+
+### NIGHTLY=1, local, 0199115 (`NIGHTLY=1 pnpm test`: the nightly's test job, law counts at their nightly size)
+
+```
+ Test Files  232 passed (232)
+      Tests  2341 passed (2341)
+```
 
 ### Claims mutation, local incremental (`pnpm exec stryker run stryker.claims.json`, tree clean at cc94fad's claims)
 
@@ -148,18 +197,33 @@ claims mutation score: 82.40% (1583 detected, 338 undetected; target 75%, gated 
 
 ### Playwright, local (`pnpm build`, then desktop and mobile projects)
 
-60 passed. Three `scene.spec.ts` phone screenshots fail by about 1% of their pixels, with and
-without this run's changes: this container's fonts differ from CI's (Run 9b, "Notes for later
+62 passed (with the decisions: the four flows of `flows-audit.spec.ts` included). Three
+`scene.spec.ts` phone screenshots fail by about 1% of their pixels, with and without this run's
+changes: this container's fonts differ from CI's (Run 9b, "Notes for later
 runs"). CI is the reference.
 
 ### CI on GitHub
 
-| commit  | what                                              | ci                      | deploy                  | tex                     |
-| ------- | ------------------------------------------------- | ----------------------- | ----------------------- | ----------------------- |
-| e54616a | fixes through E4 (GUI choice tier 1)              | success 39730252050     | success 39730252042     | success 39730252197     |
-| 2344498 | W4, the hunt tests, the report, STATUS (all code) | **success 39732465095** | **success 39732465114** | **success 39732465158** |
+| commit  | what                                                          | ci                      | deploy                  | tex                     |
+| ------- | ------------------------------------------------------------- | ----------------------- | ----------------------- | ----------------------- |
+| e54616a | fixes through E4 (GUI choice tier 1)                          | success 39730252050     | success 39730252042     | success 39730252197     |
+| 2344498 | W4, the hunt tests, the report, STATUS (all code)             | **success 39732465095** | **success 39732465114** | **success 39732465158** |
+| 0199115 | the maintainer's decisions (ADR-0019 to ADR-0023), floor 2341 | **success 39738239134** | **success 39738239004** | **success 39738238972** |
 
-On 2344498: ci **https://github.com/youseng/geomira/actions/runs/39732465095 success**, deploy
+On 0199115, the last code commit, which includes the maintainer's decisions: ci
+**https://github.com/youseng/geomira/actions/runs/39738239134 success**, deploy
+**https://github.com/youseng/geomira/actions/runs/39738239004 success**, tex
+**https://github.com/youseng/geomira/actions/runs/39738238972 success**. The nightly on this
+branch:
+
+- run 39736888673 (015613a, the commit that changes nightly.yml): `scope` ran `test` and
+  skipped `plan` and the mutation shards. The next push cancelled the test job, as the
+  concurrency rule says.
+- run 39738239142 (0199115, no configuration change): only `scope` ran, with success.
+
+The NIGHTLY=1 suite was run locally instead (below).
+
+On 2344498 (the audit before the decisions): ci **https://github.com/youseng/geomira/actions/runs/39732465095 success**, deploy
 **https://github.com/youseng/geomira/actions/runs/39732465114 success**, tex
 **https://github.com/youseng/geomira/actions/runs/39732465158 success**. Other run URLs are
 `https://github.com/youseng/geomira/actions/runs/<id>`. On 2344498 the ci run is
@@ -179,13 +243,12 @@ report; its runs are on the PR. The nightly is not waited for.
   2. it matches `asy -f pdf …/euler-line/standalone.asy`;
   3. `\measuredangle` and `\mathrm` labels render.
      Details are in report §9.
-- **R2: decide proposals P1–P5** (report §8):
-  - a relative scale-factor test for compose;
-  - the chirality of rotated lines;
-  - the meaning of locked layers;
-  - freezing test helpers;
-  - a nightly on each merge.
-- **R3: W10.** Should an unplaceable huge circle be listed as "not drawable at this zoom"?
+- **Decided and implemented here:** P1, P3, P4, P5 and W10 (ADR-0019 to ADR-0023). P2 is left
+  for audit 2.
+- **After the merge:**
+  - the first push to main runs the nightly with mutation (ADR-0022), so its scores are those of
+    this run's code;
+  - from the `run-10` tag on, helper edits need an ADR (ADR-0021).
 - The `run-10` tag is for the maintainer to place on the merge.
 - Formatting: Prettier `--write` was run only on files written in this run, and its changes were
   reviewed (whitespace and line breaks). No `eslint --fix` or other automatic fix was run.
