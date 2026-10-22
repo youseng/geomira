@@ -110,7 +110,9 @@ measure       = segment | angle | number | expr ;
 | `name = expr [attrs]` | an object (points: `A`, `M_a`, `H'`; others: `l`, `ω`, `k2`) |
 | `claim <claim> [name=…]` | a claim (see Claims) |
 | `assume <condition>` | a hypothesis: an open condition (see Assumptions) |
-| `triangle A B C [type]` | three free points, `tri_ABC = polygon(A, B, C)` and the type's `assume` lines; types acute, scalene, obtuse_at_<vertex> |
+| `triangle A B C [type]` | three free points (or the ones that exist), `tri_ABC = polygon(A, B, C)` and the type's `assume` lines; types acute, scalene, obtuse_at_<vertex> |
+| `points A B C [attrs]` | free points at places drawn from the names (Geomdraw's notation) |
+| `X, Y = intersect(a, b)` | both branches of a two-candidate call (Geomdraw's notation, see below) |
 | `style X [attrs]` | the style of X (also of an image: `style A* [hidden]`) |
 | `label X "…"` | the label of X |
 | `@version 1` | the file version (always printed; current: 1) |
@@ -203,6 +205,59 @@ Open conditions only: equality assumptions are errors ("construct it"), and so a
 | `less` | `x < y (x, y: AB, ∠ABC, angle(…), dist(…), numbers)` | `assume AB < AC` |
 | `greater` | `x > y` | `assume ∠BAC > 30` |
 | `not_equal` | `x ≠ y`, `x != y` | `assume AB ≠ AC` |
+
+## Geomdraw's notation
+
+The notation of the maintainer's earlier Geomdraw is read too (ADR-0025). It is turned into the forms above when the text is applied, so a saved file holds only those. Examples on the figure `A = (1, 2); B = (3, 4); C = (0, 5); D = (2, 7); P = (9, 9); ω = ABC`:
+
+| written | read as |
+| --- | --- |
+| `points E F` | `E = (3.5, 1.7) · F = (-3.9, 2)` |
+| `Q = point()` | `Q = (2, -2.1)` |
+| `triangle ABC` | `tri_ABC = polygon(A, B, C)` |
+| `M = midpoint(BC)` | `M = midpoint(B, C)` |
+| `O = circumcenter(ABC)` | `O = circumcenter(A, B, C)` |
+| `H = foot(C, AB)` | `H = foot(C, line(A, B))` |
+| `X, Y = intersect(ω, AB)` | `X = intersect(ω, line(A, B), along(+)) · Y = intersect(ω, line(A, B), along(-))` |
+| `t_1, t_2 = tangents(P, ω)` | `t_1 = tangent_from(P, ω, orient(+)) · t_2 = tangent_from(P, ω, orient(-))` |
+| `l = AB @red @dashed` | `l = line(A, B) [color=red, dash=dashed]` |
+| `G = Centroid(A, B, C)` | `G = centroid(A, B, C)` |
+| `claim A, B, C collinear` | `claim collinear(A, B, C)` |
+| `claim ABCD cyclic` | `claim concyclic(A, B, C, D)` |
+| `claim AB ⟂ CD` | `claim perpendicular(line(A, B), line(C, D))` |
+| `claim AD ∥ BC` | `claim parallel(line(A, D), line(B, C))` |
+| `claim D on ω` | `claim on(D, ω)` |
+
+Style words: `@dashed`, `@dotted`, `@solid`, `@thick`, `@thin`, `@hidden`, `@nolabel`, `@noimage`, `@black`, `@red`, `@blue`, `@green`, `@orange`, `@purple`, `@brown`, `@teal`, `@gray`, `@grey`.
+
+Other names: `tangents` = `tangent_from`, `tangent_points` = `tangent_point`, `second_intersection` = `other`, `length` = `dist`, `distance` = `dist`, `slider` = `param`, `perpendicular` = `perp`.
+
+```ebnf
+(* ---- Geomdraw's notation: read, never printed (ADR-0025) ---- *)
+statement    += pointsStmt | branchesStmt ;
+pointsStmt    = ( "point" | "points" ) , pointName , { pointName } , { attr } ;
+                                    (* free points at places drawn from the names *)
+branchesStmt  = name , "," , name , "=" , call , { attr } ;
+                                    (* a two-candidate call without selectors: the first name
+                                       takes along(+) or orient(+), the second along(-) or orient(-) *)
+definition   += name , "=" , "point" , "(" , ")" , { attr } ;           (* a free point *)
+triangleStmt += "triangle" , pointName , pointName , pointName ,
+                { "acute" | "scalene" | "obtuse" | "obtuse_at_" , pointName } , { attr } ;
+                                    (* names that exist are used; "obtuse": at the first vertex *)
+primary      += run ;
+run           = pointName , pointName , { pointName } ;    (* glued: AB is line(A, B), ABC is
+                                       circle(A, B, C), ABCD… polygon(A, B, C, D, …); as an argument
+                                       a run is spread into its points where the call or the claim
+                                       takes the points and not the line, circle or polygon *)
+call         += Capitalised , "(" , [ args ] , ")" ;    (* Midpoint(…) is midpoint(…) *)
+tool         += alias ;                                     (* see "Other names" *)
+attr         += "@" , styleWord ;                           (* @red is [color=red] *)
+claim        += expr , { "," , expr } , ( "collinear" | "concyclic" | "cyclic" | "concurrent" )
+              | expr , ( "⟂" | "⊥" | "perp" | "perpendicular" | "∥" | "parallel"
+                       | "on" | "tangent" ) , expr ;
+symbol escapes += "\perp" = "⟂", "\parallel" = "∥".
+keywords: Triangle, Point, Points, Claim, Assume, Style, Label start a line as in lowercase.
+```
 
 ## Tools
 

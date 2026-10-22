@@ -24,6 +24,7 @@ import { planAsy, exactNum, type AsyDecl, type AsyPlan } from './asy-plan';
 import { AsyDrawer, drawingCode } from './asy-draw';
 import type { ExportFrame } from './frame';
 import { paintOf, uniqueWarnings, type ExportText } from './paint';
+import { undefinedWarnings } from './undefined-objects';
 import { measureText, unitBp, warningLines } from './tex-common';
 
 export interface AsyExport extends ExportText {
@@ -63,7 +64,7 @@ function build(f: ExportFrame, registry: Registry, dialect: AsyDialect) {
   const drawing = drawingCode(d);
   const pens = [...d.pens].map(([hex, name]) => `pen ${name} = rgb("${hex}");`);
   const helpers = helperClosure([...plan.decls.flatMap((x) => x.helpers), ...d.helpers]);
-  const warnings = uniqueWarnings(d.warnings);
+  const warnings = uniqueWarnings([...undefinedWarnings(f.scene), ...d.warnings]);
   const lines = [
     ...head.slice(0, 1),
     ...warningLines(warnings, '//'),

@@ -279,6 +279,16 @@ export function applyEdit(state: EditorState, e: Edit, env: EditorEnv): EditResu
 
 const DRAGGING = 'a drag is in progress: finish or cancel it first';
 
+function batch(
+  state: EditorState,
+  e: Extract<Edit, { kind: 'batch' }>,
+  env: EditorEnv,
+): EditResult {
+  if (state.drag !== null) return refuse(state, DRAGGING);
+  const step = guarded(state.doc, batchStep(state.doc, e.edits, env), false);
+  return commit(state, step, labelOf(state, e), env);
+}
+
 function apply(state: EditorState, e: Edit, env: EditorEnv): EditResult {
   switch (e.kind) {
     case 'select':
@@ -286,6 +296,7 @@ function apply(state: EditorState, e: Edit, env: EditorEnv): EditResult {
     case 'viewport':
     case 'activeLayer':
     case 'tool':
+    case 'toolValue':
       return uiEdit(state, e);
     case 'dragStart':
     case 'dragMove':
@@ -296,14 +307,7 @@ function apply(state: EditorState, e: Edit, env: EditorEnv): EditResult {
     case 'redo':
       return state.drag === null ? historyStep(state, e.kind, env) : refuse(state, DRAGGING);
     case 'batch':
-      return state.drag === null
-        ? commit(
-            state,
-            guarded(state.doc, batchStep(state.doc, e.edits, env), false),
-            labelOf(state, e),
-            env,
-          )
-        : refuse(state, DRAGGING);
+      return batch(state, e, env);
     case 'add':
     case 'remove':
     case 'rename':

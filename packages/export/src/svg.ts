@@ -14,6 +14,7 @@ import { dashPattern } from '@geomira/scene/style';
 import type { DisplayItem, Path } from '@geomira/scene/types';
 import type { Vec2 } from '@geomira/scene/viewport';
 import type { ExportFrame } from './frame';
+import { undefinedWarnings } from './undefined-objects';
 import {
   num,
   paintOf,
@@ -167,7 +168,7 @@ export function toSvg(f: ExportFrame): ExportText {
   ];
   return {
     text: lines.join('\n'),
-    warnings: uniqueWarnings(warnings),
+    warnings: uniqueWarnings([...undefinedWarnings(f.scene), ...warnings]),
     drawn: f.display.items.map((i) => i.id),
   };
 }

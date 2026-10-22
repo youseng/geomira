@@ -115,7 +115,7 @@ export function ClaimBox(p: {
       <input
         type="text"
         aria-label={p.label}
-        placeholder="Test a claim: collinear(A, B, C) · AB = CD · ∠ABC = ∠DEF"
+        placeholder="Test a claim: A, B, C collinear · ABCD cyclic · AB ⟂ CD · AB = CD"
         spellCheck={false}
         autoComplete="off"
         value={text}

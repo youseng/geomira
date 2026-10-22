@@ -154,21 +154,23 @@ function unexpectedPunct(c: Cursor, p: string): undefined {
   return undefined;
 }
 
-/** A point name; two glued point names (`AB`) are a segment, not an expression. */
+/**
+ * A point name, or a run of glued point names (ADR-0025, Geomdraw's notation): `AB` is
+ * line(A, B), `ABC` circle(A, B, C), `ABCD…` polygon(A, B, C, D, …); the builder spreads the
+ * names into a call that takes the points instead (`midpoint(AB)`, build-expr.ts).
+ */
 function parsePointName(c: Cursor): ExprNode | undefined {
   const t = next(c);
   if (t === undefined) return undefined;
-  const g = peek(c);
-  if (g?.kind === 'point' && !g.spaceBefore) {
-    fail(
-      c,
-      `"${t.text}${g.text}" is two point names`,
-      `write line(${t.text}, ${g.text}), segment(${t.text}, ${g.text}) or dist(${t.text}, ${g.text}); the notation ${t.text}${g.text} belongs in claims and assumptions`,
-      join(t, g),
-    );
-    return undefined;
+  const names: ExprNode[] = [{ kind: 'name', name: t.value, span: t }];
+  for (let g = peek(c); g?.kind === 'point' && !g.spaceBefore; g = peek(c)) {
+    next(c);
+    names.push({ kind: 'name', name: g.value, span: g });
   }
-  return { kind: 'name', name: t.value, span: t };
+  const [only] = names;
+  if (names.length === 1 && only !== undefined) return only;
+  const tool = names.length === 2 ? 'line' : names.length === 3 ? 'circle' : 'polygon';
+  return { kind: 'call', tool, args: names, selectors: [], span: since(c, t), glued: true };
 }
 
 function parseParen(c: Cursor): ExprNode | undefined {

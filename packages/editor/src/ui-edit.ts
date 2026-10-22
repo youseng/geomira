@@ -7,7 +7,7 @@ import type { Viewport } from '@geomira/kernel/document';
 import { assertNever } from '@geomira/num/assert';
 import type { EditorState } from './state';
 import { idleTool, type ToolId } from './tool-state';
-import { TOOLS } from './tools';
+import { TOOLS, toolUI } from './tools';
 import { done as ok, refuse, viewportProblem, type EditResult } from './result';
 
 export type UiEdit =
@@ -20,8 +20,13 @@ export type UiEdit =
   | { readonly kind: 'hover'; readonly id: number | null }
   | { readonly kind: 'viewport'; readonly viewport: Viewport }
   | { readonly kind: 'activeLayer'; readonly id: string }
-  /** Switches tools; the claim tool takes a claim kind. The new tool starts with no picks. */
-  | { readonly kind: 'tool'; readonly tool: ToolId; readonly claimKind?: string };
+  /**
+   * Switches tools; the claim tool takes a claim kind. The new tool starts with no picks and,
+   * when it asks for a number, that number's initial text.
+   */
+  | { readonly kind: 'tool'; readonly tool: ToolId; readonly claimKind?: string }
+  /** The text of the active tool's number (rotate's angle, …); its picks stay. */
+  | { readonly kind: 'toolValue'; readonly value: string };
 
 function selection(state: EditorState, ids: readonly number[], mode: 'replace' | 'add' | 'toggle') {
   const missing = ids.find((id) => !state.doc.objects.some((o) => o.id === id));
@@ -64,8 +69,13 @@ export function uiEdit(state: EditorState, e: UiEdit): EditResult {
     case 'tool': {
       if (!TOOLS.some((t) => t.id === e.tool)) return refuse(state, `there is no tool "${e.tool}"`);
       const kind = e.claimKind ?? state.toolState.claimKind;
-      return ok({ ...state, tool: e.tool, toolState: idleTool(kind) });
+      const value = toolUI(e.tool)?.value?.initial ?? '';
+      return ok({ ...state, tool: e.tool, toolState: idleTool(kind, value) });
     }
+    case 'toolValue':
+      return toolUI(state.tool)?.value === undefined
+        ? refuse(state, 'the active tool takes no number')
+        : ok({ ...state, toolState: { ...state.toolState, value: e.value } });
     default:
       return assertNever(e, 'UI edit');
   }

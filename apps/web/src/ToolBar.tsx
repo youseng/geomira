@@ -1,26 +1,15 @@
 import { useState } from 'react';
 import { claimToolKinds, stepsOf } from '@geomira/editor/machine';
+import { toolPrompt } from '@geomira/editor/prompt';
 import type { EditorState } from '@geomira/editor/state';
 import { keyCap, TOOL_GROUPS } from '@geomira/editor/tool-groups';
-import { toolUI } from '@geomira/editor/tools';
+import { toolUI, type ToolUI } from '@geomira/editor/tools';
 import { SrOnly, ToolIcon } from './icons';
 import type { EditorStore } from './store';
 
 export interface ToolBarProps {
   readonly store: EditorStore;
   readonly state: EditorState;
-}
-
-/** What the active tool waits for (from the tool's data). */
-function prompt(state: EditorState): string {
-  const tool = toolUI(state.tool);
-  if (tool === undefined) return '';
-  const ts = state.toolState;
-  if (ts.choosing !== null) return `${tool.label}: click the one you mean`;
-  if (tool.build.kind === 'text' && ts.picks.length > 0) return `${tool.label}: type the text`;
-  const { steps, rest } = stepsOf(tool, ts);
-  const step = steps[ts.picks.length] ?? rest;
-  return step === undefined ? `${tool.label}: ${tool.help}` : `${tool.label}: ${step.prompt}`;
 }
 
 /**
@@ -106,20 +95,45 @@ function ClaimKind({ store, state }: ToolBarProps) {
 }
 
 /**
+ * The number a tool asks for (rotate's angle, homothety's ratio, a radius), Geomdraw's prompt
+ * as a field: it can be typed before or between the picks; the editor reads it at the last.
+ */
+function ToolValueField({ store, state, tool }: ToolBarProps & { tool: ToolUI }) {
+  if (tool.value === undefined) return null;
+  return (
+    <label className="tool-value">
+      {tool.value.label}
+      <input
+        type="text"
+        inputMode="decimal"
+        size={6}
+        value={state.toolState.value}
+        onChange={(e) => {
+          store.apply({ kind: 'toolValue', value: e.target.value });
+        }}
+      />
+    </label>
+  );
+}
+
+/**
  * The active tool's controls on the canvas (top left, Geomdraw's hint box): the claim tool's
- * kind, the text tool's string, Finish and Cancel; shown only when the tool has one.
+ * kind, the text tool's string, the tool's number, Finish and Cancel; shown only when the tool
+ * has one.
  */
 export function ToolHint({ store, state }: ToolBarProps) {
   const tool = toolUI(state.tool);
   const ts = state.toolState;
   const hasRest = tool !== undefined && stepsOf(tool, ts).rest !== undefined;
   const text = tool?.build.kind === 'text' && ts.picks.length > 0;
-  const cancel = ts.picks.length > 0 || ts.choosing !== null;
-  if (state.tool !== 'claim' && !text && !hasRest && !cancel) return null;
+  const value = tool?.value !== undefined;
+  const cancel = ts.picks.length > 0;
+  if (state.tool !== 'claim' && !text && !hasRest && !cancel && !value) return null;
   return (
     <div className="tool-hint">
       {state.tool === 'claim' && <ClaimKind store={store} state={state} />}
       {text && <TextInput store={store} />}
+      {tool !== undefined && <ToolValueField store={store} state={state} tool={tool} />}
       {hasRest && (
         <button
           type="button"
@@ -150,7 +164,7 @@ export function ToolHint({ store, state }: ToolBarProps) {
 export function StatusLine({ state }: { state: EditorState }) {
   return (
     <div className="statusbar">
-      <span role="status">{prompt(state)}</span>
+      <span role="status">{toolPrompt(state)}</span>
     </div>
   );
 }

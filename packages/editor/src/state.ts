@@ -110,13 +110,12 @@ export function createEditor(doc: Document, env: EditorEnv): EditorState {
 }
 
 /**
- * The tool's picks and pending choice when every object they name still exists; else the
+ * The tool's picks when every object they name still exists; else the
  * idle tool (Run 10 audit: picks survived the undo of the point they named, so the next click
  * was refused, or bound to another object that later took the freed id).
  */
 function prunedTool(t: ToolState, ids: ReadonlySet<number>): ToolState {
-  const named = [...t.picks, ...(t.choosing?.args ?? [])];
-  return named.every((id) => ids.has(id)) ? t : idleTool(t.claimKind);
+  return t.picks.every((id) => ids.has(id)) ? t : idleTool(t.claimKind, t.value);
 }
 
 /**

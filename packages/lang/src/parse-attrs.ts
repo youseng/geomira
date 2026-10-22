@@ -1,10 +1,50 @@
 /**
  * Attributes (ADR-0009): bracket groups `[key, key=value, key=v1,v2]`; a list-valued key
  * (exclude, layers, viewport) takes the rest of its group. Directives also take bare
- * `key=value` items (`@view proof layers=main,inv`).
+ * `key=value` items (`@view proof layers=main,inv`). Statements also take Geomdraw's style
+ * words (ADR-0025): `@red`, `@dashed`, `@thick`, `@hidden`, `@nolabel`, … each one of the
+ * attributes above (`@red` is `[color=red]`).
  */
 import type { Attr, AttrValue } from './ast';
 import { describe, expect, fail, isPunct, next, peek, since, type Cursor } from './cursor';
+
+/** Geomdraw's style words: `@word` and the attribute it stands for (key, value). */
+const STYLE_WORDS: Readonly<Record<string, readonly [string, AttrValue['kind'] | null, string]>> =
+  Object.freeze({
+    dashed: ['dash', 'word', 'dashed'],
+    dotted: ['dash', 'word', 'dotted'],
+    solid: ['dash', 'word', 'solid'],
+    thick: ['width', 'number', '2.5'],
+    thin: ['width', 'number', '1'],
+    hidden: ['hidden', null, ''],
+    nolabel: ['label', 'string', ''],
+    noimage: ['noimage', null, ''],
+    ...Object.fromEntries(
+      ['black', 'red', 'blue', 'green', 'orange', 'purple', 'brown', 'teal', 'gray', 'grey'].map(
+        (w) => [w, ['color', 'word', w] as const],
+      ),
+    ),
+  });
+
+/** The words `@word` may be (for hints). */
+export const STYLE_WORD_LIST: readonly string[] = Object.freeze(Object.keys(STYLE_WORDS));
+
+function styleWord(c: Cursor): Attr | undefined {
+  const t = next(c);
+  const w = t === undefined ? undefined : STYLE_WORDS[t.value];
+  if (t === undefined || w === undefined) {
+    fail(
+      c,
+      `unexpected ${describe(t)}`,
+      `style words are @${STYLE_WORD_LIST.join(', @')}; or write [color=…]`,
+      t,
+    );
+    return undefined;
+  }
+  const [key, kind, text] = w;
+  const values = kind === null ? null : [{ text, kind, minus: false, span: t }];
+  return { key, values, span: t };
+}
 
 /** Keys whose value is a comma-separated list. */
 export const LIST_KEYS: readonly string[] = Object.freeze(['exclude', 'layers', 'viewport']);
@@ -113,6 +153,10 @@ export function parseAttrs(c: Cursor, bare: boolean): Attr[] | undefined {
       out.push(...g);
     } else if (bare && (t.kind === 'name' || t.kind === 'point')) {
       const a = item(c, false);
+      if (a === undefined) return undefined;
+      out.push(a);
+    } else if (!bare && t.kind === 'directive') {
+      const a = styleWord(c);
       if (a === undefined) return undefined;
       out.push(a);
     } else {
