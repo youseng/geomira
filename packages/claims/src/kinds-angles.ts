@@ -7,12 +7,16 @@
  *   - Undirected angles (NOT polynomial: they need |cross|, an order): angle_eq, angle_sum,
  *     angle_diff. angle(A, B, C) = α ∈ [0°, 180°] has (cos α, sin α) ∝ (u·v, |u × v|), so
  *     α + σβ = θ iff w·conj(e^{iθ}) is a positive real, w = (c₁ + i s₁)(c₂ + iσ s₂): one
- *     condition (the imaginary part) and one order item (the real part, > 0).
+ *     condition (the imaginary part) and one order item (the real part, > 0). That is
+ *     α + σβ ≡ θ mod 360°; at an end of θ's range (0° or 360° for a sum, ±180° for a
+ *     difference) the other end is the same residue, so one more order item names the end:
+ *     α = 0° at the low end (cos α > 0), α = 180° at the high end (ADR-0027).
  */
 import { inexact, isInexact, type Field, type Inexact } from '@geomira/num/field';
 import { FloatField } from '@geomira/num/float-field';
 import { cMul, cPow } from '@geomira/num/complex';
 import {
+  add,
   compare,
   div,
   formatRational,
@@ -37,6 +41,7 @@ import {
   type Algebra,
   type ClaimArgs,
   type ClaimKindSpec,
+  type OrderItem,
 } from './kind';
 import type { Ndg } from './ndg';
 
@@ -167,6 +172,32 @@ function linesTheta<T>(
   return { z: { x: vDot(F, l.d, m.d), y: vCross(F, l.d, m.d) }, w };
 }
 
+/** Which end of its range θ is, if any: there α + σβ ≡ θ mod 360° has two solutions. */
+type End = 'low' | 'high' | undefined;
+
+/** At an end of θ's range, α must be 0° (low) or 180° (high): the sign of cos α. */
+function endItem<T>(
+  F: Field<T>,
+  p1: Vec<T>,
+  end: End,
+  sigma: 1 | -1,
+  theta: Rational,
+): OrderItem<T>[] {
+  if (end === undefined) return [];
+  const other = formatRational(
+    end === 'low' ? add(theta, fromInteger(360)) : sub(theta, fromInteger(360)),
+  );
+  return [
+    {
+      value: end === 'low' ? p1.x : F.neg(p1.x),
+      norm: F.add(F.mul(p1.x, p1.x), F.mul(p1.y, p1.y)),
+      dim: 'dimensionless',
+      strict: true,
+      what: `the ${sigma === 1 ? 'sum' : 'difference'} is ${other}°, not ${formatRational(theta)}°`,
+    },
+  ];
+}
+
 /** Linear form α + σβ = θ of two undirected angles (σ = ±1). */
 function undirected<T>(
   F: Field<T>,
@@ -174,6 +205,7 @@ function undirected<T>(
   sigma: 1 | -1,
   theta: Rational,
   ctx: ToleranceContext,
+  end?: End,
 ): Algebra<T> | Undefined | Inexact {
   const pts = sixPoints(args, 0);
   if (pts === undefined) return badClaim('angle');
@@ -204,11 +236,12 @@ function undirected<T>(
         strict: true,
         what: 'the angles differ by a half turn',
       },
+      ...endItem(F, p1, end, sigma, theta),
     ],
   };
 }
 
-/** The angle of w·conj(e^{iθ}) in radians, in [0, π]. */
+/** |α + σβ − θ| in radians: not folded mod 2π, so the two ends of θ's range differ. */
 function undirectedResidual(args: ClaimArgs<number>, sigma: 1 | -1, theta: number): number {
   const pts = sixPoints(args, 0);
   if (pts === undefined) return Infinity;
@@ -218,8 +251,7 @@ function undirectedResidual(args: ClaimArgs<number>, sigma: 1 | -1, theta: numbe
     const [u, v] = [f.sub(a, b), f.sub(c, b)];
     return Math.atan2(Math.abs(f.cross(u, v)), f.dot(u, v));
   };
-  const d = ang(0) + sigma * ang(3) - (theta * Math.PI) / 180;
-  const r = Math.abs(Math.atan2(Math.sin(d), Math.cos(d)));
+  const r = Math.abs(ang(0) + sigma * ang(3) - (theta * Math.PI) / 180);
   return Number.isFinite(r) ? r : Infinity;
 }
 
@@ -246,7 +278,14 @@ function formKind(name: string, sigma: 1 | -1, lo: number, hi: number, doc: stri
     doc,
     algebra: (F, args, ctx) => {
       const theta = thetaIn(litAt(args, 6), lo, hi, name);
-      return 'kind' in theta ? theta : undirected(F, args, sigma, theta, ctx);
+      if ('kind' in theta) return theta;
+      const end: End =
+        compare(theta, fromInteger(lo)) === 0
+          ? 'low'
+          : compare(theta, fromInteger(hi)) === 0
+            ? 'high'
+            : undefined;
+      return undirected(F, args, sigma, theta, ctx, end);
     },
     residual: (args) => {
       const t = args[6];
