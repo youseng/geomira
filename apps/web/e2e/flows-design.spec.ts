@@ -74,7 +74,7 @@ test('the claim box adds the claim, opens Claims and tests it; the chip follows'
 }) => {
   await openApp(page);
   await example(page, 'euler-line');
-  await page.getByLabel('Claim to test').fill('O, G, H collinear');
+  await page.getByLabel('Claim to test').fill('O, G, H are collinear');
   await page.getByLabel('Claim to test').press('Enter');
   // Not a statement of the language: refused with the parser's reason, nothing added.
   await expect(page.getByRole('status').filter({ hasText: 'Line 1' })).toBeVisible();

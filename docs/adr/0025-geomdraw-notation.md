@@ -105,8 +105,13 @@ keywords: Triangle, Point, Points, Claim, Assume, Style, Label start a line as i
 
 ## Consequences
 
-- No frozen test changed: every form here was an error before, so no valid text changes
-  meaning, and the one frozen assertion about `x = AB` (its hint names `dist(A, B)`) holds.
+- One frozen line changes (commit citing this ADR): `apps/web/e2e/flows-design.spec.ts`
+  typed Geomdraw's `O, G, H collinear` into the claim box to show that a text the language
+  does not read is refused with the parser's reason. Decision 9 makes that text a claim, so
+  the line types `O, G, H are collinear` instead, which is still refused with the parser's
+  reason; the test's other lines, and what it checks, are unchanged. Every other form here
+  was an error before, so no other valid text changes meaning, and the frozen assertion about
+  `x = AB` (its hint names `dist(A, B)`) holds.
 - A text written with these forms is rewritten in canonical form on Apply (as the `triangle`
   sugar already was); the figure is the same.
 

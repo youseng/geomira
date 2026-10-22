@@ -76,7 +76,7 @@ export function CommandBar({ store, inputRef }: CommandBarProps) {
         ref={inputRef}
         type="text"
         aria-label="Command"
-        placeholder="Command, construction or claim — e.g.  X = midpoint(A, H)  ·  claim collinear(A, B, C)   (press /)"
+        placeholder="Command, construction or claim — e.g.  points A B C  ·  M = midpoint(BC)  ·  claim AB ⟂ CD   (press /)"
         spellCheck={false}
         autoComplete="off"
         value={c.text}
