@@ -1,4 +1,5 @@
 import type { EditorState } from '@geomira/editor/state';
+import type { Layer } from '@geomira/kernel/document';
 import type { EditorStore } from '../store';
 
 export interface LayersPanelProps {
@@ -17,10 +18,31 @@ function ruleText(state: EditorState, layerId: string): string {
   return ` · image of ${source} under ${map}`;
 }
 
+/** The lock of a layer (ADR-0020): a document edit, so it is in the text and undoable. */
+function LockBox({ store, layer, index }: { store: EditorStore; layer: Layer; index: number }) {
+  return (
+    <label
+      className="layer-lock"
+      title="Locked: its objects cannot be dragged, edited or removed here (the text still can)"
+    >
+      <input
+        type="checkbox"
+        aria-label={`Lock layer ${String(index + 1)}`}
+        checked={layer.locked}
+        onChange={(e) => {
+          store.apply({ kind: 'updateLayer', id: layer.id, patch: { locked: e.target.checked } });
+        }}
+      />
+      <span aria-hidden="true">locked</span>
+    </label>
+  );
+}
+
 /**
- * Layers (SPEC §8.2, §15): visibility (a document edit: it is in the text), the active layer
- * (where new objects are built), derived layers' rules, removal of a layer, and how many images
- * are not drawn because they coincide with their sources (SPEC §13).
+ * Layers (SPEC §8.2, §15): visibility and the lock (document edits: they are in the text;
+ * a locked layer's objects cannot be dragged, edited or removed through the GUI, ADR-0020),
+ * the active layer (where new objects are built), derived layers' rules, removal of a layer,
+ * and how many images are not drawn because they coincide with their sources (SPEC §13).
  */
 export function LayersPanel({ store, state, coincident }: LayersPanelProps) {
   return (
@@ -53,6 +75,7 @@ export function LayersPanel({ store, state, coincident }: LayersPanelProps) {
               store.apply({ kind: 'activeLayer', id: l.id });
             }}
           />
+          <LockBox store={store} layer={l} index={i} />
           <span className="muted">{ruleText(state, l.id)}</span>
           {i > 0 && (
             <button

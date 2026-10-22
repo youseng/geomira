@@ -44,3 +44,29 @@ test('a text with errors survives a visit to another tab', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Revert text' })).toBeEnabled();
   expect(errors).toEqual([]);
 });
+
+/**
+ * ADR-0020 (audit proposal P3): a layer locked in the Layers panel keeps its objects from
+ * being deleted through the GUI (the refusal is shown); the text still edits them.
+ */
+test('a locked layer refuses Delete on its objects; the text still edits them', async ({
+  page,
+}) => {
+  const errors = await openApp(page);
+  for (const line of ['A = (0, 0)', 'B = (4, 0)']) await command(page, line);
+  await tab(page, 'Layers');
+  await page.getByRole('checkbox', { name: 'Lock layer 1' }).check();
+  await expectLines(page, '@layer main [locked]');
+  await tab(page, 'Objects');
+  await page.getByRole('button', { name: 'A', exact: true }).click();
+  await page.keyboard.press('Delete');
+  await expect(page.locator('.notice')).toContainText(
+    'A is in the locked layer main: unlock the layer to remove it',
+  );
+  await expectLines(page, 'A = (0, 0)');
+  const area = await textArea(page);
+  await area.fill((await area.inputValue()).replace('A = (0, 0)', 'A = (1, 1)'));
+  await page.getByRole('button', { name: 'Apply text' }).click();
+  await expectLines(page, 'A = (1, 1)');
+  expect(errors).toEqual([]);
+});
