@@ -17,6 +17,7 @@ import { MIN_VALID_FRACTION } from './constants';
 import type { ClaimValue } from './eval-claim';
 import { RUNG_NAMES, type RungName, type SampleOutcome } from './rungs';
 import type { Regime } from './sampler';
+import { selectorPhrase } from './verdict-notes';
 
 export type LocalKind = 'holds' | 'false' | 'mixed' | 'inconclusive';
 export type GlobalKind =
@@ -39,6 +40,8 @@ export interface NamedSelector {
   readonly selector: string;
   readonly call: string;
   readonly advice: string;
+  /** The selector is written inside the claim itself (no user object holds it). */
+  readonly inClaim?: boolean;
 }
 
 export interface Verdict {
@@ -241,7 +244,7 @@ export function globalVerdict(c: Collector, k: Common, flips: FlipSummary): Verd
     const what =
       flips.named === undefined
         ? `flipping its ${String(flips.k)} orientation-dependent selectors together repairs every failure`
-        : `${flips.named.object}'s \`${flips.named.selector}\` encodes a side; ${flips.named.advice}`;
+        : `${selectorPhrase(flips.named)} encodes a side; ${flips.named.advice}`;
     v = {
       ...base(
         'global',

@@ -13,6 +13,7 @@
 import { assertNever } from '@geomira/num/assert';
 import { RUNG_NAMES } from './rungs';
 import type { GlobalKind, LocalKind, Verdict } from './verdict';
+import { selectorPhrase } from './verdict-notes';
 
 export type VerdictTone = 'holds' | 'false' | 'mixed' | 'inconclusive' | 'info';
 
@@ -101,7 +102,7 @@ function globalBody(v: Verdict, kind: Exclude<GlobalKind, 'inconclusive'>, o: Li
       const what =
         v.named === undefined
           ? 'flipping its orientation-dependent selectors together repairs every failure'
-          : `${v.named.object}'s \`${v.named.selector}\` encodes a side; ${v.named.advice}`;
+          : `${selectorPhrase(v.named)} encodes a side; ${v.named.advice}`;
       return `Orientation-dependent (${checked(v)}: ${f} of ${of} fail and hold with the selectors flipped; ${what}${tail(notes)})`;
     }
     case 'configuration-dependent': {

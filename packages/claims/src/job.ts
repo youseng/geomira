@@ -141,7 +141,13 @@ function summary(prep: Prepared, state: FlipState): FlipSummary {
   const named: NamedSelector | undefined =
     site === undefined
       ? undefined
-      : { object: site.objectName, selector: site.text, call: site.callText, advice: advice(site) };
+      : {
+          object: site.objectName,
+          selector: site.text,
+          call: site.callText,
+          advice: advice(site),
+          ...(site.inClaim ? { inClaim: true } : {}),
+        };
   return {
     failing: state.failing,
     unrepaired: state.unrepaired,
