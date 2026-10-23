@@ -110,7 +110,9 @@ export function lexLine(src: string, line: number): LexedLine {
       c.i += 1;
       c.space = true;
     } else if (ch === '#') {
-      return { tokens: c.tokens, comment: src.slice(c.i + 1), diagnostics: c.diags };
+      // Trailing CRs are not part of the comment (a CRLF file with a stray CR; P2).
+      const comment = src.slice(c.i + 1).replace(/\r+$/u, '');
+      return { tokens: c.tokens, comment, diagnostics: c.diags };
     } else {
       lexToken(c, ch);
     }

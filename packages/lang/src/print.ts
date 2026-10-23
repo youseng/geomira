@@ -27,18 +27,24 @@ interface Out {
   readonly comments: Map<string, Comment>;
 }
 
+/** Comment lines as `#…` lines: line breaks split them, trailing CRs are dropped (P2). */
+function commentLines(l: string): string[] {
+  return l.split('\n').map((x) => `#${x.replace(/\r+$/u, '')}`);
+}
+
 function emit(out: Out, anchor: CommentAnchor | undefined, text: string): void {
   const c = anchor === undefined ? undefined : out.comments.get(anchorKey(anchor));
   if (anchor !== undefined) out.comments.delete(anchorKey(anchor));
-  for (const l of c?.lines ?? []) out.lines.push(...l.split('\n').map((x) => `#${x}`));
-  out.lines.push(c?.inline === undefined ? text : `${text}  #${c.inline.replace(/\n/gu, ' ')}`);
+  for (const l of c?.lines ?? []) out.lines.push(...commentLines(l));
+  const inline = c?.inline?.replace(/\n/gu, ' ').replace(/\r+$/u, '');
+  out.lines.push(inline === undefined ? text : `${text}  #${inline}`);
 }
 
 function emitComments(out: Out, anchor: CommentAnchor): void {
   const c = out.comments.get(anchorKey(anchor));
   out.comments.delete(anchorKey(anchor));
   for (const l of [...(c?.lines ?? []), ...(c?.inline === undefined ? [] : [c.inline])])
-    out.lines.push(...l.split('\n').map((x) => `#${x}`));
+    out.lines.push(...commentLines(l));
 }
 
 /** A word when it lexes as one lowercase name with the same value, else a quoted string. */
