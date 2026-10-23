@@ -1,5 +1,93 @@
 # STATUS
 
+## Style card and repeated constructions (maintainer request, 2026-10-23): NOT ACCEPTED (waiting for CI)
+
+Two changes the maintainer asked for after round 2, on the same branch (PR #18). Decisions:
+[ADR-0029](adr/0029-style-card-and-repeated-constructions.md).
+
+## Done (each item → the test file that proves it)
+
+1. **The Style tab is replaced by a Geomdraw-style card**: right-click (or long-press) an object
+   on the canvas, or its row in the Objects panel; colour swatches and a custom colour, point
+   size or line width, opacity, label (show + text), visible, and More (dash, z, label angle and
+   distance, noimage); the canvas previews the draft; Write to script makes one edit, Reset
+   returns to the default style. → `apps/web/test/style-draft.test.ts`, `card-place.test.ts`,
+   `gestures-hold.test.ts`, `long-press.test.ts`, `apps/web/e2e/style-popover.spec.ts`
+   (desktop and mobile), the frozen `flows-persist.spec.ts` (changed, below).
+2. **Per-object opacity** (`[opacity=0.5]`), in the language, the scene, the canvas and every
+   export; documents without it export byte-identically. → `packages/lang/test/opacity.test.ts`,
+   `packages/editor/test/style-opacity.test.ts`, `packages/scene/test/opacity.test.ts`,
+   `apps/web/test/render-opacity.test.ts`, `packages/export/test/opacity.test.ts`; fixture
+   `tests/fixtures/export/opacity.geo` for tex.yml.
+3. **No repeated constructions**: `line(B, A)` after `line(A, B)`, a circle through the same
+   three points in another order, `midpoint(B, A)`, an intersection with its curves swapped, and
+   the other symmetries of ADR-0029 item 10. GUI tools reuse the existing object and say so; the
+   command bar refuses the repeat; the text panel warns. →
+   `packages/kernel/test/construction-key.test.ts` (every symmetry: same key and same value or
+   figure), `packages/editor/test/same-construction.test.ts`,
+   `packages/lang/test/same-construction.test.ts`, `apps/web/test/same-construction-web.test.ts`.
+
+## Not done
+
+- A repeat written in the text is a warning, not an error (ADR-0029 item 13: frozen language
+  laws and an export fixture with deliberate repeats; older files must stay editable).
+- Symmetries not declared yet: `angle(A, B, C) = angle(C, B, A)`, `area` of points,
+  `other(a, b, P)`, `mark_segment`. Repeats nested inside another call are found only for
+  symmetries that keep the value (`midpoint`, centres, …), not for lines or circles in another
+  order.
+- ADR-0009's GRAMMAR comment on style keys does not list `opacity` (docs/language.md does).
+
+## Known bugs
+
+As in round 2 below (rotate by a literal angle under mirroring; selector filters on an exact
+boundary), and the low items of the list given to the maintainer: `pnpm rules` without tags,
+the unnamed "together repairs every failure" wording, free points 0.3 apart, the typed `+90`,
+multi-object delete, one history entry per keystroke in number fields (the card's sliders write
+once, at Write to script), no delete on phones, no layer opacity control, the `evaluateFrom`
+comment.
+
+## Uncertain
+
+- The card's ranges (point size 1–7, line width 0.4–5) and the 500 ms long-press are
+  judgement calls.
+- Commit 19f0bbd deletes StylePanel.tsx before 078ef00 adds the card: apps/web does not build at
+  that one commit.
+
+## Changed frozen tests
+
+Compared with `run-10b`, under [ADR-0029](adr/0029-style-card-and-repeated-constructions.md):
+`apps/web/e2e/flows-persist.spec.ts`, the Style-tab steps of one test now use the card (3 lines
+changed or removed, 2 added; commit a8f76ea). Added lines only: `packages/kernel/test/exports.test.ts`,
+`packages/lang/test/exports.test.ts`, `packages/lang/test/helpers/gen-doc.ts`,
+`packages/editor/test/helpers/fuzz-commands.ts`.
+
+## Acceptance command output
+
+### Local (`pnpm verify`)
+
+```
+✔ no dependency violations found (620 modules, 3354 dependencies cruised)
+ok   tolerance: 883 files scanned, 0 violation(s)
+ok   file-length: 883 files scanned, 0 violation(s)
+ok   test-count: 2932 tests, floor 2771, 0 violation(s)
+ok   disabled-tests: 883 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-10b, 0 violation(s)
+ok   forbidden-words: 883 files scanned, 0 violation(s)
+ Test Files  330 passed (330)
+      Tests  2932 passed (2932)
+```
+
+The test-count floor is now 2932. Playwright (the card fixer's worktree): 92 passed, 3 failed,
+the phone canvas baselines of `scene.spec.ts`, which fail the same way on the unmodified base
+in this container. CI: pending (PR #18).
+
+## Requests
+
+- Confirm the card's behaviour (draft + Write to script; closing discards) and whether a repeat
+  in the text should become an error (it would need the frozen tests above changed).
+
+---
+
 ## Pre-beta review, round 2: the medium bugs (maintainer request, 2026-10-23): NOT ACCEPTED (waiting for CI)
 
 After round 1 (below), the maintainer asked for every medium bug to be found, then for all of
