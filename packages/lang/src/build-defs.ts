@@ -1,5 +1,5 @@
 /**
- * Definitions, `triangle` and style statements. Styles from `style X` / `label X` lines are
+ * Definitions and style statements (`triangle`: build-triangle.ts). Styles from `style X` / `label X` lines are
  * collected first and applied when X is created (so they may sit anywhere, and a [noimage]
  * style is known before X's images would be made). A statement with an error is not
  * applied: its name is remembered as failed, so later uses say which line to fix.
@@ -8,18 +8,17 @@ import type { Style } from '@geomira/kernel/document';
 import { MAIN_LAYER_ID } from '@geomira/kernel/document';
 import type { Expr } from '@geomira/kernel/expr';
 import { formatExpr } from '@geomira/kernel/selector';
-import type { Attr, Condition, ExprNode, Line, NameRef, Statement } from './ast';
+import type { Attr, ExprNode, Line, NameRef, Statement } from './ast';
 import { STYLE_KEYS, byKey, namesAttr, styleOf } from './attr-values';
 import { checkCalls, convert } from './build-expr';
 import { exprEnv } from './build-env';
 import { addDefinition } from './build-objects';
 import { nameOf, type State } from './build-state';
-import { error, type Span } from './diagnostic';
+import { error } from './diagnostic';
 import { freePlaces } from './free-points';
-import { expandTriangle, polygonName, type TriangleType } from './triangle';
+import { polygonName } from './triangle';
 
 type Def = Extract<Statement, { kind: 'def' }>;
-type Tri = Extract<Statement, { kind: 'triangle' }>;
 
 /** The text of an expression with the document's names. */
 export function show(st: State): (e: Expr) => string {
@@ -142,74 +141,4 @@ export function definition(st: State, s: Def, line: number): number | undefined 
     bare && e.selectors.length === 0 ? freePlaces('point', [s.target.name])[0] : undefined;
   const expr = place === undefined ? e : freePoint(s.target, place);
   return define(st, s.target, expr, s.attrs, line);
-}
-
-function triangleType(st: State, s: Tri): { type: TriangleType; types: string[] } | undefined {
-  let t: TriangleType = { acute: false, scalene: false };
-  const types: string[] = [];
-  for (const a of s.attrs) {
-    const at = /^obtuse_at_(.+)$/u.exec(a.key)?.[1];
-    const vertex = at === undefined ? -1 : s.points.findIndex((p) => p.name === at);
-    if (a.values !== null || (a.key !== 'acute' && a.key !== 'scalene' && vertex < 0)) {
-      st.diags.push(
-        error(
-          a.span,
-          `"${a.key}" is not a triangle type`,
-          `types: acute, scalene, obtuse_at_${s.points[0]?.name ?? 'A'}`,
-        ),
-      );
-      return undefined;
-    }
-    types.push(a.key);
-    if (a.key === 'acute') t = { ...t, acute: true };
-    else if (a.key === 'scalene') t = { ...t, scalene: true };
-    else if (t.obtuse !== undefined && t.obtuse !== vertex) {
-      st.diags.push(
-        error(a.span, 'a triangle has at most one obtuse angle', 'keep one obtuse_at_…'),
-      );
-      return undefined;
-    } else t = { ...t, obtuse: vertex };
-  }
-  if (t.acute && t.obtuse !== undefined) {
-    st.diags.push(
-      error(s.span, 'an acute triangle has no obtuse angle', 'keep acute or obtuse_at_…'),
-    );
-    return undefined;
-  }
-  return { type: t, types };
-}
-
-/** Expands a triangle: its points and polygon now, its conditions returned for later. */
-export function triangle(
-  st: State,
-  s: Tri,
-  line: number,
-  poly: string,
-): { first?: number; conditions: Condition[] } {
-  const tt = triangleType(st, s);
-  if (tt === undefined) {
-    for (const p of s.points) st.failed.set(p.name, line);
-    st.failed.set(poly, line);
-    return { conditions: [] };
-  }
-  const ex = expandTriangle(s.points, tt.type, tt.types, s.span);
-  // ADR-0025: `triangle ABC` on points that exist draws their triangle; the others are made.
-  const ids = s.points.map((p, i) =>
-    st.ids.has(p.name) && (st.defLines.get(p.name) ?? line) < line
-      ? st.ids.get(p.name)
-      : define(st, p, freePoint(p, ex.points[i] ?? ['0', '0']), [], line),
-  );
-  const refs: ExprNode[] = s.points.map((p) => ({ kind: 'name', name: p.name, span: p.span }));
-  const span: Span = s.span;
-  define(
-    st,
-    { name: poly, span },
-    { kind: 'call', tool: 'polygon', args: refs, selectors: [], span },
-    [],
-    line,
-  );
-  const first = ids[0];
-  return first === undefined
-    ? { conditions: [...ex.conditions] }
-    : { first, conditions: [...ex.conditions] };
 }
