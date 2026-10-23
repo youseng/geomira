@@ -19,7 +19,7 @@ import { dashPattern } from '@geomira/scene/style';
 import type { DisplayItem, Path } from '@geomira/scene/types';
 import type { Vec2 } from '@geomira/scene/viewport';
 import type { ExportFrame } from './frame';
-import { undefinedWarnings } from './undefined-objects';
+import { missingWarnings } from './undefined-objects';
 import {
   num,
   paintOf,
@@ -181,7 +181,7 @@ function picture(f: ExportFrame): { lines: string[]; warnings: ExportWarning[] }
     ...f.display.items.flatMap((item) => itemLines(w, item)),
     ...labelLines(w),
   ];
-  const warnings = uniqueWarnings([...undefinedWarnings(f.scene), ...w.warnings]);
+  const warnings = uniqueWarnings([...missingWarnings(f), ...w.warnings]);
   const header = [
     `% GEOMIRA export: TikZ. One unit is ${unit} (${measureText(f.view.viewport.zoom)} px on screen).`,
     '% Needs \\usepackage{tikz} and \\usepackage{amssymb}.',
