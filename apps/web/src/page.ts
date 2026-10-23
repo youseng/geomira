@@ -3,7 +3,7 @@
  * (editor store, test worker host and runs), the scene of the current figure, and what the
  * header's buttons and the keyboard shortcuts do. Every change is an edit of the store.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { TriangleType } from '@geomira/claims/randomize';
 import type { DocumentEdit } from '@geomira/editor/edit';
 import { randomizeEdit } from '@geomira/editor/randomize';
@@ -256,6 +256,9 @@ export function useHeader(env: HeaderEnv) {
   // The text of the settled state: a drag frame does not print the document (note F).
   const settled = useSettled(state);
   const printed = useMemo(() => print(settled.doc), [settled.doc]);
+  // Re-render when the autosave writes the slots: "Restore previous figure" depends on them.
+  const { subscribe, getVersion } = store.autosave;
+  useSyncExternalStore(subscribe, getVersion, getVersion);
   const props: HeaderProps = {
     canUndo: state.history.past.length > 0,
     canRedo: state.history.future.length > 0,
