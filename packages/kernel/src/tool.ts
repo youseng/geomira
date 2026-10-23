@@ -47,6 +47,12 @@ export interface Signature {
    */
   readonly output?: readonly ValueKind[];
   /**
+   * The index of an argument whose kind the result has (an image has its figure's kind:
+   * reflect(X, l) and apply(T, X) preserve X). The static kinds narrow `output` to the kinds
+   * that argument can have, so the image of a line is a line, never a circle (kinds.ts).
+   */
+  readonly preserves?: number;
+  /**
    * The overload's VALUE needs a square root or a trigonometric function (√, sin, cos,
    * atan2), even of an exact argument (sqrt(9/4), rotate(O, 90)). Square roots taken only
    * to normalise a decision do not count (exact fields fall back to the exact test). Read

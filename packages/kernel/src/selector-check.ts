@@ -3,7 +3,8 @@
  * (`intersect(a, b, 2)`) and a two-candidate call without selectors PARSE errors with a
  * hint; the language (a later run) reports these diagnostics at the line and column of
  * the call. They are decided STATICALLY, from the kinds an expression can have (a
- * literal is a number, a call has its tool's outputKinds, a reference its object's), so
+ * literal is a number, a call the kinds of the overloads its arguments can resolve to, a
+ * reference its object's), so
  * a call that can have two candidates for some argument kinds (cline is a circle or a
  * line) needs a selector even when the current figure happens to give one.
  * Also reported: selectors on a tool that takes none, along(±) / orient(±) / other(P)
@@ -16,6 +17,7 @@ import type { Document } from './document';
 import type { CallExpr, Expr } from './expr';
 import { selectorExprs } from './expr';
 import type { Registry } from './registry';
+import { callKinds } from './kinds';
 import { formatExpr } from './selector';
 import type { BranchShape, ToolSpec } from './tool';
 import type { ValueKind } from './value';
@@ -30,7 +32,11 @@ export interface SelectorDiagnostic {
 /** The kinds the object `id` can have, or undefined when unknown. */
 export type KindsOfRef = (id: number) => readonly ValueKind[] | undefined;
 
-/** The kinds an expression can have, or undefined when unknown (an unknown tool). */
+/**
+ * The kinds an expression can have, or undefined when unknown (an unknown tool). A call has
+ * the kinds of the overloads its arguments can resolve to (kinds.ts: reflect(l, k) and
+ * apply(T, l) are lines), or its tool's outputKinds when no overload takes them.
+ */
 export function staticKinds(
   e: Expr,
   kindsOfRef: KindsOfRef,
@@ -43,8 +49,12 @@ export function staticKinds(
       return ['string'];
     case 'ref':
       return kindsOfRef(e.id);
-    case 'call':
-      return registry.get(e.tool)?.outputKinds;
+    case 'call': {
+      const tool = registry.get(e.tool);
+      if (tool === undefined) return undefined;
+      const args = e.args.map((a) => staticKinds(a, kindsOfRef, registry));
+      return callKinds(tool, args) ?? tool.outputKinds;
+    }
     default:
       return assertNever(e, 'expression');
   }

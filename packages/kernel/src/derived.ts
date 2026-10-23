@@ -18,8 +18,8 @@ import { applyRemoval, dependents, fail, type EditResult, type Removal } from '.
 import { call, ref, exprEquals, type Expr } from './expr';
 import { stableTopologicalOrder } from './graph';
 import type { Registry } from './registry';
-import type { Signature } from './tool';
-import { capabilityKinds, type ValueKind } from './value';
+import { callKinds } from './kinds';
+import type { ValueKind } from './value';
 
 /**
  * The kinds a map takes to the same kind: figures and, since ADR-0011, the display values
@@ -37,21 +37,10 @@ const IMAGED_KINDS: readonly ValueKind[] = [
 
 export type KindTable = ReadonlyMap<number, readonly ValueKind[] | undefined>;
 
-/** Whether a signature takes `n` arguments whose static kinds may fit its capabilities. */
-function fits(s: Signature, args: readonly (readonly ValueKind[] | undefined)[]): boolean {
-  if (args.length < s.params.length || (args.length > s.params.length && s.rest === undefined))
-    return false;
-  return args.every((k, i) => {
-    const cap = s.params[i] ?? s.rest;
-    return (
-      cap !== undefined && (k === undefined || k.some((x) => capabilityKinds(cap).includes(x)))
-    );
-  });
-}
-
 /**
  * The kinds an expression can have (undefined: unknown), narrowed to the overloads its
- * arguments can match (Signature.output): reflect(l) is a transform, reflect(A, l) a point.
+ * arguments can match (Signature.output and preserves, kinds.ts): reflect(l) is a transform,
+ * reflect(A, l) a point, reflect(l, k) and apply(T, l) lines.
  * An unknown tool, or arguments no overload can take, → unknown.
  */
 export function exprKinds(
@@ -68,10 +57,12 @@ export function exprKinds(
       return kinds.get(e.id);
     case 'call': {
       const tool = registry.get(e.tool);
-      const args = e.args.map((a) => exprKinds(a, kinds, registry));
-      const sigs = tool?.signatures.filter((s) => fits(s, args)) ?? [];
-      if (tool === undefined || sigs.length === 0) return undefined;
-      return [...new Set(sigs.flatMap((s) => s.output ?? tool.outputKinds))];
+      return tool === undefined
+        ? undefined
+        : callKinds(
+            tool,
+            e.args.map((a) => exprKinds(a, kinds, registry)),
+          );
     }
     default:
       return assertNever(e, 'expression');

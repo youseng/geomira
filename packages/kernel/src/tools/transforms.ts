@@ -144,9 +144,8 @@ const TRANSFORM_KIND: readonly ValueKind[] = ['transform'];
 
 /** An overload taking X (of capability `x`) first: its result has X's kinds. */
 function imageSignature(x: Capability, params: readonly Capability[], radical: boolean): Signature {
-  return radical
-    ? { params: [x, ...params], output: capabilityKinds(x), radical }
-    : { params: [x, ...params], output: capabilityKinds(x) };
+  const sig: Signature = { params: [x, ...params], output: capabilityKinds(x), preserves: 0 };
+  return radical ? { ...sig, radical } : sig;
 }
 
 /** A transform value that passed the validity check, or the problem. */
@@ -367,7 +366,11 @@ export const TRANSFORM_TOOLS: readonly ToolSpec[] = [
     id: 'apply',
     name: 'apply',
     family: 'transformations',
-    signatures: APPLIED.map((x) => ({ params: ['transform', x], output: capabilityKinds(x) })),
+    signatures: APPLIED.map((x) => ({
+      params: ['transform', x],
+      output: capabilityKinds(x),
+      preserves: 1,
+    })),
     outputKinds: APPLIED_KINDS,
     compute: apply,
     degenerate: [
