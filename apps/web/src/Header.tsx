@@ -215,7 +215,7 @@ function ExportMenu(p: HeaderProps) {
             onClick={p.onRestore}
             close={close}
             disabled={!p.canRestore}
-            title="The autosaved figure from before (after opening a link: your own figure)"
+            title="The autosaved figure from before (after opening a link or an example: your own figure)"
           >
             Restore previous figure
           </MenuItem>

@@ -233,6 +233,19 @@ function actions(env: HeaderEnv) {
   };
 }
 
+/**
+ * Opens example `id`: its test runs start afresh, and it is not autosaved before its first
+ * edit, so browsing examples never pushes the user's own figure out (ADR-0028). False when
+ * there is no such example.
+ */
+export function openExample(store: EditorStore, runs: { clear(): void }, id: string): boolean {
+  const e = EXAMPLES.find((x) => x.id === id);
+  if (e === undefined) return false;
+  runs.clear();
+  store.openText(e.text, 'example');
+  return true;
+}
+
 /** The header's state and actions. */
 export function useHeader(env: HeaderEnv) {
   const { store, runs, snap, ready } = env;
@@ -243,11 +256,6 @@ export function useHeader(env: HeaderEnv) {
   // The text of the settled state: a drag frame does not print the document (note F).
   const settled = useSettled(state);
   const printed = useMemo(() => print(settled.doc), [settled.doc]);
-  const open = (text: string, origin: 'file' | 'autosave') => {
-    setTimes(null);
-    runs.clear();
-    store.openText(text, origin);
-  };
   const props: HeaderProps = {
     canUndo: state.history.past.length > 0,
     canRedo: state.history.future.length > 0,
@@ -255,9 +263,7 @@ export function useHeader(env: HeaderEnv) {
     triangleType,
     stats,
     onExample: (id) => {
-      const e = EXAMPLES.find((x) => x.id === id);
-      if (e === undefined) return;
-      open(e.text, 'file');
+      if (openExample(store, runs, id)) setTimes(null);
     },
     onTriangleType: setTriangleType,
     onRandomize: () => {
@@ -268,7 +274,9 @@ export function useHeader(env: HeaderEnv) {
     onRestore: () => {
       const text = store.autosave.restore(printed);
       if (text === undefined) return;
-      open(text, 'autosave');
+      setTimes(null);
+      runs.clear();
+      store.openText(text, 'autosave');
       store.autosave.restored();
     },
     onMeasure: () => {

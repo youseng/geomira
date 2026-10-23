@@ -3,14 +3,17 @@
  * timers, these functions decide what to write. Two slots: `current` (the figure being
  * edited) and `previous` (the autosave that the current session replaced, offered as
  * "Restore previous figure").
- *   - A document opened from a link is NOT saved until its first edit (opening a link must
- *     not overwrite the user's own work).
+ *   - A document opened from a link or as one of the app's examples is NOT saved until its
+ *     first edit: opening (or browsing) them must not overwrite the user's own work, which
+ *     stays the `current` slot meanwhile (ADR-0028: examples used to be saved at once, so
+ *     opening two pushed the user's figure out of both slots).
  *   - The first save of a session moves the stored `current` to `previous` (unless it is
  *     the same text), so a session never silently destroys the last one; later saves of the
  *     session overwrite `current` only.
  *   - Restoring swaps the slots: the restored figure becomes current, and the figure it
  *     replaces becomes previous (so a restore can itself be undone by restoring again).
  */
+import { assertNever } from '@geomira/num/assert';
 
 export interface AutosaveSlots {
   readonly current: string | null;
@@ -19,8 +22,23 @@ export interface AutosaveSlots {
 
 export const EMPTY_SLOTS: AutosaveSlots = Object.freeze({ current: null, previous: null });
 
-/** Where the open document came from. */
-export type Origin = 'autosave' | 'link' | 'file' | 'new';
+/** Where the open document came from (`example`: one of the app's example figures). */
+export type Origin = 'autosave' | 'link' | 'example' | 'file' | 'new';
+
+/** Whether a document of this origin is saved only after its first edit (module comment). */
+export function waitsForEdit(origin: Origin): boolean {
+  switch (origin) {
+    case 'link':
+    case 'example':
+      return true;
+    case 'autosave':
+    case 'file':
+    case 'new':
+      return false;
+    default:
+      return assertNever(origin, 'origin');
+  }
+}
 
 export interface Session {
   readonly origin: Origin;
@@ -41,7 +59,7 @@ export function afterEdit(s: Session): Session {
 
 /** Whether the document should be saved now (see the module comment). */
 export function shouldSave(s: Session): boolean {
-  return s.origin !== 'link' || s.edited;
+  return !waitsForEdit(s.origin) || s.edited;
 }
 
 /** The slots after saving `text` in session `s`, and the session after it. */
