@@ -8,7 +8,7 @@
  * `X, Y = intersect(a, b)` (both branches of a two-candidate call).
  */
 import type { Attr, ExprNode, Line, NameRef, Statement } from './ast';
-import type { Diagnostic } from './diagnostic';
+import { hasErrors, type Diagnostic } from './diagnostic';
 import {
   atEnd,
   cursor,
@@ -37,13 +37,10 @@ export interface ParsedLine {
 export function parseLine(src: string, line: number): ParsedLine {
   const lexed = lexLine(src, line);
   const base = lexed.comment === undefined ? { line } : { line, comment: lexed.comment };
+  const lexFailed = hasErrors(lexed.diagnostics);
   if (lexed.tokens.length === 0)
-    return {
-      line: { ...base, failed: lexed.diagnostics.length > 0 },
-      diagnostics: lexed.diagnostics,
-    };
-  if (lexed.diagnostics.length > 0)
-    return { line: { ...base, failed: true }, diagnostics: lexed.diagnostics };
+    return { line: { ...base, failed: lexFailed }, diagnostics: lexed.diagnostics };
+  if (lexFailed) return { line: { ...base, failed: true }, diagnostics: lexed.diagnostics };
   const c = cursor(lexed.tokens, line, src.length + 1);
   const s = statement(c);
   if (s !== undefined && !atEnd(c))
@@ -51,7 +48,7 @@ export function parseLine(src: string, line: number): ParsedLine {
   const ok = s !== undefined && c.diags.length === 0;
   return {
     line: ok ? { ...base, statement: s, failed: false } : { ...base, failed: true },
-    diagnostics: c.diags,
+    diagnostics: [...lexed.diagnostics, ...c.diags],
   };
 }
 

@@ -16,7 +16,7 @@
  * (`Midpoint(A, B)` is midpoint(A, B)), and a capitalised statement keyword starts a line
  * (`Triangle ABC`); both are lowercased. Neither was a valid point name.
  */
-import { error, type Diagnostic } from './diagnostic';
+import { error, warning, type Diagnostic } from './diagnostic';
 import { GREEK, SYMBOL_ESCAPES } from './symbols';
 import { lexNumber, lexString } from './lex-literals';
 import type { Token } from './token';
@@ -191,11 +191,42 @@ function lexEscape(c: Cursor): void {
   );
 }
 
+/** Whether the last tokens are a division operator, optionally followed by a minus sign. */
+function afterDivision(c: Cursor): boolean {
+  const n = c.tokens.length;
+  const last = c.tokens[n - 1];
+  const before = c.tokens[n - 2];
+  if (last?.kind !== 'punct') return false;
+  return (
+    last.value === '/' || (last.value === '-' && before?.kind === 'punct' && before.value === '/')
+  );
+}
+
+/**
+ * A number. Right after `/` (or `/-`) a glued fraction is not one literal: `a/2/3` is
+ * (a/2)/3. The spaced form `a / 2/3`, which printers before ADR-0028 wrote for a/(2/3),
+ * warns that it is now read as (a / 2) / 3.
+ */
 function lexNumberToken(c: Cursor): void {
   const start = c.i;
-  const r = lexNumber(c.src, c.i);
+  const split = afterDivision(c);
+  const r = lexNumber(c.src, c.i, !split);
   c.i = r.end;
+  const spaced = c.space;
   push(c, 'number', start, c.src.slice(start, r.end));
+  const whole = lexNumber(c.src, start).end;
+  if (split && spaced && whole > r.end) {
+    const frac = c.src.slice(start, whole);
+    const num = c.src.slice(start, r.end);
+    const den = c.src.slice(r.end + 1, whole);
+    c.diags.push(
+      warning(
+        { line: c.line, column: start + 1, endColumn: whole + 1 },
+        `x / ${frac} is read as (x / ${num}) / ${den}`,
+        `to divide by the fraction write x / (${frac})`,
+      ),
+    );
+  }
 }
 
 /** Statement keywords a line may start with in capitals (Geomdraw's `Triangle A B C`). */

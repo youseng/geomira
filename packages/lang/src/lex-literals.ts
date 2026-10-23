@@ -7,10 +7,14 @@
 import { parseRational, type Rational } from '@geomira/num/rational';
 
 const NUMBER = /^[0-9]+(?:\.[0-9]+|\/[0-9]+)?(?:[eE][+-]?[0-9]+)?°?/u;
+const NO_FRACTION = /^[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?°?/u;
 
-/** The end of the number starting at `i` (src[i] is a digit). */
-export function lexNumber(src: string, i: number): { readonly end: number } {
-  const m = NUMBER.exec(src.slice(i));
+/**
+ * The end of the number starting at `i` (src[i] is a digit). With `fraction` false (right
+ * after a division operator), `2/3` is not one literal: `a/2/3` is (a/2)/3.
+ */
+export function lexNumber(src: string, i: number, fraction = true): { readonly end: number } {
+  const m = (fraction ? NUMBER : NO_FRACTION).exec(src.slice(i));
   return { end: i + (m?.[0].length ?? 1) };
 }
 
