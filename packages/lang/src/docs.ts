@@ -61,8 +61,8 @@ const STATEMENTS: readonly (readonly [string, string])[] = [
 ];
 
 const ATTRIBUTES: readonly (readonly [string, string])[] = [
-  ['definition', 'color, width, dash, hidden, noimage, label, layers'],
-  ['style', 'color, width, dash, hidden, noimage, label'],
+  ['definition', 'color, width, dash, opacity, hidden, noimage, label, layers'],
+  ['style', 'color, width, dash, opacity, hidden, noimage, label'],
   ['claim', 'name'],
   ['triangle', 'acute, scalene, obtuse_at_<vertex>'],
   ['@layer', 'main, visible, locked, opacity, order; derived layers also suffix, exclude'],
@@ -128,7 +128,7 @@ function intro(): string[] {
     '',
     ...table(['statement', 'keys'], ATTRIBUTES),
     '',
-    `Values: \`color=red\` or \`color="#ff0000"\`; \`width=1.5\`; \`dash=${DASHES.join('|')}\`; flags \`hidden\`, \`noimage\`, \`locked\` (or \`=true\` / \`=false\`); \`label="…"\`; lists \`exclude=X,Y\`, \`layers=a,b\` (a list takes the rest of its bracket group).`,
+    `Values: \`color=red\` or \`color="#ff0000"\`; \`width=1.5\`; \`dash=${DASHES.join('|')}\`; \`opacity=0.5\` (in [0, 1], times the layer's opacity); flags \`hidden\`, \`noimage\`, \`locked\` (or \`=true\` / \`=false\`); \`label="…"\`; lists \`exclude=X,Y\`, \`layers=a,b\` (a list takes the rest of its bracket group).`,
     '',
   ];
 }

@@ -82,6 +82,7 @@ const styleArb: fc.Arbitrary<Style> = fc.record(
     z: fc.integer({ min: -3, max: 3 }),
     labelAngle: fc.double({ min: -720, max: 720, noNaN: true }),
     labelDist: fc.oneof(fc.double({ min: 0, max: 30, noNaN: true }), fc.constant(-2)),
+    opacity: fc.oneof(fc.double({ min: 0, max: 1, noNaN: true }), fc.constantFrom(Number.NaN, 1.5)),
   },
   { requiredKeys: [] },
 );

@@ -61,6 +61,7 @@ function styleItems(s: Style): string[] {
   if (s.color !== undefined) out.push(`color=${wordOrString(s.color)}`);
   if (s.width !== undefined) out.push(`width=${formatFloat(s.width)}`);
   if (s.dash !== undefined) out.push(`dash=${s.dash}`);
+  if (s.opacity !== undefined) out.push(`opacity=${formatFloat(s.opacity)}`);
   if (s.hidden !== undefined) out.push(s.hidden ? 'hidden' : 'hidden=false');
   if (s.noimage !== undefined) out.push(s.noimage ? 'noimage' : 'noimage=false');
   if (s.label !== undefined) out.push(`label=${quote(s.label)}`);

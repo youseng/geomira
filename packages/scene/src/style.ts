@@ -8,7 +8,8 @@
  *
  * Drawing values are sanitised: a width that is missing, not finite or negative takes the
  * kind's default, and widths are capped at MAX_WIDTH; a z that is not finite counts as 0;
- * a label distance that is not finite or negative takes the default. A Style is user data
+ * a label distance that is not finite or negative takes the default; an opacity that is not
+ * finite counts as 1 and one outside [0, 1] is clamped into it. A Style is user data
  * (any document may hold any number), so nothing here assumes the language's checks.
  */
 import type { DocObject, Style } from '@geomira/kernel/document';
@@ -59,16 +60,24 @@ function finiteAtLeast0(x: number | undefined): number | undefined {
   return x !== undefined && Number.isFinite(x) && x >= 0 ? x : undefined;
 }
 
-/** The style a shape of `kind` is drawn with, in a layer of the given opacity. */
+/** An opacity in [0, 1]: a value that is not finite (or absent) is 1, others are clamped. */
+function unit(x: number | undefined): number {
+  return x !== undefined && Number.isFinite(x) ? Math.min(1, Math.max(0, x)) : 1;
+}
+
+/**
+ * The style a shape of `kind` is drawn with, in a layer of the given opacity. The opacity
+ * drawn is the layer's times the style's own (ADR-0029); without a style opacity it is the
+ * layer's exactly (x · 1 = x in floating point, so nothing else changes).
+ */
 export function drawStyle(style: Style, kind: ShapeKind, opacity: number): DrawStyle {
   const fallback = kind === 'point' ? POINT_RADIUS : STROKE_WIDTH;
   const width = Math.min(MAX_WIDTH, finiteAtLeast0(style.width) ?? fallback);
-  const a = Number.isFinite(opacity) ? Math.min(1, Math.max(0, opacity)) : 1;
   return {
     color: style.color === undefined || style.color === '' ? null : style.color,
     width,
     dash: style.dash ?? 'solid',
-    opacity: a,
+    opacity: unit(opacity) * unit(style.opacity),
   };
 }
 
