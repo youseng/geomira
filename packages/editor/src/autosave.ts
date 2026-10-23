@@ -26,7 +26,7 @@ export const EMPTY_SLOTS: AutosaveSlots = Object.freeze({ current: null, previou
 export type Origin = 'autosave' | 'link' | 'example' | 'file' | 'new';
 
 /** Whether a document of this origin is saved only after its first edit (module comment). */
-export function waitsForEdit(origin: Origin): boolean {
+function waitsForEdit(origin: Origin): boolean {
   switch (origin) {
     case 'link':
     case 'example':

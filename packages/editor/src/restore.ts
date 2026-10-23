@@ -14,7 +14,7 @@
  */
 import {
   restorePrevious,
-  waitsForEdit,
+  shouldSave,
   type AutosaveSlots,
   type Origin,
   type Session,
@@ -39,7 +39,8 @@ export function restoreOffer(
   session: Session,
   openText: string,
 ): { text: string; slots: AutosaveSlots } | undefined {
-  const unsaved = waitsForEdit(session.origin) && !session.saved;
+  // Not saved yet, and waiting for its first edit (a link or an example: autosave.ts).
+  const unsaved = !session.saved && !shouldSave({ ...session, edited: false });
   if (unsaved && slots.current !== null && slots.current !== openText)
     return { text: slots.current, slots: { current: slots.current, previous: openText } };
   return restorePrevious(slots);

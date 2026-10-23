@@ -5,7 +5,7 @@
  * example is now like a link: not saved before its first edit.
  */
 import { describe, expect, it } from 'vitest';
-import { afterEdit, openSession, save, shouldSave, waitsForEdit } from '../src/autosave';
+import { afterEdit, openSession, save, shouldSave } from '../src/autosave';
 import { restoreOffer } from '../src/restore';
 
 describe('an example opened and not edited never pushes the user’s figure out', () => {
@@ -37,10 +37,10 @@ describe('an example opened and not edited never pushes the user’s figure out'
   });
 
   it('which origins wait for their first edit', () => {
-    expect(waitsForEdit('link')).toBe(true);
-    expect(waitsForEdit('example')).toBe(true);
-    expect(waitsForEdit('autosave')).toBe(false);
-    expect(waitsForEdit('new')).toBe(false);
-    expect(waitsForEdit('file')).toBe(false);
+    expect(shouldSave(openSession('link'))).toBe(false);
+    expect(shouldSave(openSession('example'))).toBe(false);
+    expect(shouldSave(openSession('autosave'))).toBe(true);
+    expect(shouldSave(openSession('new'))).toBe(true);
+    expect(shouldSave(openSession('file'))).toBe(true);
   });
 });
