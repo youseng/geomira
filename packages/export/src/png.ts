@@ -94,26 +94,31 @@ export function pngChunks(png: Uint8Array): PngChunkInfo[] | undefined {
 }
 
 /**
- * The PNG with a pHYs chunk (dpi) and an iTXt chunk `GEOMIRA` holding `text` (UTF-8,
- * uncompressed) inserted before IEND, replacing earlier ones. Degenerate: input that is not
- * a PNG with an IEND chunk is returned unchanged.
+ * The PNG with a pHYs chunk (dpi) before its first IDAT (as the PNG specification requires)
+ * and an iTXt chunk `GEOMIRA` holding `text` (UTF-8, uncompressed) before IEND, replacing
+ * earlier ones (ADR-0028). Degenerate: input that is not a PNG with an IDAT and an IEND
+ * chunk is returned unchanged.
  */
 export function pngWithMetadata(png: Uint8Array, text: string, dpi: number): Uint8Array {
   const chunks = pngChunks(png);
   if (chunks === undefined || chunks[chunks.length - 1]?.type !== 'IEND') return png;
+  const firstIdat = chunks.findIndex((c) => c.type === 'IDAT');
+  if (firstIdat < 0) return png;
   const ppm = Math.round(dpi / 0.0254);
   const phys = pngChunk('pHYs', new Uint8Array([...u32(ppm), ...u32(ppm), 1]));
   const itxt = pngChunk(
     'iTXt',
     new Uint8Array([...utf8Encode('GEOMIRA'), 0, 0, 0, 0, 0, ...utf8Encode(text)]),
   );
-  const kept = chunks.filter(
-    (c) => c.type !== 'IEND' && c.type !== 'pHYs' && !(c.type === 'iTXt' && isGeomira(c.data)),
-  );
+  const keep = (c: PngChunkInfo) =>
+    c.type !== 'IEND' && c.type !== 'pHYs' && !(c.type === 'iTXt' && isGeomira(c.data));
+  const copy = (cs: readonly PngChunkInfo[]) =>
+    cs.filter(keep).map((c) => pngChunk(c.type, c.data));
   const parts = [
     new Uint8Array(SIGNATURE),
-    ...kept.map((c) => pngChunk(c.type, c.data)),
+    ...copy(chunks.slice(0, firstIdat)),
     phys,
+    ...copy(chunks.slice(firstIdat)),
     itxt,
     pngChunk('IEND', new Uint8Array()),
   ];
