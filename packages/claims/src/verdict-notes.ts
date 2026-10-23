@@ -13,7 +13,6 @@
 import { HARD_ACCEPTANCE } from './constants';
 import type { SamplerFrame } from './frame';
 import type { Regime } from './sampler';
-import type { NamedSelector } from './verdict';
 
 /** The not-valid outcome counts of a tally. */
 export interface InvalidCounts {
@@ -106,6 +105,16 @@ export function frameNotes(regime: Regime, frame: SamplerFrame | undefined): str
   if (!frame.similarity) out.push(`no random similarity (${frame.noSimilarity ?? ''})`);
   if (mirror) out.push(`no mirroring (${frame.noMirror ?? ''})`);
   return out;
+}
+
+/** A selector named by an ORIENTATION-DEPENDENT verdict, with the equivariant alternative. */
+export interface NamedSelector {
+  readonly object: string;
+  readonly selector: string;
+  readonly call: string;
+  readonly advice: string;
+  /** The selector is written inside the claim itself (no user object holds it). */
+  readonly inClaim?: boolean;
 }
 
 /** "X's `orient(+)`", or "the claim's `intersect(…, orient(+))`" for a selector in the claim. */

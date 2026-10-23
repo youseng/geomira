@@ -32,8 +32,12 @@ import {
   repairedText,
   selectorPhrase,
   type Parity,
+  type NamedSelector,
   type ParityStats,
 } from './verdict-notes';
+
+// Defined beside the phrase that names it (verdict-notes.ts), so the two modules have no cycle.
+export type { NamedSelector } from './verdict-notes';
 
 export type LocalKind = 'holds' | 'false' | 'mixed' | 'inconclusive';
 export type GlobalKind =
@@ -48,16 +52,6 @@ export interface Tally {
   readonly illConditioned: number;
   readonly invalid: number;
   readonly rejected: number;
-}
-
-/** A selector named by an ORIENTATION-DEPENDENT verdict, with the equivariant alternative. */
-export interface NamedSelector {
-  readonly object: string;
-  readonly selector: string;
-  readonly call: string;
-  readonly advice: string;
-  /** The selector is written inside the claim itself (no user object holds it). */
-  readonly inClaim?: boolean;
 }
 
 export interface Verdict {
