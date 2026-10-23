@@ -19,6 +19,7 @@ import { applyEdit } from './edit';
 import { conventionalName, preferredName } from './conventional-names';
 import { freshName, type NameKind } from './names';
 import { done, refuse, type EditResult } from './result';
+import { localResponses } from './robust';
 import type { EditorEnv, EditorState } from './state';
 import { idleTool, type ToolState } from './tool-state';
 import type { ToolUI } from './tool-ui';
@@ -173,8 +174,33 @@ function tangent(state: EditorState, picks: readonly number[], env: EditorEnv): 
   if (p === undefined || c === undefined || P?.kind !== 'point' || C?.kind !== 'circle')
     return refuse(state, 'pick a point and a circle');
   const on = requireOnCircle(FloatField, P, C, state.values.ctx, 'tangent') === undefined;
-  if (on) return add(state, call('tangent', [ref(p), ref(c)]), 'line', env);
-  return branches(state, 'tangent_from', [p, c], 'line', env);
+  if (!on) return branches(state, 'tangent_from', [p, c], 'line', env);
+  if (!tangentStays(state, p, c, env)) {
+    const name = (id: number) => state.doc.objects.find((o) => o.id === id)?.name ?? '?';
+    return refuse(
+      state,
+      `${name(p)} is on ${name(c)} only by coincidence: its tangent would be lost as soon as ` +
+        'the figure moves (put the point on the circle with "Point on object" first)',
+    );
+  }
+  return add(state, call('tangent', [ref(p), ref(c)]), 'line', env);
+}
+
+/**
+ * Whether tangent(P, c) stays defined in each figure of the local responses (each free input
+ * moved by one local deviation), as the kernel's compute decides: P is on c by construction,
+ * not by coincidence (the check ADR-0027 item 5 gave other(P) in choice.ts).
+ */
+function tangentStays(state: EditorState, p: number, c: number, env: EditorEnv): boolean {
+  const spec = env.registry.get('tangent');
+  if (spec === undefined) return false;
+  const ctx = state.values.ctx;
+  return localResponses(state.doc, state.values.values, env.registry, ctx).every((r) => {
+    const [P, C] = [r.get(p), r.get(c)];
+    return (
+      P !== undefined && C !== undefined && spec.compute(FloatField, [P, C], ctx).kind === 'line'
+    );
+  });
 }
 
 /** The tool's typed number as an exact literal, or why it is not one. */
