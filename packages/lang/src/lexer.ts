@@ -160,7 +160,9 @@ function lexToken(c: Cursor, ch: string): void {
     return;
   }
   const p = PUNCT[ch];
-  c.i += ch.length;
+  // A whole code point: a character outside the BMP is one character, not two halves.
+  const whole = String.fromCodePoint(c.src.codePointAt(c.i) ?? 0);
+  c.i += p === undefined ? whole.length : ch.length;
   if (p !== undefined) {
     push(c, 'punct', start, ch, p);
     return;
@@ -169,7 +171,7 @@ function lexToken(c: Cursor, ch: string): void {
     fail(c, start, '° follows a number', 'write 60°');
     return;
   }
-  fail(c, start, `unexpected character "${ch}"`, spellingHint(c, ch));
+  fail(c, start, `unexpected character "${whole}"`, spellingHint(c, whole));
 }
 
 const POWERS: Readonly<Record<string, number>> = { '²': 2, '³': 3 };
