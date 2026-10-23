@@ -4,16 +4,11 @@ import type { ToolState } from '@geomira/editor/tool-state';
 import { layout, type DisplayList } from '@geomira/scene/display';
 import { hitTest } from '@geomira/scene/hit';
 import type { Scene, Undrawable } from '@geomira/scene/types';
-import {
-  toWorld,
-  zoomViewport,
-  type Size,
-  type Vec2,
-  type Viewport,
-} from '@geomira/scene/viewport';
+import { toWorld, type Size, type Vec2, type Viewport } from '@geomira/scene/viewport';
 import { Gestures } from './gestures';
 import { drawDisplay, drawPreview, LIGHT_THEME, type UiState } from './render';
 import type { EditorStore } from './store';
+import { useWheelZoom } from './surface';
 
 export interface BoardProps {
   readonly canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -28,9 +23,6 @@ export interface BoardProps {
   /** The curves of the current display that cannot be placed at its zoom (ADR-0023). */
   readonly onUndrawable: (u: readonly Undrawable[]) => void;
 }
-
-/** Wheel steps of 100 (one notch) zoom by this factor. */
-const WHEEL_ZOOM = 1.15;
 
 /** The canvas's CSS size, kept in sync with its box; its pixel size is css × dpr (HiDPI). */
 function useSurface(
@@ -123,7 +115,7 @@ function usePreview(
 /**
  * The drawing surface: the display list of the scene in the editor's viewport, drawn by the
  * canvas renderer (HiDPI) with hover and selection halos. Pointer input goes through
- * gestures.ts (tools, drags, pan, pinch); the wheel zooms about the cursor. The viewport is
+ * gestures.ts (tools, drags, pan, pinch); the wheel zooms about the cursor (surface.ts). The viewport is
  * also written to data attributes, so end-to-end tests can aim at world coordinates.
  */
 /**
@@ -150,6 +142,7 @@ export function Board(props: BoardProps) {
   const { canvasRef, store, scene, viewport, onSize, onUndrawable } = props;
   const gestures = useMemo(() => new Gestures(store), [store]);
   const size = useSurface(canvasRef, onSize);
+  useWheelZoom(canvasRef, store, size);
   const display = useDisplay(scene, viewport, size, onUndrawable);
   const { cursor, setCursor } = useFrame(props, display);
   const local = (e: { clientX: number; clientY: number }) => {
@@ -191,14 +184,6 @@ export function Board(props: BoardProps) {
       onPointerLeave={() => {
         gestures.leave();
         setCursor(null);
-      }}
-      onWheel={(e) => {
-        if (size === null) return;
-        const factor = WHEEL_ZOOM ** (-e.deltaY / 100);
-        store.apply({
-          kind: 'viewport',
-          viewport: zoomViewport({ viewport, size }, local(e), factor),
-        });
       }}
     />
   );

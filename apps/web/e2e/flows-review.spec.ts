@@ -57,3 +57,27 @@ test('Open counterexample fits the view to the sample figure', async ({ page }) 
   await page.getByRole('button', { name: 'Fit', exact: true }).click();
   expect(await view(page)).toBe(opened);
 });
+
+test('the wheel on the canvas zooms the figure, never the page (pinch is ctrl+wheel)', async ({
+  page,
+}) => {
+  await openApp(page);
+  await page.evaluate(() => {
+    // Each wheel event that reaches the window: whether the page's own zoom was prevented.
+    window.addEventListener('wheel', (e) => {
+      document.body.dataset['wheel'] =
+        `${document.body.dataset['wheel'] ?? ''}${String(e.defaultPrevented)};`;
+    });
+  });
+  const canvas = page.getByLabel('Geometry canvas');
+  const box = await canvas.boundingBox();
+  if (box === null) throw new Error('no canvas box');
+  const zoom = () => canvas.getAttribute('data-zoom');
+  const before = await zoom();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.keyboard.down('Control');
+  await page.mouse.wheel(0, -100);
+  await page.keyboard.up('Control');
+  await expect.poll(zoom).not.toBe(before);
+  expect(await page.locator('body').getAttribute('data-wheel')).toBe('true;');
+});
