@@ -4,11 +4,12 @@
  * document opens, and internal errors (note D).
  */
 import { useEffect, useRef } from 'react';
-import { keyAction, type KeyAction } from '@geomira/editor/keymap';
+import { keyAction, type KeyAction, type KeyEventLike } from '@geomira/editor/keymap';
 import { openAtStartup } from '@geomira/editor/restore';
 import { decodeShare, SHARE_PREFIX } from '@geomira/editor/share';
 import { emptyDocument } from '@geomira/kernel/document';
 import { print } from '@geomira/lang/print';
+import { assertNever } from '@geomira/num/assert';
 import type { Scene } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
 import { FIT_MARGIN, viewportFor, WIDE_FIT_MARGIN } from './figure';
@@ -120,24 +121,45 @@ export function flushWhenHidden(
   };
 }
 
-function typing(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
-  );
+/**
+ * What a key event's target is to the shortcuts: a `field` takes every key (typing); a
+ * `control` (button, link, tab, …) takes Enter and Space, which activate it; `other` none.
+ */
+export type KeyTarget = 'field' | 'control' | 'other';
+
+/** The roles and elements that Enter or Space activate. */
+const CONTROLS =
+  'button, a[href], summary, [role="button"], [role="tab"], [role="link"], [role="menuitem"], [role="option"], [role="checkbox"], [role="radio"], [role="switch"]';
+
+function keyTarget(target: EventTarget | null): KeyTarget {
+  if (!(target instanceof HTMLElement)) return 'other';
+  if (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+    return 'field';
+  return target.closest(CONTROLS) === null ? 'other' : 'control';
 }
 
-/** Keyboard shortcuts (never while typing in a field). */
+/** The shortcut of a key on a target of kind `target`, if it is one (ADR-0028). */
+export function shortcutFor(e: KeyEventLike, target: KeyTarget): KeyAction | undefined {
+  switch (target) {
+    case 'field':
+      return undefined;
+    case 'control':
+      return e.key === 'Enter' || e.key === ' ' ? undefined : keyAction(e);
+    case 'other':
+      return keyAction(e);
+    default:
+      return assertNever(target, 'key target');
+  }
+}
+
+/** Keyboard shortcuts (never while typing in a field, nor Enter or Space on a control). */
 export function useShortcuts(perform: (a: KeyAction) => void): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (typing(e.target)) return;
-      const a = keyAction({
-        key: e.key,
-        ctrl: e.ctrlKey || e.metaKey,
-        shift: e.shiftKey,
-        alt: e.altKey,
-      });
+      const a = shortcutFor(
+        { key: e.key, ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey, alt: e.altKey },
+        keyTarget(e.target),
+      );
       if (a === undefined) return;
       e.preventDefault();
       perform(a);
