@@ -5,6 +5,7 @@
  * and transformation, ADR-0007), and styles waiting for new images are applied. A failure
  * leaves the document as it was before the statement.
  */
+import { sameConstruction } from '@geomira/kernel/construction-key';
 import { ref, type Expr } from '@geomira/kernel/expr';
 import type { Document, LayerRule, Style } from '@geomira/kernel/document';
 import { exprKinds, syncDerived, type Held } from '@geomira/kernel/derived';
@@ -12,8 +13,10 @@ import { ruleProblem } from '@geomira/kernel/derived-edit';
 import { reservedName } from '@geomira/kernel/doc-edit';
 import { addObject } from '@geomira/kernel/edit';
 import { staticKinds } from '@geomira/kernel/selector-check';
-import { error, type Span } from './diagnostic';
-import type { PendingRule, State } from './build-state';
+import { error, warning, type Diagnostic, type Span } from './diagnostic';
+import { nameOf, type PendingRule, type State } from './build-state';
+import { printExpr } from './print-expr';
+import { sameConstructionMessage } from './same-construction';
 
 export interface NewDef {
   readonly name: string;
@@ -160,8 +163,30 @@ function activate(st: State, name: string): void {
   }
 }
 
+/**
+ * The diagnostic of a definition that is the same construction as an earlier object
+ * (ADR-0029: line(B, A) after l = line(A, B)), or undefined. Managed images are not compared.
+ */
+function duplicate(st: State, d: NewDef): Diagnostic | undefined {
+  const severity = st.sameConstruction;
+  if (severity === undefined) return undefined;
+  const same = sameConstruction(st.doc, d.def, st.registry, { kinds: st.kinds, cache: st.keys });
+  if (same === undefined) return undefined;
+  const m = sameConstructionMessage(
+    d.name,
+    same.name,
+    printExpr(same.def, (id) => nameOf(st, id)),
+  );
+  return (severity === 'error' ? error : warning)(d.span, m.message, m.hint);
+}
+
 /** Adds one object; returns its id, or undefined (reported). */
 export function addDefinition(st: State, d: NewDef): number | undefined {
+  const dup = duplicate(st, d);
+  if (dup !== undefined) {
+    st.diags.push(dup);
+    if (dup.severity === 'error') return undefined;
+  }
   const reserved = reservedName(st.doc, d.name);
   if (reserved !== undefined) {
     st.diags.push(

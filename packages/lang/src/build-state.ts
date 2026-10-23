@@ -3,13 +3,14 @@
  * document grows statement by statement through the kernel's helpers, so the invariants
  * hold at every step; derived layers are synchronised after every object (SPEC §8.2).
  */
+import type { KeyCache } from '@geomira/kernel/construction-key';
 import type { Document, Style } from '@geomira/kernel/document';
 import { emptyDocument } from '@geomira/kernel/document';
 import type { Registry } from '@geomira/kernel/registry';
 import type { ValueKind } from '@geomira/kernel/value';
 import type { NameRef } from './ast';
 import { newBook, type CommentBook } from './comments';
-import type { Diagnostic, Span } from './diagnostic';
+import type { Diagnostic, Severity, Span } from './diagnostic';
 
 /** A derived layer whose rule becomes active once its transformation is defined. */
 export interface PendingRule {
@@ -48,13 +49,21 @@ export interface State {
   readonly layerIds: Map<string, string>;
   readonly rules: PendingRule[];
   readonly book: CommentBook;
+  /**
+   * How a definition that is the same construction as an earlier object is reported
+   * (ParseOptions.sameConstruction, ADR-0029); undefined: it is not.
+   */
+  readonly sameConstruction: Severity | undefined;
+  /** Construction keys of the definitions seen (ADR-0029; definitions are immutable). */
+  readonly keys: KeyCache;
   /** The line being built (for "defined later" versus "refers to itself"). */
   line: number;
 }
 
-export function newState(registry: Registry): State {
+export function newState(registry: Registry, sameConstruction?: Severity): State {
   return {
     registry,
+    sameConstruction,
     doc: emptyDocument(),
     diags: [],
     ids: new Map(),
@@ -66,6 +75,7 @@ export function newState(registry: Registry): State {
     layerIds: new Map([['main', 'main']]),
     rules: [],
     book: newBook(),
+    keys: new WeakMap(),
     line: 0,
   };
 }
