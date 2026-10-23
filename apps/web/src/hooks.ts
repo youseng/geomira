@@ -171,24 +171,27 @@ export function useShortcuts(perform: (a: KeyAction) => void): void {
   }, [perform]);
 }
 
-/** Fits the view whenever a document opens (once the canvas has a size). */
+/**
+ * Fits the view whenever a document opens or a fit is asked for (store.fits), once the canvas
+ * has a size.
+ */
 export function useFitOnOpen(
   store: EditorStore,
-  openCount: number,
+  fits: number,
   size: Size | null,
   sceneOf: () => Scene,
 ): void {
   const fitted = useRef(0);
   useEffect(() => {
     // Only a newly opened document is fitted (once the canvas has a size); edits keep the view.
-    if (size === null || openCount === fitted.current) return;
-    fitted.current = openCount;
+    if (size === null || fits === fitted.current) return;
+    fitted.current = fits;
     const doc = store.current().doc;
     store.apply({
       kind: 'viewport',
       viewport: viewportFor({ doc, scene: sceneOf() }, size, fitMargin()),
     });
-  }, [store, openCount, size, sceneOf]);
+  }, [store, fits, size, sceneOf]);
 }
 
 /** Uncaught errors of the page become internal-error messages with the debug report. */

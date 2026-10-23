@@ -27,8 +27,13 @@ export interface Notice {
 export interface Snapshot {
   readonly state: EditorState;
   readonly notice: Notice | null;
-  /** Increases whenever a document is opened: the view is fitted again. */
+  /** Increases whenever a document is opened. */
   readonly openCount: number;
+  /**
+   * Increases whenever the view is to fit the figure: a document opened, or a sample figure
+   * of a verdict shown (ADR-0028).
+   */
+  readonly fits: number;
 }
 
 function errorText(e: unknown): string {
@@ -44,7 +49,12 @@ export class EditorStore {
     readonly env: EditorEnv,
     private readonly onInternal: (message: string) => void,
   ) {
-    this.snap = { state: createEditor(emptyDocument(), env), notice: null, openCount: 0 };
+    this.snap = {
+      state: createEditor(emptyDocument(), env),
+      notice: null,
+      openCount: 0,
+      fits: 0,
+    };
   }
 
   readonly subscribe = (listener: () => void): (() => void) => {
@@ -136,7 +146,17 @@ export class EditorStore {
     this.autosave.opened(origin);
     this.beforeDrag = null;
     const state = createEditor(doc, this.env);
-    this.publish({ state, notice, openCount: this.snap.openCount + 1 });
+    this.publish({
+      state,
+      notice,
+      openCount: this.snap.openCount + 1,
+      fits: this.snap.fits + 1,
+    });
+  }
+
+  /** Asks for the view to fit the figure once it is drawn (useFitOnOpen). */
+  requestFit(): void {
+    this.publish({ fits: this.snap.fits + 1 });
   }
 
   /** Opens a text (parse is total: lines with errors are left out and listed). */

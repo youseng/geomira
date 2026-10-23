@@ -160,7 +160,7 @@ function useApp() {
   }, []);
   useStartup(store, page.runs, onReady);
   useAutosave(store, snap, ready);
-  useFitOnOpen(store, snap.openCount, size, sceneOf);
+  useFitOnOpen(store, snap.fits, size, sceneOf);
   useInternalErrors(onInternal);
   const fit = useFit(store, size, sceneOf);
   const fitAfterEdit = useFitAfterEdit(page.scene, fit);

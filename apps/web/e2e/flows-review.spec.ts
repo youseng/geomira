@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { claimItem, command, openApp, tab, text } from './helpers';
 
 /** Bug-fix round (ADR-0028): claims, counterexamples, notices and gestures on the desktop. */
@@ -30,4 +30,30 @@ test('Test globally after an edit leaves the local verdict marked as of the earl
   await expect(page.locator('.run-box.stale .verdict[data-regime="local"]')).toHaveCount(1);
   await expect(page.locator('.run-box.stale .verdict[data-regime="global"]')).toHaveCount(0);
   expect(await text(page)).toContain('C = (2, 3)');
+});
+
+/** The canvas's view (data attributes). */
+async function view(page: Page): Promise<string> {
+  return page
+    .getByLabel('Geometry canvas')
+    .evaluate((c) => ['cx', 'cy', 'zoom'].map((k) => c.getAttribute(`data-${k}`)).join(' '));
+}
+
+test('Open counterexample fits the view to the sample figure', async ({ page }) => {
+  await openApp(page);
+  for (const line of ['A = (1, 3)', 'B = (0, 0)', 'C = (4, 0)', 'H = orthocenter(A, B, C)'])
+    await command(page, line);
+  await command(page, 'claim ∠BHC + ∠BAC = 180');
+  await tab(page, 'Claims');
+  await claimItem(page, 'claim')
+    .getByRole('button', { name: 'Test globally', exact: true })
+    .click();
+  const global = page.locator('.verdict[data-regime="global"]');
+  await expect(global).toBeVisible({ timeout: 60_000 });
+  await global.getByRole('button', { name: 'Open counterexample' }).click();
+  await expect(claimItem(page, 'claim').locator('.badge')).toHaveText('false in this figure');
+  const opened = await view(page);
+  // Fit changes nothing: the view was fitted when the sample opened.
+  await page.getByRole('button', { name: 'Fit', exact: true }).click();
+  expect(await view(page)).toBe(opened);
 });
