@@ -21,7 +21,7 @@ import type { Registry } from '@geomira/kernel/registry';
 import { assertNever } from '@geomira/num/assert';
 import { print } from '@geomira/lang/print';
 import type { Size } from '@geomira/scene/viewport';
-import { CopyButton } from './Dialogs';
+import { CopyButton, useDialog } from './Dialogs';
 import { drawDisplay, LIGHT_THEME, NO_UI } from './render';
 
 export interface ExportDialogProps {
@@ -174,6 +174,7 @@ export function ExportDialog(p: ExportDialogProps) {
   const [variant, setVariant] = useState<Variant>({ standalone: false, aops: false, ratio: 2 });
   const { state, registry, size } = p;
   const text = useMemo(() => print(state.doc), [state.doc]);
+  const ref = useDialog(p.onClose);
   const result = useMemo(() => {
     if (size === null) return { ok: false as const, problem: 'the canvas has no size yet' };
     const frame = exportFrame(state.doc, state.values.values, {
@@ -184,7 +185,7 @@ export function ExportDialog(p: ExportDialogProps) {
       : frame;
   }, [state, size, format, variant, registry]);
   return (
-    <div className="dialog export-dialog" role="dialog" aria-label="Export">
+    <div className="dialog export-dialog" role="dialog" aria-label="Export" ref={ref} tabIndex={-1}>
       <h2>Export</h2>
       <div role="radiogroup" aria-label="Format">
         {FORMATS.map((f) => (

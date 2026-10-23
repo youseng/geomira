@@ -79,3 +79,17 @@ test('the completion list goes when the command bar loses the focus, and comes b
   await expect(input).toBeFocused();
   await expect(input).toHaveValue(/^M = midpoint/u);
 });
+
+test('a dialog takes the focus, and Escape closes it', async ({ page }) => {
+  await openApp(page);
+  const exportButton = page.getByRole('button', { name: 'Export', exact: true });
+  for (const item of ['Share link', 'SVG']) {
+    await exportButton.click();
+    await page.getByRole('button', { name: item, exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await expect.poll(() => dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+  }
+});
