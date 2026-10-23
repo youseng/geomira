@@ -152,21 +152,25 @@ function click(
   if (typeof sides === 'string') return refuse(state, sides);
   const def = createdPoint(sides.state, sides.virtual, env);
   if (typeof def === 'string') return refuse(state, def);
-  return created(sides.state, tool, add(sides.state, def, 'point', env), point.index, env);
+  return created(state, tool, add(sides.state, def, 'point', env), point.index, env);
 }
 
-/** Picks an object a click just created (its own edit) for step `slot`. */
+/**
+ * Picks an object a click just created (its own edit) for step `slot`. When the pick or the
+ * build it completes is refused, the whole click is: the reason is given and `origin` (the
+ * state before the click) is kept, so no stray point or side is left behind.
+ */
 function created(
-  state: EditorState,
+  origin: EditorState,
   tool: ToolUI,
   made: EditResult,
   slot: number,
   env: EditorEnv,
 ): EditResult {
-  if (!made.ok || made.id === undefined) return made.ok ? refuse(state, 'nothing was made') : made;
+  if (!made.ok) return refuse(origin, made.reason);
+  if (made.id === undefined) return refuse(origin, 'nothing was made');
   const r = pushPick(made.state, tool, made.id, slot, env);
-  // A later refusal keeps the new object (its own edit); the tool's picks stay as they were.
-  return r.ok ? r : { ...made, state: { ...made.state, toolState: state.toolState } };
+  return r.ok ? r : refuse(origin, r.reason);
 }
 
 function objectInput(state: EditorState, tool: ToolUI, id: number, env: EditorEnv): EditResult {
