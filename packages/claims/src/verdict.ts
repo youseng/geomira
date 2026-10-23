@@ -8,8 +8,9 @@
  *   sample holds once the orientation-dependent selectors are flipped; one selector is
  *   named when flipping it alone repairs every failure) · CONFIGURATION-DEPENDENT (some
  *   failing sample does not hold even flipped; with an example document) · INCONCLUSIVE.
- * Verdicts state what was checked (rungs and counts) and carry the seed; they never use
- * the words reserved for the Phase 2 prover.
+ * Verdicts state what was checked (rungs and counts), the samples the hypotheses rejected
+ * (whenever there are any) and the seed (verdict-notes.ts); they never use the words
+ * reserved for the Phase 2 prover.
  */
 import type { Seed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
@@ -17,7 +18,7 @@ import { MIN_VALID_FRACTION } from './constants';
 import type { ClaimValue } from './eval-claim';
 import { RUNG_NAMES, type RungName, type SampleOutcome } from './rungs';
 import type { Regime } from './sampler';
-import { selectorPhrase } from './verdict-notes';
+import { rejectedNote, selectorPhrase } from './verdict-notes';
 
 export type LocalKind = 'holds' | 'false' | 'mixed' | 'inconclusive';
 export type GlobalKind =
@@ -137,18 +138,24 @@ function topReasons(c: Collector): { reason: string; count: number }[] {
 }
 
 function enoughValid(c: Collector, n: number): boolean {
-  return (
-    c.tally.true + c.tally.false >= Math.ceil(MIN_VALID_FRACTION * n) &&
-    c.tally.true + c.tally.false > 0
-  );
+  return enough(c.tally.true + c.tally.false, n);
 }
 
 function inconclusiveText(c: Collector, tested: number): string {
   const valid = c.tally.true + c.tally.false;
-  const why = topReasons(c)
-    .map((r) => `${r.reason} ×${String(r.count)}`)
-    .join('; ');
-  return `INCONCLUSIVE (${String(valid)} of ${String(tested)} figures valid${why === '' ? '' : `; ${why}`})`;
+  const why = topReasons(c).map((r) => `${r.reason} ×${String(r.count)}`);
+  const notes = [...why, ...rejectedNote(c.tally.rejected)];
+  return `INCONCLUSIVE (${String(valid)} of ${String(tested)} figures valid${tail(notes)})`;
+}
+
+/** "; a; b", or nothing. */
+function tail(notes: readonly string[]): string {
+  return notes.length === 0 ? '' : `; ${notes.join('; ')}`;
+}
+
+/** The rejected samples, after the counts. */
+function countNotes(c: Collector): string[] {
+  return rejectedNote(c.tally.rejected);
 }
 
 export interface Common {
@@ -192,6 +199,7 @@ function base(
 export function localVerdict(c: Collector, k: Common, current: ClaimValue): Verdict {
   const { true: t, false: f } = c.tally;
   const valid = t + f;
+  const notes = tail(countNotes(c));
   let kind: LocalKind;
   let text: string;
   if (!enoughValid(c, k.n)) {
@@ -199,18 +207,18 @@ export function localVerdict(c: Collector, k: Common, current: ClaimValue): Verd
   } else if (f === 0) {
     [kind, text] = [
       'holds',
-      `HOLDS IN THIS CONFIGURATION (${rungText(c.rungs)}, ${String(t)}/${String(valid)})`,
+      `HOLDS IN THIS CONFIGURATION (${rungText(c.rungs)}, ${String(t)}/${String(valid)}${notes})`,
     ];
   } else if (t === 0) {
     const only = current.value === 'true' ? '; true in the current figure only' : '';
     [kind, text] = [
       'false',
-      `FALSE (${rungText(c.rungs)}, ${String(f)}/${String(valid)} false${only})`,
+      `FALSE (${rungText(c.rungs)}, ${String(f)}/${String(valid)} false${only}${notes})`,
     ];
   } else {
     [kind, text] = [
       'mixed',
-      `MIXED (${rungText(c.rungs)}, ${String(t)} true and ${String(f)} false of ${String(valid)})`,
+      `MIXED (${rungText(c.rungs)}, ${String(t)} true and ${String(f)} false of ${String(valid)}${notes})`,
     ];
   }
   return { ...base('local', kind, text, c, k), current };
@@ -228,33 +236,37 @@ export interface FlipSummary {
   readonly k: number;
 }
 
+/** Whether `count` decided figures are enough for a verdict other than INCONCLUSIVE. */
+function enough(count: number, n: number): boolean {
+  return count >= Math.ceil(MIN_VALID_FRACTION * n) && count > 0;
+}
+
+function orientationVerdict(c: Collector, k: Common, flips: FlipSummary, notes: string[]): Verdict {
+  const valid = c.tally.true + c.tally.false;
+  const what =
+    flips.named === undefined
+      ? `flipping its ${String(flips.k)} orientation-dependent selectors together repairs every failure`
+      : `${selectorPhrase(flips.named)} encodes a side; ${flips.named.advice}`;
+  const text = `ORIENTATION-DEPENDENT (${String(c.tally.false)} of ${String(valid)} fail and hold with the selectors flipped; ${what}${tail(notes)})`;
+  return {
+    ...base('global', 'orientation-dependent', text, c, k),
+    ...(flips.named === undefined ? {} : { named: flips.named }),
+  };
+}
+
 /** The GLOBAL verdict. */
 export function globalVerdict(c: Collector, k: Common, flips: FlipSummary): Verdict {
   const { true: t, false: f } = c.tally;
   const valid = t + f;
-  const rejected =
-    c.tally.rejected === 0 ? '' : `; ${String(c.tally.rejected)} samples rejected by hypotheses`;
-  const counts = `${rungText(c.rungs)}, ${String(t)}/${String(valid)}${rejected}; ${String(c.mirrored)} mirrored`;
+  const notes = countNotes(c);
+  const counts = `${rungText(c.rungs)}, ${String(t)}/${String(valid)}${tail([...notes, `${String(c.mirrored)} mirrored`])}`;
   let v: Verdict;
   if (!enoughValid(c, k.n)) {
     v = base('global', 'inconclusive', inconclusiveText(c, k.tested), c, k);
   } else if (f === 0) {
     v = base('global', 'holds-across', `HOLDS ACROSS THE DECLARED CONFIGURATION (${counts})`, c, k);
   } else if (flips.k > 0 && flips.unrepaired === 0) {
-    const what =
-      flips.named === undefined
-        ? `flipping its ${String(flips.k)} orientation-dependent selectors together repairs every failure`
-        : `${selectorPhrase(flips.named)} encodes a side; ${flips.named.advice}`;
-    v = {
-      ...base(
-        'global',
-        'orientation-dependent',
-        `ORIENTATION-DEPENDENT (${String(f)} of ${String(valid)} fail and hold with the selectors flipped; ${what})`,
-        c,
-        k,
-      ),
-      ...(flips.named === undefined ? {} : { named: flips.named }),
-    };
+    v = orientationVerdict(c, k, flips, notes);
   } else {
     const why =
       flips.k === 0
@@ -263,7 +275,7 @@ export function globalVerdict(c: Collector, k: Common, flips: FlipSummary): Verd
     v = base(
       'global',
       'configuration-dependent',
-      `CONFIGURATION-DEPENDENT (${String(f)} of ${String(valid)} fail; ${why})`,
+      `CONFIGURATION-DEPENDENT (${String(f)} of ${String(valid)} fail; ${why}${tail(notes)})`,
       c,
       k,
     );
