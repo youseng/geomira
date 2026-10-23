@@ -103,14 +103,19 @@ function addGlider(state: EditorState, curve: number, at: Vec<number>, env: Edit
 }
 
 /**
- * The glider tool: a point on the line or circle under the click, or on a polygon's side,
- * its segment(A, B) (an existing one, or a new one as its own edit, ADR-0024 item 8).
+ * The glider tool: a point on the line or circle under the click (never on a point that is
+ * there already), or on a polygon's side, its segment(A, B) (an existing one, or a new one
+ * as its own edit, ADR-0024 item 8).
  */
 function gliderClick(
   state: EditorState,
   input: Extract<ToolInput, { kind: 'click' }>,
   env: EditorEnv,
 ): EditResult {
+  // As with the point tool, a click on a point never creates another one there.
+  const point = input.hit.hits.find((h) => h.kind === 'point');
+  if (point !== undefined)
+    return refuse(state, `${point.name} is here already: click the curve where there is no point`);
   const curve = input.hit.hits.find((h) => h.kind === 'line' || h.kind === 'circle')?.id;
   const v = input.hit.virtual;
   const at = v.kind === 'on' ? v.world : input.world;
