@@ -18,6 +18,20 @@ export function claimToolKinds(): string[] {
   ).map((k) => k.name);
 }
 
+/**
+ * Claim kinds whose points come in groups that may share points (two angles, four segments):
+ * the claim tool may pick a point twice for them, angle_eq(B, A, I, I, A, C) or
+ * ratio(A, B, A, C, …), as the ratio and spiral tools may (ToolUI.repeats). Every other kind
+ * refuses a repeated pick: its arguments must differ (collinear(A, A, B) is degenerate).
+ */
+export const REPEATING_CLAIM_KINDS: readonly string[] = Object.freeze(['angle_eq', 'ratio']);
+
+/** Whether the next pick may name an object picked before. */
+export function mayRepeat(tool: ToolUI, ts: ToolState): boolean {
+  if (tool.build.kind === 'claim') return REPEATING_CLAIM_KINDS.includes(ts.claimKind);
+  return tool.repeats === true;
+}
+
 function pickOfParam(p: ClaimParam): PickKind {
   return p === 'point' || p === 'line' || p === 'circle' ? p : 'curve';
 }

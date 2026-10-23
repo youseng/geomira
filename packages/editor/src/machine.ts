@@ -19,7 +19,7 @@ import { applyEdit } from './edit';
 import { add, build, reset, withTool } from './machine-build';
 import { done, refuse, type EditResult } from './result';
 import type { EditorEnv, EditorState } from './state';
-import { openSteps, stepsOf } from './tool-steps';
+import { mayRepeat, openSteps, stepsOf } from './tool-steps';
 import { toolUI, type PickKind, type ToolUI } from './tools';
 
 export { claimToolKinds, stepsOf } from './tool-steps';
@@ -79,7 +79,7 @@ function pushPick(
   const { steps, rest } = stepsOf(tool, ts);
   const closes = rest?.pick === 'point' && ts.picks.length >= steps.length && id === ts.picks[0];
   if (closes) return build(state, tool, inStepOrder(ts.picks, ts.slots), env);
-  if (ts.picks.includes(id) && tool.repeats !== true)
+  if (ts.picks.includes(id) && !mayRepeat(tool, ts))
     return refuse(state, 'this object is already picked');
   const picks = [...ts.picks, id];
   const slots = [...ts.slots, slot];
