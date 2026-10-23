@@ -188,7 +188,12 @@ function modpRung(prep: Prepared, doc: Document, src: EntropySource): SampleOutc
   return isInexact(d) ? undefined : fromDecision(d, 'exact mod p', prep);
 }
 
-/** The free inputs moved by FLOOR_DELTA in their natural units (lengths: scale). */
+/**
+ * The free inputs moved by FLOOR_DELTA in their natural units (lengths: scale; a line
+ * glider's t: scale/|d|; an angle: radians; (u : v): |(u, v)|, as the parameter is
+ * homogeneous, so the step is relative to it; a param: its range). Degenerate: (0 : 0) →
+ * a step of 0 (the glider is undefined either way).
+ */
 function perturbed(prep: Prepared, doc: Document, rng: Rng, scale: number): Document {
   const jitter = (x: { num: bigint; den: bigint }, unit: number) =>
     fromNumber(toNumber(x) + FLOOR_DELTA * unit * rng.gaussian());
@@ -204,7 +209,9 @@ function perturbed(prep: Prepared, doc: Document, rng: Rng, scale: number): Docu
           ? scale / Math.hypot(glider.d.x, glider.d.y)
           : input.kind === 'angle-glider'
             ? 180 / Math.PI
-            : 1;
+            : input.kind === 'stereo'
+              ? Math.hypot(...v.map(toNumber))
+              : 1;
     if (input.kind === 'param') {
       const [lo, hi, x] = v;
       if (lo !== undefined && hi !== undefined && x !== undefined)

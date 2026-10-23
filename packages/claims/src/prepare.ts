@@ -16,6 +16,7 @@ import type { EvalContext } from '@geomira/kernel/tool';
 import type { Value } from '@geomira/kernel/value';
 import { analyzeClaim, type ClaimAnalysis, type OrientationSite } from './analysis';
 import { callsOf, exprAt } from './expr-path';
+import { samplerFrame, type SamplerFrame } from './frame';
 import { findFree, type FreeInput } from './free';
 import { assumptionProblem, comparisonDim, type MeasureDim } from './hypotheses';
 import { argProblem } from './check';
@@ -70,6 +71,8 @@ export interface Prepared {
   readonly sites: readonly SiteProbe[];
   readonly free: readonly FreeInput[];
   readonly ordered: readonly OrderedGroup[];
+  /** What the samplers may do to this figure: the similarity, mirroring (frame.ts). */
+  readonly frame: SamplerFrame;
   /** The current figure: its context and the float values of the glider objects. */
   readonly baseCtx: EvalContext;
   readonly gliderObjects: ReadonlyMap<string, Value<number>>;
@@ -81,6 +84,14 @@ export type PrepareResult =
 
 export function freeKey(id: number, path: readonly number[]): string {
   return `${String(id)}:${path.join('.')}`;
+}
+
+/** Whether the call at `path` of object `id` holds one of `free` (the samplers map it). */
+export function freeMap(
+  free: readonly FreeInput[],
+): (id: number, path: readonly number[]) => boolean {
+  const keys = new Set(free.map((f) => freeKey(f.id, f.path)));
+  return (id, path) => keys.has(freeKey(id, path));
 }
 
 /**
@@ -230,6 +241,15 @@ export function prepare(doc: Document, claimId: number, registry: Registry): Pre
     a.kind === 'lit' ? { lit: a.value } : { probe: p.claimProbes[next++] ?? -1 },
   );
   const floatRoots = [...p.claimProbes, ...p.hypProbes, ...p.sites.flatMap((s) => s.argProbes)];
+  const floatKeep = closureOf(p.doc, floatRoots);
+  const frame = samplerFrame({
+    doc: p.doc,
+    registry,
+    keep: floatKeep,
+    claimExprs: c.claim.args,
+    assumptions: doc.assumptions,
+    mapped: freeMap(free),
+  });
   return {
     ok: true,
     prepared: {
@@ -241,11 +261,12 @@ export function prepare(doc: Document, claimId: number, registry: Registry): Pre
       argText: c.claim.args.map((a) => formatExpr(a, (id) => names.get(id))),
       hypotheses: hypothesesOf(doc, p.hypProbes),
       claimClosure: p.claimClosure,
-      floatKeep: closureOf(p.doc, floatRoots),
+      floatKeep,
       analysis: p.analysis,
       sites: p.sites,
       free,
       ordered: orderedGroups(p.doc, doc.assumptions, free),
+      frame,
       baseCtx: c.ctx,
       gliderObjects,
     },

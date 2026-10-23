@@ -11,6 +11,7 @@ import { createRng, type Seed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
 import type { Registry } from '@geomira/kernel/registry';
 import { EXACT_BUDGET_BITS } from './constants';
+import { CURRENT_FIGURE_SEED } from './current';
 import { prepare } from './prepare';
 import { decideSample, type RungName, type SampleOutcome } from './rungs';
 
@@ -24,7 +25,7 @@ export type ClaimValue =
     };
 
 export interface EvalOptions {
-  /** The seed of the noise-floor perturbations (default 0). */
+  /** The seed of the noise-floor perturbations (default CURRENT_FIGURE_SEED). */
   readonly seed?: Seed;
   /** The exact rung's size budget in bits (default EXACT_BUDGET_BITS). */
   readonly budgetBits?: number;
@@ -60,7 +61,7 @@ export function evalClaim(
   if (!p.ok) return { value: 'undefined', status: 'invalid', reason: p.reason };
   const outcome = decideSample(p.prepared, p.prepared.doc, {
     budgetBits: options.budgetBits ?? EXACT_BUDGET_BITS,
-    rng: createRng(options.seed ?? 0),
+    rng: createRng(options.seed ?? CURRENT_FIGURE_SEED),
     hypotheses: false,
   });
   return valueOf(outcome);

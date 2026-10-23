@@ -3,8 +3,10 @@
  * in sentence case, then in parentheses what was checked: the regime, n and the rungs used
  * ("Holds in this configuration (local test, n = 200, exact over Q)"); counts follow only
  * where they add something (mixed rungs, fewer valid figures than tested, rejected samples,
- * mirrored figures, a shortfall against the hypotheses). The seed, the tally and the most
- * frequent reasons of invalid figures go to `detail`, shown under the line.
+ * mirrored figures, a shortfall against the hypotheses or one caused by mirroring,
+ * undefined figures repaired by the flip test). The seed, the tally, what the samplers could
+ * not do to the figure (no random similarity, no mirroring: frame.ts) and the most frequent
+ * reasons of invalid figures go to `detail`, shown under the line.
  *
  * `tone` is how the line is coloured: only a LOCAL verdict can be `false` or `mixed`;
  * every GLOBAL verdict is `info` (SPEC §10.5: global findings are information, never a red
@@ -13,6 +15,14 @@
 import { assertNever } from '@geomira/num/assert';
 import { RUNG_NAMES } from './rungs';
 import type { GlobalKind, LocalKind, Verdict } from './verdict';
+import {
+  frameNotes,
+  parityNote,
+  parityShortNote,
+  rejectedNote,
+  repairedText,
+  selectorPhrase,
+} from './verdict-notes';
 
 export type VerdictTone = 'holds' | 'false' | 'mixed' | 'inconclusive' | 'info';
 
@@ -48,9 +58,16 @@ function checked(v: Verdict): string {
   return `${v.regime} test, n = ${String(v.n)}${rungs === '' ? '' : `, ${rungs}`}`;
 }
 
-/** Notes about the hypotheses: a shortfall of tested figures, and "hard to satisfy". */
+/**
+ * Notes about the hypotheses: a shortfall of tested figures, and "hard to satisfy"; or, when
+ * figures of one orientation rarely satisfy them (mirroring is the cause), that instead.
+ */
 function hypothesisNotes(v: Verdict, o: LineOptions): string[] {
   const out: string[] = [];
+  if (v.hardParity !== undefined && v.parity !== undefined) {
+    if (v.tested < v.n) out.push(parityShortNote(v.tested, v.n));
+    return [...out, parityNote(v.parity, v.hardParity)];
+  }
   if (v.tested < v.n)
     out.push(`only ${String(v.tested)} of ${String(v.n)} figures satisfied the hypotheses`);
   if (v.hardToSatisfy === true && o.figureExplains !== true)
@@ -90,8 +107,7 @@ function inconclusive(v: Verdict, o: LineOptions): string {
 function globalBody(v: Verdict, kind: Exclude<GlobalKind, 'inconclusive'>, o: LineOptions): string {
   const f = String(v.tally.false);
   const of = String(valid(v));
-  const rejected =
-    v.tally.rejected > 0 ? [`${String(v.tally.rejected)} samples rejected by hypotheses`] : [];
+  const rejected = rejectedNote(v.tally.rejected);
   const notes = [...validNote(v), ...hypothesisNotes(v, o)];
   const tail = (xs: string[]) => (xs.length === 0 ? '' : `; ${xs.join('; ')}`);
   switch (kind) {
@@ -101,15 +117,16 @@ function globalBody(v: Verdict, kind: Exclude<GlobalKind, 'inconclusive'>, o: Li
       const what =
         v.named === undefined
           ? 'flipping its orientation-dependent selectors together repairs every failure'
-          : `${v.named.object}'s \`${v.named.selector}\` encodes a side; ${v.named.advice}`;
-      return `Orientation-dependent (${checked(v)}: ${f} of ${of} fail and hold with the selectors flipped; ${what}${tail(notes)})`;
+          : `${selectorPhrase(v.named)} encodes a side; ${v.named.advice}`;
+      const fails = repairedText(v.tally.false, valid(v), v.undefinedRepaired ?? 0);
+      return `Orientation-dependent (${checked(v)}: ${fails}; ${what}${tail([...rejected, ...notes])})`;
     }
     case 'configuration-dependent': {
       // The verdict's own text says which of the two cases the flip test found.
       const why = v.text.includes('no orientation-dependent selector')
         ? 'no orientation-dependent selector'
         : 'flipping the orientation-dependent selectors does not repair them';
-      return `Configuration-dependent (${checked(v)}: ${f} of ${of} fail; ${why}${tail(notes)})`;
+      return `Configuration-dependent (${checked(v)}: ${f} of ${of} fail; ${why}${tail([...rejected, ...notes])})`;
     }
     default:
       return assertNever(kind, 'global verdict');
@@ -147,6 +164,7 @@ function detailOf(v: Verdict): string {
   const invalid = t.degenerate + t.undefined + t.ambiguous + t.illConditioned + t.invalid;
   if (invalid > 0) parts.push(`${String(invalid)} not valid`);
   if (v.regime === 'global') parts.push(`${String(v.mirrored ?? 0)} mirrored`);
+  parts.push(...frameNotes(v.regime, v.frame));
   const reasons = v.reasons.map((r) => `${r.reason} ×${String(r.count)}`).join('; ');
   return reasons === '' ? parts.join(' · ') : `${parts.join(' · ')} · ${reasons}`;
 }
