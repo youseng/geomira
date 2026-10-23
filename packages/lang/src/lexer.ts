@@ -167,7 +167,32 @@ function lexToken(c: Cursor, ch: string): void {
     fail(c, start, '° follows a number', 'write 60°');
     return;
   }
-  fail(c, start, `unexpected character "${ch}"`, 'remove it');
+  fail(c, start, `unexpected character "${ch}"`, spellingHint(c, ch));
+}
+
+const POWERS: Readonly<Record<string, number>> = { '²': 2, '³': 3 };
+
+/**
+ * What to write for a character the language spells otherwise: a power (`a^2`, `a²`) is a
+ * product, a root `√2` is sqrt(2), `×` and `÷` are `*` and `/`; anything else is removed.
+ * `c.i` is just after the character.
+ */
+function spellingHint(c: Cursor, ch: string): string {
+  const prev = c.tokens.at(-1);
+  const base = prev === undefined ? 'x' : prev.value === ')' ? '(…)' : prev.text;
+  const exp = ch === '^' ? Number(/^[0-9]+/u.exec(c.src.slice(c.i))?.[0] ?? NaN) : POWERS[ch];
+  if (ch === '^' || exp !== undefined) {
+    return exp === 2 || exp === 3
+      ? `there is no power: write ${Array.from({ length: exp }, () => base).join(' * ')}`
+      : `there is no power: multiply, e.g. ${base} * ${base}`;
+  }
+  if (ch === '√') {
+    const arg = /^(?:[0-9.]+|[A-Za-zα-ω][A-Za-z0-9_α-ω']*)/u.exec(c.src.slice(c.i))?.[0];
+    return `write sqrt(${arg ?? '…'})`;
+  }
+  if (ch === '×') return 'write * for multiplication';
+  if (ch === '÷') return 'write / for division';
+  return 'remove it';
 }
 
 function lexEscape(c: Cursor): void {

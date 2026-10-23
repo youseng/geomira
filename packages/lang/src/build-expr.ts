@@ -42,6 +42,8 @@ export interface ExprEnv {
 export interface CallSite {
   readonly call: CallExpr;
   readonly span: Span;
+  /** What the glued runs among the call's direct arguments mean (ADR-0025), for hints. */
+  readonly runs?: string;
 }
 
 export interface Converted {
@@ -136,8 +138,14 @@ function built(
     tool,
     xs.filter((x): x is Expr => x !== undefined),
   );
-  calls.splice(site, 0, { call: c, span });
+  calls.splice(site, 0, siteOf(c, span, args));
   return c;
+}
+
+/** A call site, with the meaning of the glued runs among its direct arguments. */
+function siteOf(c: CallExpr, span: Span, args: readonly ExprNode[]): CallSite {
+  const runs = args.flatMap((a) => (a.kind === 'call' && a.glued === true ? [runMeaning(a)] : []));
+  return runs.length === 0 ? { call: c, span } : { call: c, span, runs: runs.join('; ') };
 }
 
 function unknownTool(name: string, span: Span, env: ExprEnv): undefined {
@@ -173,7 +181,8 @@ function callExpr(
   }
   const site = calls.length;
   const before = env.diags.length;
-  const args = spreadRuns(tool, n.args, env.registry).map((a) => toExpr(a, env, calls));
+  const spread = spreadRuns(tool, n.args, env.registry);
+  const args = spread.map((a) => toExpr(a, env, calls));
   const sels = n.selectors.map((s) => toSelector(s, env, calls));
   if (args.some((x) => x === undefined) || sels.some((x) => x === undefined)) {
     if (n.glued === true) explainRun(n, env.diags, before);
@@ -194,8 +203,16 @@ function callExpr(
     argExprs,
     sels.filter((x): x is Selector => x !== undefined),
   );
-  calls.splice(site, 0, { call: c, span: n.span });
+  calls.splice(site, 0, siteOf(c, n.span, spread));
   return c;
+}
+
+/** `AB is line(A, B); the length AB is dist(A, B)`: what a glued run means (ADR-0025). */
+function runMeaning(n: Extract<ExprNode, { kind: 'call' }>): string {
+  const names = n.args.flatMap((a) => (a.kind === 'name' ? [a.name] : []));
+  const list = names.join(', ');
+  const length = names.length === 2 ? `; the length ${names.join('')} is dist(${list})` : '';
+  return `${names.join('')} is ${n.tool}(${list})${length}`;
 }
 
 /**
@@ -203,10 +220,7 @@ function callExpr(
  * and its length is dist(A, B).
  */
 function explainRun(n: Extract<ExprNode, { kind: 'call' }>, diags: Diagnostic[], from: number) {
-  const names = n.args.flatMap((a) => (a.kind === 'name' ? [a.name] : []));
-  const list = names.join(', ');
-  const length = names.length === 2 ? `; the length ${names.join('')} is dist(${list})` : '';
-  const meaning = `${names.join('')} is ${n.tool}(${list})${length}`;
+  const meaning = runMeaning(n);
   for (let i = from; i < diags.length; i++) {
     const d = diags[i];
     if (d !== undefined) diags[i] = { ...d, hint: `${d.hint} (${meaning})` };
@@ -259,7 +273,7 @@ export function checkCalls(
         tool,
         kinds.map((k) => ({ kind: k.join(' | ') })),
       );
-      out.push(error(site.span, msg, 'pass arguments of the kinds a signature takes'));
+      out.push(error(site.span, msg, site.runs ?? 'pass arguments of the kinds a signature takes'));
     }
   }
   return out;

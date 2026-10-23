@@ -93,10 +93,40 @@ function statement(c: Cursor): Statement | undefined {
   }
   if ((t?.kind === 'name' || t?.kind === 'point') && isPunct(c, '=', 1)) return definition(c);
   if ((t?.kind === 'name' || t?.kind === 'point') && isPunct(c, ',', 1)) return branches(c);
+  if (t?.kind === 'point') return gluedTarget(c);
   fail(
     c,
     `expected a statement, found ${describe(t)}`,
     'write name = expression, points A B C, claim …, assume …, or a directive such as @version 1',
+  );
+  return undefined;
+}
+
+const COUNTS = ['', 'one', 'two', 'three', 'four', 'five'];
+
+/** `AB = …`: glued point names where a name is defined (ADR-0028), else not a statement. */
+function gluedTarget(c: Cursor): Statement | undefined {
+  const first = peek(c);
+  let k = 1;
+  while (peek(c, k)?.kind === 'point' && peek(c, k)?.spaceBefore === false) k += 1;
+  const last = peek(c, k - 1);
+  if (k < 2 || !isPunct(c, '=', k) || first === undefined || last === undefined) {
+    fail(
+      c,
+      `expected a statement, found ${describe(first)}`,
+      'write name = expression, points A B C, claim …, assume …, or a directive such as @version 1',
+    );
+    return undefined;
+  }
+  const text = c.tokens
+    .slice(c.i, c.i + k)
+    .map((x) => x.text)
+    .join('');
+  fail(
+    c,
+    `"${text}" is ${COUNTS[k] ?? String(k)} glued point names, not a name`,
+    'name it with one letter, as in l = line(A, B) or A_1 = …',
+    { line: first.line, column: first.column, endColumn: last.endColumn },
   );
   return undefined;
 }
