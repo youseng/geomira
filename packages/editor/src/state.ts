@@ -30,6 +30,11 @@ export interface DragState {
   readonly base: number;
   /** The document before the drag (dragCancel restores it). */
   readonly before: Document;
+  /**
+   * The history before the drag: dragCancel restores its undo entries exactly (the drag's
+   * entry may have pushed the oldest one out of a full history).
+   */
+  readonly history: History;
   /** Whether a move has happened (then the history's last entry is this drag's). */
   readonly moved: boolean;
 }
