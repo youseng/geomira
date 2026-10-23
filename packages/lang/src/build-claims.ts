@@ -7,6 +7,7 @@
  */
 import type { Assumption, Claim, CommentAnchor } from '@geomira/kernel/document';
 import type { Expr } from '@geomira/kernel/expr';
+import { exprKinds } from '@geomira/kernel/derived';
 import { nameProblem } from '@geomira/kernel/names';
 import { claimProblem } from '@geomira/claims/check';
 import { assumptionProblem } from '@geomira/claims/hypotheses';
@@ -14,7 +15,7 @@ import type { Attr, Condition } from './ast';
 import { byKey, textAttr } from './attr-values';
 import { expression } from './build-defs';
 import type { State } from './build-state';
-import { error } from './diagnostic';
+import { error, warning } from './diagnostic';
 import { spreadCondition } from './geomdraw';
 
 export interface Deferred {
@@ -53,6 +54,25 @@ function claimName(st: State, attrs: readonly Attr[]): { ok: boolean; name?: str
   return name === undefined ? { ok: true } : { ok: true, name };
 }
 
+/**
+ * `x = y` of things that cannot be points (ADR-0028): the tester's "invalid claim" message,
+ * as a warning where the line is written. Not an error: the printer writes equal(l, m) made
+ * in the editor as `l = m`, and that text must read back to the same document (P1).
+ */
+function relationKinds(st: State, c: Condition, xs: readonly Expr[]): void {
+  const kinds = claimProblem({ kind: c.kind, args: xs }, (e) =>
+    exprKinds(e, st.kinds, st.registry),
+  );
+  if (kinds === undefined) return;
+  st.diags.push(
+    warning(
+      c.span,
+      kinds,
+      'equal compares points; for lengths write AB = CD or dist(A, B) = dist(C, D)',
+    ),
+  );
+}
+
 /** Builds one claim or assumption; its comment anchor, or undefined when not applied. */
 function one(st: State, d: Deferred): CommentAnchor | undefined {
   st.line = Number.MAX_SAFE_INTEGER;
@@ -78,6 +98,7 @@ function one(st: State, d: Deferred): CommentAnchor | undefined {
   }
   const named = claimName(st, d.attrs);
   if (!named.ok) return undefined;
+  if (d.condition.relation === true) relationKinds(st, d.condition, xs);
   const c: Claim =
     named.name === undefined
       ? { id, kind: d.condition.kind, args: xs }

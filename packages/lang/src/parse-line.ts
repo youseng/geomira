@@ -26,7 +26,8 @@ import { lexLine } from './lexer';
 import { floatLiteral } from './lex-literals';
 import { parseAttrs } from './parse-attrs';
 import { parseExpr } from './parse-expr';
-import { parseClaim, parseCondition } from './parse-notation';
+import { parseCondition } from './parse-condition';
+import { parseClaim } from './parse-notation';
 
 export interface ParsedLine {
   readonly line: Line;
