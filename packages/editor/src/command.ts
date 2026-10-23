@@ -54,6 +54,18 @@ function guiTool(line: string): ToolUI | undefined {
   return TOOLS.find((x) => x.id === t || x.label.toLowerCase() === t);
 }
 
+/**
+ * The index of the printed line a single-valued directive command replaces (`@title`,
+ * `@author`, `@viewport`: a document has at most one of each), or undefined. Strings are
+ * printed with their newlines escaped, so a line that starts with the directive is it.
+ */
+function replacedLine(lines: readonly string[], command: string): number | undefined {
+  const m = /^@(title|author|viewport)(?=\s|$)/u.exec(command);
+  if (m === null) return undefined;
+  const i = lines.findIndex((l) => new RegExp(`^${m[0]}(?=\\s|$)`, 'u').test(l));
+  return i >= 0 ? i : undefined;
+}
+
 /** Runs one command (see the module comment). Never throws. */
 export function runCommand(state: EditorState, line: string, env: EditorEnv): CommandResult {
   const trimmed = line.trim();
@@ -65,9 +77,15 @@ export function runCommand(state: EditorState, line: string, env: EditorEnv): Co
       ? { kind: 'edit', result: r }
       : { kind: 'error', reason: r.reason, diagnostics: [] };
   }
-  const printed = print(state.doc);
-  const offset = printed.split('\n').length - 1;
-  const r = applyEdit(state, { kind: 'replaceText', text: `${printed}${trimmed}\n` }, env);
+  const lines = print(state.doc).split('\n');
+  const at = replacedLine(lines, trimmed);
+  // The command's line: the directive it replaces, else a new last line.
+  const offset = at ?? lines.length - 1;
+  const text =
+    at === undefined
+      ? `${lines.join('\n')}${trimmed}\n`
+      : lines.map((l, i) => (i === at ? trimmed : l)).join('\n');
+  const r = applyEdit(state, { kind: 'replaceText', text }, env);
   if (!r.ok) {
     const diagnostics = (r.diagnostics ?? []).map((d) => ({ ...d, line: d.line - offset }));
     return { kind: 'error', reason: r.reason, diagnostics };
