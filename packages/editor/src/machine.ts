@@ -175,7 +175,10 @@ function created(
   if (!made.ok) return refuse(origin, made.reason);
   if (made.id === undefined) return refuse(origin, 'nothing was made');
   const r = pushPick(made.state, tool, made.id, slot, env);
-  return r.ok ? r : refuse(origin, r.reason);
+  // The notice of an object reused rather than made again (ADR-0029) stays with the click.
+  const notice = r.ok ? (r.notice ?? made.notice) : undefined;
+  if (!r.ok) return refuse(origin, r.reason);
+  return notice === undefined ? r : { ...r, notice };
 }
 
 function objectInput(state: EditorState, tool: ToolUI, id: number, env: EditorEnv): EditResult {

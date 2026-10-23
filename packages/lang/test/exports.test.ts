@@ -33,7 +33,10 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   },
   './grammar': { module: grammar, names: ['GRAMMAR'] },
   './docs': { module: docs, names: ['renderLanguageDocs'] },
-  './same-construction': { module: sameConstruction, names: ['sameConstructionMessage'] },
+  './same-construction': {
+    module: sameConstruction,
+    names: ['alreadyMessage', 'sameConstructionMessage'],
+  },
 };
 
 describe('@geomira/lang subpath surface', () => {

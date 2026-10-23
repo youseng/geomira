@@ -6,13 +6,16 @@
  * together (ADR-0024).
  */
 import type { DocumentEdit } from './edit';
+import { sameConstruction } from '@geomira/kernel/construction-key';
 import { exprKinds, objectKinds } from '@geomira/kernel/derived';
+import type { DocObject } from '@geomira/kernel/document';
 import { call, lit, ref, type Expr } from '@geomira/kernel/expr';
 import { requireOnCircle } from '@geomira/kernel/incidence';
 import type { Value, Vec } from '@geomira/kernel/value';
 import { assertNever } from '@geomira/num/assert';
 import { FloatField } from '@geomira/num/float-field';
 import { parseRational, toNumber } from '@geomira/num/rational';
+import { alreadyMessage } from '@geomira/lang/same-construction';
 import { pointsCoincide } from '@geomira/scene/coincide';
 import { chooseSelectors } from './choice';
 import { applyEdit } from './edit';
@@ -72,6 +75,29 @@ function addEdit(
   return { kind: 'add', object: { name, def, layers: [state.activeLayer] } };
 }
 
+/** "l is line(A, B) already; …": what reusing `objs` instead of adding them again says. */
+function alreadyThere(state: EditorState, objs: readonly DocObject[]): string {
+  const names = (id: number) => state.doc.objects.find((o) => o.id === id)?.name;
+  return objs.map((o) => alreadyMessage(o, names)).join('; ');
+}
+
+/**
+ * Instead of adding objects that are the same constructions as `objs` (ADR-0029): selects
+ * them; the result's id is the last one (a tool that goes on picks it) and its notice says
+ * so. Nothing is added, so there is no history entry.
+ */
+function reuse(state: EditorState, objs: readonly DocObject[], env: EditorEnv): EditResult {
+  const ids = objs.map((o) => o.id);
+  const r = applyEdit(state, { kind: 'select', ids, mode: 'replace' }, env);
+  const last = ids[ids.length - 1];
+  if (!r.ok || last === undefined) return r;
+  return { ...r, id: last, notice: alreadyThere(state, objs) };
+}
+
+/**
+ * Adds `def` as a new object, or, when an object of the figure is the same construction
+ * (line(B, A) for l = line(A, B); ADR-0029), reuses that one (see reuse).
+ */
 export function add(
   state: EditorState,
   def: Expr,
@@ -79,10 +105,17 @@ export function add(
   env: EditorEnv,
   wanted?: string,
 ): EditResult {
+  const same = sameConstruction(state.doc, def, env.registry);
+  if (same !== undefined) return reuse(state, [same], env);
   return applyEdit(state, addEdit(state, def, kind, env, wanted), env);
 }
 
-/** Adds every definition as one batch (one history entry); names are chosen in turn. */
+/**
+ * Adds every definition as one batch (one history entry); names are chosen in turn. A
+ * definition that is the same construction as an object of the figure is not added: that
+ * object is reused (selected and named in the notice; ADR-0029); one that repeats an earlier
+ * definition of the batch is left out.
+ */
 function addAll(
   state: EditorState,
   defs: readonly Expr[],
@@ -90,18 +123,29 @@ function addAll(
   env: EditorEnv,
 ): EditResult {
   const edits: DocumentEdit[] = [];
+  const reused: DocObject[] = [];
   let probe = state;
   for (const def of defs) {
+    const same = sameConstruction(probe.doc, def, env.registry);
+    if (same !== undefined) {
+      const old = state.doc.objects.some((o) => o.id === same.id);
+      if (old && !reused.includes(same)) reused.push(same);
+      continue;
+    }
     const e = addEdit(probe, def, kind, env);
     const r = applyEdit(probe, e, env);
     if (!r.ok) return refuse(state, r.reason);
     probe = r.state;
     edits.push(e);
   }
+  if (edits.length === 0) return reuse(state, reused, env);
   const [only] = edits;
-  if (only !== undefined && edits.length === 1) return applyEdit(state, only, env);
   const names = edits.map((e) => (e.kind === 'add' ? e.object.name : '')).join(', ');
-  return applyEdit(state, { kind: 'batch', label: `add ${names}`, edits }, env);
+  const r =
+    only !== undefined && edits.length === 1
+      ? applyEdit(state, only, env)
+      : applyEdit(state, { kind: 'batch', label: `add ${names}`, edits }, env);
+  return r.ok && reused.length > 0 ? { ...r, notice: alreadyThere(state, reused) } : r;
 }
 
 /** Whether a point object of the figure is at `at` (within the decision band). */

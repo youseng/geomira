@@ -21,6 +21,12 @@ export type EditResult =
       /** The id of a new object, claim, assumption (or of the last one a batch made). */
       readonly id?: number;
       readonly layerId?: string;
+      /**
+       * Information for the user about a success: a tool that would have added an object the
+       * same construction as an existing one reused that one instead ("l is line(A, B)
+       * already", ADR-0029).
+       */
+      readonly notice?: string;
     }
   | {
       readonly ok: false;

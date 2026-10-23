@@ -15,7 +15,6 @@ import { addObject } from '@geomira/kernel/edit';
 import { staticKinds } from '@geomira/kernel/selector-check';
 import { error, warning, type Diagnostic, type Span } from './diagnostic';
 import { nameOf, type PendingRule, type State } from './build-state';
-import { printExpr } from './print-expr';
 import { sameConstructionMessage } from './same-construction';
 
 export interface NewDef {
@@ -172,11 +171,7 @@ function duplicate(st: State, d: NewDef): Diagnostic | undefined {
   if (severity === undefined) return undefined;
   const same = sameConstruction(st.doc, d.def, st.registry, { kinds: st.kinds, cache: st.keys });
   if (same === undefined) return undefined;
-  const m = sameConstructionMessage(
-    d.name,
-    same.name,
-    printExpr(same.def, (id) => nameOf(st, id)),
-  );
+  const m = sameConstructionMessage(d.name, same, (id) => nameOf(st, id));
   return (severity === 'error' ? error : warning)(d.span, m.message, m.hint);
 }
 
