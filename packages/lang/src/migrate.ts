@@ -41,9 +41,13 @@ export function readVersion(
   return undefined;
 }
 
+/** Rewrites the number of the `@version` line, keeping the rest of it (indent, comment). */
 function setVersion(text: string, line: number, version: number): string {
   const lines = text.split('\n');
-  lines[line - 1] = `@version ${String(version)}`;
+  const old = lines[line - 1] ?? '';
+  lines[line - 1] = /@version[ \t]+[0-9]+/u.test(old)
+    ? old.replace(/@version[ \t]+[0-9]+/u, `@version ${String(version)}`)
+    : `@version ${String(version)}`;
   return lines.join('\n');
 }
 
