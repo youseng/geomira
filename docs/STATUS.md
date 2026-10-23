@@ -1,6 +1,134 @@
 # STATUS
 
-## Pre-beta bug review (maintainer request, 2026-10-22): NOT ACCEPTED (waiting for CI)
+## Pre-beta review, round 2: the medium bugs (maintainer request, 2026-10-23): NOT ACCEPTED (waiting for CI)
+
+After round 1 (below), the maintainer asked for every medium bug to be found, then for all of
+them to be fixed. Six reviews (kernel, claims, lang, scene and export, editor, web) found about
+thirty new defects, each reproduced by a script; with the ten medium bugs round 1 left open,
+they were fixed by six parallel fixers, one area each, merged here. Every fix is its own
+commit whose new test failed before it. Decisions: [ADR-0028](adr/0028-pre-beta-review-round-2.md).
+
+Base check: main = 36851f9 (PR #17 merged; round 1's CI green, links below).
+
+## Done (each item → the test file that proves it)
+
+Test files are under the package's `test/` folder unless a path is given.
+
+- **Lang** (ADR-0028 items 1–6): `a/2/3` is (a/2)/3 (high: silently wrong arithmetic) →
+  `division-chain.test.ts`; `triangle ABC <type>` on existing points has the type →
+  `triangle-existing.test.ts`; `length`/`distance` equalities are the length claim, other
+  non-point `x = y` claims warn → `claim-equal-kinds.test.ts`,
+  `packages/claims/test/check-arg-kinds.test.ts`; `dist(AB)`, `angle(ABC)` in claims and
+  assumptions → `notation-spread.test.ts`; hints → `hints-operators.test.ts`; `circle(O, AB)`
+  warns → `circle-run-warning.test.ts`; a line with an error applies nothing →
+  `no-partial-lines.test.ts`; BOM → `bom.test.ts`; comment CRs, negation depth, non-BMP
+  characters, the `@version` comment, a triangle line's comments → `comment-cr`,
+  `negation-depth`, `non-bmp`, `migrate-version-comment`, `triangle-comments` (`.test.ts`).
+- **Claims** (items 7–11): the random similarity only for figures it maps →
+  `sampler-frame.test.ts` (∠BHC + ∠A = 180° with C = (2, 2√3) and `on(P, circle(O, 5))` now
+  HOLD); invalid and rejected counts in verdicts → `verdict-invalid-counts.test.ts`,
+  `verdict-rejected-counts.test.ts`; undefined figures in the flip test →
+  `laws/l16-undefined.test.ts`; no probe names → `probe-name.test.ts`; mirroring named →
+  `mirror-acceptance.test.ts`; badge and local test agree → `current-figure-seed.test.ts`;
+  the (u : v) floor step → `noise-floor-stereo.test.ts`.
+- **Kernel** (items 12–16): images of lines are lines → `image-kinds.test.ts`; computed gliders
+  are not draggable → `drag-computed.test.ts` (kernel and editor); rule transformations →
+  `rule-transform-kind.test.ts`; inverse range → `inverse-range.test.ts`; image order after a
+  move → `image-placement-move.test.ts`.
+- **Scene and export** (items 17–21): a tangency click builds the intersection →
+  `packages/scene/test/hit-tangency.test.ts`, `packages/editor/test/point-tangency.test.ts`;
+  points near a text → `hit-text-handle.test.ts`, `packages/editor/test/point-near-text.test.ts`;
+  undrawable warnings and polygons → `undrawable-warnings.test.ts`,
+  `packages/scene/test/placement-polygon.test.ts`; Asymptote curve accuracy →
+  `asy-circle-accuracy.test.ts`, `arc-bezier.test.ts`; large TikZ arcs → `tikz-big-arc.test.ts`;
+  segment-mark label → `segment-mark-label.test.ts`; text handle not exported →
+  `text-handle.test.ts`; dashed polygons in Asymptote → `asy-dashed-polygon.test.ts`; PNG pHYs
+  → `png-phys-order.test.ts`. New tex.yml fixtures: `big-arcs.geo`, `dashed-polygons.geo`.
+- **Editor** (items 23–24): `claim-tool-repeats`, `claim-tool-order`, `glider-sides`,
+  `glider-on-point`, `created-pick-refused`, `intersection-lines`, `tangent-coincidence`,
+  `debug-log`, `keymap-backspace`, `share-percent`, `hidden-side-reuse`,
+  `drag-text-scaled-image`, `drag-cancel-history`, `locked-layers-move-in`,
+  `command-directives`, `tool-value-kept` (`.test.ts`).
+- **Web and autosave** (items 22, 25–28): `packages/editor/test/autosave-example.test.ts`,
+  `autosave-examples`, `autosave-flush`, `autosave-notify`, `examples-keys`,
+  `test-runs-regime-docs`, `open-sample-fit`, `shortcut-targets`, `notice-refusal`,
+  `gestures-escape`, `wheel-zoom`, `pixel-ratio`, `objects-pick` (`.test.ts`), and the new
+  Playwright specs `flows-keyboard.spec.ts`, `flows-review.spec.ts`,
+  `drawer-notice-mobile.spec.ts`.
+
+## Not done
+
+Kept because frozen tests pin the current behaviour (ADR-0028, Consequences):
+
+- the intersection tool on `line(A, B)` and `line(A, C)` still builds a point on A
+  (`packages/editor/test/machine.test.ts:238`, `geomdraw-tools.test.ts:215`);
+- a cancelled drag restores the undo history exactly but still clears redo (the fuzz model);
+- the debug log still keeps UI edits (they now leave first);
+- the local verdict line omits rejected counts (`verdict-line-exact.test.ts`);
+- a non-point `x = y` claim is a warning, not an error;
+- label placement falls back to the first direction when every direction collides (Run 8b
+  note C, `packages/scene/test/label-collision.test.ts:94`); a least-overlap version is ready if
+  the maintainer wants it changed.
+
+## Known bugs
+
+- `rotate(X, O, θ)` with a literal θ is not equivariant under the global test's mirroring: with
+  `assume` lines, a claim whose failures come from that orientation reads
+  CONFIGURATION-DEPENDENT, not ORIENTATION-DEPENDENT (SPEC §10.5 lists only selectors as
+  orientation-dependent).
+- Selector filters (`same_side`, `between`, `on_arc`) give "ambiguous" when a candidate lies
+  exactly on the dividing line, even when the other candidate decides (SPEC §7 as written).
+
+## Uncertain
+
+- TikZ arcs below 4000 bp may carry pgf's quarter-circle Bézier error (up to 2.7·10⁻⁴·r,
+  about 0.05 px at 200 px); not checked (no TeX in this container).
+- The new Asymptote syntax (explicit `..controls..` pieces, the per-edge `for` loop) was
+  reviewed by hand only; tex.yml compiles it through the new fixtures.
+- Decisions to confirm: ADR-0028 items 3 (warning, not error), 7 (the conservative similarity
+  rule), 13 (computed gliders refused rather than moving their param), 15 (the inverse range),
+  17 (0.5 px tangency) and 22 (the `example` origin).
+- No mathematical fact or contest problem was used.
+
+## Changed frozen tests
+
+Compared with `run-10b`, under [ADR-0028](adr/0028-pre-beta-review-round-2.md):
+
+- `packages/export/test/png-utf8.test.ts`, four lines (commit 2c0f4f1): the chunk order was
+  the bug.
+- `packages/export/test/__snapshots__/fixture-display/{snippet.tikz.tex,standalone.tex,standalone.asy,aops.asy}`,
+  six deleted lines each (commit 8ad0bec): the text handle's speck.
+
+## Acceptance command output
+
+### Local, merged branch (`pnpm verify`)
+
+```
+✔ no dependency violations found (605 modules, 3270 dependencies cruised)
+ok   tolerance: 859 files scanned, 0 violation(s)
+ok   file-length: 859 files scanned, 0 violation(s)
+ok   test-count: 2771 tests, floor 2471, 0 violation(s)
+ok   disabled-tests: 859 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-10b, 0 violation(s)
+ok   forbidden-words: 859 files scanned, 0 violation(s)
+ Test Files  317 passed (317)
+      Tests  2771 passed (2771)
+```
+
+The test-count floor is now 2771. Playwright (web fixer's worktree, desktop and mobile): 77
+passed and 3 failed, the three phone canvas baselines of `scene.spec.ts`, which fail the same way
+on the unmodified main build in this container (label fonts; CI is the reference). CI: pending
+(PR #18).
+
+## Requests
+
+- Confirm the decisions under Uncertain, and say which items under Not done should change their
+  frozen tests.
+- No runtime dependency was added.
+
+---
+
+## Pre-beta bug review (maintainer request, 2026-10-22): ACCEPTED (2026-10-23)
 
 The maintainer asked for a comprehensive bug review before the beta, then for the most
 serious findings to be fixed. The review covered every package and apps/web (seven parallel
@@ -131,7 +259,18 @@ ok   forbidden-words: 771 files scanned, 0 violation(s)
 ```
 
 The test-count floor is now 2471. Playwright was not run locally; the built page was driven
-with Playwright for items 7 and 8 only. CI: pending (this PR).
+with Playwright for items 7 and 8 only.
+
+### CI on GitHub (1ce2069, PR #17, merged as 36851f9)
+
+- ci https://github.com/youseng/geomira/actions/runs/39872534574 and
+  https://github.com/youseng/geomira/actions/runs/39872579401: `verify` success.
+- tex https://github.com/youseng/geomira/actions/runs/39872534595 and
+  https://github.com/youseng/geomira/actions/runs/39872579324: `compile` success (the new
+  `near-tangent.geo` fixture included).
+- deploy https://github.com/youseng/geomira/actions/runs/39872535045: build success.
+
+This section's Known bugs were fixed by the round below, except those it lists.
 
 ## Requests
 
