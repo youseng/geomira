@@ -1,4 +1,32 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
+
+/**
+ * A dialog's focus and Escape (ADR-0028): the dialog takes the focus when it opens, Escape
+ * closes it (and is not also a canvas shortcut), and the focus returns where it was.
+ */
+export function useDialog(onClose: () => void): RefObject<HTMLDivElement | null> {
+  const ref = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const before = document.activeElement;
+    ref.current?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      e.preventDefault();
+      close.current();
+    };
+    // Capture on the window: before the page's shortcuts and menus see the key.
+    addEventListener('keydown', onKey, true);
+    return () => {
+      removeEventListener('keydown', onKey, true);
+      if (before instanceof HTMLElement && before.isConnected)
+        before.focus({ preventScroll: true });
+    };
+  }, []);
+  return ref;
+}
 
 /** Copies text to the clipboard when the browser allows it; the text stays selectable anyway. */
 function copy(text: string, done: (ok: boolean) => void): void {
@@ -46,8 +74,9 @@ export interface TextDialogProps {
 
 /** A dialog showing a text to copy (share link, debug report). */
 export function TextDialog({ title, text, copyLabel, onClose, multiline }: TextDialogProps) {
+  const ref = useDialog(onClose);
   return (
-    <div className="dialog" role="dialog" aria-label={title}>
+    <div className="dialog" role="dialog" aria-label={title} ref={ref} tabIndex={-1}>
       <h2>{title}</h2>
       {multiline ? (
         <textarea readOnly value={text} aria-label={`${title} content`} rows={12} />

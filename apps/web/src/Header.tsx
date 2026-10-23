@@ -162,6 +162,26 @@ function ViewMenu(p: HeaderProps) {
 }
 
 /**
+ * Whether a key on the CLOSED examples list is ignored: type-ahead letters and the arrows
+ * would open another example at once, replacing the figure (ADR-0028). Space, Enter and
+ * Alt+ArrowDown still open the list; a choice in the open list is made there.
+ */
+export function ignoredOnExamples(key: string, modified: boolean): boolean {
+  if (modified) return false;
+  const moves = [
+    'ArrowUp',
+    'ArrowDown',
+    'ArrowLeft',
+    'ArrowRight',
+    'Home',
+    'End',
+    'PageUp',
+    'PageDown',
+  ];
+  return (key.length === 1 && key !== ' ') || moves.includes(key);
+}
+
+/**
  * The examples as a native select laid over a menu button (its label stays "Example"): the
  * button shows "Examples", the platform's own list opens on a click or a tap.
  */
@@ -176,6 +196,9 @@ function Examples(p: HeaderProps) {
       <select
         aria-label="Example"
         value=""
+        onKeyDown={(e) => {
+          if (ignoredOnExamples(e.key, e.altKey || e.ctrlKey || e.metaKey)) e.preventDefault();
+        }}
         onChange={(e) => {
           p.onExample(e.target.value);
         }}
@@ -215,7 +238,7 @@ function ExportMenu(p: HeaderProps) {
             onClick={p.onRestore}
             close={close}
             disabled={!p.canRestore}
-            title="The autosaved figure from before (after opening a link: your own figure)"
+            title="The autosaved figure from before (after opening a link or an example: your own figure)"
           >
             Restore previous figure
           </MenuItem>

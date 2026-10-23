@@ -3,7 +3,7 @@
  * (editor store, test worker host and runs), the scene of the current figure, and what the
  * header's buttons and the keyboard shortcuts do. Every change is an edit of the store.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { TriangleType } from '@geomira/claims/randomize';
 import type { DocumentEdit } from '@geomira/editor/edit';
 import { randomizeEdit } from '@geomira/editor/randomize';
@@ -233,6 +233,19 @@ function actions(env: HeaderEnv) {
   };
 }
 
+/**
+ * Opens example `id`: its test runs start afresh, and it is not autosaved before its first
+ * edit, so browsing examples never pushes the user's own figure out (ADR-0028). False when
+ * there is no such example.
+ */
+export function openExample(store: EditorStore, runs: { clear(): void }, id: string): boolean {
+  const e = EXAMPLES.find((x) => x.id === id);
+  if (e === undefined) return false;
+  runs.clear();
+  store.openText(e.text, 'example');
+  return true;
+}
+
 /** The header's state and actions. */
 export function useHeader(env: HeaderEnv) {
   const { store, runs, snap, ready } = env;
@@ -243,11 +256,9 @@ export function useHeader(env: HeaderEnv) {
   // The text of the settled state: a drag frame does not print the document (note F).
   const settled = useSettled(state);
   const printed = useMemo(() => print(settled.doc), [settled.doc]);
-  const open = (text: string, origin: 'file' | 'autosave') => {
-    setTimes(null);
-    runs.clear();
-    store.openText(text, origin);
-  };
+  // Re-render when the autosave writes the slots: "Restore previous figure" depends on them.
+  const { subscribe, getVersion } = store.autosave;
+  useSyncExternalStore(subscribe, getVersion, getVersion);
   const props: HeaderProps = {
     canUndo: state.history.past.length > 0,
     canRedo: state.history.future.length > 0,
@@ -255,9 +266,10 @@ export function useHeader(env: HeaderEnv) {
     triangleType,
     stats,
     onExample: (id) => {
-      const e = EXAMPLES.find((x) => x.id === id);
-      if (e === undefined) return;
-      open(e.text, 'file');
+      if (!openExample(store, runs, id)) return;
+      setTimes(null);
+      // Off the hidden list, so a letter is a shortcut, not another example (ADR-0028).
+      env.canvas()?.focus({ preventScroll: true });
     },
     onTriangleType: setTriangleType,
     onRandomize: () => {
@@ -268,7 +280,9 @@ export function useHeader(env: HeaderEnv) {
     onRestore: () => {
       const text = store.autosave.restore(printed);
       if (text === undefined) return;
-      open(text, 'autosave');
+      setTimes(null);
+      runs.clear();
+      store.openText(text, 'autosave');
       store.autosave.restored();
     },
     onMeasure: () => {

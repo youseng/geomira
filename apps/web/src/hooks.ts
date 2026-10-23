@@ -4,11 +4,12 @@
  * document opens, and internal errors (note D).
  */
 import { useEffect, useRef } from 'react';
-import { keyAction, type KeyAction } from '@geomira/editor/keymap';
+import { keyAction, type KeyAction, type KeyEventLike } from '@geomira/editor/keymap';
 import { openAtStartup } from '@geomira/editor/restore';
 import { decodeShare, SHARE_PREFIX } from '@geomira/editor/share';
 import { emptyDocument } from '@geomira/kernel/document';
 import { print } from '@geomira/lang/print';
+import { assertNever } from '@geomira/num/assert';
 import type { Scene } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
 import { FIT_MARGIN, viewportFor, WIDE_FIT_MARGIN } from './figure';
@@ -80,40 +81,85 @@ export function useStartup(store: EditorStore, runs: { clear(): void }, onReady:
   }, [store, runs, onReady]);
 }
 
-/** Saves the figure after changes (the policy is packages/editor's); a link's hash goes once edited. */
+/**
+ * Saves the figure after changes (the policy is packages/editor's); a link's hash goes once
+ * edited. The save waits AUTOSAVE_MS after the last change; it runs at once when another
+ * figure opens (store.ts) or the page hides (ADR-0028).
+ */
 export function useAutosave(store: EditorStore, snap: Snapshot, ready: boolean): void {
   const doc = snap.state.doc;
   useEffect(() => {
-    if (!ready) return undefined;
-    const t = setTimeout(() => {
+    if (!ready) return;
+    // The hash of this figure: a link opened later is not removed by this figure's save.
+    const hash = location.hash;
+    store.autosave.schedule(() => {
       store.autosave.save(print(doc));
-      if (store.autosave.wasEdited() && location.hash.startsWith(SHARE_PREFIX))
+      if (store.autosave.wasEdited() && hash.startsWith(SHARE_PREFIX) && location.hash === hash)
         history.replaceState(null, '', location.pathname + location.search);
     }, AUTOSAVE_MS);
-    return () => {
-      clearTimeout(t);
-    };
   }, [store, doc, ready]);
+  useEffect(() => flushWhenHidden(store.autosave, window, document), [store]);
 }
 
-function typing(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
-  );
+/** Runs the pending save when the page hides (pagehide, or hidden); returns the unsubscribe. */
+export function flushWhenHidden(
+  autosave: { flush(): void },
+  win: EventTarget,
+  doc: EventTarget & { readonly visibilityState: string },
+): () => void {
+  const flush = () => {
+    autosave.flush();
+  };
+  const onVisibility = () => {
+    if (doc.visibilityState === 'hidden') autosave.flush();
+  };
+  win.addEventListener('pagehide', flush);
+  doc.addEventListener('visibilitychange', onVisibility);
+  return () => {
+    win.removeEventListener('pagehide', flush);
+    doc.removeEventListener('visibilitychange', onVisibility);
+  };
 }
 
-/** Keyboard shortcuts (never while typing in a field). */
+/**
+ * What a key event's target is to the shortcuts: a `field` takes every key (typing); a
+ * `control` (button, link, tab, …) takes Enter and Space, which activate it; `other` none.
+ */
+export type KeyTarget = 'field' | 'control' | 'other';
+
+/** The roles and elements that Enter or Space activate. */
+const CONTROLS =
+  'button, a[href], summary, [role="button"], [role="tab"], [role="link"], [role="menuitem"], [role="option"], [role="checkbox"], [role="radio"], [role="switch"]';
+
+function keyTarget(target: EventTarget | null): KeyTarget {
+  if (!(target instanceof HTMLElement)) return 'other';
+  if (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+    return 'field';
+  return target.closest(CONTROLS) === null ? 'other' : 'control';
+}
+
+/** The shortcut of a key on a target of kind `target`, if it is one (ADR-0028). */
+export function shortcutFor(e: KeyEventLike, target: KeyTarget): KeyAction | undefined {
+  switch (target) {
+    case 'field':
+      return undefined;
+    case 'control':
+      return e.key === 'Enter' || e.key === ' ' ? undefined : keyAction(e);
+    case 'other':
+      return keyAction(e);
+    default:
+      return assertNever(target, 'key target');
+  }
+}
+
+/** Keyboard shortcuts (never while typing in a field, nor Enter or Space on a control). */
 export function useShortcuts(perform: (a: KeyAction) => void): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (typing(e.target)) return;
-      const a = keyAction({
-        key: e.key,
-        ctrl: e.ctrlKey || e.metaKey,
-        shift: e.shiftKey,
-        alt: e.altKey,
-      });
+      const a = shortcutFor(
+        { key: e.key, ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey, alt: e.altKey },
+        keyTarget(e.target),
+      );
       if (a === undefined) return;
       e.preventDefault();
       perform(a);
@@ -125,24 +171,27 @@ export function useShortcuts(perform: (a: KeyAction) => void): void {
   }, [perform]);
 }
 
-/** Fits the view whenever a document opens (once the canvas has a size). */
+/**
+ * Fits the view whenever a document opens or a fit is asked for (store.fits), once the canvas
+ * has a size.
+ */
 export function useFitOnOpen(
   store: EditorStore,
-  openCount: number,
+  fits: number,
   size: Size | null,
   sceneOf: () => Scene,
 ): void {
   const fitted = useRef(0);
   useEffect(() => {
     // Only a newly opened document is fitted (once the canvas has a size); edits keep the view.
-    if (size === null || openCount === fitted.current) return;
-    fitted.current = openCount;
+    if (size === null || fits === fitted.current) return;
+    fitted.current = fits;
     const doc = store.current().doc;
     store.apply({
       kind: 'viewport',
       viewport: viewportFor({ doc, scene: sceneOf() }, size, fitMargin()),
     });
-  }, [store, openCount, size, sceneOf]);
+  }, [store, fits, size, sceneOf]);
 }
 
 /** Uncaught errors of the page become internal-error messages with the debug report. */

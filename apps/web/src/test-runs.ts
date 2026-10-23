@@ -4,8 +4,9 @@
  * is followed automatically by a global run when the document has `assume` lines; a global
  * run can also be asked for. A small external store (useSyncExternalStore), so progress
  * re-renders the Claims panel only, never the canvas: the main thread stays free during a
- * test. Each run remembers the document it tested: a verdict about an earlier figure is
- * marked as such, never shown as the current one's. Only the CURRENT job of a claim and regime
+ * test. Each run remembers the document it tested, the local and the global run each their
+ * own (ADR-0028): a verdict about an earlier figure is marked as such, never shown as the
+ * current one's. Only the CURRENT job of a claim and regime
  * writes its run: messages of a superseded job, or of any job after `clear()` (another figure
  * was opened), are ignored (Run 10 audit).
  */
@@ -13,9 +14,10 @@ import type { TestClaimJob } from '@geomira/claims/job';
 import type { Verdict } from '@geomira/claims/verdict';
 import type { Claim, Document } from '@geomira/kernel/document';
 import { exprEquals } from '@geomira/kernel/expr';
+import { assertNever } from '@geomira/num/assert';
 import type { JobCallbacks } from './worker/host';
 
-type Regime = TestClaimJob['regime'];
+export type Regime = TestClaimJob['regime'];
 
 /** What runs the jobs: the Web Worker host (host.ts), or a fake in tests. */
 export interface JobHost {
@@ -34,9 +36,34 @@ export type Run =
   | { readonly status: 'failed'; readonly message: string };
 
 export interface ClaimRuns {
+  /** The document of the latest test started. */
   readonly doc: Document;
   readonly local?: Run;
   readonly global?: Run;
+  /** The document the local run tested (absent: `doc`). */
+  readonly localDoc?: Document;
+  /** The document the global run tested (absent: `doc`). */
+  readonly globalDoc?: Document;
+}
+
+/** The document the `regime` run tested. */
+export function runDoc(r: ClaimRuns, regime: Regime): Document {
+  switch (regime) {
+    case 'local':
+      return r.localDoc ?? r.doc;
+    case 'global':
+      return r.globalDoc ?? r.doc;
+    default:
+      return assertNever(regime, 'regime');
+  }
+}
+
+/** Which runs of `r` tested another document than `doc` (shown as of an earlier figure). */
+export function staleRuns(r: ClaimRuns, doc: Document): { local: boolean; global: boolean } {
+  return {
+    local: r.local !== undefined && runDoc(r, 'local') !== doc,
+    global: r.global !== undefined && runDoc(r, 'global') !== doc,
+  };
 }
 
 type Snapshot = ReadonlyMap<number, ClaimRuns>;
@@ -53,9 +80,9 @@ function sameStatement(a: Claim | undefined, b: Claim | undefined): boolean {
 }
 
 /**
- * The runs to show for claim `id` of `doc`: only when the tested document had the same
- * statement under that id. Undo rolls the id counter back, so a new claim can reuse the id of
- * an undone one, whose verdict must not appear on it (pre-beta review).
+ * The runs to show for claim `id` of `doc`: each run only when the document it tested had the
+ * same statement under that id. Undo rolls the id counter back, so a new claim can reuse the
+ * id of an undone one, whose verdict must not appear on it (pre-beta review).
  */
 export function runsFor(
   snapshot: ReadonlyMap<number, ClaimRuns>,
@@ -63,8 +90,24 @@ export function runsFor(
   id: number,
 ): ClaimRuns | undefined {
   const r = snapshot.get(id);
+  if (r === undefined) return undefined;
   const find = (d: Document) => d.claims.find((c) => c.id === id);
-  return r !== undefined && sameStatement(find(r.doc), find(doc)) ? r : undefined;
+  const now = find(doc);
+  const shown = (regime: Regime): Partial<ClaimRuns> => {
+    const run = r[regime];
+    if (run === undefined || !sameStatement(find(runDoc(r, regime)), now)) return {};
+    switch (regime) {
+      case 'local':
+        return { local: run, localDoc: runDoc(r, regime) };
+      case 'global':
+        return { global: run, globalDoc: runDoc(r, regime) };
+      default:
+        return assertNever(regime, 'regime');
+    }
+  };
+  const kept: ClaimRuns = { doc: r.doc, ...shown('local'), ...shown('global') };
+  if (kept.local === undefined && kept.global === undefined) return undefined;
+  return kept.local === r.local && kept.global === r.global ? r : kept;
 }
 
 /** A fresh seed for each run (reported with its verdict, SPEC §10.5). */
@@ -115,7 +158,11 @@ export class TestRuns {
   /** Starts a test of `claim` in `doc`; a local run is followed by a global one when assumed. */
   start(doc: Document, claim: number, regime: Regime): void {
     this.cancel(claim);
-    this.set(claim, (r) => (regime === 'local' ? { doc } : { ...r, doc }));
+    // A local run starts the claim's runs afresh; a global one keeps the local run, and the
+    // document that run tested (ADR-0028).
+    this.set(claim, (r) =>
+      regime === 'local' ? { doc, localDoc: doc } : { ...r, doc, globalDoc: doc },
+    );
     const job: TestClaimJob = {
       kind: 'testClaim',
       regime,
