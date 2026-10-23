@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { claimItem, command, openApp, tab, text } from './helpers';
+import { claimItem, command, expectLines, openApp, tab, text } from './helpers';
 
 /** Bug-fix round (ADR-0028): claims, counterexamples, notices and gestures on the desktop. */
 
@@ -115,14 +115,14 @@ test('a label typed in the style card is one edit, applied by Write to script (A
   const card = page.getByRole('dialog', { name: 'Style of A' });
   await card.getByLabel('Label text').pressSequentially('xyz');
   await card.getByRole('button', { name: 'Write to script', exact: true }).click();
-  expect(await text(page)).toContain('A = (0, 0) [label="xyz"]');
+  await expectLines(page, 'A = (0, 0) [label="xyz"]');
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
-  expect(await text(page)).toMatch(/^A = \(0, 0\)$/mu);
+  await expectLines(page, 'A = (0, 0)');
   // Leaving the card without writing applies nothing: the draft is discarded.
   await tab(page, 'Objects');
   await page.getByRole('button', { name: 'A', exact: true }).click({ button: 'right' });
   await card.getByLabel('Label text').pressSequentially('pq');
   await tab(page, 'Text');
   await expect(card).toHaveCount(0);
-  expect(await text(page)).toMatch(/^A = \(0, 0\)$/mu);
+  await expectLines(page, 'A = (0, 0)');
 });
