@@ -1,8 +1,10 @@
 /**
  * Drag-through (SPEC §8.4): dragging a managed image X* of a free input X sets
  * X := T⁻¹(cursor). A chain of derived layers (X** = T₂(X*), X* = T₁(X)) inverts every
- * map in turn. Free points get the new coordinates; gliders `on(obj, …)` get the
- * parameter of the point of obj nearest to the preimage (glider.ts dragParameter). The
+ * map in turn. Free points get the new coordinates; gliders `on(obj, …)` with literal
+ * parameters get the parameter of the point of obj nearest to the preimage (glider.ts
+ * dragParameter); a glider whose parameter is computed (on(l, s), on(c, 2 * angle(…))) is not
+ * draggable, since its parameter is not free (SPEC §5). The
  * result is an edit (a redefinition of X, for applyDocEdit), never a document. Stated rule
  * (tested): if a map of the chain depends on X (X defines the mirror, the centre, …), the
  * image is NOT draggable, since moving X would move the map as well. Inversion (Phase 2)
@@ -119,6 +121,9 @@ function redefinition(
   }
   const [objExpr, ...params] = d.kind === 'call' && d.tool === 'on' ? d.args : [];
   if (objExpr === undefined) return `${base.name} is not a free point or a glider`;
+  // Only literal parameters are free (SPEC §5): a computed one is never replaced by a number.
+  if (params.some((a) => a.kind !== 'lit'))
+    return `${base.name} is not draggable: its parameter is computed`;
   const obj = argValue(doc, base, objExpr, values);
   if (obj === undefined || (obj.kind !== 'line' && obj.kind !== 'circle'))
     return `the object ${base.name} glides on is undefined`;
@@ -133,7 +138,8 @@ function redefinition(
  * given the document's current float evaluation. Degenerate cases (→ not-draggable, with
  * the reason): not a managed object; a map of the chain that depends on the source; a map
  * that is undefined; a source that is neither a free point nor a glider; a glider whose
- * object is undefined, or a cursor at the centre of its circle.
+ * parameter is computed; a glider whose object is undefined, or a cursor at the centre of
+ * its circle.
  */
 export function dragThrough(
   doc: Document,
