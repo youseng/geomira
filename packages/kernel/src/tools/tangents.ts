@@ -102,7 +102,12 @@ export const TANGENT_TOOLS: readonly ToolSpec[] = [
     id: 'radical_axis',
     name: 'radical_axis',
     family: 'lines',
-    signatures: [{ params: ['round', 'round'] }],
+    signatures: [
+      {
+        params: ['round', 'round'],
+        symmetry: [{ kind: 'permute', positions: [0, 1], same: 'figure' }],
+      },
+    ],
     outputKinds: ['line'],
     compute: radicalAxis,
     degenerate: [

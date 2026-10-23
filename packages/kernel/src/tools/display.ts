@@ -31,7 +31,13 @@ export const DISPLAY_TOOLS: readonly ToolSpec[] = [
     id: 'polygon',
     name: 'polygon',
     family: 'display',
-    signatures: [{ params: ['point', 'point', 'point'], rest: 'point' }],
+    signatures: [
+      {
+        params: ['point', 'point', 'point'],
+        rest: 'point',
+        symmetry: [{ kind: 'dihedral', same: 'figure' }],
+      },
+    ],
     outputKinds: ['polygon'],
     compute: polygon,
     degenerate: [

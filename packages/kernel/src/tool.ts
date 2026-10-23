@@ -32,6 +32,32 @@ export interface BranchShape {
 }
 
 /**
+ * What an argument symmetry keeps (ADR-0029): 'value' — the permuted call has exactly the
+ * same value (a point, a number); 'figure' — the same figure (the same point set), but a
+ * direction, an anchor or a vertex order may differ (line(A, B) and line(B, A) have
+ * opposite directions). Only 'value' symmetries apply inside nested calls, where a
+ * direction or an anchor can matter (along(±), gliders).
+ */
+export type Sameness = 'value' | 'figure';
+
+/**
+ * A symmetry of an overload's arguments, as data (ADR-0029; read by construction-key.ts and
+ * the generated docs):
+ *   - 'permute': any order of the arguments at `positions` (0-based) gives the same
+ *     construction; `flipsOrient`: an odd permutation also flips orient(±) (intersect of two
+ *     circles labels its points by the orientation from the first centre to the second);
+ *   - 'dihedral': any rotation or reversal of ALL the arguments (a polygon's vertices).
+ */
+export type ArgSymmetry =
+  | {
+      readonly kind: 'permute';
+      readonly positions: readonly number[];
+      readonly same: Sameness;
+      readonly flipsOrient?: true;
+    }
+  | { readonly kind: 'dihedral'; readonly same: Sameness };
+
+/**
  * One overload: a capability per parameter; `rest` accepts any number of further
  * arguments of one capability (polygon(A, B, C, …)); `branch` marks an overload of a
  * branchable tool; `output` narrows the result kinds of the overload.
@@ -40,6 +66,11 @@ export interface Signature {
   readonly params: readonly Capability[];
   readonly rest?: Capability;
   readonly branch?: BranchShape;
+  /**
+   * The argument symmetries of the overload (ADR-0029): two calls that differ only by one
+   * are the same construction, and the editor and the language refuse the second.
+   */
+  readonly symmetry?: readonly ArgSymmetry[];
   /**
    * The kinds this overload's result can have, when narrower than the tool's outputKinds
    * (Run 4: reflect(l) is a transform, reflect(X, l) has X's kind). Read by the static
@@ -161,6 +192,17 @@ export interface ToolSpec {
   candidates?<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): readonly Value<T>[];
   /** The degenerate cases, each tested by name (packages/kernel/test/degenerate.test.ts). */
   readonly degenerate: readonly string[];
+  /**
+   * A free input (SPEC §5: point, on, param): its calls hold free state that drags and the
+   * samplers change independently, so a definition with such a call anywhere is never the
+   * same construction as another (ADR-0029).
+   */
+  readonly input?: true;
+  /**
+   * Every call of this tool is the call of `sameAs` with the same arguments
+   * (circumcircle(A, B, C) is circle(A, B, C)): the same construction (ADR-0029).
+   */
+  readonly sameAs?: string;
   readonly export: ExportMapping;
   readonly doc: string;
   readonly examples: readonly ToolExample[];

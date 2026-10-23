@@ -30,7 +30,8 @@
     "./views": "./src/views.ts",
     "./drag": "./src/drag.ts",
     "./geom": "./src/geom.ts",
-    "./incidence": "./src/incidence.ts"
+    "./incidence": "./src/incidence.ts",
+    "./construction-key": "./src/construction-key.ts"
   },
   "dependencies": {
     "@geomira/num": "workspace:*"

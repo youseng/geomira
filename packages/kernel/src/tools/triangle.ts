@@ -4,7 +4,7 @@
  * tests compare independent constructions.
  */
 import type { Field } from '@geomira/num/field';
-import type { EvalContext, ExampleArg, ToolSpec } from '../tool';
+import type { EvalContext, ExampleArg, Signature, ToolSpec } from '../tool';
 import { isZeroNormalized, two, vAdd, vCross, vDot, vRot90, vScale, vSub } from '../geom';
 import { pointOf, undef, type Point, type Undefined, type Value, type Vec } from '../value';
 import { badArgs, pointsOf } from './args';
@@ -115,12 +115,20 @@ const ABC: readonly ExampleArg[] = [
   ['1', '3'],
 ];
 
+/** The vertices in any order: the same point (ADR-0029). */
+export const ANY_ORDER: readonly Signature[] = [
+  {
+    params: ['point', 'point', 'point'],
+    symmetry: [{ kind: 'permute', positions: [0, 1, 2], same: 'value' }],
+  },
+];
+
 export const TRIANGLE_TOOLS: readonly ToolSpec[] = [
   {
     id: 'circumcenter',
     name: 'circumcenter',
     family: 'points',
-    signatures: [{ params: ['point', 'point', 'point'] }],
+    signatures: ANY_ORDER,
     outputKinds: ['point'],
     compute: circumcenter,
     degenerate: ['coincident vertices → Undefined', 'collinear vertices → Undefined (use cline)'],
@@ -132,7 +140,7 @@ export const TRIANGLE_TOOLS: readonly ToolSpec[] = [
     id: 'centroid',
     name: 'centroid',
     family: 'points',
-    signatures: [{ params: ['point', 'point', 'point'] }],
+    signatures: ANY_ORDER,
     outputKinds: ['point'],
     compute: centroid,
     degenerate: ['collinear or coincident vertices → the mean of the vertices'],
@@ -144,7 +152,7 @@ export const TRIANGLE_TOOLS: readonly ToolSpec[] = [
     id: 'orthocenter',
     name: 'orthocenter',
     family: 'points',
-    signatures: [{ params: ['point', 'point', 'point'] }],
+    signatures: ANY_ORDER,
     outputKinds: ['point'],
     compute: orthocenter,
     degenerate: ['coincident vertices → Undefined', 'collinear vertices → Undefined'],

@@ -6,7 +6,7 @@
  * otherwise; mod p they are always Inexact. This is expected (SPEC §3.4).
  */
 import { isInexact, type Field, type Inexact } from '@geomira/num/field';
-import type { EvalContext, ExampleArg, ToolSpec } from '../tool';
+import type { ArgSymmetry, EvalContext, ExampleArg, Signature, ToolSpec } from '../tool';
 import { abs, vAdd, vDot, vRot90, vScale, vSub } from '../geom';
 import {
   pointOf,
@@ -173,10 +173,24 @@ const GENERIC: readonly ExampleArg[] = [
   ['4', '0'],
   ['1', '3'],
 ];
-/** Side or arm lengths are square roots: every overload is radical (ADR-0008). */
-const THREE: readonly ToolSpec['signatures'][number][] = [
-  { params: ['point', 'point', 'point'], radical: true },
+/**
+ * Side or arm lengths are square roots: every overload is radical (ADR-0008). The argument
+ * symmetries of each tool (ADR-0029).
+ */
+function three(symmetry: readonly ArgSymmetry[]): readonly Signature[] {
+  return [{ params: ['point', 'point', 'point'], radical: true, symmetry }];
+}
+/** Any order of the vertices: the same point. */
+const ANY: readonly ArgSymmetry[] = [{ kind: 'permute', positions: [0, 1, 2], same: 'value' }];
+/** B and C swap (opposite A; the anchor is on BC): the same value. */
+const BC: readonly ArgSymmetry[] = [{ kind: 'permute', positions: [1, 2], same: 'value' }];
+/** The incircle: B and C swap with the same value; any order moves only the anchor. */
+const IN_CIRCLE: readonly ArgSymmetry[] = [
+  ...BC,
+  { kind: 'permute', positions: [0, 1, 2], same: 'figure' },
 ];
+/** The arms A and C of the angle at B swap: the same line (the direction may differ). */
+const ARMS: readonly ArgSymmetry[] = [{ kind: 'permute', positions: [0, 2], same: 'figure' }];
 const TRIANGLE_CASES = [
   'coincident vertices → Undefined',
   'collinear vertices → Undefined',
@@ -193,13 +207,14 @@ function triangleTool(
   compute: ToolSpec['compute'],
   outputKind: 'point' | 'circle',
   doc: string,
+  symmetry: readonly ArgSymmetry[],
   exported: ToolSpec['export'] = 'numeric',
 ): ToolSpec {
   return {
     id: name,
     name,
     family: outputKind === 'point' ? 'points' : 'circles',
-    signatures: THREE,
+    signatures: three(symmetry),
     outputKinds: [outputKind],
     compute,
     degenerate: TRIANGLE_CASES,
@@ -219,7 +234,7 @@ function bisectorTool(
     id: name,
     name,
     family: 'lines',
-    signatures: THREE,
+    signatures: three(ARMS),
     outputKinds: ['line'],
     compute,
     degenerate: [...BISECTOR_CASES, ...extra],
@@ -235,14 +250,16 @@ export const INCIRCLE_TOOLS: readonly ToolSpec[] = [
     incenter,
     'point',
     'The incenter of ABC (where the internal bisectors meet).',
+    ANY,
     { constructive: 'incenter' },
   ),
-  triangleTool('excenter', excenter, 'point', 'excenter(A, B, C): the excenter opposite A.'),
+  triangleTool('excenter', excenter, 'point', 'excenter(A, B, C): the excenter opposite A.', BC),
   triangleTool(
     'incircle',
     incircle,
     'circle',
     'The incircle of ABC; anchor: its touch point on BC.',
+    IN_CIRCLE,
     { constructive: 'incircle' },
   ),
   triangleTool(
@@ -250,6 +267,7 @@ export const INCIRCLE_TOOLS: readonly ToolSpec[] = [
     excircle,
     'circle',
     'excircle(A, B, C): the excircle opposite A; anchor: its touch point on BC.',
+    BC,
   ),
   bisectorTool(
     'bisector',
