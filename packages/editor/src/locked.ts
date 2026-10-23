@@ -51,14 +51,28 @@ export function lockedChange(before: Document, after: Document): string | undefi
     if (changed(o, now))
       return `${o.name} is in the locked layer ${lock.name}: unlock the layer to change it`;
   }
-  const old = new Set(before.objects.map((o) => o.id));
   for (const o of after.objects) {
-    if (old.has(o.id)) continue;
-    const lock = lockOf(after, o);
+    const lock = lockedEntry(after, findObject(before, o.id), o);
     if (lock !== undefined)
       return `the layer ${lock.name} is locked: unlock it to add objects to it`;
   }
   return undefined;
+}
+
+/**
+ * The locked layer `now` entered by the edit, or undefined: a new object in a locked layer,
+ * or an object moved into a locked layer it was not in. Locking a layer that holds objects
+ * moves none of them, so it is not an entry.
+ */
+function lockedEntry(
+  after: Document,
+  was: DocObject | undefined,
+  now: DocObject,
+): Layer | undefined {
+  if (now.managedBy !== undefined) return undefined;
+  const entered = (l: Layer) =>
+    l.locked && now.layers.includes(l.id) && !(was?.layers.includes(l.id) ?? false);
+  return after.layers.find(entered);
 }
 
 /** Why a drag of `ids` (the dragged object, then the object it rewrites) is refused. */
