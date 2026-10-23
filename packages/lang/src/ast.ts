@@ -56,6 +56,8 @@ export interface Condition {
   readonly kind: string;
   readonly args: readonly ExprNode[];
   readonly span: Span;
+  /** Written as the relation `x = y` (equal), not as a kind call. */
+  readonly relation?: boolean;
 }
 
 export interface AttrValue {

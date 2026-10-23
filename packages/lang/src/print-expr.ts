@@ -4,6 +4,8 @@
  * strings quoted with the escapes of the lexer (ADR-0011), infix arithmetic with the fewest parentheses that parse back to the same tree (operators
  * are left-associative, so a right operand of equal precedence keeps its parentheses),
  * spaces around every binary operator (so `l* * 2` never reads as a name), selectors last.
+ * A fraction literal on the right of a division is parenthesised (`a / (2/3)`): the lexer
+ * reads no glued fraction right after `/`, so `a / 2/3` is (a / 2) / 3.
  */
 import type { Expr, LitExpr } from '@geomira/kernel/expr';
 import { eq, formatRational } from '@geomira/num/rational';
@@ -66,8 +68,10 @@ function printAt(e: Expr, names: Names, min: number): string {
       const [a, b] = e.args;
       const infix = INFIX[e.tool];
       if (isInfix(e) && infix !== undefined && a !== undefined && b !== undefined) {
-        const s = `${printAt(a, names, infix.prec)} ${infix.op} ${printAt(b, names, infix.prec + 1)}`;
-        return wrap(s, e, min);
+        const right = printAt(b, names, infix.prec + 1);
+        const r =
+          e.tool === 'div' && b.kind === 'lit' && right.includes('/') ? `(${right})` : right;
+        return wrap(`${printAt(a, names, infix.prec)} ${infix.op} ${r}`, e, min);
       }
       if (isNeg(e) && a !== undefined) {
         const inner =

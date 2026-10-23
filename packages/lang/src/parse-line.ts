@@ -8,7 +8,7 @@
  * `X, Y = intersect(a, b)` (both branches of a two-candidate call).
  */
 import type { Attr, ExprNode, Line, NameRef, Statement } from './ast';
-import type { Diagnostic } from './diagnostic';
+import { hasErrors, type Diagnostic } from './diagnostic';
 import {
   atEnd,
   cursor,
@@ -26,7 +26,8 @@ import { lexLine } from './lexer';
 import { floatLiteral } from './lex-literals';
 import { parseAttrs } from './parse-attrs';
 import { parseExpr } from './parse-expr';
-import { parseClaim, parseCondition } from './parse-notation';
+import { parseCondition } from './parse-condition';
+import { parseClaim } from './parse-notation';
 
 export interface ParsedLine {
   readonly line: Line;
@@ -37,13 +38,10 @@ export interface ParsedLine {
 export function parseLine(src: string, line: number): ParsedLine {
   const lexed = lexLine(src, line);
   const base = lexed.comment === undefined ? { line } : { line, comment: lexed.comment };
+  const lexFailed = hasErrors(lexed.diagnostics);
   if (lexed.tokens.length === 0)
-    return {
-      line: { ...base, failed: lexed.diagnostics.length > 0 },
-      diagnostics: lexed.diagnostics,
-    };
-  if (lexed.diagnostics.length > 0)
-    return { line: { ...base, failed: true }, diagnostics: lexed.diagnostics };
+    return { line: { ...base, failed: lexFailed }, diagnostics: lexed.diagnostics };
+  if (lexFailed) return { line: { ...base, failed: true }, diagnostics: lexed.diagnostics };
   const c = cursor(lexed.tokens, line, src.length + 1);
   const s = statement(c);
   if (s !== undefined && !atEnd(c))
@@ -51,7 +49,7 @@ export function parseLine(src: string, line: number): ParsedLine {
   const ok = s !== undefined && c.diags.length === 0;
   return {
     line: ok ? { ...base, statement: s, failed: false } : { ...base, failed: true },
-    diagnostics: c.diags,
+    diagnostics: [...lexed.diagnostics, ...c.diags],
   };
 }
 
@@ -95,10 +93,40 @@ function statement(c: Cursor): Statement | undefined {
   }
   if ((t?.kind === 'name' || t?.kind === 'point') && isPunct(c, '=', 1)) return definition(c);
   if ((t?.kind === 'name' || t?.kind === 'point') && isPunct(c, ',', 1)) return branches(c);
+  if (t?.kind === 'point') return gluedTarget(c);
   fail(
     c,
     `expected a statement, found ${describe(t)}`,
     'write name = expression, points A B C, claim …, assume …, or a directive such as @version 1',
+  );
+  return undefined;
+}
+
+const COUNTS = ['', 'one', 'two', 'three', 'four', 'five'];
+
+/** `AB = …`: glued point names where a name is defined (ADR-0028), else not a statement. */
+function gluedTarget(c: Cursor): Statement | undefined {
+  const first = peek(c);
+  let k = 1;
+  while (peek(c, k)?.kind === 'point' && peek(c, k)?.spaceBefore === false) k += 1;
+  const last = peek(c, k - 1);
+  if (k < 2 || !isPunct(c, '=', k) || first === undefined || last === undefined) {
+    fail(
+      c,
+      `expected a statement, found ${describe(first)}`,
+      'write name = expression, points A B C, claim …, assume …, or a directive such as @version 1',
+    );
+    return undefined;
+  }
+  const text = c.tokens
+    .slice(c.i, c.i + k)
+    .map((x) => x.text)
+    .join('');
+  fail(
+    c,
+    `"${text}" is ${COUNTS[k] ?? String(k)} glued point names, not a name`,
+    'name it with one letter, as in l = line(A, B) or A_1 = …',
+    { line: first.line, column: first.column, endColumn: last.endColumn },
   );
   return undefined;
 }

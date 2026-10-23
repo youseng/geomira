@@ -22,6 +22,8 @@ export interface Expansion {
   /** Exact decimal coordinates, as written in the definitions. */
   readonly points: readonly (readonly [string, string])[];
   readonly conditions: readonly Condition[];
+  /** The statement's seed (names and sorted types), for vertices drawn around existing ones. */
+  readonly seed: number;
 }
 
 /** FNV-1a (32 bit) of a string's UTF-16 code units. */
@@ -34,41 +36,66 @@ export function fnv1a(s: string): number {
   return h;
 }
 
-type P = readonly [number, number];
+export type P = readonly [number, number];
 
 /** The angle at b, in degrees. */
-function angleAt(a: P, b: P, c: P): number {
+export function angleAt(a: P, b: P, c: P): number {
   const [ux, uy, vx, vy] = [a[0] - b[0], a[1] - b[1], c[0] - b[0], c[1] - b[1]];
   return (Math.abs(Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy)) * 180) / Math.PI;
 }
 
-function fits(pts: readonly P[], t: TriangleType): boolean {
+/** The angles at the three vertices, in degrees. */
+export function anglesOf(a: P, b: P, c: P): [number, number, number] {
+  return [angleAt(c, a, b), angleAt(a, b, c), angleAt(b, c, a)];
+}
+
+/** The sides opposite the three vertices. */
+export function sidesOf(a: P, b: P, c: P): [number, number, number] {
+  return [
+    Math.hypot(b[0] - c[0], b[1] - c[1]),
+    Math.hypot(c[0] - a[0], c[1] - a[1]),
+    Math.hypot(a[0] - b[0], a[1] - b[1]),
+  ];
+}
+
+/**
+ * Whether the triangle has the type with the margin of ADR-0009 decision 11. Lengths are
+ * in `unit`s (sides ≥ 2 units); a side marked `given` (both ends exist) is not checked
+ * for length. Degenerate: fewer than three points → false.
+ */
+export function fits(
+  pts: readonly P[],
+  t: TriangleType,
+  unit = 1,
+  given: readonly boolean[] = [],
+): boolean {
   const [a, b, c] = pts;
   if (a === undefined || b === undefined || c === undefined) return false;
-  const angles = [angleAt(c, a, b), angleAt(a, b, c), angleAt(b, c, a)];
+  const angles = anglesOf(a, b, c);
   if (angles.some((x) => x < 15)) return false;
   if (t.acute && angles.some((x) => x > 80)) return false;
   const o = t.obtuse === undefined ? undefined : angles[t.obtuse];
   if (o !== undefined && (o < 100 || o > 150)) return false;
   if (t.obtuse === undefined && !t.acute && angles.some((x) => x > 150)) return false;
-  const sides = [
-    Math.hypot(b[0] - c[0], b[1] - c[1]),
-    Math.hypot(c[0] - a[0], c[1] - a[1]),
-    Math.hypot(a[0] - b[0], a[1] - b[1]),
-  ];
-  if (sides.some((x) => x < 2)) return false;
+  const sides = sidesOf(a, b, c);
+  if (sides.some((x, i) => given[i] !== true && x < 2 * unit)) return false;
   if (!t.scalene) return true;
   const s = [...sides].sort((x, y) => x - y);
   return (s[1] ?? 0) > 1.1 * (s[0] ?? 0) && (s[2] ?? 0) > 1.1 * (s[1] ?? 0);
 }
 
-/** A coordinate on the 0.1 grid as an exact decimal. */
-function decimal(tenths: number): string {
-  const sign = tenths < 0 ? '-' : '';
-  const n = Math.abs(tenths);
-  const whole = Math.floor(n / 10);
-  const frac = n % 10;
-  return frac === 0 ? `${sign}${String(whole)}` : `${sign}${String(whole)}.${String(frac)}`;
+/**
+ * `units` × 10^`exp` as an exact decimal (`decimal(-35)` = "-3.5", `decimal(4, 2)` = "400",
+ * `decimal(7, -3)` = "0.007"); units is an integer.
+ */
+export function decimal(units: number, exp = -1): string {
+  const sign = units < 0 ? '-' : '';
+  const digits = String(Math.abs(units));
+  if (exp >= 0) return units === 0 ? '0' : `${sign}${digits}${'0'.repeat(exp)}`;
+  const padded = digits.padStart(1 - exp, '0');
+  const whole = padded.slice(0, exp);
+  const frac = padded.slice(exp).replace(/0+$/u, '');
+  return frac === '' ? `${sign}${whole}` : `${sign}${whole}.${frac}`;
 }
 
 /** The points for a hash; a fixed fallback after 10 000 draws (never reached in tests). */
@@ -101,7 +128,8 @@ export function expandTriangle(
   span: Span,
 ): Expansion {
   const key = `triangle ${names.map((n) => n.name).join(' ')} [${[...types].sort().join(',')}]`;
-  const points = draw(fnv1a(key), t).map(([x, y]) => [decimal(x), decimal(y)] as const);
+  const seed = fnv1a(key);
+  const points = draw(seed, t).map(([x, y]) => [decimal(x), decimal(y)] as const);
   const refs: ExprNode[] = names.map((n) => ({ kind: 'name', name: n.name, span: n.span }));
   const conditions: Condition[] = [];
   if (t.acute) conditions.push({ kind: 'acute', args: refs, span });
@@ -118,7 +146,7 @@ export function expandTriangle(
       });
     }
   }
-  return { points, conditions };
+  return { points, conditions, seed };
 }
 
 /** The polygon's name: `tri_` and the vertex names (letters, digits, `_`), unused. */

@@ -27,7 +27,7 @@ function byPosition(a: Diagnostic, b: Diagnostic): number {
 
 export function parse(text: string, registry: Registry, options: ParseOptions = {}): ParseResult {
   const m = migrateText(text, options.migrations ?? MIGRATIONS);
-  const src = m.ok ? m.text : text;
+  const src = m.ok ? m.text : text.replace(/^\uFEFF/u, '');
   const diagnostics: Diagnostic[] = [];
   const lines: Line[] = src.split('\n').map((raw, i) => {
     const p = parseLine(raw.endsWith('\r') ? raw.slice(0, -1) : raw, i + 1);

@@ -74,3 +74,52 @@ export function newState(registry: Registry): State {
 export function nameOf(st: State, id: number): string | undefined {
   return st.doc.objects.find((o) => o.id === id)?.name;
 }
+
+function refill<K, V>(m: Map<K, V>, from: ReadonlyMap<K, V>): void {
+  m.clear();
+  for (const [k, v] of from) m.set(k, v);
+}
+
+/**
+ * A snapshot of what defining objects changes (the document, names, kinds, the states of
+ * derived-layer rules, the use of waiting styles), and the function that restores it: a
+ * statement that defines several objects is applied whole or not at all (ADR-0009 decision
+ * 14). Diagnostics and failed names are kept.
+ */
+export function snapshot(st: State): () => void {
+  const doc = st.doc;
+  const ids = new Map(st.ids);
+  const staticKinds = new Map(st.staticKinds);
+  const kinds = new Map(st.kinds);
+  const rules = st.rules.map((r) => r.state);
+  const styles = new Map([...st.styles].map(([k, p]) => [k, { ...p, spans: [...p.spans] }]));
+  return () => {
+    st.doc = doc;
+    refill(st.ids, ids);
+    refill(st.staticKinds, staticKinds);
+    refill(st.kinds, kinds);
+    for (const [i, r] of st.rules.entries()) r.state = rules[i] ?? r.state;
+    refill(st.styles, styles);
+  };
+}
+
+/**
+ * Runs `f`, which defines the objects `names` of line `line`; when it reports an error,
+ * everything it defined is undone and the names that did not exist before are marked failed
+ * (later uses then say which line to fix). Returns f's result, or undefined when undone.
+ */
+export function wholeLine<T>(
+  st: State,
+  names: readonly string[],
+  line: number,
+  f: () => T,
+): T | undefined {
+  const restore = snapshot(st);
+  const existed = new Set(names.filter((n) => st.ids.has(n)));
+  const n = st.diags.length;
+  const r = f();
+  if (!st.diags.slice(n).some((d) => d.severity === 'error')) return r;
+  restore();
+  for (const name of names) if (!existed.has(name)) st.failed.set(name, line);
+  return undefined;
+}
