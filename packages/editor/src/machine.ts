@@ -14,7 +14,7 @@ import type { Value, Vec } from '@geomira/kernel/value';
 import { assertNever } from '@geomira/num/assert';
 import type { HitResult } from '@geomira/scene/hit';
 import { createdPoint, gliderAt } from './create';
-import { onSides, polygonSide } from './create-side';
+import { onSides, polygonSide, sideObject } from './create-side';
 import { applyEdit } from './edit';
 import { add, build, reset, withTool } from './machine-build';
 import { done, refuse, type EditResult } from './result';
@@ -104,7 +104,7 @@ function addGlider(state: EditorState, curve: number, at: Vec<number>, env: Edit
 
 /**
  * The glider tool: a point on the line or circle under the click, or on a polygon's side,
- * made as segment(A, B) first (its own edit, ADR-0024 item 8).
+ * its segment(A, B) (an existing one, or a new one as its own edit, ADR-0024 item 8).
  */
 function gliderClick(
   state: EditorState,
@@ -117,7 +117,7 @@ function gliderClick(
   if (curve !== undefined) return withTool(addGlider(state, curve, at, env), reset(state));
   const side = polygonSide(state, input.hit, input.world);
   if (side === undefined) return refuse(state, 'click a line or a circle');
-  const made = add(state, side, 'line', env);
+  const made = sideObject(state, side, env);
   if (!made.ok || made.id === undefined) return refuse(state, 'the side could not be made');
   const r = addGlider(made.state, made.id, at, env);
   // A refused glider leaves no stray side.
@@ -144,7 +144,7 @@ function click(
   const line = open.find((x) => HIT_KINDS[x.step.pick].includes('line'));
   const side = line === undefined ? undefined : polygonSide(state, input.hit, input.world);
   if (line !== undefined && side !== undefined)
-    return created(state, tool, add(state, side, 'line', env), line.index, env);
+    return created(state, tool, sideObject(state, side, env), line.index, env);
   const point = open.find((x) => x.step.pick === 'point');
   if (point === undefined)
     return refuse(state, `${first.step.prompt}: click a ${PICK_WORDS[first.step.pick]}`);
