@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { EditorState } from '@geomira/editor/state';
 import type { DocumentEdit } from '@geomira/editor/edit';
 import type { Style } from '@geomira/kernel/document';
@@ -115,17 +116,39 @@ function FlagFields({ s, set }: FieldsProps) {
         />
         No image in derived layers (noimage)
       </label>
-      <label>
-        Label text
-        <input
-          type="text"
-          value={s.label ?? ''}
-          onChange={(e) => {
-            set({ label: e.target.value === '' ? undefined : e.target.value });
-          }}
-        />
-      </label>
     </>
+  );
+}
+
+/**
+ * The label text, typed as a draft and applied as ONE edit on Enter or when the field is left
+ * (each keystroke was its own history entry: ADR-0028); Escape drops the draft.
+ */
+function LabelField({ s, set }: FieldsProps) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const commit = () => {
+    if (draft === null) return;
+    setDraft(null);
+    if (draft !== (s.label ?? '')) set({ label: draft === '' ? undefined : draft });
+  };
+  return (
+    <label>
+      Label text
+      <input
+        type="text"
+        value={draft ?? s.label ?? ''}
+        onChange={(e) => {
+          setDraft(e.target.value);
+        }}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            commit();
+          } else if (e.key === 'Escape') setDraft(null);
+        }}
+      />
+    </label>
   );
 }
 
@@ -152,7 +175,8 @@ function NumberFields({ s, set }: FieldsProps) {
 /**
  * Style of the selected objects (SPEC §15): colour, width, dash, hidden, noimage (left out of
  * derived layers), label text and offset (angle, pixels), z. Each change is one style edit of
- * every selected object (a batch: one history entry), so it is in the text.
+ * every selected object (a batch: one history entry), so it is in the text; the label text is
+ * applied on Enter or when its field is left.
  */
 export function StylePanel({ store, state }: StylePanelProps) {
   const objects = state.doc.objects.filter((o) => state.selection.includes(o.id));
@@ -171,6 +195,7 @@ export function StylePanel({ store, state }: StylePanelProps) {
       <p>{objects.map((o) => o.name).join(', ')}</p>
       <ChoiceFields s={first.style} set={set} />
       <FlagFields s={first.style} set={set} />
+      <LabelField key={objects.map((o) => o.id).join(' ')} s={first.style} set={set} />
       <NumberFields s={first.style} set={set} />
     </div>
   );

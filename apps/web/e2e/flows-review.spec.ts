@@ -103,3 +103,25 @@ test('the canvas takes the new pixel ratio when it changes (another screen, a zo
   expect(await canvas.evaluate((c) => c.clientWidth)).toBe(width);
   await expect.poll(ratio).toBeCloseTo(2, 2);
 });
+
+test('a label typed in the Style panel is one edit, applied on Enter or when leaving', async ({
+  page,
+}) => {
+  await openApp(page);
+  await command(page, 'A = (0, 0)');
+  await command(page, 'B = (4, 0)');
+  await tab(page, 'Objects');
+  await page.getByRole('button', { name: 'A', exact: true }).click();
+  await tab(page, 'Style');
+  const label = page.getByLabel('Label text');
+  await label.pressSequentially('xyz');
+  await label.press('Enter');
+  expect(await text(page)).toContain('A = (0, 0) [label="xyz"]');
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  expect(await text(page)).toMatch(/^A = \(0, 0\)$/mu);
+  // Leaving the field applies it too.
+  await tab(page, 'Style');
+  await page.getByLabel('Label text').pressSequentially('pq');
+  await tab(page, 'Text');
+  expect(await text(page)).toContain('A = (0, 0) [label="pq"]');
+});
