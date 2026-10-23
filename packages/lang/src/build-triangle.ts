@@ -139,23 +139,29 @@ export function triangle(
     return failAll(st, s, line, poly);
   }
   const made = wholeLine(st, [...names, poly], line, () => {
-    const vertexIds = s.points.map((p, i) => {
+    // The ids of the objects the line makes: its new vertices, then the polygon.
+    const own: (number | undefined)[] = s.points.map((p, i) => {
       const at = all ? ex.points[i] : place?.ok === true ? place.points[i] : undefined;
-      return ids[i] ?? define(st, p, freePoint(p, at ?? ['0', '0']), [], line);
+      return ids[i] === undefined
+        ? define(st, p, freePoint(p, at ?? ['0', '0']), [], line)
+        : undefined;
     });
     const refs: ExprNode[] = s.points.map((p) => ({ kind: 'name', name: p.name, span: p.span }));
     const span: Span = s.span;
-    define(
-      st,
-      { name: poly, span },
-      { kind: 'call', tool: 'polygon', args: refs, selectors: [], span },
-      [],
-      line,
+    own.push(
+      define(
+        st,
+        { name: poly, span },
+        { kind: 'call', tool: 'polygon', args: refs, selectors: [], span },
+        [],
+        line,
+      ),
     );
-    return vertexIds;
+    return own;
   });
   if (made === undefined) return { conditions: [] };
-  const first = made[0];
+  // Comments go to the first object the line makes (not to an existing vertex's line).
+  const first = made.find((id) => id !== undefined);
   return first === undefined
     ? { conditions: [...ex.conditions] }
     : { first, conditions: [...ex.conditions] };
