@@ -42,3 +42,21 @@ test('after choosing an example the canvas has the focus: a letter is no other e
   await page.keyboard.press('ArrowDown');
   await expect(text).toHaveValue(/^@title "Euler line"$/mu);
 });
+
+test('the command bar completes at the cursor, also after the cursor moved by a key', async ({
+  page,
+}) => {
+  await openApp(page);
+  await command(page, 'A = (0, 0)');
+  const input = page.getByLabel('Command', { exact: true });
+  await input.click();
+  await input.pressSequentially('A = (1, 1)  mid');
+  const list = page.getByRole('listbox', { name: 'Completions' });
+  await expect(list).toContainText('midpoint');
+  const atEnd = await list.innerText();
+  // Back to the word "A": the completions are for it, not for "mid".
+  await input.press('Home');
+  await input.press('ArrowRight');
+  await expect.poll(() => list.innerText()).not.toBe(atEnd);
+  await expect(list).not.toContainText('midpoint');
+});

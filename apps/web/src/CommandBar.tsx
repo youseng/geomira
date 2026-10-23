@@ -56,7 +56,15 @@ function useCommandBar(store: EditorStore, inputRef: CommandBarProps['inputRef']
     setActive(0);
     setFeedback(null);
   };
-  return { text, list, active, feedback, accept, onKey, onChange };
+  // The cursor also moves without a change (arrows, Home, a click): completions follow it.
+  const onSelect = (e: React.SyntheticEvent<HTMLInputElement>) => {
+    const at = e.currentTarget.selectionStart ?? e.currentTarget.value.length;
+    if (at !== cursor) {
+      setCursor(at);
+      setActive(0);
+    }
+  };
+  return { text, list, active, feedback, accept, onKey, onChange, onSelect };
 }
 
 /**
@@ -82,6 +90,8 @@ export function CommandBar({ store, inputRef }: CommandBarProps) {
         value={c.text}
         onChange={c.onChange}
         onKeyDown={c.onKey}
+        onSelect={c.onSelect}
+        onKeyUp={c.onSelect}
       />
       {c.list.length > 0 && (
         <ul className="completions" role="listbox" aria-label="Completions">
