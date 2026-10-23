@@ -14,7 +14,7 @@ import { checkCalls, convert } from './build-expr';
 import { exprEnv } from './build-env';
 import { addDefinition } from './build-objects';
 import { nameOf, type State } from './build-state';
-import { error } from './diagnostic';
+import { error, hasErrors } from './diagnostic';
 import { freePlaces } from './free-points';
 import { polygonName } from './triangle';
 
@@ -29,7 +29,7 @@ export function show(st: State): (e: Expr) => string {
 export function expression(st: State, node: ExprNode): Expr | undefined {
   const n = st.diags.length;
   const conv = convert(node, exprEnv(st));
-  if (conv === undefined || st.diags.length > n) return undefined;
+  if (conv === undefined || hasErrors(st.diags.slice(n))) return undefined;
   const found = checkCalls(conv, st.registry, (id) => st.staticKinds.get(id), st.kinds, show(st));
   st.diags.push(...found);
   return found.length > 0 ? undefined : conv.expr;

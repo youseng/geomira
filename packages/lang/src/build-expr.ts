@@ -19,7 +19,7 @@ import { exprKinds, type KindTable } from '@geomira/kernel/derived';
 import { rejection, type Registry } from '@geomira/kernel/registry';
 import { callDiagnostics, type KindsOfRef } from '@geomira/kernel/selector-check';
 import type { ExprNode, SelectorNode } from './ast';
-import { error, type Diagnostic, type Span } from './diagnostic';
+import { error, warning, type Diagnostic, type Span } from './diagnostic';
 import { exactLiteral } from './lex-literals';
 import { spreadRuns, TOOL_ALIASES, toolName } from './geomdraw';
 import { makeSelector } from './selectors';
@@ -182,6 +182,7 @@ function callExpr(
   const site = calls.length;
   const before = env.diags.length;
   const spread = spreadRuns(tool, n.args, env.registry);
+  circleThrough(tool, n, spread, env.diags);
   const args = spread.map((a) => toExpr(a, env, calls));
   const sels = n.selectors.map((s) => toSelector(s, env, calls));
   if (args.some((x) => x === undefined) || sels.some((x) => x === undefined)) {
@@ -205,6 +206,29 @@ function callExpr(
   );
   calls.splice(site, 0, siteOf(c, n.span, spread));
   return c;
+}
+
+/**
+ * `circle(O, AB)`: ADR-0025 spreads the run, so it is the circle through O, A and B; a
+ * warning (the line is applied) says so and how to write centre O, radius AB (ADR-0028).
+ */
+function circleThrough(
+  tool: string,
+  n: Extract<ExprNode, { kind: 'call' }>,
+  spread: readonly ExprNode[],
+  diags: Diagnostic[],
+): void {
+  const [o, run] = n.args;
+  if (tool !== 'circle' || n.args.length !== 2 || spread.length !== 3) return;
+  if (o?.kind !== 'name' || run?.kind !== 'call' || run.glued !== true) return;
+  const [a, b] = run.args.map((x) => (x.kind === 'name' ? x.name : '?'));
+  diags.push(
+    warning(
+      n.span,
+      `${n.tool}(${o.name}, ${a ?? '?'}${b ?? '?'}) is the circle through ${o.name}, ${a ?? '?'} and ${b ?? '?'}`,
+      `for centre ${o.name} and radius ${a ?? '?'}${b ?? '?'} write circle(${o.name}, dist(${a ?? '?'}, ${b ?? '?'}))`,
+    ),
+  );
 }
 
 /** `AB is line(A, B); the length AB is dist(A, B)`: what a glued run means (ADR-0025). */

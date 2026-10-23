@@ -16,7 +16,7 @@ import { convert } from './build-expr';
 import { define, freePoint } from './build-defs';
 import { exprEnv } from './build-env';
 import type { State } from './build-state';
-import { error } from './diagnostic';
+import { error, hasErrors } from './diagnostic';
 import { freePlaces } from './free-points';
 
 type Points = Extract<Statement, { kind: 'points' }>;
@@ -107,7 +107,7 @@ export function branchesStatement(st: State, s: Branches, line: number): number 
   const before = shapeProblem(s);
   const n = st.diags.length;
   const conv = before === undefined ? convert(s.expr, exprEnv(st)) : undefined;
-  const low = conv === undefined || st.diags.length > n ? undefined : lowOf(st, conv.expr);
+  const low = conv === undefined || hasErrors(st.diags.slice(n)) ? undefined : lowOf(st, conv.expr);
   const problem = before ?? (typeof low === 'object' ? low : undefined);
   if (problem !== undefined) st.diags.push(error(s.span, problem.message, problem.hint));
   if (low !== 'along' && low !== 'orient') {
