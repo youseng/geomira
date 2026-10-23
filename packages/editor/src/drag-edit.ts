@@ -54,13 +54,29 @@ function move(state: EditorState, drag: DragState, to: Vec<number>, env: EditorE
   return done({ ...next, history, drag: { ...drag, moved: true } });
 }
 
+/**
+ * The object whose image scale applies to a drag of `id`: a text's anchor (followed while it
+ * is a text anchored at an object, so a text at a scaled image rounds as that image does),
+ * else `id` itself.
+ */
+function scaled(state: EditorState, id: number): number {
+  let cur = id;
+  for (let guard = 0; guard < state.doc.objects.length; guard++) {
+    const def = findObject(state.doc, cur)?.def;
+    const anchor = def?.kind === 'call' && def.tool === 'text' ? def.args[0] : undefined;
+    if (anchor?.kind !== 'ref') return cur;
+    cur = anchor.id;
+  }
+  return cur;
+}
+
 /** Rounds the base's coordinates at drag end, unless that would move the object visibly. */
 function end(state: EditorState, drag: DragState, env: EditorEnv): EditResult {
   const finished = { ...state, drag: null };
   const base = findObject(state.doc, drag.base);
   const c = evalContextFor(state.doc);
   if (!drag.moved || base === undefined || !c.ok) return done(finished);
-  const k = chainScale(state.doc, drag.id, state.values);
+  const k = chainScale(state.doc, scaled(state, drag.id), state.values);
   const exp = dragGrid(c.ctx.scale, state.viewport.zoom, k);
   const def = roundedDefinition(state.doc, base, exp, state.values);
   const r = applyDocEdit(state.doc, env.registry, { kind: 'redefine', id: drag.base, def });
