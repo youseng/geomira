@@ -11,7 +11,7 @@ import { ClaimBox } from '../Header';
 import { MathText } from '../MathText';
 import { claimStatement } from '../Stage';
 import type { EditorStore } from '../store';
-import { runsFor, type ClaimRuns, type TestRuns } from '../test-runs';
+import { runsFor, staleRuns, type ClaimRuns, type TestRuns } from '../test-runs';
 import { RunLine } from './RunLine';
 
 export interface ClaimsPanelProps {
@@ -92,10 +92,18 @@ function Actions({ row, state, runs, running }: ClaimProps & { running: boolean 
   );
 }
 
+/** What the stale note says: every shown result, or only one of them, is of an earlier figure. */
+function staleText(stale: { local: boolean; global: boolean }, r: ClaimRuns): string {
+  const all = (stale.local || r.local === undefined) && (stale.global || r.global === undefined);
+  if (all) return 'These results are for an earlier version of the figure.';
+  return `The ${stale.local ? 'local' : 'global'} test result is for an earlier version of the figure.`;
+}
+
 function Claim(props: ClaimProps) {
   const { row, state, store, runs, r, figureExplains } = props;
   const running = r?.local?.status === 'running' || r?.global?.status === 'running';
-  const stale = r !== undefined && r.doc !== state.doc;
+  const each = r === undefined ? { local: false, global: false } : staleRuns(r, state.doc);
+  const stale = each.local || each.global;
   return (
     <li className="card claim" data-claim={row.id}>
       <div className="card-head">
@@ -106,7 +114,7 @@ function Claim(props: ClaimProps) {
       <Actions {...props} running={running} />
       {stale && (
         <p className="stale-note">
-          These results are for an earlier version of the figure.{' '}
+          {r === undefined ? null : staleText(each, r)}{' '}
           <button
             type="button"
             disabled={running}
@@ -118,12 +126,16 @@ function Claim(props: ClaimProps) {
           </button>
         </p>
       )}
-      <div className={stale ? 'runs stale' : 'runs'}>
+      <div className="runs">
         {r?.local !== undefined && (
-          <RunLine run={r.local} store={store} explain={figureExplains} label="Local test" />
+          <div className={each.local ? 'run-box stale' : 'run-box'}>
+            <RunLine run={r.local} store={store} explain={figureExplains} label="Local test" />
+          </div>
         )}
         {r?.global !== undefined && (
-          <RunLine run={r.global} store={store} explain={figureExplains} label="Global test" />
+          <div className={each.global ? 'run-box stale' : 'run-box'}>
+            <RunLine run={r.global} store={store} explain={figureExplains} label="Global test" />
+          </div>
         )}
       </div>
     </li>

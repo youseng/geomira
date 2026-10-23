@@ -115,7 +115,8 @@
   color: var(--muted);
 }
 
-.runs.stale {
+/* A result of an earlier version of the figure (each run its own, ADR-0028). */
+.run-box.stale {
   opacity: 0.55;
 }
 
