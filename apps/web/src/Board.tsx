@@ -8,7 +8,7 @@ import { toWorld, type Size, type Vec2, type Viewport } from '@geomira/scene/vie
 import { Gestures } from './gestures';
 import { drawDisplay, drawPreview, LIGHT_THEME, type UiState } from './render';
 import type { EditorStore } from './store';
-import { useWheelZoom } from './surface';
+import { useSurface, useWheelZoom } from './surface';
 
 export interface BoardProps {
   readonly canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -22,36 +22,6 @@ export interface BoardProps {
   readonly onSize: (s: Size) => void;
   /** The curves of the current display that cannot be placed at its zoom (ADR-0023). */
   readonly onUndrawable: (u: readonly Undrawable[]) => void;
-}
-
-/** The canvas's CSS size, kept in sync with its box; its pixel size is css × dpr (HiDPI). */
-function useSurface(
-  canvasRef: RefObject<HTMLCanvasElement | null>,
-  onSize: (s: Size) => void,
-): Size | null {
-  const [size, setSize] = useState<Size | null>(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas === null) return undefined;
-    const resize = () => {
-      const s = {
-        width: Math.max(1, canvas.clientWidth),
-        height: Math.max(1, canvas.clientHeight),
-      };
-      const ratio = window.devicePixelRatio;
-      canvas.width = Math.max(1, Math.round(s.width * ratio));
-      canvas.height = Math.max(1, Math.round(s.height * ratio));
-      setSize(s);
-      onSize(s);
-    };
-    resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(canvas);
-    return () => {
-      observer.disconnect();
-    };
-  }, [canvasRef, onSize]);
-  return size;
 }
 
 /**

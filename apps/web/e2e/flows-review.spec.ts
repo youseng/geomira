@@ -81,3 +81,25 @@ test('the wheel on the canvas zooms the figure, never the page (pinch is ctrl+wh
   await expect.poll(zoom).not.toBe(before);
   expect(await page.locator('body').getAttribute('data-wheel')).toBe('true;');
 });
+
+test('the canvas takes the new pixel ratio when it changes (another screen, a zoom)', async ({
+  page,
+}) => {
+  await openApp(page);
+  const canvas = page.getByLabel('Geometry canvas');
+  const ratio = () =>
+    canvas.evaluate((c) => (c instanceof HTMLCanvasElement ? c.width / c.clientWidth : 0));
+  const width = await canvas.evaluate((c) => c.clientWidth);
+  expect(await ratio()).toBeCloseTo(1, 2);
+  const viewport = page.viewportSize();
+  if (viewport === null) throw new Error('no viewport');
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    ...viewport,
+    deviceScaleFactor: 2,
+    mobile: false,
+  });
+  await expect.poll(() => page.evaluate(() => devicePixelRatio)).toBe(2);
+  expect(await canvas.evaluate((c) => c.clientWidth)).toBe(width);
+  await expect.poll(ratio).toBeCloseTo(2, 2);
+});
