@@ -19,6 +19,7 @@ import { dashPattern } from '@geomira/scene/style';
 import type { DisplayItem, Path } from '@geomira/scene/types';
 import type { Vec2 } from '@geomira/scene/viewport';
 import type { ExportFrame } from './frame';
+import { arcBeziers } from './arc-bezier';
 import { missingWarnings } from './undefined-objects';
 import {
   num,
@@ -43,6 +44,12 @@ import {
 const MAX_DIMENSION_BP = 15000;
 /** ... or when a coordinate NUMBER would exceed this (TeX's numbers stop at 16383.99). */
 const MAX_NUMBER = 15000;
+/**
+ * Arcs of a screen radius of this many bp or more are written as Bézier pieces (arc-bezier.ts)
+ * rather than `arc[…, radius=R]`, for which TeX computes R and offsets up to 2R as dimensions
+ * (\maxdimen = 16383.99pt): 2R stays below half of it (ADR-0028).
+ */
+const MAX_ARC_BP = 4000;
 
 /**
  * The power of ten the world coordinates are multiplied by: 1 for a view 1 to 1000 world
@@ -126,6 +133,13 @@ function pathLine(w: Writer, p: Path, item: DisplayItem, paint: Paint): string {
     case 'poly':
       return `\\draw[${strokeOptions(w, item, paint)}] ${p.pts.map((q) => w.at(q)).join(' -- ')}${p.closed ? ' -- cycle' : ''};`;
     case 'arc': {
+      if (p.r * BP_PER_PX >= MAX_ARC_BP) {
+        const bs = arcBeziers(p);
+        const pieces = bs.map(
+          (b) => ` .. controls ${w.at(b.c0)} and ${w.at(b.c1)} .. ${w.at(b.p1)}`,
+        );
+        return `\\draw[${strokeOptions(w, item, paint)}] ${w.at(bs[0]?.p0 ?? p.c)}${pieces.join('')};`;
+      }
       const start = { x: p.c.x + p.r * Math.cos(p.from), y: p.c.y - p.r * Math.sin(p.from) };
       const deg = (a: number) => num((a * 180) / Math.PI, 4);
       return `\\draw[${strokeOptions(w, item, paint)}] ${w.at(start)} arc[start angle=${deg(p.from)}, end angle=${deg(p.to)}, radius=${w.len(p.r)}];`;
