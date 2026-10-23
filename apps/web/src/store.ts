@@ -22,6 +22,8 @@ export interface Notice {
   readonly tone: 'refusal' | 'info' | 'error';
   readonly text: string;
   readonly diagnostics?: readonly Diagnostic[];
+  /** Answered like a refusal by the next document edit or tool action (ADR-0029). */
+  readonly transient?: boolean;
 }
 
 export interface Snapshot {
@@ -108,7 +110,15 @@ export class EditorStore {
     const s = r.state;
     const acted =
       s.doc !== before.doc || s.tool !== before.tool || s.toolState !== before.toolState;
-    const notice = acted && this.snap.notice?.tone === 'refusal' ? null : this.snap.notice;
+    const old = this.snap.notice;
+    const answered = acted && (old?.tone === 'refusal' || old?.transient === true);
+    // A tool that reused an existing construction says so (ADR-0029).
+    const notice: Notice | null =
+      r.notice === undefined
+        ? answered
+          ? null
+          : old
+        : { tone: 'info', text: r.notice, transient: true };
     this.publish({ state: r.state, notice });
     return r;
   }
