@@ -18,7 +18,7 @@ import { arcBeziers, bezierPieces } from './arc-bezier';
 import type { AsyPlan } from './asy-plan';
 import type { ExportFrame } from './frame';
 import { num, paintOf, type ExportWarning, type Paint } from './paint';
-import { BP_PER_PX, labelSide, labelTex, world, worldDigits } from './tex-common';
+import { BP_PER_PX, inkPaths, labelSide, labelTex, world, worldDigits } from './tex-common';
 
 /** The drawing statements under construction: pens by colour, helpers used, warnings. */
 export class AsyDrawer {
@@ -132,7 +132,7 @@ function itemCode(d: AsyDrawer, item: DisplayItem): string[] {
       out.push(
         `fill(${item.fill.map((q) => d.at(q)).join('--')}--cycle, ${d.pen(paint.hex)}${opac(paint.alpha * d.f.theme.fillAlpha)});`,
       );
-    for (const p of item.paths) out.push(pathCode(d, p, item, paint));
+    for (const p of inkPaths(item)) out.push(pathCode(d, p, item, paint));
   }
   return out;
 }

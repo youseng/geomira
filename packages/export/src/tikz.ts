@@ -31,6 +31,7 @@ import {
 } from './paint';
 import {
   BP_PER_PX,
+  inkPaths,
   labelSide,
   labelTex,
   measureText,
@@ -160,7 +161,7 @@ function itemLines(w: Writer, item: DisplayItem): string[] {
     out.push(
       `\\fill[${w.colour(paint.hex)}${opacity('fill opacity', paint.alpha * w.f.theme.fillAlpha)}] ${item.fill.map((q) => w.at(q)).join(' -- ')} -- cycle;`,
     );
-  for (const p of item.paths) out.push(pathLine(w, p, item, paint));
+  for (const p of inkPaths(item)) out.push(pathLine(w, p, item, paint));
   return out;
 }
 

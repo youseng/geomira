@@ -144,11 +144,8 @@ gm_dot(A_1pp, 0.0875, gmc0, 1);
 // P1
 gm_dot(P1, 0.0875, gmc0, 1);
 // t1
-gm_dot((1, 5), 0, gmc0, 1);
 // t2
-gm_dot((7, 3), 0, gmc0, 1);
 // t3
-gm_dot((5, -1), 0, gmc0, 1);
 // ν*
 draw(circle(nus.c, nus.r), gmc0 + linewidth(1.125) + opacity(0.5));
 // tri*
@@ -184,11 +181,8 @@ gm_dot(A_1pps, 0.0875, gmc0, 0.5);
 // P1*
 gm_dot(P1s, 0.0875, gmc0, 0.5);
 // t1*
-gm_dot((1, -5), 0, gmc0, 0.5);
 // t2*
-gm_dot((7, -3), 0, gmc0, 0.5);
 // t3*
-gm_dot((5, 1), 0, gmc0, 0.5);
 label("$\nu$-circle", (1.813173, 2.063173), (1, 1), gmc0); // label of ν
 label("$A$", (-0.225, 0), (-1, 0), gmc0); // label of A
 label("$B$", (6.225, 0), (1, 0), gmc0); // label of B
