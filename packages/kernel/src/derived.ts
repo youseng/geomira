@@ -19,6 +19,7 @@ import { call, ref, exprEquals, type Expr } from './expr';
 import { stableTopologicalOrder } from './graph';
 import type { Registry } from './registry';
 import { callKinds } from './kinds';
+import { textOrder } from './text-order';
 import type { ValueKind } from './value';
 
 /**
@@ -261,7 +262,9 @@ function duplicateName(objects: readonly DocObject[]): string | undefined {
  * Makes the managed objects match the rules exactly: stale images go (with their
  * dependents, listed in `removed`), names and definitions are repaired, and every missing
  * image is created right after the later of its source and its transform (so "adding an
- * object to the source appends its image"), chains included. Degenerate cases: an image
+ * object to the source appends its image"), chains included; every image ends right after
+ * the later of its source and its transformation (text order, text-order.ts, so the printed
+ * text parses back to the same order after a move). Degenerate cases: an image
  * name already used by another object → error; a dependency cycle (a rule's transform
  * built from its own images) → error. A synced document is returned unchanged. With `held`,
  * the held sources are not imaged (their existing images stay; see Held).
@@ -288,7 +291,8 @@ export function syncDerived(doc: Document, registry: Registry, held?: Held): Edi
       if (ordered === undefined) return fail('cycle: a transformation depends on its own images');
       const clash = duplicateName(ordered);
       if (clash !== undefined) return fail(`the image name ${clash} is already used`);
-      return { ok: true, doc: { ...cur, objects: ordered }, added: [...fresh], removed };
+      const objects = imageless ? ordered : textOrder({ ...cur, objects: ordered });
+      return { ok: true, doc: { ...cur, objects }, added: [...fresh], removed };
     }
   }
   return fail('cycle: the derived layers image each other without end');
