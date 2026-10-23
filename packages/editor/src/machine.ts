@@ -97,6 +97,15 @@ function moveClick(state: EditorState, hit: HitResult, env: EditorEnv): EditResu
   );
 }
 
+function addGlider(state: EditorState, curve: number, at: Vec<number>, env: EditorEnv) {
+  const def = gliderAt(state, curve, at);
+  return typeof def === 'string' ? refuse(state, def) : add(state, def, 'point', env);
+}
+
+/**
+ * The glider tool: a point on the line or circle under the click, or on a polygon's side,
+ * made as segment(A, B) first (its own edit, ADR-0024 item 8).
+ */
 function gliderClick(
   state: EditorState,
   input: Extract<ToolInput, { kind: 'click' }>,
@@ -105,11 +114,14 @@ function gliderClick(
   const curve = input.hit.hits.find((h) => h.kind === 'line' || h.kind === 'circle')?.id;
   const v = input.hit.virtual;
   const at = v.kind === 'on' ? v.world : input.world;
-  if (curve === undefined) return refuse(state, 'click a line or a circle');
-  const def = gliderAt(state, curve, at);
-  return typeof def === 'string'
-    ? refuse(state, def)
-    : withTool(add(state, def, 'point', env), reset(state));
+  if (curve !== undefined) return withTool(addGlider(state, curve, at, env), reset(state));
+  const side = polygonSide(state, input.hit, input.world);
+  if (side === undefined) return refuse(state, 'click a line or a circle');
+  const made = add(state, side, 'line', env);
+  if (!made.ok || made.id === undefined) return refuse(state, 'the side could not be made');
+  const r = addGlider(made.state, made.id, at, env);
+  // A refused glider leaves no stray side.
+  return r.ok ? withTool(r, reset(state)) : refuse(state, r.reason);
 }
 
 function click(

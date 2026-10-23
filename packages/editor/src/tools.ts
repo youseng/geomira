@@ -51,7 +51,7 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     id: 'glider',
     label: 'Point on object',
     key: 'g',
-    help: 'A point on a line or circle, free to move along it.',
+    help: 'A point on a line, a circle or a polygon side, free to move along it.',
     steps: [{ pick: 'curve', prompt: 'click the curve where the point goes' }],
     build: { kind: 'none' },
   },
