@@ -109,16 +109,30 @@ function parenArgs(c: Cursor, what: string): ExprNode[] | undefined {
   return expect(c, ')', `write ${what}`) === undefined ? undefined : out;
 }
 
+/**
+ * The arguments of `word(…)` with a lone run of `n` glued names spread into its points, as in
+ * definitions (ADR-0025 decision 4): `dist(AB)` is dist(A, B), `angle(ABC)` angle(A, B, C).
+ */
+function spreadArgs(c: Cursor, what: string, n: number): ExprNode[] | undefined {
+  const args = parenArgs(c, what);
+  const [only] = args ?? [];
+  if (args?.length === 1 && only?.kind === 'call' && only.glued === true && only.args.length === n)
+    return [...only.args];
+  return args;
+}
+
 /** Three points: `ABC` glued or `(X, Y, Z)`; for ∡ also `(l, m)`. */
 function anglePoints(c: Cursor, sym: string, lines: boolean): ExprNode[] | undefined {
   if (isPunct(c, '(')) {
-    const args = parenArgs(c, `${sym}(X, Y, Z)`);
+    const start = here(c);
+    const args = spreadArgs(c, `${sym}(X, Y, Z)`, 3);
     if (args === undefined) return undefined;
     if (args.length === 3 || (lines && args.length === 2)) return args;
     fail(
       c,
       `${sym}(…) takes three points${lines ? ' or two lines' : ''}`,
       `write ${sym}ABC or ${sym}(X, Y, Z)`,
+      since(c, start),
     );
     return undefined;
   }
@@ -153,11 +167,12 @@ function isDistAhead(c: Cursor): boolean {
 /** A segment: `AB` or dist(X, Y) (also written length(X, Y), distance(X, Y)). */
 function parseSegment(c: Cursor): ExprNode[] | undefined {
   if (isDistAhead(c)) {
+    const start = here(c);
     const word = next(c)?.value ?? 'dist';
-    const args = parenArgs(c, `${word}(X, Y)`);
+    const args = spreadArgs(c, `${word}(X, Y)`, 2);
     if (args === undefined) return undefined;
     if (args.length === 2) return args;
-    fail(c, `${word} takes two points`, `write ${word}(X, Y)`);
+    fail(c, `${word} takes two points`, `write ${word}(X, Y)`, since(c, start));
     return undefined;
   }
   const pts = gluedPoints(c);
@@ -178,11 +193,12 @@ function isSegmentAhead(c: Cursor): boolean {
 
 function parseAngleTerm(c: Cursor): ExprNode[] | undefined {
   if (isWord(c, 'angle')) {
+    const start = here(c);
     next(c);
-    const args = parenArgs(c, 'angle(X, Y, Z)');
+    const args = spreadArgs(c, 'angle(X, Y, Z)', 3);
     if (args === undefined) return undefined;
     if (args.length === 3) return args;
-    fail(c, 'angle takes three points', 'write angle(X, Y, Z)');
+    fail(c, 'angle takes three points', 'write angle(X, Y, Z)', since(c, start));
     return undefined;
   }
   next(c);
