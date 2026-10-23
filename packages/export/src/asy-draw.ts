@@ -126,7 +126,12 @@ function itemCode(d: AsyDrawer, item: DisplayItem): string[] {
   } else if (v !== undefined && item.kind === 'polygon') {
     if (item.fill !== null)
       out.push(`fill(${v.ident}, ${d.pen(paint.hex)}${opac(paint.alpha * d.f.theme.fillAlpha)});`);
-    out.push(`draw(${v.ident}, ${strokePen(d, item, paint)});`);
+    // Dashes restart at every vertex, as the canvas strokes each edge on its own (ADR-0028).
+    out.push(
+      dashPattern(item.style.dash, item.style.width).length === 0
+        ? `draw(${v.ident}, ${strokePen(d, item, paint)});`
+        : `for (int i = 0; i < length(${v.ident}); ++i) draw(subpath(${v.ident}, i, i + 1), ${strokePen(d, item, paint)});`,
+    );
   } else {
     if (item.fill !== null)
       out.push(
