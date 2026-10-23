@@ -8,6 +8,10 @@
  * import packages/lang (SPEC §2: lang → claims), so the host parses first (ADR-0008).
  * Cryptographic randomness for the mod-p rung is supplied by the host (`env.entropy`,
  * e.g. num's cryptoSource over crypto.getRandomValues); without it the rung is skipped.
+ *
+ * Global jobs run the flip test on false figures and on undefined ones (an undefined figure
+ * that holds flipped failed through an orientation choice: law L16). Local jobs judge the
+ * current figure exactly as the live badge does.
  */
 import { createRng, deriveSeed, type EntropySource, type Seed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
@@ -70,9 +74,22 @@ interface FlipState {
   failing: number;
   unrepaired: number;
   unrepairedDoc?: Document;
+  /** Undefined figures that held once flipped (counted in `failing` too). */
+  undefinedRepaired: number;
   /** Site index → whether flipping it alone repaired every failing sample so far. */
   alone: Map<number, boolean>;
   k: Set<number>;
+}
+
+function newFlipState(): FlipState {
+  return { failing: 0, unrepaired: 0, undefinedRepaired: 0, alone: new Map(), k: new Set() };
+}
+
+/** What flipping the orientation-dependent selectors of one figure gives. */
+interface Flips {
+  readonly sites: readonly number[];
+  readonly all: boolean;
+  readonly alone: readonly boolean[];
 }
 
 function chiralLine(
@@ -106,27 +123,61 @@ function flipped(prep: Prepared, doc: Document, sites: readonly number[]): Docum
   return { ...doc, objects };
 }
 
-/** k + 1 evaluations of a failing sample: all orientation-dependent selectors flipped, then each alone. */
+/** k + 1 evaluations of a figure: all orientation-dependent selectors flipped, then each alone. */
+function flipsOf(prep: Prepared, doc: Document, decide: (d: Document) => SampleOutcome): Flips {
+  const sites = dependentSites(prep, doc);
+  const all = sites.length > 0 && decide(flipped(prep, doc, sites)).kind === 'true';
+  const alone = sites.map((i) =>
+    sites.length === 1 ? all : decide(flipped(prep, doc, [i])).kind === 'true',
+  );
+  return { sites, all, alone };
+}
+
+/** Counts a failing figure (false, or undefined and repaired) in the flip state. */
+function countFailing(state: FlipState, r: Flips): void {
+  state.failing++;
+  for (const i of r.sites) state.k.add(i);
+  for (const [j, i] of r.sites.entries())
+    state.alone.set(i, (state.alone.get(i) ?? state.failing === 1) && r.alone[j] === true);
+  for (const i of state.alone.keys()) if (!r.sites.includes(i)) state.alone.set(i, false);
+}
+
+/** The flip test of a FALSE figure (SPEC §10.5). */
 function flipTest(
   prep: Prepared,
   doc: Document,
   state: FlipState,
   decide: (d: Document) => SampleOutcome,
 ): void {
-  state.failing++;
-  const sites = dependentSites(prep, doc);
-  for (const i of sites) state.k.add(i);
-  const all = sites.length > 0 && decide(flipped(prep, doc, sites)).kind === 'true';
-  const alone = sites.map((i) =>
-    sites.length === 1 ? all : decide(flipped(prep, doc, [i])).kind === 'true',
-  );
-  for (const [j, i] of sites.entries())
-    state.alone.set(i, (state.alone.get(i) ?? state.failing === 1) && alone[j] === true);
-  for (const i of state.alone.keys()) if (!sites.includes(i)) state.alone.set(i, false);
-  if (!all && !alone.some(Boolean)) {
+  const r = flipsOf(prep, doc, decide);
+  countFailing(state, r);
+  if (!r.all && !r.alone.some(Boolean)) {
     state.unrepaired++;
     state.unrepairedDoc ??= withoutProbes(doc);
   }
+}
+
+/**
+ * The flip test of an UNDEFINED (degenerate, ambiguous) figure: when flipping the
+ * orientation-dependent selectors makes the claim hold, the figure failed through an
+ * orientation choice (law L16) and counts as a repaired failure; otherwise it stays a figure
+ * that is not valid, as before.
+ */
+function flipUndefined(
+  prep: Prepared,
+  doc: Document,
+  state: FlipState,
+  decide: (d: Document) => SampleOutcome,
+): void {
+  if (prep.sites.length === 0) return;
+  const r = flipsOf(prep, doc, decide);
+  if (!r.all && !r.alone.some(Boolean)) return;
+  countFailing(state, r);
+  state.undefinedRepaired++;
+}
+
+function isUndefinedOutcome(o: SampleOutcome): boolean {
+  return o.kind === 'undefined' || o.kind === 'degenerate' || o.kind === 'ambiguous';
 }
 
 function advice(s: SiteProbe['site']): string {
@@ -152,6 +203,7 @@ function summary(prep: Prepared, state: FlipState): FlipSummary {
     failing: state.failing,
     unrepaired: state.unrepaired,
     k: state.k.size,
+    ...(state.undefinedRepaired > 0 ? { undefinedRepaired: state.undefinedRepaired } : {}),
     ...(state.unrepairedDoc === undefined ? {} : { unrepairedDoc: state.unrepairedDoc }),
     ...(named === undefined ? {} : { named }),
   };
@@ -169,7 +221,7 @@ export function* runJob(
   const prep = p.prepared;
   const budgetBits = env.budgetBits ?? EXACT_BUDGET_BITS;
   const c: Collector = newCollector();
-  const flips: FlipState = { failing: 0, unrepaired: 0, alone: new Map(), k: new Set() };
+  const flips = newFlipState();
   const maxAttempts = RETRY_FACTOR * job.n;
   let [done, attempts] = [0, 0];
   while (done < job.n && attempts < maxAttempts) {
@@ -190,6 +242,7 @@ export function* runJob(
       done++;
       if (mirrored) c.mirrored++;
       if (job.regime === 'global' && o.kind === 'false') flipTest(prep, doc, flips, decide);
+      if (job.regime === 'global' && isUndefinedOutcome(o)) flipUndefined(prep, doc, flips, decide);
     }
     const cmd = yield { kind: 'progress', regime: job.regime, done, n: job.n, attempts };
     if (cmd === 'cancel') return { kind: 'cancelled', done, attempts };

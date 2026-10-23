@@ -3,7 +3,8 @@
  * in sentence case, then in parentheses what was checked: the regime, n and the rungs used
  * ("Holds in this configuration (local test, n = 200, exact over Q)"); counts follow only
  * where they add something (mixed rungs, fewer valid figures than tested, rejected samples,
- * mirrored figures, a shortfall against the hypotheses). The seed, the tally and the most frequent
+ * mirrored figures, a shortfall against the hypotheses, undefined figures repaired by the
+ * flip test). The seed, the tally and the most frequent
  * reasons of invalid figures go to `detail`, shown under the line.
  *
  * `tone` is how the line is coloured: only a LOCAL verdict can be `false` or `mixed`;
@@ -13,7 +14,7 @@
 import { assertNever } from '@geomira/num/assert';
 import { RUNG_NAMES } from './rungs';
 import type { GlobalKind, LocalKind, Verdict } from './verdict';
-import { rejectedNote, selectorPhrase } from './verdict-notes';
+import { rejectedNote, repairedText, selectorPhrase } from './verdict-notes';
 
 export type VerdictTone = 'holds' | 'false' | 'mixed' | 'inconclusive' | 'info';
 
@@ -102,7 +103,8 @@ function globalBody(v: Verdict, kind: Exclude<GlobalKind, 'inconclusive'>, o: Li
         v.named === undefined
           ? 'flipping its orientation-dependent selectors together repairs every failure'
           : `${selectorPhrase(v.named)} encodes a side; ${v.named.advice}`;
-      return `Orientation-dependent (${checked(v)}: ${f} of ${of} fail and hold with the selectors flipped; ${what}${tail([...rejected, ...notes])})`;
+      const fails = repairedText(v.tally.false, valid(v), v.undefinedRepaired ?? 0);
+      return `Orientation-dependent (${checked(v)}: ${fails}; ${what}${tail([...rejected, ...notes])})`;
     }
     case 'configuration-dependent': {
       // The verdict's own text says which of the two cases the flip test found.

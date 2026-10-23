@@ -5,12 +5,13 @@
  *   with an example and a counterexample document) · INCONCLUSIVE (fewer than half of the N
  *   figures valid: undefined, degenerate, ambiguous or ill-conditioned, with reasons).
  *   GLOBAL: HOLDS ACROSS THE DECLARED CONFIGURATION · ORIENTATION-DEPENDENT (every failing
- *   sample holds once the orientation-dependent selectors are flipped; one selector is
- *   named when flipping it alone repairs every failure) · CONFIGURATION-DEPENDENT (some
- *   failing sample does not hold even flipped; with an example document) · INCONCLUSIVE.
- * Verdicts state what was checked (rungs and counts), the samples the hypotheses rejected
- * (whenever there are any) and the seed (verdict-notes.ts); they never use the words
- * reserved for the Phase 2 prover.
+ *   sample holds once the orientation-dependent selectors are flipped; an undefined sample
+ *   that holds flipped is a failing sample too, law L16; one selector is named when flipping
+ *   it alone repairs every failure) · CONFIGURATION-DEPENDENT (some failing sample does not
+ *   hold even flipped; with an example document) · INCONCLUSIVE.
+ * Verdicts state what was checked (rungs and counts), the figures that were not valid and
+ * the samples the hypotheses rejected (whenever there are any) and the seed
+ * (verdict-notes.ts); they never use the words reserved for the Phase 2 prover.
  */
 import type { Seed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
@@ -18,7 +19,7 @@ import { MIN_VALID_FRACTION } from './constants';
 import type { ClaimValue } from './eval-claim';
 import { RUNG_NAMES, type RungName, type SampleOutcome } from './rungs';
 import type { Regime } from './sampler';
-import { rejectedNote, selectorPhrase } from './verdict-notes';
+import { invalidNote, rejectedNote, repairedText, selectorPhrase } from './verdict-notes';
 
 export type LocalKind = 'holds' | 'false' | 'mixed' | 'inconclusive';
 export type GlobalKind =
@@ -67,6 +68,8 @@ export interface Verdict {
   readonly mirrored?: number;
   /** Fewer than HARD_ACCEPTANCE of the attempts satisfied the hypotheses. */
   readonly hardToSatisfy?: boolean;
+  /** GLOBAL: undefined figures that hold once the orientation-dependent selectors are flipped. */
+  readonly undefinedRepaired?: number;
   readonly named?: NamedSelector;
 }
 
@@ -153,9 +156,9 @@ function tail(notes: readonly string[]): string {
   return notes.length === 0 ? '' : `; ${notes.join('; ')}`;
 }
 
-/** The rejected samples, after the counts. */
-function countNotes(c: Collector): string[] {
-  return rejectedNote(c.tally.rejected);
+/** The figures that were not valid and the rejected samples, after the counts. */
+function countNotes(c: Collector, tested: number): string[] {
+  return [...invalidNote(c.tally, tested), ...rejectedNote(c.tally.rejected)];
 }
 
 export interface Common {
@@ -199,7 +202,7 @@ function base(
 export function localVerdict(c: Collector, k: Common, current: ClaimValue): Verdict {
   const { true: t, false: f } = c.tally;
   const valid = t + f;
-  const notes = tail(countNotes(c));
+  const notes = tail(countNotes(c, k.tested));
   let kind: LocalKind;
   let text: string;
   if (!enoughValid(c, k.n)) {
@@ -234,6 +237,11 @@ export interface FlipSummary {
   readonly named?: NamedSelector;
   /** Orientation-dependent selectors met (k). */
   readonly k: number;
+  /**
+   * Undefined (or degenerate, or ambiguous) figures that hold once the orientation-dependent
+   * selectors are flipped (law L16: such figures fail only through an orientation choice).
+   */
+  readonly undefinedRepaired?: number;
 }
 
 /** Whether `count` decided figures are enough for a verdict other than INCONCLUSIVE. */
@@ -243,30 +251,38 @@ function enough(count: number, n: number): boolean {
 
 function orientationVerdict(c: Collector, k: Common, flips: FlipSummary, notes: string[]): Verdict {
   const valid = c.tally.true + c.tally.false;
+  const u = flips.undefinedRepaired ?? 0;
   const what =
     flips.named === undefined
       ? `flipping its ${String(flips.k)} orientation-dependent selectors together repairs every failure`
       : `${selectorPhrase(flips.named)} encodes a side; ${flips.named.advice}`;
-  const text = `ORIENTATION-DEPENDENT (${String(c.tally.false)} of ${String(valid)} fail and hold with the selectors flipped; ${what}${tail(notes)})`;
+  const text = `ORIENTATION-DEPENDENT (${repairedText(c.tally.false, valid, u)}; ${what}${tail(notes)})`;
   return {
     ...base('global', 'orientation-dependent', text, c, k),
     ...(flips.named === undefined ? {} : { named: flips.named }),
+    ...(u > 0 ? { undefinedRepaired: u } : {}),
   };
 }
 
-/** The GLOBAL verdict. */
+/**
+ * The GLOBAL verdict. ORIENTATION-DEPENDENT when the closure has orientation-dependent
+ * selectors and flipping them repairs every false figure and makes some figure hold that was
+ * false or undefined (an undefined figure that holds once flipped is an orientation failure
+ * too: law L16); then HOLDS ACROSS, CONFIGURATION-DEPENDENT or INCONCLUSIVE on the valid ones.
+ */
 export function globalVerdict(c: Collector, k: Common, flips: FlipSummary): Verdict {
   const { true: t, false: f } = c.tally;
   const valid = t + f;
-  const notes = countNotes(c);
+  const u = flips.undefinedRepaired ?? 0;
+  const notes = countNotes(c, k.tested);
   const counts = `${rungText(c.rungs)}, ${String(t)}/${String(valid)}${tail([...notes, `${String(c.mirrored)} mirrored`])}`;
   let v: Verdict;
-  if (!enoughValid(c, k.n)) {
+  if (flips.k > 0 && flips.unrepaired === 0 && f + u > 0 && enough(valid + u, k.n)) {
+    v = orientationVerdict(c, k, flips, notes);
+  } else if (!enoughValid(c, k.n)) {
     v = base('global', 'inconclusive', inconclusiveText(c, k.tested), c, k);
   } else if (f === 0) {
     v = base('global', 'holds-across', `HOLDS ACROSS THE DECLARED CONFIGURATION (${counts})`, c, k);
-  } else if (flips.k > 0 && flips.unrepaired === 0) {
-    v = orientationVerdict(c, k, flips, notes);
   } else {
     const why =
       flips.k === 0
