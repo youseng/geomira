@@ -170,6 +170,21 @@
     right: 10px;
   }
 
+  /*
+   * With the drawer open, notices and errors show above it (ADR-0028: they were drawn
+   * behind it), at the bottom of the canvas area, clear of the drawer's tab row; the tool's
+   * controls, which act on the hidden canvas, stay hidden as before.
+   */
+  .app:has(> .side.open) .stage-top {
+    z-index: 75;
+    top: auto;
+    bottom: 8px;
+  }
+
+  .app:has(> .side.open) .stage-top > .tool-hint {
+    display: none;
+  }
+
   /* Zoom and fit in a row, clear of the fitted figure's margin. */
   .zoomctl {
     flex-direction: row;
