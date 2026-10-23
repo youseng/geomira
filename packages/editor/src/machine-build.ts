@@ -158,9 +158,13 @@ function intersections(state: EditorState, picks: readonly number[], env: Editor
     return refuse(state, 'pick two curves');
   const r = env.registry.resolve('intersect', [va, vb]);
   if (!r.ok) return refuse(state, r.reason);
-  if (r.signature.branch?.candidates !== 2)
-    return add(state, call('intersect', [ref(a), ref(b)]), 'point', env);
-  return branches(state, 'intersect', [a, b], 'point', env);
+  if (r.signature.branch?.candidates === 2)
+    return branches(state, 'intersect', [a, b], 'point', env);
+  // One common point at most (two lines): lines that do not meet here (parallel, segments
+  // whose ranges miss) are refused, as curves are, rather than adding an Undefined point.
+  const p = r.tool.compute(FloatField, [va, vb], state.values.ctx);
+  if (p.kind !== 'point') return refuse(state, 'the curves do not meet here');
+  return add(state, call('intersect', [ref(a), ref(b)]), 'point', env);
 }
 
 function tangent(state: EditorState, picks: readonly number[], env: EditorEnv): EditResult {
