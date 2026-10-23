@@ -8,7 +8,8 @@
  *     image of C in layer ref";
  *   - managed objects are maintained by their rule: they cannot be removed, renamed,
  *     redefined, moved or put in other layers directly (exclude the source instead);
- *   - a rule's transformation cannot be redefined as something that is not one;
+ *   - a rule's transformation cannot be redefined as something that is not one, directly
+ *     or through what it is built from (every rule is re-checked after every edit);
  *   - `move`: an object moves to another place in the construction order (its
  *     dependencies and dependents keep I2: the stable topological order re-validates it).
  */
@@ -108,6 +109,41 @@ function transformProblem(
 }
 
 /**
+ * The layers whose rule's transformation exists but cannot be a transformation (its static
+ * kinds exclude one), each with that object's name.
+ */
+function nonTransforms(doc: Document, registry: Registry): Map<string, string> {
+  const out = new Map<string, string>();
+  const ruled = doc.layers.filter((l) => l.rule !== undefined);
+  if (ruled.length === 0) return out;
+  const kinds = objectKinds(doc, registry);
+  for (const l of ruled) {
+    const t = l.rule === undefined ? undefined : findObject(doc, l.rule.transform.id);
+    const k = t === undefined ? undefined : kinds.get(t.id);
+    if (t !== undefined && k !== undefined && !k.includes('transform')) out.set(l.id, t.name);
+  }
+  return out;
+}
+
+/**
+ * ADR-0007 decision 11 for every edit (not only a redefinition of the transform object
+ * itself): an edit after which a rule's transformation can no longer be one (through an
+ * alias t = s, redefining s as a point) is refused. A rule that was already broken before the
+ * edit (a hand-built document) does not block it.
+ */
+function brokenRule(before: Document, after: Document, registry: Registry): string | undefined {
+  const now = nonTransforms(after, registry);
+  if (now.size === 0) return undefined;
+  const was = nonTransforms(before, registry);
+  for (const [layerId, name] of now) {
+    if (was.has(layerId)) continue;
+    const layer = findLayer(after, layerId)?.name ?? layerId;
+    return `${name} is the transformation of layer ${layer}: the edit would make it not a transformation`;
+  }
+  return undefined;
+}
+
+/**
  * Moves an object to position `index` of the construction order; the stable topological
  * order then keeps I2 (an object cannot move before what it is built from, and what is
  * built from it moves after it). Degenerate: an index outside the list → error.
@@ -199,6 +235,8 @@ export function applyDocEdit(
 ): EditResult<Applied> {
   const r = step(doc, registry, edit);
   if (!r.ok) return r;
+  const broken = brokenRule(doc, r.doc, registry);
+  if (broken !== undefined) return fail(broken);
   const s = syncDerived(r.doc, registry);
   if (!s.ok) return s;
   const added = [...(r.added ?? []), ...s.added];
