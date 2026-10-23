@@ -60,3 +60,22 @@ test('the command bar completes at the cursor, also after the cursor moved by a 
   await expect.poll(() => list.innerText()).not.toBe(atEnd);
   await expect(list).not.toContainText('midpoint');
 });
+
+test('the completion list goes when the command bar loses the focus, and comes back', async ({
+  page,
+}) => {
+  await openApp(page);
+  const input = page.getByLabel('Command', { exact: true });
+  await input.click();
+  await input.pressSequentially('M = mid');
+  const list = page.getByRole('listbox', { name: 'Completions' });
+  await expect(list).toBeVisible();
+  await page.getByRole('tab', { name: 'Objects', exact: true }).click();
+  await expect(list).toHaveCount(0);
+  await input.focus();
+  await expect(list).toBeVisible();
+  // A click on a completion keeps the focus in the bar and accepts it.
+  await list.getByRole('option').filter({ hasText: 'midpoint' }).first().click();
+  await expect(input).toBeFocused();
+  await expect(input).toHaveValue(/^M = midpoint/u);
+});
