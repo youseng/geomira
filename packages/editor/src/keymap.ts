@@ -21,6 +21,8 @@ export type KeyAction =
 export interface KeyBinding {
   /** KeyboardEvent.key (letters lowercase unless shift is part of the binding). */
   readonly key: string;
+  /** Other key values for the same binding (Backspace: the delete key of a Mac). */
+  readonly also?: readonly string[];
   readonly ctrl?: boolean;
   readonly shift?: boolean;
   readonly action: KeyAction;
@@ -54,6 +56,7 @@ const COMMANDS: readonly KeyBinding[] = [
   },
   {
     key: 'Delete',
+    also: ['Backspace'],
     action: { kind: 'delete' },
     help: 'Remove the selected objects (and what is built from them)',
     section: 'Editing',
@@ -76,7 +79,7 @@ export const KEYMAP: readonly KeyBinding[] = Object.freeze([
 function matches(k: KeyBinding, e: KeyEventLike): boolean {
   if ((k.ctrl === true) !== e.ctrl) return false;
   // Without Ctrl the key value already says whether Shift was down ("c", "C", "?").
-  if (k.ctrl !== true) return k.key === e.key;
+  if (k.ctrl !== true) return k.key === e.key || (k.also ?? []).includes(e.key);
   return k.key.toLowerCase() === e.key.toLowerCase() && (k.shift === true) === e.shift;
 }
 
@@ -86,9 +89,10 @@ export function keyAction(e: KeyEventLike): KeyAction | undefined {
   return KEYMAP.find((k) => matches(k, e))?.action;
 }
 
-/** How a binding is written in the help ("Ctrl+Shift+Z", "c"). */
+/** How a binding is written in the help ("Ctrl+Shift+Z", "c", "Delete or Backspace"). */
 export function keyText(b: KeyBinding): string {
-  return `${b.ctrl === true ? 'Ctrl+' : ''}${b.shift === true ? 'Shift+' : ''}${b.key}`;
+  const keys = [b.key, ...(b.also ?? [])].join(' or ');
+  return `${b.ctrl === true ? 'Ctrl+' : ''}${b.shift === true ? 'Shift+' : ''}${keys}`;
 }
 
 export interface HelpSection {

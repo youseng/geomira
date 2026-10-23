@@ -19,13 +19,14 @@ import { applyEdit } from './edit';
 import { conventionalName, preferredName } from './conventional-names';
 import { freshName, type NameKind } from './names';
 import { done, refuse, type EditResult } from './result';
+import { localResponses } from './robust';
 import type { EditorEnv, EditorState } from './state';
 import { idleTool, type ToolState } from './tool-state';
 import type { ToolUI } from './tool-ui';
 
 /** The idle tool after a build: no picks; the claim kind and the typed number stay. */
 export function reset(state: EditorState): ToolState {
-  return idleTool(state.toolState.claimKind, state.toolState.value);
+  return idleTool(state.toolState.claimKind, state.toolState.value, state.toolState.typed);
 }
 
 export function withTool(r: EditResult, ts: ToolState): EditResult {
@@ -158,9 +159,13 @@ function intersections(state: EditorState, picks: readonly number[], env: Editor
     return refuse(state, 'pick two curves');
   const r = env.registry.resolve('intersect', [va, vb]);
   if (!r.ok) return refuse(state, r.reason);
-  if (r.signature.branch?.candidates !== 2)
-    return add(state, call('intersect', [ref(a), ref(b)]), 'point', env);
-  return branches(state, 'intersect', [a, b], 'point', env);
+  if (r.signature.branch?.candidates === 2)
+    return branches(state, 'intersect', [a, b], 'point', env);
+  // One common point at most (two lines): lines that do not meet here (parallel, segments
+  // whose ranges miss) are refused, as curves are, rather than adding an Undefined point.
+  const p = r.tool.compute(FloatField, [va, vb], state.values.ctx);
+  if (p.kind !== 'point') return refuse(state, 'the curves do not meet here');
+  return add(state, call('intersect', [ref(a), ref(b)]), 'point', env);
 }
 
 function tangent(state: EditorState, picks: readonly number[], env: EditorEnv): EditResult {
@@ -169,8 +174,33 @@ function tangent(state: EditorState, picks: readonly number[], env: EditorEnv): 
   if (p === undefined || c === undefined || P?.kind !== 'point' || C?.kind !== 'circle')
     return refuse(state, 'pick a point and a circle');
   const on = requireOnCircle(FloatField, P, C, state.values.ctx, 'tangent') === undefined;
-  if (on) return add(state, call('tangent', [ref(p), ref(c)]), 'line', env);
-  return branches(state, 'tangent_from', [p, c], 'line', env);
+  if (!on) return branches(state, 'tangent_from', [p, c], 'line', env);
+  if (!tangentStays(state, p, c, env)) {
+    const name = (id: number) => state.doc.objects.find((o) => o.id === id)?.name ?? '?';
+    return refuse(
+      state,
+      `${name(p)} is on ${name(c)} only by coincidence: its tangent would be lost as soon as ` +
+        'the figure moves (put the point on the circle with "Point on object" first)',
+    );
+  }
+  return add(state, call('tangent', [ref(p), ref(c)]), 'line', env);
+}
+
+/**
+ * Whether tangent(P, c) stays defined in each figure of the local responses (each free input
+ * moved by one local deviation), as the kernel's compute decides: P is on c by construction,
+ * not by coincidence (the check ADR-0027 item 5 gave other(P) in choice.ts).
+ */
+function tangentStays(state: EditorState, p: number, c: number, env: EditorEnv): boolean {
+  const spec = env.registry.get('tangent');
+  if (spec === undefined) return false;
+  const ctx = state.values.ctx;
+  return localResponses(state.doc, state.values.values, env.registry, ctx).every((r) => {
+    const [P, C] = [r.get(p), r.get(c)];
+    return (
+      P !== undefined && C !== undefined && spec.compute(FloatField, [P, C], ctx).kind === 'line'
+    );
+  });
 }
 
 /** The tool's typed number as an exact literal, or why it is not one. */

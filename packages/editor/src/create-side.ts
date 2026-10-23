@@ -6,11 +6,13 @@
  * users drop perpendiculars on a triangle's side with one click.
  */
 import { findObject } from '@geomira/kernel/document';
+import { NO_REMOVAL } from '@geomira/kernel/derived-edit';
 import { call, type Expr } from '@geomira/kernel/expr';
 import type { Vec } from '@geomira/kernel/value';
 import type { HitResult, VirtualHit } from '@geomira/scene/hit';
 import { applyEdit } from './edit';
 import { freshName } from './names';
+import type { EditResult } from './result';
 import type { EditorEnv, EditorState } from './state';
 
 type V = Vec<number>;
@@ -49,10 +51,42 @@ function sideOf(state: EditorState, id: number, at: V): Expr | undefined {
   return a === undefined || b === undefined ? undefined : call('segment', [a.ref, b.ref]);
 }
 
+/** The ids of segment(A, B)'s two points (references only), or undefined. */
+function ends(def: Expr): [number, number] | undefined {
+  if (def.kind !== 'call' || def.tool !== 'segment' || def.selectors.length > 0) return undefined;
+  const [a, b] = def.args;
+  return a?.kind === 'ref' && b?.kind === 'ref' && def.args.length === 2 ? [a.id, b.id] : undefined;
+}
+
+/** An object defined as segment(A, B) or segment(B, A) for the side `side`, hidden or not. */
+function existingSide(state: EditorState, side: Expr): number | undefined {
+  const s = ends(side);
+  if (s === undefined) return undefined;
+  const same = (def: Expr) => {
+    const e = ends(def);
+    return (
+      e !== undefined && ((e[0] === s[0] && e[1] === s[1]) || (e[0] === s[1] && e[1] === s[0]))
+    );
+  };
+  return state.doc.objects.find((o) => same(o.def))?.id;
+}
+
+/**
+ * The object of a side (segment(A, B) from polygonSide): an existing segment of it, reused
+ * even when hidden (a click cannot hit it), else a new one as its own edit.
+ */
+export function sideObject(state: EditorState, side: Expr, env: EditorEnv): EditResult {
+  const id = existingSide(state, side);
+  if (id !== undefined) return { ok: true, state, removed: NO_REMOVAL, added: [], id };
+  const object = { name: freshName(state.doc, 'line'), def: side, layers: [state.activeLayer] };
+  return applyEdit(state, { kind: 'add', object }, env);
+}
+
 /**
  * A virtual hit on polygon sides made into one on segments: each polygon it names (a point
- * on a side, a side meeting a curve) gets its side created as a segment, one edit each, so
- * the point the click creates is a glider on that side or the intersection with it.
+ * on a side, a side meeting a curve) gets its side as a segment (sideObject: an existing one,
+ * or one edit each), so the point the click creates is a glider on that side or the
+ * intersection with it.
  */
 export function onSides(
   state: EditorState,
@@ -67,8 +101,7 @@ export function onSides(
   for (const id of ids.filter(isPolygon)) {
     const side = sideOf(s, id, v.world);
     if (side === undefined) return 'there is no curve there';
-    const object = { name: freshName(s.doc, 'line'), def: side, layers: [s.activeLayer] };
-    const r = applyEdit(s, { kind: 'add', object }, env);
+    const r = sideObject(s, side, env);
     if (!r.ok || r.id === undefined) return r.ok ? 'the side could not be made' : r.reason;
     swap.set(id, r.id);
     s = r.state;

@@ -14,12 +14,12 @@ import type { Value, Vec } from '@geomira/kernel/value';
 import { assertNever } from '@geomira/num/assert';
 import type { HitResult } from '@geomira/scene/hit';
 import { createdPoint, gliderAt } from './create';
-import { onSides, polygonSide } from './create-side';
+import { onSides, polygonSide, sideObject } from './create-side';
 import { applyEdit } from './edit';
 import { add, build, reset, withTool } from './machine-build';
 import { done, refuse, type EditResult } from './result';
 import type { EditorEnv, EditorState } from './state';
-import { openSteps, stepsOf } from './tool-steps';
+import { mayRepeat, openSteps, stepsOf } from './tool-steps';
 import { toolUI, type PickKind, type ToolUI } from './tools';
 
 export { claimToolKinds, stepsOf } from './tool-steps';
@@ -79,7 +79,7 @@ function pushPick(
   const { steps, rest } = stepsOf(tool, ts);
   const closes = rest?.pick === 'point' && ts.picks.length >= steps.length && id === ts.picks[0];
   if (closes) return build(state, tool, inStepOrder(ts.picks, ts.slots), env);
-  if (ts.picks.includes(id) && tool.repeats !== true)
+  if (ts.picks.includes(id) && !mayRepeat(tool, ts))
     return refuse(state, 'this object is already picked');
   const picks = [...ts.picks, id];
   const slots = [...ts.slots, slot];
@@ -97,19 +97,36 @@ function moveClick(state: EditorState, hit: HitResult, env: EditorEnv): EditResu
   );
 }
 
+function addGlider(state: EditorState, curve: number, at: Vec<number>, env: EditorEnv) {
+  const def = gliderAt(state, curve, at);
+  return typeof def === 'string' ? refuse(state, def) : add(state, def, 'point', env);
+}
+
+/**
+ * The glider tool: a point on the line or circle under the click (never on a point that is
+ * there already), or on a polygon's side, its segment(A, B) (an existing one, or a new one
+ * as its own edit, ADR-0024 item 8).
+ */
 function gliderClick(
   state: EditorState,
   input: Extract<ToolInput, { kind: 'click' }>,
   env: EditorEnv,
 ): EditResult {
+  // As with the point tool, a click on a point never creates another one there.
+  const point = input.hit.hits.find((h) => h.kind === 'point');
+  if (point !== undefined)
+    return refuse(state, `${point.name} is here already: click the curve where there is no point`);
   const curve = input.hit.hits.find((h) => h.kind === 'line' || h.kind === 'circle')?.id;
   const v = input.hit.virtual;
   const at = v.kind === 'on' ? v.world : input.world;
-  if (curve === undefined) return refuse(state, 'click a line or a circle');
-  const def = gliderAt(state, curve, at);
-  return typeof def === 'string'
-    ? refuse(state, def)
-    : withTool(add(state, def, 'point', env), reset(state));
+  if (curve !== undefined) return withTool(addGlider(state, curve, at, env), reset(state));
+  const side = polygonSide(state, input.hit, input.world);
+  if (side === undefined) return refuse(state, 'click a line or a circle');
+  const made = sideObject(state, side, env);
+  if (!made.ok || made.id === undefined) return refuse(state, 'the side could not be made');
+  const r = addGlider(made.state, made.id, at, env);
+  // A refused glider leaves no stray side.
+  return r.ok ? withTool(r, reset(state)) : refuse(state, r.reason);
 }
 
 function click(
@@ -132,7 +149,7 @@ function click(
   const line = open.find((x) => HIT_KINDS[x.step.pick].includes('line'));
   const side = line === undefined ? undefined : polygonSide(state, input.hit, input.world);
   if (line !== undefined && side !== undefined)
-    return created(state, tool, add(state, side, 'line', env), line.index, env);
+    return created(state, tool, sideObject(state, side, env), line.index, env);
   const point = open.find((x) => x.step.pick === 'point');
   if (point === undefined)
     return refuse(state, `${first.step.prompt}: click a ${PICK_WORDS[first.step.pick]}`);
@@ -140,21 +157,25 @@ function click(
   if (typeof sides === 'string') return refuse(state, sides);
   const def = createdPoint(sides.state, sides.virtual, env);
   if (typeof def === 'string') return refuse(state, def);
-  return created(sides.state, tool, add(sides.state, def, 'point', env), point.index, env);
+  return created(state, tool, add(sides.state, def, 'point', env), point.index, env);
 }
 
-/** Picks an object a click just created (its own edit) for step `slot`. */
+/**
+ * Picks an object a click just created (its own edit) for step `slot`. When the pick or the
+ * build it completes is refused, the whole click is: the reason is given and `origin` (the
+ * state before the click) is kept, so no stray point or side is left behind.
+ */
 function created(
-  state: EditorState,
+  origin: EditorState,
   tool: ToolUI,
   made: EditResult,
   slot: number,
   env: EditorEnv,
 ): EditResult {
-  if (!made.ok || made.id === undefined) return made.ok ? refuse(state, 'nothing was made') : made;
+  if (!made.ok) return refuse(origin, made.reason);
+  if (made.id === undefined) return refuse(origin, 'nothing was made');
   const r = pushPick(made.state, tool, made.id, slot, env);
-  // A later refusal keeps the new object (its own edit); the tool's picks stay as they were.
-  return r.ok ? r : { ...made, state: { ...made.state, toolState: state.toolState } };
+  return r.ok ? r : refuse(origin, r.reason);
 }
 
 function objectInput(state: EditorState, tool: ToolUI, id: number, env: EditorEnv): EditResult {
