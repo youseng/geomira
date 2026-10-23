@@ -2,10 +2,11 @@
  * TikZ arcs of a large screen radius (ADR-0028): `arc[… radius=R]` makes TeX compute R × the
  * unit and offsets up to 2R as dimensions, which stop at 16383.99pt (\maxdimen). The canvas
  * draws arcs of up to MAX_ARC_RADIUS = 32768 px (24576bp) as curves, so from a safe bound on
- * an arc is written as explicit Bézier pieces instead, each within a fiftieth of a pixel of
+ * an arc is written as explicit Bézier pieces instead, each within ARC_BEZIER_PX (1/16 px) of
  * the circle; smaller arcs are written as before.
  */
 import { describe, expect, it } from 'vitest';
+import { ARC_BEZIER_PX } from '../src/arc-bezier';
 import { toTikz } from '../src/tikz';
 import { frameOf } from './helpers/figure';
 
@@ -57,12 +58,12 @@ describe('TikZ arcs stay within TeX’s dimensions', () => {
       if (line.includes('arc[')) expect(ps).toEqual([]);
       else {
         expect(ps.length).toBeGreaterThan(0);
-        // Every piece is on the circle within a fiftieth of a pixel and the written digits.
+        // Every piece is on the circle within ARC_BEZIER_PX and the written digits.
         for (const p of ps)
           for (let i = 0; i <= 32; i++) {
             const [x, y] = bezier(p, i / 32);
             const off = Math.abs(Math.hypot(x, y + R) - R) * unit;
-            expect(off).toBeLessThan(0.75 / 50 + 0.02);
+            expect(off).toBeLessThan(0.75 * ARC_BEZIER_PX + 0.02);
           }
       }
     });

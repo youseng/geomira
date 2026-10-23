@@ -3,7 +3,10 @@
  * draws them. Points, lines, full circles and polygons are drawn through their variables
  * (`gm_dot(A, …)`, `draw(gm_path(l), …)` clipped to the canvas's drawn region,
  * `draw(circle(w.c, w.r), …)`, `fill`/`draw` of a polygon's path); marks, texts and arcs
- * from the display list's own paths in world coordinates. Pens carry the six-digit colour,
+ * from the display list's own paths in world coordinates. Asymptote's circle is unitcircle,
+ * four Bézier pieces off by up to r/3600: a circle whose screen radius makes that more than
+ * ARC_BEZIER_PX is drawn from the display list's arcs as enough explicit Bézier pieces
+ * (arc-bezier.ts, ADR-0028), and one the canvas samples as a polyline as that polyline. Pens carry the six-digit colour,
  * the width in bp, the dash pattern and the opacity; labels are placed by their reference
  * point and side (tex-common.ts) with `labelmargin = 0`.
  */
@@ -11,6 +14,7 @@ import { assertNever } from '@geomira/num/assert';
 import { dashPattern } from '@geomira/scene/style';
 import type { DisplayItem, Path } from '@geomira/scene/types';
 import type { Vec2 } from '@geomira/scene/viewport';
+import { arcBeziers, bezierPieces } from './arc-bezier';
 import type { AsyPlan } from './asy-plan';
 import type { ExportFrame } from './frame';
 import { num, paintOf, type ExportWarning, type Paint } from './paint';
@@ -66,6 +70,15 @@ function strokePen(d: AsyDrawer, item: DisplayItem, paint: Paint): string {
   return `${d.pen(paint.hex)} + linewidth(${num(item.style.width * BP_PER_PX, 4)})${type}${opac(paint.alpha)}`;
 }
 
+/**
+ * Whether Asymptote's own circle and arc (unitcircle's four quarter pieces, or parts of them)
+ * stay within ARC_BEZIER_PX of a circle of screen radius rPx; a larger arc is written as
+ * enough Bézier pieces (arc-bezier.ts, ADR-0028).
+ */
+function unitcircleOk(rPx: number): boolean {
+  return bezierPieces(rPx, 2 * Math.PI) <= 4;
+}
+
 function pathCode(d: AsyDrawer, p: Path, item: DisplayItem, paint: Paint): string {
   switch (p.kind) {
     case 'dot':
@@ -76,7 +89,11 @@ function pathCode(d: AsyDrawer, p: Path, item: DisplayItem, paint: Paint): strin
     case 'arc': {
       const c = world(d.f, p.c);
       const deg = (a: number) => num((a * 180) / Math.PI, 4);
-      return `draw(arc((${num(c.x, d.digits)}, ${num(c.y, d.digits)}), ${d.len(p.r)}, ${deg(p.from)}, ${deg(p.to)}), ${strokePen(d, item, paint)});`;
+      if (unitcircleOk(p.r))
+        return `draw(arc((${num(c.x, d.digits)}, ${num(c.y, d.digits)}), ${d.len(p.r)}, ${deg(p.from)}, ${deg(p.to)}), ${strokePen(d, item, paint)});`;
+      const bs = arcBeziers(p);
+      const pieces = bs.map((b) => `..controls ${d.at(b.c0)} and ${d.at(b.c1)}..${d.at(b.p1)}`);
+      return `draw(${d.at(bs[0]?.p0 ?? p.c)}${pieces.join('')}, ${strokePen(d, item, paint)});`;
     }
     default:
       return assertNever(p, 'path');
@@ -90,6 +107,8 @@ function itemCode(d: AsyDrawer, item: DisplayItem): string[] {
   const value = d.f.values.get(item.id);
   const out = [`// ${item.name}`];
   const r = item.paths[0]?.kind === 'dot' ? item.paths[0].r : 0;
+  // A circle is drawn through its variable when unitcircle is accurate enough at its size.
+  const near = item.paths.every((p) => p.kind === 'arc' && unitcircleOk(p.r));
   if (v !== undefined && item.kind === 'point') {
     d.helpers.add('dot');
     out.push(`gm_dot(${v.ident}, ${d.len(r)}, ${d.pen(paint.hex)}, ${num(paint.alpha, 4)});`);
@@ -100,7 +119,8 @@ function itemCode(d: AsyDrawer, item: DisplayItem): string[] {
     v !== undefined &&
     item.kind === 'circle' &&
     value?.kind === 'circle' &&
-    value.arc === null
+    value.arc === null &&
+    near
   ) {
     out.push(`draw(circle(${v.ident}.c, ${v.ident}.r), ${strokePen(d, item, paint)});`);
   } else if (v !== undefined && item.kind === 'polygon') {

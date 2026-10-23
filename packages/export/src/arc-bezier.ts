@@ -13,8 +13,12 @@
 import type { Path } from '@geomira/scene/types';
 import type { Vec2 } from '@geomira/scene/viewport';
 
-/** Largest distance, in CSS px, between a written Bézier arc and its circle. */
-export const ARC_BEZIER_PX = 1 / 50;
+/**
+ * Largest distance, in CSS px, between a written Bézier arc and its circle: a quarter of the
+ * canvas's own ARC_SAGITTA for the arcs it samples. Asymptote's unitcircle meets it up to a
+ * screen radius of about 229 px.
+ */
+export const ARC_BEZIER_PX = 1 / 16;
 
 /** At most this many pieces per full turn. */
 const MAX_PIECES = 256;
