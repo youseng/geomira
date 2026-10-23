@@ -112,6 +112,18 @@ function bisector(paths: readonly Path[]): number | undefined {
     : (screenAngle({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, c) * 180) / Math.PI;
 }
 
+/**
+ * The middle tick of a segment mark: the centre of its ticks' midpoints (the middle tick for
+ * an odd count, between the two middle ones for an even count; ADR-0028).
+ */
+function tickCentre(paths: readonly Path[]): Vec2 | undefined {
+  const mids = paths.flatMap((p) => {
+    const [a, b] = p.kind === 'poly' ? [p.pts[0], p.pts[p.pts.length - 1]] : [];
+    return a === undefined || b === undefined ? [] : [{ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }];
+  });
+  return mids.length === 0 ? undefined : centroid(mids);
+}
+
 function anchorOf(view: View, item: DisplayItem): Vec2 | undefined {
   const first = item.paths[0];
   const q =
@@ -121,13 +133,15 @@ function anchorOf(view: View, item: DisplayItem): Vec2 | undefined {
         : undefined
       : item.kind === 'angle_mark'
         ? markAnchor(item.paths)
-        : item.kind === 'circle'
-          ? circleAnchor(view, item.paths)
-          : item.kind === 'polygon' && item.region !== null
-            ? centroid(item.region)
-            : first?.kind === 'poly'
-              ? polyMiddle(view, first.pts)
-              : undefined;
+        : item.kind === 'segment_mark'
+          ? tickCentre(item.paths)
+          : item.kind === 'circle'
+            ? circleAnchor(view, item.paths)
+            : item.kind === 'polygon' && item.region !== null
+              ? centroid(item.region)
+              : first?.kind === 'poly'
+                ? polyMiddle(view, first.pts)
+                : undefined;
   return q !== undefined && onSurface(view, q) ? q : undefined;
 }
 

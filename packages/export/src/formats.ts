@@ -9,7 +9,7 @@ import { toAsymptote } from './asy';
 import type { AsyDialect } from './asy-map';
 import type { ExportFrame } from './frame';
 import { warningText, type ExportText, type ExportWarning } from './paint';
-import { undefinedWarnings } from './undefined-objects';
+import { missingWarnings } from './undefined-objects';
 import { pngPlan, type PngPlan } from './png';
 import { toSvg } from './svg';
 import { toTikz, toTikzStandalone } from './tikz';
@@ -77,7 +77,7 @@ export function exportAs(f: ExportFrame, choice: ExportChoice, registry: Registr
         plan,
         fileName: `${base}.png`,
         mime: 'image/png',
-        warnings: undefinedWarnings(f.scene),
+        warnings: missingWarnings(f),
         drawn: plan.drawn,
       };
     }

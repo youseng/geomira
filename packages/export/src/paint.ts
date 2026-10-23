@@ -5,6 +5,7 @@
  * warnings an export reports (characters TeX cannot write, colours it cannot read).
  */
 import { hex6, parseCssColor } from './color';
+import { assertNever } from '@geomira/num/assert';
 
 export interface ExportTheme {
   /** Colour of objects without a colour, and of labels (CSS). */
@@ -45,17 +46,26 @@ export type ExportWarning =
     }
   | { readonly kind: 'colour'; readonly object: string; readonly colour: string }
   /** A visible object whose value is undefined here: it has no position, so it is not drawn. */
-  | { readonly kind: 'undefined'; readonly object: string; readonly reason: string };
+  | { readonly kind: 'undefined'; readonly object: string; readonly reason: string }
+  /** A visible object that cannot be placed at the zoom (ADR-0023): not drawn (ADR-0028). */
+  | { readonly kind: 'undrawable'; readonly object: string };
 
 /** The warning as one sentence (the UI and the `% Warning` lines show it). */
 export function warningText(w: ExportWarning): string {
-  if (w.kind === 'character') {
-    const code = `U+${w.codePoint.toString(16).toUpperCase().padStart(4, '0')}`;
-    return `the label of ${w.object} has a character TeX cannot write (${JSON.stringify(w.char)}, ${code}): written as ?`;
+  switch (w.kind) {
+    case 'character': {
+      const code = `U+${w.codePoint.toString(16).toUpperCase().padStart(4, '0')}`;
+      return `the label of ${w.object} has a character TeX cannot write (${JSON.stringify(w.char)}, ${code}): written as ?`;
+    }
+    case 'undefined':
+      return `${w.object} is undefined in this figure (${w.reason}): not drawn`;
+    case 'undrawable':
+      return `${w.object} is not drawable at this zoom: not drawn`;
+    case 'colour':
+      return `the color ${JSON.stringify(w.colour)} of ${w.object} cannot be read: drawn in the default ink`;
+    default:
+      return assertNever(w, 'export warning');
   }
-  if (w.kind === 'undefined')
-    return `${w.object} is undefined in this figure (${w.reason}): not drawn`;
-  return `the color ${JSON.stringify(w.colour)} of ${w.object} cannot be read: drawn in the default ink`;
 }
 
 export interface Paint {

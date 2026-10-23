@@ -10,7 +10,9 @@
  * one), else the nearest point of the topmost curve under the cursor (a point on it),
  * else a free position. Each carries its screen and world position. The virtual hit is
  * 'none' when a point is hit (the point itself is the target) and when the view has a
- * problem (no hits then: its world positions would not be finite).
+ * problem (no hits then: its world positions would not be finite). A text's handle is hit
+ * as its part 'point' (to drag it) but is not a point of the figure: it never makes the
+ * virtual hit 'none' (ADR-0028).
  */
 import { geometryOf, intersections, nearestOn, pathDistance, type Piece } from './hit-geom';
 import type { DisplayItem, DisplayList } from './display';
@@ -123,7 +125,7 @@ export function hitTest(display: DisplayList, q: Vec2, radius: number = HIT_RADI
     const h = item === undefined ? undefined : hitItem(item, q, radius);
     if (h !== undefined) hits.push(h);
   }
-  const virtual: VirtualHit = hits.some((h) => h.part === 'point')
+  const virtual: VirtualHit = hits.some((h) => h.part === 'point' && h.kind === 'point')
     ? { kind: 'none' }
     : virtualHit(display, hits, q, radius);
   return { hits, virtual };

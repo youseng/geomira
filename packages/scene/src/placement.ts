@@ -60,3 +60,22 @@ export function curvePlacement(s: Curve, rect: Rect, zoom: number): Placement {
   if (dist > halfDiagonal(rect) + err) return 'outside';
   return err * zoom <= PLACEMENT_PX ? 'ok' : 'unplaceable';
 }
+
+/**
+ * Whether a polygon's edges can be placed (ADR-0028): 'unplaceable' when one of them is,
+ * as the segment a + t·(b − a) the layout clips; otherwise 'ok' (its vertices are exact).
+ * Degenerate cases: a zero-length edge is a vertex ('ok'); an edge of non-finite length
+ * is 'unplaceable'.
+ */
+export function polygonPlacement(pts: readonly Vec2[], rect: Rect, zoom: number): Placement {
+  for (const [i, a] of pts.entries()) {
+    const b = pts[(i + 1) % pts.length] ?? a;
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    if (!Number.isFinite(len)) return 'unplaceable';
+    if (len === 0) continue;
+    const u = { x: (b.x - a.x) / len, y: (b.y - a.y) / len };
+    const edge: Curve = { kind: 'line', p: a, u, lo: 0, hi: len };
+    if (curvePlacement(edge, rect, zoom) === 'unplaceable') return 'unplaceable';
+  }
+  return 'ok';
+}
