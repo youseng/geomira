@@ -15,6 +15,7 @@ import type { Registry } from '@geomira/kernel/registry';
 import { isOrientationDependent } from '@geomira/kernel/selector';
 import type { Value } from '@geomira/kernel/value';
 import { EXACT_BUDGET_BITS, HARD_ACCEPTANCE, RETRY_FACTOR } from './constants';
+import { CURRENT_FIGURE_SEED } from './current';
 import { valueOf } from './eval-claim';
 import { flipSelector } from './expr-path';
 import { prepare, type Prepared, type SiteProbe } from './prepare';
@@ -195,9 +196,9 @@ export function* runJob(
     hardToSatisfy: done / attempts < HARD_ACCEPTANCE,
   };
   if (job.regime === 'local') {
-    const current = valueOf(
-      decideSample(prep, prep.doc, { budgetBits, rng: createRng(job.seed), hypotheses: false }),
-    );
+    // The current figure is judged exactly as the live badge judges it (evalClaim's seed).
+    const rng = createRng(CURRENT_FIGURE_SEED);
+    const current = valueOf(decideSample(prep, prep.doc, { budgetBits, rng, hypotheses: false }));
     return { kind: 'verdict', verdict: localVerdict(c, common, current) };
   }
   return { kind: 'verdict', verdict: globalVerdict(c, common, summary(prep, flips)) };
