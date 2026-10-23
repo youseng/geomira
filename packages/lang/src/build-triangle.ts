@@ -10,7 +10,7 @@ import { evaluate } from '@geomira/kernel/evaluate';
 import { FloatField } from '@geomira/num/float-field';
 import type { Condition, ExprNode, Statement } from './ast';
 import { define, freePoint } from './build-defs';
-import type { State } from './build-state';
+import { wholeLine, type State } from './build-state';
 import { error, type Span } from './diagnostic';
 import { expandTriangle, type P, type TriangleType } from './triangle';
 import { placeAround } from './triangle-fixed';
@@ -94,6 +94,21 @@ function failAll(st: State, s: Tri, line: number, poly: string): { conditions: C
   return { conditions: [] };
 }
 
+/** Whether a vertex is named twice (`triangle AAB`): reported. */
+function namedTwice(st: State, s: Tri): boolean {
+  const twice = s.points.find((p, i) => s.points.findIndex((q) => q.name === p.name) < i);
+  if (twice === undefined) return false;
+  const names = s.points.map((p) => p.name).join('');
+  st.diags.push(
+    error(
+      twice.span,
+      `triangle ${names} names ${twice.name} twice`,
+      'name three different vertices',
+    ),
+  );
+  return true;
+}
+
 /** Expands a triangle: its points and polygon now, its conditions returned for later. */
 export function triangle(
   st: State,
@@ -101,6 +116,7 @@ export function triangle(
   line: number,
   poly: string,
 ): { first?: number; conditions: Condition[] } {
+  if (namedTwice(st, s)) return failAll(st, s, line, poly);
   const tt = triangleType(st, s);
   if (tt === undefined) return failAll(st, s, line, poly);
   const ex = expandTriangle(s.points, tt.type, tt.types, s.span);
@@ -122,19 +138,23 @@ export function triangle(
     );
     return failAll(st, s, line, poly);
   }
-  const made = s.points.map((p, i) => {
-    const at = all ? ex.points[i] : place?.ok === true ? place.points[i] : undefined;
-    return ids[i] ?? define(st, p, freePoint(p, at ?? ['0', '0']), [], line);
+  const made = wholeLine(st, [...names, poly], line, () => {
+    const vertexIds = s.points.map((p, i) => {
+      const at = all ? ex.points[i] : place?.ok === true ? place.points[i] : undefined;
+      return ids[i] ?? define(st, p, freePoint(p, at ?? ['0', '0']), [], line);
+    });
+    const refs: ExprNode[] = s.points.map((p) => ({ kind: 'name', name: p.name, span: p.span }));
+    const span: Span = s.span;
+    define(
+      st,
+      { name: poly, span },
+      { kind: 'call', tool: 'polygon', args: refs, selectors: [], span },
+      [],
+      line,
+    );
+    return vertexIds;
   });
-  const refs: ExprNode[] = s.points.map((p) => ({ kind: 'name', name: p.name, span: p.span }));
-  const span: Span = s.span;
-  define(
-    st,
-    { name: poly, span },
-    { kind: 'call', tool: 'polygon', args: refs, selectors: [], span },
-    [],
-    line,
-  );
+  if (made === undefined) return { conditions: [] };
   const first = made[0];
   return first === undefined
     ? { conditions: [...ex.conditions] }
