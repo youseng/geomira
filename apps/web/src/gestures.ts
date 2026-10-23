@@ -4,7 +4,9 @@
  * it DRAGS (dragStart / dragMove / dragEnd, one history entry); elsewhere it PANS; a press
  * that moves less than CLICK_SLOP px is a CLICK, given to the active tool with the scene's
  * hit test at the cursor and its world position. Two fingers PINCH: zoom about their
- * midpoint and pan with it. Viewport changes are UI edits (outside history).
+ * midpoint and pan with it. Viewport changes are UI edits (outside history). A drag ended
+ * elsewhere (Escape, undo) ends its gesture quietly: the rest of the press does nothing
+ * (ADR-0028).
  */
 import { hitTest } from '@geomira/scene/hit';
 import type { DisplayList } from '@geomira/scene/display';
@@ -48,6 +50,11 @@ export class Gestures {
     return { viewport: this.store.current().viewport, size: display.view.size };
   }
 
+  /** Whether the press's drag was ended by something else (Escape, undo): then it is over. */
+  private dragGone(m: Mode): boolean {
+    return m.kind === 'press' && m.drag && this.store.current().drag === null;
+  }
+
   private twoPointers(): [Vec2, Vec2] | undefined {
     const [a, b] = [...this.pointers.values()];
     return a === undefined || b === undefined ? undefined : [a, b];
@@ -57,7 +64,9 @@ export class Gestures {
     this.pointers.set(id, q);
     const two = this.twoPointers();
     if (two !== undefined) {
-      if (this.mode.kind === 'press' && this.mode.drag) this.store.apply({ kind: 'dragCancel' });
+      const m = this.mode;
+      if (m.kind === 'press' && m.drag && !this.dragGone(m))
+        this.store.apply({ kind: 'dragCancel' });
       this.mode = {
         kind: 'pinch',
         d0: distance(...two),
@@ -86,6 +95,10 @@ export class Gestures {
       return;
     }
     if (m.kind !== 'press') return;
+    if (this.dragGone(m)) {
+      this.mode = { kind: 'none' };
+      return;
+    }
     if (!m.moved && distance(q, m.start) < CLICK_SLOP) return;
     m.moved = true;
     if (m.drag) this.store.apply({ kind: 'dragMove', to: toWorld(this.view(display), q) });
@@ -121,14 +134,15 @@ export class Gestures {
       return;
     }
     this.mode = { kind: 'none' };
-    if (m.kind !== 'press') return;
+    if (m.kind !== 'press' || this.dragGone(m)) return;
     if (m.drag) this.store.apply({ kind: m.moved ? 'dragEnd' : 'dragCancel' });
     if (!m.moved) this.click(q, display);
   }
 
   cancel(id: number): void {
     if (!this.pointers.delete(id)) return;
-    if (this.mode.kind === 'press' && this.mode.drag) this.store.apply({ kind: 'dragCancel' });
+    const m = this.mode;
+    if (m.kind === 'press' && m.drag && !this.dragGone(m)) this.store.apply({ kind: 'dragCancel' });
     if (this.pointers.size === 0) this.mode = { kind: 'none' };
   }
 
