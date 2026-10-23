@@ -35,7 +35,8 @@ import { record, redo, undo } from './history';
 import { textComments } from './comments';
 import { lockedChange } from './locked';
 import { textOrder } from './order';
-import { LOG_LENGTH, withDocument, type EditorEnv, type EditorState } from './state';
+import { appendLog } from './log';
+import { withDocument, type EditorEnv, type EditorState } from './state';
 import { refuse, viewportProblem, type EditResult } from './result';
 import { uiEdit, type UiEdit } from './ui-edit';
 
@@ -265,11 +266,10 @@ function historyStep(state: EditorState, which: 'undo' | 'redo', env: EditorEnv)
   return { ok: true, state: { ...next, history: r.history }, removed: NO_REMOVAL, added: [] };
 }
 
-/** Logs an applied edit (the debug report's last LOG_LENGTH edits). */
+/** Logs an applied edit (the debug report's last edits; log.ts: UI edits leave first). */
 function logged(r: EditResult, e: Edit): EditResult {
   if (!r.ok) return r;
-  const log = [...r.state.log, e].slice(-LOG_LENGTH);
-  return { ...r, state: { ...r.state, log } };
+  return { ...r, state: { ...r.state, log: appendLog(r.state.log, e) } };
 }
 
 /** Applies one edit (see the module comment). Never throws; a refusal leaves the state as it was. */

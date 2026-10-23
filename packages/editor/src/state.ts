@@ -48,7 +48,10 @@ export interface EditorState {
   /** The layer new objects are built in. */
   readonly activeLayer: string;
   readonly drag: DragState | null;
-  /** The most recent edits, oldest first (at most LOG_LENGTH), for the debug report. */
+  /**
+   * Recent edits, oldest first, for the debug report: at most LOG_LENGTH, and when full a UI
+   * edit leaves before any document edit (log.ts).
+   */
   readonly log: readonly unknown[];
 }
 
