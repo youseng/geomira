@@ -26,7 +26,7 @@ import type { ToolUI } from './tool-ui';
 
 /** The idle tool after a build: no picks; the claim kind and the typed number stay. */
 export function reset(state: EditorState): ToolState {
-  return idleTool(state.toolState.claimKind, state.toolState.value);
+  return idleTool(state.toolState.claimKind, state.toolState.value, state.toolState.typed);
 }
 
 export function withTool(r: EditResult, ts: ToolState): EditResult {
