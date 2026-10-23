@@ -1,6 +1,6 @@
 # STATUS
 
-## Style card and repeated constructions (maintainer request, 2026-10-23): NOT ACCEPTED (waiting for CI)
+## Style card and repeated constructions (maintainer request, 2026-10-23): ACCEPTED (2026-10-23)
 
 Two changes the maintainer asked for after round 2, on the same branch (PR #18). Decisions:
 [ADR-0029](adr/0029-style-card-and-repeated-constructions.md).
@@ -79,7 +79,21 @@ ok   forbidden-words: 883 files scanned, 0 violation(s)
 
 The test-count floor is now 2932. Playwright (the card fixer's worktree): 92 passed, 3 failed,
 the phone canvas baselines of `scene.spec.ts`, which fail the same way on the unmodified base
-in this container. CI: pending (PR #18).
+in this container.
+
+### CI on GitHub (38d4bc8, PR #18)
+
+- ci https://github.com/youseng/geomira/actions/runs/39978413556 and
+  https://github.com/youseng/geomira/actions/runs/39978406176: `verify` (with `pnpm e2e`)
+  success.
+- tex https://github.com/youseng/geomira/actions/runs/39978413656: `compile` success (the new
+  `big-arcs.geo`, `dashed-polygons.geo` and `opacity.geo` fixtures included).
+- deploy https://github.com/youseng/geomira/actions/runs/39978406286: build success.
+
+On 8adae1c the e2e test "a label typed in the style card is one edit" failed once in CI: it read
+the text panel once, before the panel showed the edit (reproduced locally, 2 of 15). 38d4bc8
+makes its three reads wait (`expectLines`); 30 of 30 pass. The commit that marks these sections
+ACCEPTED changes only docs/STATUS.md.
 
 ## Requests
 
@@ -88,7 +102,7 @@ in this container. CI: pending (PR #18).
 
 ---
 
-## Pre-beta review, round 2: the medium bugs (maintainer request, 2026-10-23): NOT ACCEPTED (waiting for CI)
+## Pre-beta review, round 2: the medium bugs (maintainer request, 2026-10-23): ACCEPTED (2026-10-23)
 
 After round 1 (below), the maintainer asked for every medium bug to be found, then for all of
 them to be fixed. Six reviews (kernel, claims, lang, scene and export, editor, web) found about
@@ -205,8 +219,8 @@ ok   forbidden-words: 859 files scanned, 0 violation(s)
 
 The test-count floor is now 2771. Playwright (web fixer's worktree, desktop and mobile): 77
 passed and 3 failed, the three phone canvas baselines of `scene.spec.ts`, which fail the same way
-on the unmodified main build in this container (label fonts; CI is the reference). CI: pending
-(PR #18).
+on the unmodified main build in this container (label fonts; CI is the reference). CI: green
+on PR #18 (links in the section above).
 
 ## Requests
 
