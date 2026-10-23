@@ -80,20 +80,44 @@ export function useStartup(store: EditorStore, runs: { clear(): void }, onReady:
   }, [store, runs, onReady]);
 }
 
-/** Saves the figure after changes (the policy is packages/editor's); a link's hash goes once edited. */
+/**
+ * Saves the figure after changes (the policy is packages/editor's); a link's hash goes once
+ * edited. The save waits AUTOSAVE_MS after the last change; it runs at once when another
+ * figure opens (store.ts) or the page hides (ADR-0028).
+ */
 export function useAutosave(store: EditorStore, snap: Snapshot, ready: boolean): void {
   const doc = snap.state.doc;
   useEffect(() => {
-    if (!ready) return undefined;
-    const t = setTimeout(() => {
+    if (!ready) return;
+    // The hash of this figure: a link opened later is not removed by this figure's save.
+    const hash = location.hash;
+    store.autosave.schedule(() => {
       store.autosave.save(print(doc));
-      if (store.autosave.wasEdited() && location.hash.startsWith(SHARE_PREFIX))
+      if (store.autosave.wasEdited() && hash.startsWith(SHARE_PREFIX) && location.hash === hash)
         history.replaceState(null, '', location.pathname + location.search);
     }, AUTOSAVE_MS);
-    return () => {
-      clearTimeout(t);
-    };
   }, [store, doc, ready]);
+  useEffect(() => flushWhenHidden(store.autosave, window, document), [store]);
+}
+
+/** Runs the pending save when the page hides (pagehide, or hidden); returns the unsubscribe. */
+export function flushWhenHidden(
+  autosave: { flush(): void },
+  win: EventTarget,
+  doc: EventTarget & { readonly visibilityState: string },
+): () => void {
+  const flush = () => {
+    autosave.flush();
+  };
+  const onVisibility = () => {
+    if (doc.visibilityState === 'hidden') autosave.flush();
+  };
+  win.addEventListener('pagehide', flush);
+  doc.addEventListener('visibilitychange', onVisibility);
+  return () => {
+    win.removeEventListener('pagehide', flush);
+    doc.removeEventListener('visibilitychange', onVisibility);
+  };
 }
 
 function typing(target: EventTarget | null): boolean {

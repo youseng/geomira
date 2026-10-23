@@ -131,6 +131,8 @@ export class EditorStore {
   }
 
   open(doc: Document, origin: Origin, notice: Notice | null = null): void {
+    // The figure being left saves its last edit first (its save may still be pending).
+    this.autosave.flush();
     this.autosave.opened(origin);
     this.beforeDrag = null;
     const state = createEditor(doc, this.env);
