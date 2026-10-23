@@ -15,6 +15,11 @@ export interface Style {
   readonly color?: string;
   readonly width?: number;
   readonly dash?: 'solid' | 'dashed' | 'dotted';
+  /**
+   * The object's own opacity, in [0, 1]: it multiplies its drawing layer's opacity (the
+   * scene, ADR-0029). Absent = 1.
+   */
+  readonly opacity?: number;
   readonly hidden?: boolean;
   /** Excludes the object from derived layers (SPEC §8.2). */
   readonly noimage?: boolean;

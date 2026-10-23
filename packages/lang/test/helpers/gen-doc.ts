@@ -60,6 +60,8 @@ function randomStyle(rng: Rng): Style {
   if (chance(rng, 0.2)) s = { ...s, z: double(rng, -5, 5) };
   if (chance(rng, 0.2)) s = { ...s, labelAngle: double(rng, -360, 360) };
   if (chance(rng, 0.2)) s = { ...s, labelDist: double(rng, 0, 40) };
+  // ADR-0029: the object's own opacity.
+  if (chance(rng, 0.2)) s = { ...s, opacity: chance(rng, 0.2) ? 1 : double(rng, 0, 1) };
   return s;
 }
 

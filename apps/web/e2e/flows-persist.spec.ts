@@ -33,10 +33,11 @@ test('objects panel lists Undefined reasons; style panel edits the text', async 
   await expect(page.locator('.object-row').filter({ hasText: 'intersect' })).toContainText(
     'undefined: ',
   );
-  await page.getByRole('button', { name: 'B', exact: true }).click();
-  await tab(page, 'Style');
-  await page.getByLabel('Color').selectOption('red');
+  await page.getByRole('button', { name: 'B', exact: true }).click({ button: 'right' });
+  await page.getByRole('button', { name: 'red', exact: true }).click();
+  await page.getByText('More', { exact: true }).click();
   await page.getByLabel('No image in derived layers (noimage)').check();
+  await page.getByRole('button', { name: 'Write to script' }).click();
   await expectLines(page, 'B = (2, 0) [color=red, noimage]');
 });
 

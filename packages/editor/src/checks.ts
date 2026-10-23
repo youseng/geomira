@@ -113,5 +113,7 @@ export function styleProblem(s: Style): string | undefined {
   if (!finite(s.z) || !finite(s.labelAngle)) return 'z and the label angle are finite numbers';
   if (!finite(s.labelDist) || (s.labelDist ?? 0) < 0)
     return 'a label distance is a finite number ≥ 0';
+  if (!finite(s.opacity) || (s.opacity ?? 0) < 0 || (s.opacity ?? 0) > 1)
+    return 'an opacity is a number in [0, 1]';
   return undefined;
 }

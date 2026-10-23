@@ -21,6 +21,7 @@ import { SidePanel, type Tab } from './SidePanel';
 import { useSettled } from './settled';
 import { ClaimChips, DevBox, NoticeLine, Stage, ZoomControls } from './Stage';
 import type { EditorStore } from './store';
+import { StyleCard, usePreviewScene, useStyleCard } from './StyleCard';
 import { Palette, StatusLine, ToolHint } from './ToolBar';
 
 /** Catches render errors: the page shows them as internal errors with the debug report. */
@@ -175,11 +176,14 @@ function useApp() {
   const openClaims = useStable(() => {
     panels.showTab('Claims');
   });
+  const style = useStyleCard(store);
+  const { state } = snap;
+  // The canvas previews the style card's draft (ADR-0029): a render override, not an edit.
+  const shown = usePreviewScene(page.scene, state.doc, state.values.values, style.card);
   return {
     ...{ page, canvasRef, commandRef, setSize, panels, dialog, setDialog, header, size },
     ...useUndrawable(),
-    onTestClaim,
-    openClaims,
+    ...{ onTestClaim, openClaims, style, shown },
   };
 }
 
@@ -209,15 +213,51 @@ function StageTop({ app }: { app: ReturnType<typeof useApp> }) {
   );
 }
 
+/** The canvas: the figure, with the style card's draft previewed over it (ADR-0029). */
+function Canvas({ app }: { app: ReturnType<typeof useApp> }) {
+  const { state } = app.page.snap;
+  return (
+    <Board
+      canvasRef={app.canvasRef}
+      store={app.page.store}
+      scene={app.shown}
+      viewport={state.viewport}
+      hover={state.hover}
+      selection={state.selection}
+      toolState={state.toolState}
+      onSize={app.setSize}
+      onUndrawable={app.onUndrawable}
+      onStyle={app.style.open}
+    />
+  );
+}
+
+/** The style card of the object it was opened on, if any (ADR-0029). */
+function StyleCardView({ app }: { app: ReturnType<typeof useApp> }) {
+  const { style, page } = app;
+  if (style.card === null) return null;
+  return (
+    <StyleCard
+      key={style.card.id}
+      store={page.store}
+      state={page.snap.state}
+      card={style.card}
+      onDraft={style.setDraft}
+      onClose={style.close}
+    />
+  );
+}
+
 /**
  * Geomira (SPEC §15) in Geomdraw's layout (Run 9b): the top bar, the tool palette, the canvas
- * with its hint, status line, live claim chips and zoom buttons, the command line and the
- * panels; over packages/editor (every change is an edit), packages/scene (drawing,
- * hit-testing) and packages/claims (badges here, tests in a Web Worker).
+ * with its hint, status line, live claim chips and zoom buttons, the command line, the panels
+ * and an object's style card (ADR-0029); over packages/editor (every change is an edit),
+ * packages/scene (drawing, hit-testing) and packages/claims (badges here, tests in a Web
+ * Worker).
  */
 export function App() {
   const app = useApp();
-  const { page, canvasRef, commandRef, setSize, panels, dialog, setDialog, header, size } = app;
+  const { page, commandRef, panels, dialog, setDialog, header, size } = app;
   const { store, snap, scene } = page;
   const { state } = snap;
   const settled = useSettled(state);
@@ -226,17 +266,7 @@ export function App() {
       <Header {...header.props} />
       <Tools store={store} state={settled} />
       <Stage>
-        <Board
-          canvasRef={canvasRef}
-          store={store}
-          scene={scene}
-          viewport={state.viewport}
-          hover={state.hover}
-          selection={state.selection}
-          toolState={state.toolState}
-          onSize={setSize}
-          onUndrawable={app.onUndrawable}
-        />
+        <Canvas app={app} />
         <StageTop app={app} />
         <DevBox
           scene={scene}
@@ -261,8 +291,10 @@ export function App() {
           open={panels.open}
           onClose={panels.close}
           onTestClaim={app.onTestClaim}
+          onStyle={app.style.open}
         />
       </Boundary>
+      <StyleCardView app={app} />
       <DialogView
         dialog={dialog}
         store={store}

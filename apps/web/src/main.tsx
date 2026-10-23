@@ -4,6 +4,7 @@ import { App } from './App';
 import './styles.css';
 import './stage.css';
 import './dialogs.css';
+import './card.css';
 import './panels.css';
 import './claims.css';
 import './phone.css';
