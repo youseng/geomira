@@ -1,8 +1,8 @@
 /**
  * Similarity transformations (SPEC §4, §8.1), field-generic: z ↦ a·z + b (direct) or
  * z ↦ a·z̄ + b (anti). Everything here is a polynomial in the coordinates, so it is exact
- * over Q and mod p; the only division (`inverse`) is by |a|², which `similarityProblem`
- * guarantees is not zero. A Transform holds a Similarity in v1; 'mobius' and 'projective'
+ * over Q and mod p; the only division (`inverse`) is by |a|² (or by a itself), which
+ * `similarityProblem` guarantees is not zero. A Transform holds a Similarity in v1; 'mobius' and 'projective'
  * are reserved (SPEC §18 E3): when they arrive, `Transform.t` becomes a union and the
  * compiler points at every place (here and in tools/transforms.ts) that must switch on it.
  */
@@ -56,9 +56,11 @@ export function transformOf<T>(s: Similarity<T>): Transform<T> {
  * inverses of valid maps are valid (|a₁a₂| = |a₁||a₂| > 0), so the scale factor a itself
  * collapses only when it is exactly 0 (a hand-built value). Degenerate cases:
  *   - a = 0 exactly (every field) → Undefined "the map collapses the plane (scale factor 0)";
- *   - FloatField, a ≠ 0 but |a|² not a positive finite double (|a| below about 10⁻¹⁶² or
- *     above 10¹⁵⁴: products of many tiny or huge maps) → Inexact, since the inverse is not
- *     representable; never "collapses".
+ *   - FloatField, a ≠ 0 but |a|² or 1/|a|² not a positive finite double (|a| below about
+ *     10⁻¹⁵⁴ or above about 10¹⁵⁴: products of many tiny or huge maps) → Inexact, since the
+ *     map or its inverse is not representable; never "collapses". The range is closed under
+ *     inversion (ADR-0028: with only |a|² tested, |a| = 10⁻¹⁶⁰ was valid and its inverse
+ *     was not), so the inverse of a valid map is valid.
  * Mod p (p ≡ 3 mod 4), |a|² = 0 only for a = 0, so a valid a is always a valid divisor.
  */
 export function similarityProblem<T>(
@@ -70,7 +72,7 @@ export function similarityProblem<T>(
     return undef(`${tool}: the map collapses the plane (scale factor 0)`);
   if (F.kind !== 'float') return undefined;
   const n = F.toNumber(cAbs2(F, s.a));
-  return n > 0 && Number.isFinite(n)
+  return n > 0 && Number.isFinite(n) && Number.isFinite(1 / n)
     ? undefined
     : { kind: 'inexact', reason: `${tool}: the scale factor is beyond the double range` };
 }
@@ -106,15 +108,37 @@ export function composeSimilarities<T>(
   return similarity(s.anti !== t.anti, cMul(F, s.a, a2), cAdd(F, cMul(F, s.a, b2), s.b));
 }
 
+/** The smallest positive normal double: below it a double loses significant bits. */
+const MIN_NORMAL = 2 ** -1022;
+
 /**
- * The inverse map. Direct: z = (w − b)/a, so a' = conj(a)/|a|², b' = −b·a'. Anti:
- * z = conj(w − b)/conj(a), so a' = a/|a|², b' = −conj(b)·a'. Degenerate: a = 0 is the
- * caller's to exclude with `similarityProblem` (F.div would throw on an exact zero).
+ * 1/z without forming |z|² (Smith's division), for floats whose |z|² is subnormal. Exact in
+ * every field; the larger component (by magnitude) is the pivot, so it is not zero for z ≠ 0.
+ */
+function reciprocal<T>(F: Field<T>, z: Complex<T>): Complex<T> {
+  if (Math.abs(F.toNumber(z.re)) >= Math.abs(F.toNumber(z.im))) {
+    const r = F.div(z.im, z.re);
+    const d = F.add(z.re, F.mul(z.im, r));
+    return complex(F.div(F.one, d), F.neg(F.div(r, d)));
+  }
+  const r = F.div(z.re, z.im);
+  const d = F.add(z.im, F.mul(z.re, r));
+  return complex(F.div(r, d), F.neg(F.div(F.one, d)));
+}
+
+/**
+ * The inverse map. Direct: z = (w − b)/a, so a' = conj(a)/|a|² = 1/a, b' = −b·a'. Anti:
+ * z = conj(w − b)/conj(a), so a' = a/|a|² = 1/conj(a), b' = −conj(b)·a'. In floats a
+ * subnormal |a|² (|a| near 10⁻¹⁵⁴) would lose precision, so a' is then 1/a by Smith's
+ * division instead (ADR-0028). Degenerate: a = 0 is the caller's to exclude with
+ * `similarityProblem` (F.div would throw on an exact zero).
  */
 export function inverseSimilarity<T>(F: Field<T>, s: Similarity<T>): Similarity<T> {
   const n = cAbs2(F, s.a);
-  const inv = F.div(F.one, n);
-  const a = cScale(F, s.anti ? s.a : cConj(F, s.a), inv);
+  const a =
+    F.kind === 'float' && !(F.toNumber(n) >= MIN_NORMAL)
+      ? reciprocal(F, s.anti ? cConj(F, s.a) : s.a)
+      : cScale(F, s.anti ? s.a : cConj(F, s.a), F.div(F.one, n));
   const b = cNeg(F, cMul(F, s.anti ? cConj(F, s.b) : s.b, a));
   return similarity(s.anti, a, b);
 }
