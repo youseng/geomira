@@ -24,12 +24,24 @@ function statusText(r: ObjectRow): string {
   }
 }
 
+/**
+ * A click on an object's name: a tool waiting for a pick takes the object (transforms are
+ * picked here: maps are not drawn); otherwise the object is selected. When the tool refuses
+ * the object, its reason stays shown after the selection (ADR-0028).
+ */
+export function pickObject(store: EditorStore, id: number): void {
+  const refusal = store.current().tool === 'move' ? null : store.input({ kind: 'object', id });
+  if (refusal?.ok === true) return;
+  const notice = store.getSnapshot().notice;
+  store.apply({ kind: 'select', ids: [id], mode: 'replace' });
+  if (refusal !== null && notice !== null && store.getSnapshot().notice !== notice)
+    store.setNotice(notice);
+}
+
 function Row({ row, store, state, undrawable }: { row: ObjectRow } & ObjectsPanelProps) {
   const selected = state.selection.includes(row.id);
   const pick = () => {
-    // A tool waiting for a pick takes the object (transforms are picked here: maps are not drawn).
-    if (state.tool !== 'move' && store.input({ kind: 'object', id: row.id }).ok) return;
-    store.apply({ kind: 'select', ids: [row.id], mode: 'replace' });
+    pickObject(store, row.id);
   };
   return (
     <li className={`object-row status-${row.status}${selected ? ' selected' : ''}`}>
