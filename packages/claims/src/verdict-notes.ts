@@ -7,9 +7,12 @@
  *   - a shortfall that comes from MIRRORING rather than from the hypotheses: figures of one
  *     orientation rarely satisfy them because the construction fixes an orientation (a
  *     rotation by a literal angle, orient(±)), while the other orientation is easy;
+ *   - the samplers' frame: no random similarity, or no mirroring, and why (frame.ts).
  * The words reserved for the Phase 2 prover never appear.
  */
 import { HARD_ACCEPTANCE } from './constants';
+import type { SamplerFrame } from './frame';
+import type { Regime } from './sampler';
 import type { NamedSelector } from './verdict';
 
 /** The not-valid outcome counts of a tally. */
@@ -91,6 +94,18 @@ export function parityNote(stats: ParityStats, hard: Parity): string {
 /** The shortfall of tested figures when one orientation is the cause. */
 export function parityShortNote(tested: number, n: number): string {
   return `only ${String(tested)} of ${String(n)} figures tested: half of the tested figures are mirrored, as the global test requires`;
+}
+
+/** "no random similarity (C has …)" and, in the global regime, "no mirroring (…)". */
+export function frameNotes(regime: Regime, frame: SamplerFrame | undefined): string[] {
+  if (frame === undefined) return [];
+  const out: string[] = [];
+  const mirror = regime === 'global' && !frame.mirror;
+  if (!frame.similarity && mirror && frame.noSimilarity === frame.noMirror)
+    return [`no random similarity or mirroring (${frame.noSimilarity ?? ''})`];
+  if (!frame.similarity) out.push(`no random similarity (${frame.noSimilarity ?? ''})`);
+  if (mirror) out.push(`no mirroring (${frame.noMirror ?? ''})`);
+  return out;
 }
 
 /** "X's `orient(+)`", or "the claim's `intersect(…, orient(+))`" for a selector in the claim. */

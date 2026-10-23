@@ -9,7 +9,8 @@
  * Cryptographic randomness for the mod-p rung is supplied by the host (`env.entropy`,
  * e.g. num's cryptoSource over crypto.getRandomValues); without it the rung is skipped.
  *
- * Global jobs mirror every other tested figure, count attempts and acceptances per orientation (so a low acceptance caused by
+ * Global jobs mirror every other tested figure (only when the figure's frame allows it:
+ * frame.ts), count attempts and acceptances per orientation (so a low acceptance caused by
  * mirroring is not blamed on the hypotheses), and run the flip test on false figures and on
  * undefined ones (an undefined figure that holds flipped failed through an orientation
  * choice: law L16). Local jobs judge the current figure exactly as the live badge does.
@@ -231,7 +232,7 @@ export function* runJob(
   const maxAttempts = RETRY_FACTOR * job.n;
   let [done, attempts] = [0, 0];
   while (done < job.n && attempts < maxAttempts) {
-    const mirrored = job.regime === 'global' && done % 2 === 1;
+    const mirrored = job.regime === 'global' && prep.frame.mirror && done % 2 === 1;
     const side = mirrored ? parity.mirrored : parity.unmirrored;
     const seed = deriveSeed(job.seed, attempts);
     attempts++;
@@ -262,6 +263,7 @@ export function* runJob(
     tested: done,
     attempts,
     hardToSatisfy: done / attempts < HARD_ACCEPTANCE,
+    frame: prep.frame,
     ...(job.regime === 'global' ? { parity } : {}),
   };
   return { kind: 'verdict', verdict: finalVerdict(job.regime, prep, c, common, flips, budgetBits) };

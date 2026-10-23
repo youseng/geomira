@@ -4,7 +4,8 @@
  * ("Holds in this configuration (local test, n = 200, exact over Q)"); counts follow only
  * where they add something (mixed rungs, fewer valid figures than tested, rejected samples,
  * mirrored figures, a shortfall against the hypotheses or one caused by mirroring,
- * undefined figures repaired by the flip test). The seed, the tally and the most frequent
+ * undefined figures repaired by the flip test). The seed, the tally, what the samplers could
+ * not do to the figure (no random similarity, no mirroring: frame.ts) and the most frequent
  * reasons of invalid figures go to `detail`, shown under the line.
  *
  * `tone` is how the line is coloured: only a LOCAL verdict can be `false` or `mixed`;
@@ -15,6 +16,7 @@ import { assertNever } from '@geomira/num/assert';
 import { RUNG_NAMES } from './rungs';
 import type { GlobalKind, LocalKind, Verdict } from './verdict';
 import {
+  frameNotes,
   parityNote,
   parityShortNote,
   rejectedNote,
@@ -162,6 +164,7 @@ function detailOf(v: Verdict): string {
   const invalid = t.degenerate + t.undefined + t.ambiguous + t.illConditioned + t.invalid;
   if (invalid > 0) parts.push(`${String(invalid)} not valid`);
   if (v.regime === 'global') parts.push(`${String(v.mirrored ?? 0)} mirrored`);
+  parts.push(...frameNotes(v.regime, v.frame));
   const reasons = v.reasons.map((r) => `${r.reason} ×${String(r.count)}`).join('; ');
   return reasons === '' ? parts.join(' · ') : `${parts.join(' · ')} · ${reasons}`;
 }

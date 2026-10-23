@@ -8,7 +8,8 @@
  *   - circle(O, r) with a literal r: an explicit radius, which is not free but is a
  *     length, so the random similarity scales it (as SPEC §3.1 counts it in the scale).
  * Literals written inside a claim or an assumption are constants of the claim, not free
- * inputs. Images in derived layers are not free: evaluate recomputes them (note C).
+ * inputs. Images in derived layers are not free: evaluate recomputes them (note C). Whether
+ * mapping only these inputs moves the whole figure consistently is decided by frame.ts.
  */
 import type { Rational } from '@geomira/num/rational';
 import type { Document } from '@geomira/kernel/document';

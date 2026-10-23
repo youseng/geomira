@@ -11,16 +11,19 @@
  *   hold even flipped; with an example document) · INCONCLUSIVE.
  * Verdicts state what was checked (rungs and counts), the figures that were not valid and
  * the samples the hypotheses rejected (whenever there are any), a low acceptance (blaming
- * mirroring when one orientation alone is rare) and the seed (verdict-notes.ts); they never
- * use the words reserved for the Phase 2 prover.
+ * mirroring when one orientation alone is rare), what the samplers could not do to the
+ * figure (frame.ts), and the seed (verdict-notes.ts); they never use the words reserved for
+ * the Phase 2 prover.
  */
 import type { Seed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
 import { MIN_VALID_FRACTION } from './constants';
 import type { ClaimValue } from './eval-claim';
+import type { SamplerFrame } from './frame';
 import { RUNG_NAMES, type RungName, type SampleOutcome } from './rungs';
 import type { Regime } from './sampler';
 import {
+  frameNotes,
   hardParity,
   invalidNote,
   parityNote,
@@ -88,6 +91,8 @@ export interface Verdict {
   readonly parity?: ParityStats;
   /** GLOBAL: undefined figures that hold once the orientation-dependent selectors are flipped. */
   readonly undefinedRepaired?: number;
+  /** What the samplers could not do to this figure (no similarity, no mirroring), and why. */
+  readonly frame?: SamplerFrame;
   readonly named?: NamedSelector;
 }
 
@@ -187,10 +192,12 @@ export interface Common {
   readonly hardToSatisfy: boolean;
   /** GLOBAL: attempts and tested figures per orientation (job.ts). */
   readonly parity?: ParityStats;
+  /** What the samplers may do to the figure (frame.ts). */
+  readonly frame?: SamplerFrame;
 }
 
-/** The notes after a verdict's parentheses: acceptance and shortfall. */
-function trailer(k: Common, parity: Parity | undefined): string[] {
+/** The notes after a verdict's parentheses: acceptance, shortfall and the samplers' frame. */
+function trailer(regime: Regime, k: Common, parity: Parity | undefined): string[] {
   const out: string[] = [];
   if (parity !== undefined && k.parity !== undefined) out.push(parityNote(k.parity, parity));
   else if (k.hardToSatisfy) out.push('hard to satisfy: few figures satisfy the hypotheses');
@@ -200,7 +207,7 @@ function trailer(k: Common, parity: Parity | undefined): string[] {
         ? `only ${String(k.tested)} of ${String(k.n)} figures satisfied the hypotheses`
         : parityShortNote(k.tested, k.n),
     );
-  return out;
+  return [...out, ...frameNotes(regime, k.frame)];
 }
 
 function base(
@@ -211,7 +218,12 @@ function base(
   k: Common,
 ): Verdict {
   const parity = regime === 'global' ? hardParity(k.parity) : undefined;
-  const notes = trailer(k, parity).map((x) => ` · ${x}`);
+  const notes = trailer(regime, k, parity).map((x) => ` · ${x}`);
+  // The frame is reported only when it restricted what this regime does.
+  const frame =
+    k.frame !== undefined && (!k.frame.similarity || (regime === 'global' && !k.frame.mirror))
+      ? k.frame
+      : undefined;
   return {
     regime,
     kind,
@@ -228,6 +240,7 @@ function base(
     ...(k.hardToSatisfy && parity === undefined ? { hardToSatisfy: true } : {}),
     ...(parity === undefined ? {} : { hardParity: parity }),
     ...(regime === 'global' && k.parity !== undefined ? { parity: k.parity } : {}),
+    ...(frame === undefined ? {} : { frame }),
   };
 }
 
