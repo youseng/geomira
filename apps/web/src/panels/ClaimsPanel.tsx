@@ -11,7 +11,7 @@ import { ClaimBox } from '../Header';
 import { MathText } from '../MathText';
 import { claimStatement } from '../Stage';
 import type { EditorStore } from '../store';
-import type { ClaimRuns, TestRuns } from '../test-runs';
+import { runsFor, type ClaimRuns, type TestRuns } from '../test-runs';
 import { RunLine } from './RunLine';
 
 export interface ClaimsPanelProps {
@@ -173,7 +173,7 @@ export function ClaimsPanel({ store, state, runs, onTestClaim }: ClaimsPanelProp
                 state={state}
                 store={store}
                 runs={runs}
-                r={snapshot.get(c.id)}
+                r={runsFor(snapshot, state.doc, c.id)}
                 figureExplains={explains}
               />
             ))}

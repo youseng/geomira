@@ -1,8 +1,9 @@
 /**
  * Storage for the autosave policy (SPEC §12): the policy itself is packages/editor's
  * (autosave.ts, restore.ts: pure functions); this class only reads and writes the two slots
- * in localStorage and keeps the session. Storage can be unavailable (private modes, quota):
- * reads then give empty slots and writes are dropped, never an error in the page.
+ * in localStorage and keeps the session. Storage can be unavailable (private modes, quota,
+ * blocked site data, where even reading `localStorage` throws): reads then give empty slots
+ * and writes are dropped, never an error in the page.
  */
 import {
   afterEdit,
@@ -35,8 +36,17 @@ function write(key: string, value: string | null): void {
   }
 }
 
+/** Whether storage exists at all. Reading `localStorage` itself throws when it is blocked. */
+function hasStorage(): boolean {
+  try {
+    return typeof localStorage !== 'undefined';
+  } catch {
+    return false;
+  }
+}
+
 export function readSlots(): AutosaveSlots {
-  if (typeof localStorage === 'undefined') return EMPTY_SLOTS;
+  if (!hasStorage()) return EMPTY_SLOTS;
   return { current: read(KEYS.current), previous: read(KEYS.previous) };
 }
 

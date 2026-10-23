@@ -18,7 +18,9 @@ import type { Registry } from '@geomira/kernel/registry';
 import { MARGIN_PX } from '@geomira/scene/display';
 import { worldRect } from '@geomira/scene/viewport';
 import { assertNever } from '@geomira/num/assert';
-import { asyHelper, helperClosure } from './asy-helpers';
+import { evalContextFor } from '@geomira/kernel/context';
+import { bandThreshold } from '@geomira/num/tolerance';
+import { asyHelper, bandHelper, helperClosure } from './asy-helpers';
 import type { AsyDialect, AsyType } from './asy-map';
 import { planAsy, exactNum, type AsyDecl, type AsyPlan } from './asy-plan';
 import { AsyDrawer, drawingCode } from './asy-draw';
@@ -64,6 +66,8 @@ function build(f: ExportFrame, registry: Registry, dialect: AsyDialect) {
   const drawing = drawingCode(d);
   const pens = [...d.pens].map(([hex, name]) => `pen ${name} = rgb("${hex}");`);
   const helpers = helperClosure([...plan.decls.flatMap((x) => x.helpers), ...d.helpers]);
+  const c = evalContextFor(f.doc);
+  const band = bandThreshold('length', c.ok ? c.ctx : { scale: 1 });
   const warnings = uniqueWarnings([...undefinedWarnings(f.scene), ...d.warnings]);
   const lines = [
     ...head.slice(0, 1),
@@ -72,7 +76,7 @@ function build(f: ExportFrame, registry: Registry, dialect: AsyDialect) {
     ...pens,
     '',
     '// ---- helpers ----',
-    ...helpers.map((h) => asyHelper(h)?.code ?? ''),
+    ...helpers.map((h) => (h === 'band' ? bandHelper(band) : (asyHelper(h)?.code ?? ''))),
     '',
     '// ---- the figure ----',
     ...plan.decls.map(declLine),

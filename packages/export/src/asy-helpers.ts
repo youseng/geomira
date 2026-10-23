@@ -7,8 +7,12 @@
  * as {mid − h·û, mid + h·û} (along(−), along(+): further along d), circle ∩ circle as
  * {base − h·n, base + h·n} with n = rot90(c₂ − c₁)/|c₂ − c₁| (orient(−), orient(+): the sign
  * of cross(c₂ − c₁, X − c₁)); other(P) is Vieta / the reflection in the line of centres, as
- * in the kernel. The coordinate check (check.ts, tex.yml) compares every helper's result
- * with the kernel's value.
+ * in the kernel. Both count as the kernel does (ADR-0027): a gap within the kernel's band
+ * `gm_band` (BAND·scale, written by asy.ts from the figure's context) is a tangency, whose
+ * candidates are the one double point (line ∩ circle: the foot; circle ∩ circle: the point
+ * on the line of centres), except two circles that nearly coincide (the internal gap and
+ * |r₁ − r₂| both within the band), which meet twice. The coordinate check (check.ts,
+ * tex.yml) compares every helper's result with the kernel's value.
  */
 
 export interface AsyHelper {
@@ -147,13 +151,22 @@ export const ASY_HELPERS: readonly (readonly [string, AsyHelper])[] = Object.fre
     ),
   ],
   [
+    'band',
+    H(
+      [],
+      '// The kernel decides tangency within this band (a length, BAND times the figure scale).',
+      'real gm_band = 0;',
+    ),
+  ],
+  [
     'lc',
     H(
-      ['gmline', 'gmcircle', 'foot'],
-      '// line meets circle: {along(-), along(+)}',
+      ['gmline', 'gmcircle', 'foot', 'band'],
+      '// line meets circle: {along(-), along(+)}; a gap r - |f - c| within the band: the foot, twice',
       'pair[] gm_lc(gmline l, gmcircle k) {',
       '  pair f = gm_foot(k.c, l);',
-      '  real h = sqrt(max(0, k.r^2 - abs(f - k.c)^2));',
+      '  real e = abs(f - k.c);',
+      '  real h = abs(k.r - e) <= gm_band ? 0 : sqrt(max(0, k.r^2 - e^2));',
       '  return new pair[] {f - h * unit(l.d), f + h * unit(l.d)};',
       '}',
       '// other(P): the second intersection, 2F - P (Vieta)',
@@ -163,13 +176,16 @@ export const ASY_HELPERS: readonly (readonly [string, AsyHelper])[] = Object.fre
   [
     'cc',
     H(
-      ['gmcircle'],
-      '// circle meets circle: {orient(-), orient(+)}',
+      ['gmcircle', 'band'],
+      '// circle meets circle: {orient(-), orient(+)}; a gap within the band: the double point,',
+      '// twice, unless the circles nearly coincide (the internal gap and |r1 - r2| both within it)',
       'pair[] gm_cc(gmcircle a, gmcircle b) {',
       '  pair d = b.c - a.c;',
-      '  real s = dot(d, d);',
+      '  real s = dot(d, d), dr = abs(a.r - b.r);',
       '  real x = (s + a.r^2 - b.r^2) / (2 * s);',
-      '  real h = sqrt(max(0, a.r^2 - x^2 * s));',
+      '  bool inner = abs(sqrt(s) - dr) <= gm_band, outer = abs(a.r + b.r - sqrt(s)) <= gm_band;',
+      '  bool touch = !(inner && dr <= gm_band) && (inner || outer);',
+      '  real h = touch ? 0 : sqrt(max(0, a.r^2 - x^2 * s));',
       '  pair n = (-d.y, d.x) / sqrt(s);',
       '  return new pair[] {a.c + x * d - h * n, a.c + x * d + h * n};',
       '}',
@@ -247,6 +263,12 @@ export const ASY_HELPERS: readonly (readonly [string, AsyHelper])[] = Object.fre
     ),
   ],
 ] as const);
+
+/** The code of the `band` helper for the band `band` (BAND·scale of the figure). */
+export function bandHelper(band: number): string {
+  const [comment] = (asyHelper('band')?.code ?? '').split('\n');
+  return `${comment ?? ''}\nreal gm_band = ${String(band)};`;
+}
 
 /** The helper of an id, or undefined. */
 export function asyHelper(id: string): AsyHelper | undefined {

@@ -11,7 +11,8 @@
  */
 import type { TestClaimJob } from '@geomira/claims/job';
 import type { Verdict } from '@geomira/claims/verdict';
-import type { Document } from '@geomira/kernel/document';
+import type { Claim, Document } from '@geomira/kernel/document';
+import { exprEquals } from '@geomira/kernel/expr';
 import type { JobCallbacks } from './worker/host';
 
 type Regime = TestClaimJob['regime'];
@@ -39,6 +40,32 @@ export interface ClaimRuns {
 }
 
 type Snapshot = ReadonlyMap<number, ClaimRuns>;
+
+function sameStatement(a: Claim | undefined, b: Claim | undefined): boolean {
+  if (a === undefined || b === undefined || a.kind !== b.kind) return false;
+  return (
+    a.args.length === b.args.length &&
+    a.args.every((x, i) => {
+      const y = b.args[i];
+      return y !== undefined && exprEquals(x, y);
+    })
+  );
+}
+
+/**
+ * The runs to show for claim `id` of `doc`: only when the tested document had the same
+ * statement under that id. Undo rolls the id counter back, so a new claim can reuse the id of
+ * an undone one, whose verdict must not appear on it (pre-beta review).
+ */
+export function runsFor(
+  snapshot: ReadonlyMap<number, ClaimRuns>,
+  doc: Document,
+  id: number,
+): ClaimRuns | undefined {
+  const r = snapshot.get(id);
+  const find = (d: Document) => d.claims.find((c) => c.id === id);
+  return r !== undefined && sameStatement(find(r.doc), find(doc)) ? r : undefined;
+}
 
 /** A fresh seed for each run (reported with its verdict, SPEC §10.5). */
 function freshSeed(): number {

@@ -91,6 +91,7 @@ export const INTERSECT_TOOLS: readonly ToolSpec[] = [
       'line ∩ circle: tangency (the gap within the band) → the double point',
       'circle ∩ circle: apart or one inside the other → Undefined',
       'circle ∩ circle: tangency (a gap within the band) → the double point',
+      'circle ∩ circle: the circles nearly coincide (centres and radii within the band) → two candidates by the half chord, or Undefined (ambiguous)',
       'concentric circles → Undefined',
       'two candidates and no selector → Undefined (ambiguous: add a selector)',
       'a deciding quantity of a selector within the band → Undefined (ambiguous)',

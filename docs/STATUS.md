@@ -1,5 +1,145 @@
 # STATUS
 
+## Pre-beta bug review (maintainer request, 2026-10-22): NOT ACCEPTED (waiting for CI)
+
+The maintainer asked for a comprehensive bug review before the beta, then for the most
+serious findings to be fixed. The review covered every package and apps/web (seven parallel
+reviews, each finding reproduced by a script); the eight findings that break "nothing silently
+wrong" or crash the page are fixed here, each with a test that failed before its fix, in the
+same commit. Decisions: [ADR-0027](adr/0027-pre-beta-review-fixes.md).
+
+Base check: main = 5c97751 (PR #16 merged). `pnpm install && pnpm verify` on it: green, 2443
+tests (the add-only guard needs the `run-*` tags; this container's clone had none until
+`git fetch --tags`, see Known bugs).
+
+## Done (each item → the test file that proves it)
+
+1. **False undirected angle claims at the ends of θ's range** (ADR-0027 item 1):
+   `angle(A, B, M) − angle(A, M, B) = 180` held over Q when the difference is −180°; sums of 0°
+   and 360° likewise. → `packages/claims/test/angle-wrap.test.ts`.
+2. **Claims in small figures judged relative to the figure** (item 2): a circle 2·10⁻⁶ of its
+   radius off tangency held in a figure of size 0.01 and was false at size 1.
+   → `packages/claims/test/small-figure-claims.test.ts`.
+3. **Circles that nearly coincide** (item 3): `intersect(circle(A, B, C), circle(A, B, D))`
+   with D 10⁻⁷ above C returned the common centre, on neither circle.
+   → `packages/kernel/test/circles-nearly-coincide.test.ts`, a new degenerate case of
+   `intersect` (`packages/kernel/test/degenerate.test.ts`, docs/tools.md regenerated).
+4. **Drag-end rounding flipping a dependent** (item 4): rounding Q across l flipped
+   `same_side(Q, l)` and X jumped 300 px. → `packages/editor/test/drag-rounding-dependents.test.ts`.
+5. **The tangent tool's other(Q)** (item 5): a point at a touch point by coincidence was
+   written as other(Q); the tangent became Undefined after any drag.
+   → `packages/editor/test/choice-tangent-other.test.ts`.
+6. **Asymptote near tangencies** (item 6): gm_lc / gm_cc ignored the kernel's band; a near
+   tangency was exported 1.1·10⁻⁴ of the scale off. → `packages/export/test/asy-near-tangent.test.ts`,
+   fixture `tests/fixtures/export/near-tangent.geo` (tex.yml compiles and checks it).
+7. **A verdict shown on another claim after undo**: undo rolls back the id counter, so a new
+   claim reused the undone claim's id and showed its "Holds … 200 true".
+   → `apps/web/test/test-runs-claim-identity.test.ts`; confirmed in the built page with
+   Playwright (the new claim's card has no verdict).
+8. **Blank page with blocked storage**: reading `localStorage` throws when site data is
+   blocked, and readSlots did it outside its try/catch. → `apps/web/test/persist-blocked.test.ts`;
+   confirmed in the built page (an init script making the getter throw: the page renders).
+
+## Not done
+
+The review's other findings, not fixed in this round (each reproduced, see Known bugs).
+
+## Known bugs
+
+Medium:
+
+- **The HOLDS text hides invalid figures** (`packages/claims/src/verdict.ts:196-199`,
+  `:238-239`): HOLDS needs t ≥ N/2 and f = 0, and the text prints `t/valid`, so 100 true and
+  100 undefined reads "100/100"; in a global run, orientation choices that make mirrored figures
+  undefined (not false) give HOLDS ACROSS instead of ORIENTATION-DEPENDENT (L16).
+- **Lines with an error are partly applied** (`packages/lang/src/build-defs.ts:194-209`,
+  `build-geomdraw.ts:31-33`, `:117-121`; ADR-0009 decision 14): `triangle AAB` reports "the
+  name A is already used" and still adds A, B and `polygon(A, A, B)`; `points A B` with A
+  existing still adds B; `X, X = intersect(l, w)` still adds X.
+- **Curves not drawable at the zoom are missing from exports without a warning**
+  (`packages/export/src/{tikz,asy,svg,formats}.ts`; ADR-0023): `@viewport 0 0 20`,
+  `O = (0, 1e16)`, `c = circle(O, (0, 0))`: `c` is listed undrawable, absent from the file,
+  no warning. Polygon edges skip the check (`packages/scene/src/display.ts:86-96`).
+- **A derived layer's transform can stop being one** (`packages/kernel/src/doc-edit.ts:272-285`;
+  ADR-0007 decision 11): `s = homothety(O, 2)`, `t = s`, a layer image(t, main), then
+  redefine `s` as a point: accepted, every image Undefined.
+- **Autosave loses the last edit when another figure opens within 200 ms**
+  (`apps/web/src/hooks.ts:84-97`): the pending save is cancelled, and nothing saves on pagehide.
+- **Escape during a drag** (`apps/web/src/page.ts:115`, `gestures.ts:294,328`): the gesture
+  keeps sending moves; notices "dragMove without a drag in progress".
+- **TikZ arcs of screen radius about 21,800–32,768 px** exceed TeX's \maxdimen
+  (`packages/export/src/tikz.ts:327`; inferred, not compiled here).
+- **PNG pHYs after IDAT** (`packages/export/src/png.ts:113-119`): libpng readers ignore the dpi.
+- **Trackpad pinch zooms the page too** (`apps/web/src/Board.tsx:193-200`, a passive wheel
+  listener; not reproduced on a Mac here).
+- **A UTF-8 BOM drops the first statement** (`packages/lang/src/parse.ts:31-34`).
+
+Low: a hidden side segment is duplicated by a side click (`packages/editor/src/machine.ts:210`);
+a text dragged through a scaled image is stored unrounded (`drag-edit.ts:62`); dragCancel with
+a full history (500) loses the oldest entry (`drag-edit.ts:80`); a segment mark's label sits on
+its first tick (`packages/scene/src/labels.ts:128`); `inverse` of a map with |a| ≈ 10⁻¹⁶⁰ is
+Inexact (`packages/kernel/src/similarity.ts:114-120`); 50 nested negations print text that
+does not re-parse (`packages/lang/src/parse-expr.ts:98`); a comment ending in `\r` breaks P2
+(`parse.ts:33`); a migration would drop the `@version` line's comment (`migrate.ts:38`, latent);
+non-BMP characters give two broken diagnostics (`lexer.ts:160`); the badge and the local test
+use different seeds for the current figure (`packages/claims/src/job.ts:198`); the floor step
+of `on(c, u, v)` is not normalised (`rungs.ts`, the perturbation); the canvas is not
+re-rendered on a pixel-density change (`Board.tsx:41`); a refused pick in the Objects panel
+shows no reason (`ObjectsPanel.tsx:31`); without the `run-*` tags (a clone without
+`--tags`), `pnpm rules` reports "no run-* tag yet: nothing frozen" and passes instead of failing.
+
+Local environment (as before): `sampler-local-10sigma.test.ts` can time out under coverage load.
+
+## Uncertain
+
+- **ADR-0027 item 2 changes what ADR-0017 kept absolute**: the numeric rung now judges claims
+  in figures smaller than 1 as the same figure at size 1. Confirm.
+- **DEPENDENT_PX = 1** (ADR-0027 item 4) is a judgement: dependents may move up to 1 px when
+  the dragged point is rounded (0.1 px); a larger move or any change of kind keeps the exact
+  coordinates.
+- The review's open questions: an existing object can be moved INTO a locked layer by
+  `setLayers` (ADR-0020's text names only new objects); free points from separate `point()`
+  statements can land 0.3 apart; a typed rotate/homothety number is reset by a tool switch
+  (ADR-0024 says it is kept).
+- No mathematical fact or contest problem was used.
+
+## Changed frozen tests
+
+Compared with `run-10b`.
+
+- **Modified under [ADR-0027](adr/0027-pre-beta-review-fixes.md)** (commit d8a77fa): the golden
+  Asymptote snapshots that contain gm_lc / gm_cc, `packages/export/test/__snapshots__/`
+  `{incenter-excenter,miquel,fixture-constructions}/{standalone,aops}.asy`: the helper text
+  only (the band line and the banded `h`), no coordinate.
+- **Added lines only**: `packages/kernel/test/degenerate.test.ts` (one import, one spread of
+  the new case).
+
+## Acceptance command output
+
+### Local, d924239 (`pnpm verify`)
+
+```
+✔ no dependency violations found (536 modules, 3006 dependencies cruised)
+ok   tolerance: 771 files scanned, 0 violation(s)
+ok   file-length: 771 files scanned, 0 violation(s)
+ok   test-count: 2471 tests, floor 2443, 0 violation(s)
+ok   disabled-tests: 771 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-10b, 0 violation(s)
+ok   forbidden-words: 771 files scanned, 0 violation(s)
+ Test Files  247 passed (247)
+      Tests  2471 passed (2471)
+```
+
+The test-count floor is now 2471. Playwright was not run locally; the built page was driven
+with Playwright for items 7 and 8 only. CI: pending (this PR).
+
+## Requests
+
+- Decisions above (Uncertain), and which Known bugs to fix before the beta.
+- No runtime dependency was added.
+
+---
+
 ## Geomdraw-style tools and script (maintainer request, 2026-10-22): ACCEPTED (2026-10-22)
 
 A request from the maintainer between Run 10 and Run 11, not a numbered run: make Geomira's
