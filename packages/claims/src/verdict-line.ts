@@ -3,8 +3,8 @@
  * in sentence case, then in parentheses what was checked: the regime, n and the rungs used
  * ("Holds in this configuration (local test, n = 200, exact over Q)"); counts follow only
  * where they add something (mixed rungs, fewer valid figures than tested, rejected samples,
- * mirrored figures, a shortfall against the hypotheses, undefined figures repaired by the
- * flip test). The seed, the tally and the most frequent
+ * mirrored figures, a shortfall against the hypotheses or one caused by mirroring,
+ * undefined figures repaired by the flip test). The seed, the tally and the most frequent
  * reasons of invalid figures go to `detail`, shown under the line.
  *
  * `tone` is how the line is coloured: only a LOCAL verdict can be `false` or `mixed`;
@@ -14,7 +14,13 @@
 import { assertNever } from '@geomira/num/assert';
 import { RUNG_NAMES } from './rungs';
 import type { GlobalKind, LocalKind, Verdict } from './verdict';
-import { rejectedNote, repairedText, selectorPhrase } from './verdict-notes';
+import {
+  parityNote,
+  parityShortNote,
+  rejectedNote,
+  repairedText,
+  selectorPhrase,
+} from './verdict-notes';
 
 export type VerdictTone = 'holds' | 'false' | 'mixed' | 'inconclusive' | 'info';
 
@@ -50,9 +56,16 @@ function checked(v: Verdict): string {
   return `${v.regime} test, n = ${String(v.n)}${rungs === '' ? '' : `, ${rungs}`}`;
 }
 
-/** Notes about the hypotheses: a shortfall of tested figures, and "hard to satisfy". */
+/**
+ * Notes about the hypotheses: a shortfall of tested figures, and "hard to satisfy"; or, when
+ * figures of one orientation rarely satisfy them (mirroring is the cause), that instead.
+ */
 function hypothesisNotes(v: Verdict, o: LineOptions): string[] {
   const out: string[] = [];
+  if (v.hardParity !== undefined && v.parity !== undefined) {
+    if (v.tested < v.n) out.push(parityShortNote(v.tested, v.n));
+    return [...out, parityNote(v.parity, v.hardParity)];
+  }
   if (v.tested < v.n)
     out.push(`only ${String(v.tested)} of ${String(v.n)} figures satisfied the hypotheses`);
   if (v.hardToSatisfy === true && o.figureExplains !== true)

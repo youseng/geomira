@@ -9,9 +9,10 @@
  * Cryptographic randomness for the mod-p rung is supplied by the host (`env.entropy`,
  * e.g. num's cryptoSource over crypto.getRandomValues); without it the rung is skipped.
  *
- * Global jobs run the flip test on false figures and on undefined ones (an undefined figure
- * that holds flipped failed through an orientation choice: law L16). Local jobs judge the
- * current figure exactly as the live badge does.
+ * Global jobs mirror every other tested figure, count attempts and acceptances per orientation (so a low acceptance caused by
+ * mirroring is not blamed on the hypotheses), and run the flip test on false figures and on
+ * undefined ones (an undefined figure that holds flipped failed through an orientation
+ * choice: law L16). Local jobs judge the current figure exactly as the live badge does.
  */
 import { createRng, deriveSeed, type EntropySource, type Seed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
@@ -32,6 +33,7 @@ import {
   newCollector,
   record,
   type Collector,
+  type Common,
   type FlipSummary,
   type NamedSelector,
   type Verdict,
@@ -222,12 +224,18 @@ export function* runJob(
   const budgetBits = env.budgetBits ?? EXACT_BUDGET_BITS;
   const c: Collector = newCollector();
   const flips = newFlipState();
+  const parity = {
+    unmirrored: { attempts: 0, accepted: 0 },
+    mirrored: { attempts: 0, accepted: 0 },
+  };
   const maxAttempts = RETRY_FACTOR * job.n;
   let [done, attempts] = [0, 0];
   while (done < job.n && attempts < maxAttempts) {
     const mirrored = job.regime === 'global' && done % 2 === 1;
+    const side = mirrored ? parity.mirrored : parity.unmirrored;
     const seed = deriveSeed(job.seed, attempts);
     attempts++;
+    side.attempts++;
     const doc = drawSample(prep, job.regime, seed, mirrored);
     const decide = (d: Document) =>
       decideSample(prep, d, {
@@ -240,6 +248,7 @@ export function* runJob(
     record(c, o, () => withoutProbes(doc));
     if (o.kind !== 'rejected') {
       done++;
+      side.accepted++;
       if (mirrored) c.mirrored++;
       if (job.regime === 'global' && o.kind === 'false') flipTest(prep, doc, flips, decide);
       if (job.regime === 'global' && isUndefinedOutcome(o)) flipUndefined(prep, doc, flips, decide);
@@ -247,20 +256,36 @@ export function* runJob(
     const cmd = yield { kind: 'progress', regime: job.regime, done, n: job.n, attempts };
     if (cmd === 'cancel') return { kind: 'cancelled', done, attempts };
   }
-  const common = {
+  const common: Common = {
     seed: job.seed,
     n: job.n,
     tested: done,
     attempts,
     hardToSatisfy: done / attempts < HARD_ACCEPTANCE,
+    ...(job.regime === 'global' ? { parity } : {}),
   };
-  if (job.regime === 'local') {
-    // The current figure is judged exactly as the live badge judges it (evalClaim's seed).
-    const rng = createRng(CURRENT_FIGURE_SEED);
-    const current = valueOf(decideSample(prep, prep.doc, { budgetBits, rng, hypotheses: false }));
-    return { kind: 'verdict', verdict: localVerdict(c, common, current) };
-  }
-  return { kind: 'verdict', verdict: globalVerdict(c, common, summary(prep, flips)) };
+  return { kind: 'verdict', verdict: finalVerdict(job.regime, prep, c, common, flips, budgetBits) };
+}
+
+/** The verdict of a finished job. */
+function finalVerdict(
+  regime: Regime,
+  prep: Prepared,
+  c: Collector,
+  common: Common,
+  flips: FlipState,
+  budgetBits: number,
+): Verdict {
+  if (regime === 'global') return globalVerdict(c, common, summary(prep, flips));
+  // The current figure is judged exactly as the live badge judges it (evalClaim's seed).
+  const current = valueOf(
+    decideSample(prep, prep.doc, {
+      budgetBits,
+      rng: createRng(CURRENT_FIGURE_SEED),
+      hypotheses: false,
+    }),
+  );
+  return localVerdict(c, common, current);
 }
 
 /** Runs a job to completion (tests, hosts without workers that do not need slicing). */

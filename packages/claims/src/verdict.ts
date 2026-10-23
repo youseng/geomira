@@ -10,8 +10,9 @@
  *   it alone repairs every failure) · CONFIGURATION-DEPENDENT (some failing sample does not
  *   hold even flipped; with an example document) · INCONCLUSIVE.
  * Verdicts state what was checked (rungs and counts), the figures that were not valid and
- * the samples the hypotheses rejected (whenever there are any) and the seed
- * (verdict-notes.ts); they never use the words reserved for the Phase 2 prover.
+ * the samples the hypotheses rejected (whenever there are any), a low acceptance (blaming
+ * mirroring when one orientation alone is rare) and the seed (verdict-notes.ts); they never
+ * use the words reserved for the Phase 2 prover.
  */
 import type { Seed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
@@ -19,7 +20,17 @@ import { MIN_VALID_FRACTION } from './constants';
 import type { ClaimValue } from './eval-claim';
 import { RUNG_NAMES, type RungName, type SampleOutcome } from './rungs';
 import type { Regime } from './sampler';
-import { invalidNote, rejectedNote, repairedText, selectorPhrase } from './verdict-notes';
+import {
+  hardParity,
+  invalidNote,
+  parityNote,
+  parityShortNote,
+  rejectedNote,
+  repairedText,
+  selectorPhrase,
+  type Parity,
+  type ParityStats,
+} from './verdict-notes';
 
 export type LocalKind = 'holds' | 'false' | 'mixed' | 'inconclusive';
 export type GlobalKind =
@@ -68,6 +79,13 @@ export interface Verdict {
   readonly mirrored?: number;
   /** Fewer than HARD_ACCEPTANCE of the attempts satisfied the hypotheses. */
   readonly hardToSatisfy?: boolean;
+  /**
+   * GLOBAL: figures of this orientation rarely satisfied the hypotheses while the other
+   * orientation's did (mirroring, not the hypotheses, explains the low acceptance).
+   */
+  readonly hardParity?: Parity;
+  /** GLOBAL: attempts and tested figures per orientation. */
+  readonly parity?: ParityStats;
   /** GLOBAL: undefined figures that hold once the orientation-dependent selectors are flipped. */
   readonly undefinedRepaired?: number;
   readonly named?: NamedSelector;
@@ -167,6 +185,22 @@ export interface Common {
   readonly tested: number;
   readonly attempts: number;
   readonly hardToSatisfy: boolean;
+  /** GLOBAL: attempts and tested figures per orientation (job.ts). */
+  readonly parity?: ParityStats;
+}
+
+/** The notes after a verdict's parentheses: acceptance and shortfall. */
+function trailer(k: Common, parity: Parity | undefined): string[] {
+  const out: string[] = [];
+  if (parity !== undefined && k.parity !== undefined) out.push(parityNote(k.parity, parity));
+  else if (k.hardToSatisfy) out.push('hard to satisfy: few figures satisfy the hypotheses');
+  if (k.tested < k.n)
+    out.push(
+      parity === undefined
+        ? `only ${String(k.tested)} of ${String(k.n)} figures satisfied the hypotheses`
+        : parityShortNote(k.tested, k.n),
+    );
+  return out;
 }
 
 function base(
@@ -176,15 +210,12 @@ function base(
   c: Collector,
   k: Common,
 ): Verdict {
-  const hard = k.hardToSatisfy ? ' · hard to satisfy: few figures satisfy the hypotheses' : '';
-  const short =
-    k.tested < k.n
-      ? ` · only ${String(k.tested)} of ${String(k.n)} figures satisfied the hypotheses`
-      : '';
+  const parity = regime === 'global' ? hardParity(k.parity) : undefined;
+  const notes = trailer(k, parity).map((x) => ` · ${x}`);
   return {
     regime,
     kind,
-    text: `${text}${hard}${short} · seed ${String(k.seed)}`,
+    text: `${text}${notes.join('')} · seed ${String(k.seed)}`,
     seed: k.seed,
     n: k.n,
     tested: k.tested,
@@ -194,7 +225,9 @@ function base(
     reasons: topReasons(c),
     ...(c.example === undefined ? {} : { example: c.example }),
     ...(c.counterexample === undefined ? {} : { counterexample: c.counterexample }),
-    ...(k.hardToSatisfy ? { hardToSatisfy: true } : {}),
+    ...(k.hardToSatisfy && parity === undefined ? { hardToSatisfy: true } : {}),
+    ...(parity === undefined ? {} : { hardParity: parity }),
+    ...(regime === 'global' && k.parity !== undefined ? { parity: k.parity } : {}),
   };
 }
 
