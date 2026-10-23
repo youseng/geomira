@@ -103,8 +103,12 @@ export class EditorStore {
       return r;
     }
     this.noteEdit(r.state, before);
-    // A refusal is answered by the next success; errors and information stay until dismissed.
-    const notice = this.snap.notice?.tone === 'refusal' ? null : this.snap.notice;
+    // A refusal is answered by the next document edit or tool action, not by hover, viewport
+    // or selection changes (ADR-0028); errors and information stay until dismissed.
+    const s = r.state;
+    const acted =
+      s.doc !== before.doc || s.tool !== before.tool || s.toolState !== before.toolState;
+    const notice = acted && this.snap.notice?.tone === 'refusal' ? null : this.snap.notice;
     this.publish({ state: r.state, notice });
     return r;
   }
