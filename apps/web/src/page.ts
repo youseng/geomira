@@ -266,7 +266,10 @@ export function useHeader(env: HeaderEnv) {
     triangleType,
     stats,
     onExample: (id) => {
-      if (openExample(store, runs, id)) setTimes(null);
+      if (!openExample(store, runs, id)) return;
+      setTimes(null);
+      // Off the hidden list, so a letter is a shortcut, not another example (ADR-0028).
+      env.canvas()?.focus({ preventScroll: true });
     },
     onTriangleType: setTriangleType,
     onRandomize: () => {

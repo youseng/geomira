@@ -22,3 +22,23 @@ test('Enter works on a focused button and tab (the shortcut does not take it)', 
   await page.keyboard.press('Enter');
   await expect(undo).toBeDisabled();
 });
+
+test('after choosing an example the canvas has the focus: a letter is no other example', async ({
+  page,
+}) => {
+  await openApp(page);
+  const examples = page.getByLabel('Example', { exact: true });
+  await examples.selectOption('euler-line');
+  await expect(page.getByLabel('Geometry canvas')).toBeFocused();
+  const text = page.getByLabel('Text', { exact: true });
+  await expect(text).toHaveValue(/^@title "Euler line"$/mu);
+  // With the focus left on the list, "r" opened radical-axes (type-ahead).
+  await page.keyboard.press('r');
+  await page.keyboard.press('m');
+  await expect(text).toHaveValue(/^@title "Euler line"$/mu);
+  // A letter or an arrow on the focused, closed list does not open an example either.
+  await examples.focus();
+  await page.keyboard.press('m');
+  await page.keyboard.press('ArrowDown');
+  await expect(text).toHaveValue(/^@title "Euler line"$/mu);
+});

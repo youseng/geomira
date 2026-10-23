@@ -161,6 +161,8 @@ export function Board(props: BoardProps) {
       ref={canvasRef}
       className="board"
       aria-label="Geometry canvas"
+      // Focusable from code only: the focus returns here after an example is chosen.
+      tabIndex={-1}
       data-cx={viewport.cx}
       data-cy={viewport.cy}
       data-zoom={viewport.zoom}

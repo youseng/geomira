@@ -33,6 +33,11 @@
   min-height: 0;
 }
 
+/* The canvas takes the focus from code only (after an example opens): no ring. */
+.board:focus {
+  outline: none;
+}
+
 .board {
   position: absolute;
   inset: 0 0 var(--status-h) 0;
