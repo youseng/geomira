@@ -18,8 +18,9 @@ import { applyRemoval, dependents, fail, type EditResult, type Removal } from '.
 import { call, ref, exprEquals, type Expr } from './expr';
 import { stableTopologicalOrder } from './graph';
 import type { Registry } from './registry';
-import type { Signature } from './tool';
-import { capabilityKinds, type ValueKind } from './value';
+import { callKinds } from './kinds';
+import { textOrder } from './text-order';
+import type { ValueKind } from './value';
 
 /**
  * The kinds a map takes to the same kind: figures and, since ADR-0011, the display values
@@ -37,21 +38,10 @@ const IMAGED_KINDS: readonly ValueKind[] = [
 
 export type KindTable = ReadonlyMap<number, readonly ValueKind[] | undefined>;
 
-/** Whether a signature takes `n` arguments whose static kinds may fit its capabilities. */
-function fits(s: Signature, args: readonly (readonly ValueKind[] | undefined)[]): boolean {
-  if (args.length < s.params.length || (args.length > s.params.length && s.rest === undefined))
-    return false;
-  return args.every((k, i) => {
-    const cap = s.params[i] ?? s.rest;
-    return (
-      cap !== undefined && (k === undefined || k.some((x) => capabilityKinds(cap).includes(x)))
-    );
-  });
-}
-
 /**
  * The kinds an expression can have (undefined: unknown), narrowed to the overloads its
- * arguments can match (Signature.output): reflect(l) is a transform, reflect(A, l) a point.
+ * arguments can match (Signature.output and preserves, kinds.ts): reflect(l) is a transform,
+ * reflect(A, l) a point, reflect(l, k) and apply(T, l) lines.
  * An unknown tool, or arguments no overload can take, → unknown.
  */
 export function exprKinds(
@@ -68,10 +58,12 @@ export function exprKinds(
       return kinds.get(e.id);
     case 'call': {
       const tool = registry.get(e.tool);
-      const args = e.args.map((a) => exprKinds(a, kinds, registry));
-      const sigs = tool?.signatures.filter((s) => fits(s, args)) ?? [];
-      if (tool === undefined || sigs.length === 0) return undefined;
-      return [...new Set(sigs.flatMap((s) => s.output ?? tool.outputKinds))];
+      return tool === undefined
+        ? undefined
+        : callKinds(
+            tool,
+            e.args.map((a) => exprKinds(a, kinds, registry)),
+          );
     }
     default:
       return assertNever(e, 'expression');
@@ -270,7 +262,9 @@ function duplicateName(objects: readonly DocObject[]): string | undefined {
  * Makes the managed objects match the rules exactly: stale images go (with their
  * dependents, listed in `removed`), names and definitions are repaired, and every missing
  * image is created right after the later of its source and its transform (so "adding an
- * object to the source appends its image"), chains included. Degenerate cases: an image
+ * object to the source appends its image"), chains included; every image ends right after
+ * the later of its source and its transformation (text order, text-order.ts, so the printed
+ * text parses back to the same order after a move). Degenerate cases: an image
  * name already used by another object → error; a dependency cycle (a rule's transform
  * built from its own images) → error. A synced document is returned unchanged. With `held`,
  * the held sources are not imaged (their existing images stay; see Held).
@@ -297,7 +291,8 @@ export function syncDerived(doc: Document, registry: Registry, held?: Held): Edi
       if (ordered === undefined) return fail('cycle: a transformation depends on its own images');
       const clash = duplicateName(ordered);
       if (clash !== undefined) return fail(`the image name ${clash} is already used`);
-      return { ok: true, doc: { ...cur, objects: ordered }, added: [...fresh], removed };
+      const objects = imageless ? ordered : textOrder({ ...cur, objects: ordered });
+      return { ok: true, doc: { ...cur, objects }, added: [...fresh], removed };
     }
   }
   return fail('cycle: the derived layers image each other without end');

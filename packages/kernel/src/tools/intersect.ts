@@ -9,7 +9,7 @@
 import type { Field } from '@geomira/num/field';
 import { choose, candidateValues } from '../select';
 import type { EvaluatedSelector } from '../selector';
-import type { EvalContext, ExampleArg, ToolSpec } from '../tool';
+import type { ArgSymmetry, EvalContext, ExampleArg, ToolSpec } from '../tool';
 import type { Undefined, Value } from '../value';
 import { badArgs, circleAt, lineAt } from './args';
 import {
@@ -59,6 +59,15 @@ function candidates<T>(
   return p === 'bad' || 'kind' in p ? [] : candidateValues(p);
 }
 
+/**
+ * The two curves in either order (ADR-0029): the same point. along(±) measures on the line
+ * whatever its position, and every filter and ranker reads only the candidates; orient(±) is
+ * the sign of cross(O₂ − O₁, X − O₁), so swapping two circles flips it.
+ */
+const EITHER: readonly ArgSymmetry[] = [
+  { kind: 'permute', positions: [0, 1], same: 'value', flipsOrient: true },
+];
+
 const C5: ExampleArg = {
   call: 'circle',
   args: [
@@ -73,10 +82,10 @@ export const INTERSECT_TOOLS: readonly ToolSpec[] = [
     name: 'intersect',
     family: 'points',
     signatures: [
-      { params: ['linear', 'linear'], branch: LINE_LINE },
-      { params: ['linear', 'round'], branch: LINE_CIRCLE },
-      { params: ['round', 'linear'], branch: LINE_CIRCLE },
-      { params: ['round', 'round'], branch: CIRCLE_CIRCLE },
+      { params: ['linear', 'linear'], branch: LINE_LINE, symmetry: EITHER },
+      { params: ['linear', 'round'], branch: LINE_CIRCLE, symmetry: EITHER },
+      { params: ['round', 'linear'], branch: LINE_CIRCLE, symmetry: EITHER },
+      { params: ['round', 'round'], branch: CIRCLE_CIRCLE, symmetry: EITHER },
     ],
     outputKinds: ['point'],
     compute: intersect,

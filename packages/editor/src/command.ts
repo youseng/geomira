@@ -3,7 +3,9 @@
  * applied as the document's text with the line appended (one `replaceText` edit, so it is
  * exactly what typing the line at the end of the text panel does: same parser, same ids
  * kept, one history entry); its diagnostics come back on line 1, the command's own line.
- * A tool's id or label (optionally after `tool`) switches the active tool.
+ * A tool's id or label (optionally after `tool`) switches the active tool. A statement that
+ * defines an object as the same construction as another object of the figure (m =
+ * line(B, A) when l = line(A, B) exists) is refused with the language's message (ADR-0029).
  *
  * Completions come from the registry (the only enumeration of tools), the document's
  * object names, the statement keywords, the claim and assumption kinds of packages/claims
@@ -11,9 +13,13 @@
  */
 import { CLAIM_KINDS } from '@geomira/claims/kinds';
 import { ASSUMPTION_KINDS } from '@geomira/claims/hypotheses';
+import { sameConstruction } from '@geomira/kernel/construction-key';
+import type { Document } from '@geomira/kernel/document';
+import { exprEquals } from '@geomira/kernel/expr';
 import type { Signature } from '@geomira/kernel/tool';
-import type { Diagnostic } from '@geomira/lang/diagnostic';
+import { error, type Diagnostic } from '@geomira/lang/diagnostic';
 import { print } from '@geomira/lang/print';
+import { sameConstructionMessage } from '@geomira/lang/same-construction';
 import { applyEdit } from './edit';
 import type { EditResult } from './result';
 import type { EditorEnv, EditorState } from './state';
@@ -54,6 +60,42 @@ function guiTool(line: string): ToolUI | undefined {
   return TOOLS.find((x) => x.id === t || x.label.toLowerCase() === t);
 }
 
+/**
+ * The index of the printed line a single-valued directive command replaces (`@title`,
+ * `@author`, `@viewport`: a document has at most one of each), or undefined. Strings are
+ * printed with their newlines escaped, so a line that starts with the directive is it.
+ */
+function replacedLine(lines: readonly string[], command: string): number | undefined {
+  const m = /^@(title|author|viewport)(?=\s|$)/u.exec(command);
+  if (m === null) return undefined;
+  const i = lines.findIndex((l) => new RegExp(`^${m[0]}(?=\\s|$)`, 'u').test(l));
+  return i >= 0 ? i : undefined;
+}
+
+/**
+ * The language's diagnostic, on the command's line, for an object the command defined (new,
+ * or with a new definition) that is the same construction as another user object of `neu`;
+ * or undefined. Images (managed) are not compared.
+ */
+function duplicateDefinition(
+  old: Document,
+  neu: Document,
+  width: number,
+  env: EditorEnv,
+): Diagnostic | undefined {
+  const names = (id: number) => neu.objects.find((o) => o.id === id)?.name;
+  for (const o of neu.objects) {
+    const before = old.objects.find((x) => x.id === o.id);
+    if (o.managedBy !== undefined || (before !== undefined && exprEquals(before.def, o.def)))
+      continue;
+    const same = sameConstruction(neu, o.def, env.registry, { except: o.id });
+    if (same === undefined) continue;
+    const m = sameConstructionMessage(o.name, same, names);
+    return error({ line: 1, column: 1, endColumn: width + 1 }, m.message, m.hint);
+  }
+  return undefined;
+}
+
 /** Runs one command (see the module comment). Never throws. */
 export function runCommand(state: EditorState, line: string, env: EditorEnv): CommandResult {
   const trimmed = line.trim();
@@ -65,15 +107,23 @@ export function runCommand(state: EditorState, line: string, env: EditorEnv): Co
       ? { kind: 'edit', result: r }
       : { kind: 'error', reason: r.reason, diagnostics: [] };
   }
-  const printed = print(state.doc);
-  const offset = printed.split('\n').length - 1;
-  const r = applyEdit(state, { kind: 'replaceText', text: `${printed}${trimmed}\n` }, env);
+  const lines = print(state.doc).split('\n');
+  const at = replacedLine(lines, trimmed);
+  // The command's line: the directive it replaces, else a new last line.
+  const offset = at ?? lines.length - 1;
+  const text =
+    at === undefined
+      ? `${lines.join('\n')}${trimmed}\n`
+      : lines.map((l, i) => (i === at ? trimmed : l)).join('\n');
+  const r = applyEdit(state, { kind: 'replaceText', text }, env);
   if (!r.ok) {
     const diagnostics = (r.diagnostics ?? []).map((d) => ({ ...d, line: d.line - offset }));
     return { kind: 'error', reason: r.reason, diagnostics };
   }
   if (r.state.doc === state.doc)
     return { kind: 'error', reason: 'the statement changes nothing', diagnostics: [] };
+  const dup = duplicateDefinition(state.doc, r.state.doc, trimmed.length, env);
+  if (dup !== undefined) return { kind: 'error', reason: dup.message, diagnostics: [dup] };
   return { kind: 'edit', result: r };
 }
 

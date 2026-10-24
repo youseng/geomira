@@ -9,12 +9,13 @@ import { DOCUMENT_VERSION, type CommentAnchor } from '@geomira/kernel/document';
 import type { Registry } from '@geomira/kernel/registry';
 import type { Line, Statement } from './ast';
 import { buildDeferred, type Deferred } from './build-claims';
-import { collectNames, collectStyles, definition, triangle } from './build-defs';
+import { collectNames, collectStyles, definition } from './build-defs';
+import { triangle } from './build-triangle';
 import { branchesStatement, pointsStatement } from './build-geomdraw';
 import { directives } from './build-layers';
 import { newState, type State } from './build-state';
 import { attach, defer, finish, take } from './comments';
-import { error, warning, type Diagnostic } from './diagnostic';
+import { error, warning, type Diagnostic, type Severity } from './diagnostic';
 
 export interface Built {
   readonly doc: State['doc'];
@@ -24,6 +25,8 @@ export interface Built {
 export interface VersionCheck {
   /** Why the file's version cannot be read as current (a newer file, a missing migration). */
   readonly problem?: { readonly reason: string; readonly hint: string };
+  /** ParseOptions.sameConstruction (ADR-0029). */
+  readonly sameConstruction?: Severity;
 }
 
 type Meta = Extract<Statement, { kind: 'title' | 'author' | 'viewport' | 'version' }>;
@@ -159,7 +162,7 @@ export function buildDocument(
   registry: Registry,
   version: VersionCheck,
 ): Built {
-  const st = newState(registry);
+  const st = newState(registry, version.sameConstruction);
   const anchors = directives(st, lines);
   const polys = collectNames(st, lines);
   const badStyles = collectStyles(st, lines);

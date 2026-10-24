@@ -22,7 +22,7 @@ export type UiEdit =
   | { readonly kind: 'activeLayer'; readonly id: string }
   /**
    * Switches tools; the claim tool takes a claim kind. The new tool starts with no picks and,
-   * when it asks for a number, that number's initial text.
+   * when it asks for a number, the number last typed for it (else its initial text).
    */
   | { readonly kind: 'tool'; readonly tool: ToolId; readonly claimKind?: string }
   /** The text of the active tool's number (rotate's angle, …); its picks stay. */
@@ -69,13 +69,16 @@ export function uiEdit(state: EditorState, e: UiEdit): EditResult {
     case 'tool': {
       if (!TOOLS.some((t) => t.id === e.tool)) return refuse(state, `there is no tool "${e.tool}"`);
       const kind = e.claimKind ?? state.toolState.claimKind;
-      const value = toolUI(e.tool)?.value?.initial ?? '';
-      return ok({ ...state, tool: e.tool, toolState: idleTool(kind, value) });
+      const typed = state.toolState.typed;
+      const value = typed[e.tool] ?? toolUI(e.tool)?.value?.initial ?? '';
+      return ok({ ...state, tool: e.tool, toolState: idleTool(kind, value, typed) });
     }
-    case 'toolValue':
-      return toolUI(state.tool)?.value === undefined
-        ? refuse(state, 'the active tool takes no number')
-        : ok({ ...state, toolState: { ...state.toolState, value: e.value } });
+    case 'toolValue': {
+      if (toolUI(state.tool)?.value === undefined)
+        return refuse(state, 'the active tool takes no number');
+      const typed = { ...state.toolState.typed, [state.tool]: e.value };
+      return ok({ ...state, toolState: { ...state.toolState, value: e.value, typed } });
+    }
     default:
       return assertNever(e, 'UI edit');
   }

@@ -16,6 +16,11 @@
   box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.3);
 }
 
+/* The dialog itself takes the focus when it opens (from code): no ring on the box. */
+.dialog:focus {
+  outline: none;
+}
+
 .dialog h2 {
   margin: 0 0 8px;
   font-size: 15px;

@@ -1,7 +1,7 @@
 /**
  * The steps of a GUI tool (tools.ts) and which of them the next pick may fill: the claim
- * tool's come from its claim kind; an order-free tool (ToolUI.anyOrder, ADR-0024) may fill
- * any step it has not filled yet.
+ * tool's come from its claim kind; an order-free tool (ToolUI.anyOrder, ADR-0024, and the
+ * claim tool for a kind whose steps differ in kind) may fill any step it has not filled yet.
  */
 import { CLAIM_KINDS } from '@geomira/claims/kinds';
 import type { ClaimParam } from '@geomira/claims/kind';
@@ -16,6 +16,20 @@ export function claimToolKinds(): string[] {
   return CLAIM_KINDS.filter(
     (k) => k.params.every(objects) && (k.rest === undefined || objects(k.rest)),
   ).map((k) => k.name);
+}
+
+/**
+ * Claim kinds whose points come in groups that may share points (two angles, four segments):
+ * the claim tool may pick a point twice for them, angle_eq(B, A, I, I, A, C) or
+ * ratio(A, B, A, C, …), as the ratio and spiral tools may (ToolUI.repeats). Every other kind
+ * refuses a repeated pick: its arguments must differ (collinear(A, A, B) is degenerate).
+ */
+export const REPEATING_CLAIM_KINDS: readonly string[] = Object.freeze(['angle_eq', 'ratio']);
+
+/** Whether the next pick may name an object picked before. */
+export function mayRepeat(tool: ToolUI, ts: ToolState): boolean {
+  if (tool.build.kind === 'claim') return REPEATING_CLAIM_KINDS.includes(ts.claimKind);
+  return tool.repeats === true;
 }
 
 function pickOfParam(p: ClaimParam): PickKind {
@@ -35,6 +49,16 @@ export function stepsOf(
   return k.rest === undefined ? { steps } : { steps, rest: step(k.rest) };
 }
 
+/**
+ * Whether the picks may come in any order: an order-free tool (ToolUI.anyOrder), or the claim
+ * tool when its kind's steps differ in kind and it has no rest step (on(point, curve): the
+ * curve may be clicked first), by ADR-0024 item 1's rule.
+ */
+function orderFree(tool: ToolUI, steps: readonly ToolStep[], rest: ToolStep | undefined): boolean {
+  if (tool.build.kind !== 'claim') return tool.anyOrder === true;
+  return rest === undefined && new Set(steps.map((s) => s.pick)).size > 1;
+}
+
 /** A step the next pick may fill, with its index (its place in the call). */
 export interface OpenStep {
   readonly index: number;
@@ -47,7 +71,7 @@ export interface OpenStep {
  */
 export function openSteps(tool: ToolUI, ts: ToolState): OpenStep[] {
   const { steps, rest } = stepsOf(tool, ts);
-  if (tool.anyOrder === true)
+  if (orderFree(tool, steps, rest))
     return steps.flatMap((step, index) => (ts.slots.includes(index) ? [] : [{ index, step }]));
   const index = ts.picks.length;
   const step = steps[index] ?? rest;

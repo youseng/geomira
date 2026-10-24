@@ -103,6 +103,7 @@ export const POINT_TOOLS: readonly ToolSpec[] = [
     outputKinds: ['point'],
     compute: point,
     degenerate: [],
+    input: true,
     export: 'numeric',
     doc: 'The point with coordinates (x, y); `(x, y)` is the same. Free when x and y are literals.',
     examples: [{ args: ['1', '-2/3'] }],
@@ -114,6 +115,7 @@ export const POINT_TOOLS: readonly ToolSpec[] = [
     signatures: [{ params: ['number', 'number', 'number'] }],
     outputKinds: ['number'],
     compute: param,
+    input: true,
     degenerate: [
       'min ≥ max → Undefined',
       'v outside [min, max] → Undefined',
@@ -128,7 +130,12 @@ export const POINT_TOOLS: readonly ToolSpec[] = [
     id: 'midpoint',
     name: 'midpoint',
     family: 'points',
-    signatures: [{ params: ['point', 'point'] }],
+    signatures: [
+      {
+        params: ['point', 'point'],
+        symmetry: [{ kind: 'permute', positions: [0, 1], same: 'value' }],
+      },
+    ],
     outputKinds: ['point'],
     compute: midpoint,
     degenerate: ['midpoint(A, A) = A'],
@@ -159,7 +166,13 @@ export const POINT_TOOLS: readonly ToolSpec[] = [
     id: 'foot',
     name: 'foot',
     family: 'points',
-    signatures: [{ params: ['point', 'linear'] }, { params: ['point', 'point', 'point'] }],
+    signatures: [
+      { params: ['point', 'linear'] },
+      {
+        params: ['point', 'point', 'point'],
+        symmetry: [{ kind: 'permute', positions: [1, 2], same: 'value' }],
+      },
+    ],
     outputKinds: ['point'],
     compute: foot,
     degenerate: [

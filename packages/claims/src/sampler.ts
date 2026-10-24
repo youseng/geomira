@@ -10,6 +10,9 @@
  *     are multiplied by s; glider parameters are perturbed locally (by an arc or a length
  *     of about σ); params by 2% of their range; no mirroring. It cannot cross a
  *     configuration boundary on purpose.
+ *   - BOTH: the similarity (and the mirror) only when the figure's FRAME allows it: a figure
+ *     with an absolute quantity the samplers do not map (computed coordinates, a fixed
+ *     length in a claim, …) is sampled with the identity, noise only (frame.ts, ADR-0028).
  *   - GLOBAL: the same similarity with σ = 0.3·size; gliders uniform over their range
  *     (circle gliders uniform in angle, then converted to (u : v)); params uniform; the
  *     sample may be MIRRORED (x ↦ −x about c, before the similarity) WITHOUT flipping any
@@ -34,7 +37,7 @@ import { withoutProbes } from './probes';
 /** What the sampler reads of a prepared document (a claim's, or a figure's for Randomize). */
 export type SamplerFigure = Pick<
   Prepared,
-  'doc' | 'free' | 'ordered' | 'baseCtx' | 'gliderObjects'
+  'doc' | 'free' | 'ordered' | 'baseCtx' | 'gliderObjects' | 'frame'
 >;
 
 export type Regime = 'local' | 'global';
@@ -76,17 +79,21 @@ export function figureSize(prep: SamplerFigure): number {
   return d !== undefined && Number.isFinite(d) && d > 0 ? d : prep.baseCtx.scale;
 }
 
+/**
+ * The random similarity of a sample, or the identity (with the same draws, so the noise that
+ * follows is unchanged) when the figure's frame does not allow it (frame.ts, ADR-0028).
+ */
 function similarity(rng: Rng, prep: SamplerFigure, scale: number, mirrored: boolean): Similarity {
   const theta = rng.uniform(0, 2 * Math.PI);
-  return {
-    s: 2 ** rng.uniform(-SIMILARITY_OCTAVES, SIMILARITY_OCTAVES),
-    cos: Math.cos(theta),
-    sin: Math.sin(theta),
-    degrees: (theta * 180) / Math.PI,
-    c: centroid(prep),
-    b: [rng.uniform(-0.5, 0.5) * scale, rng.uniform(-0.5, 0.5) * scale],
-    mirrored,
-  };
+  const s = 2 ** rng.uniform(-SIMILARITY_OCTAVES, SIMILARITY_OCTAVES);
+  const b: readonly [number, number] = [
+    rng.uniform(-0.5, 0.5) * scale,
+    rng.uniform(-0.5, 0.5) * scale,
+  ];
+  const c = centroid(prep);
+  if (!prep.frame.similarity) return { s: 1, cos: 1, sin: 0, degrees: 0, c, b: [0, 0], mirrored };
+  const degrees = (theta * 180) / Math.PI;
+  return { s, cos: Math.cos(theta), sin: Math.sin(theta), degrees, c, b, mirrored };
 }
 
 function mapPoint(m: Similarity, x: number, y: number): readonly [number, number] {
@@ -240,7 +247,8 @@ function orderedAssignments(ctx: Context, group: OrderedGroup): Assignment[] {
 /**
  * Sample `seed` of `regime` (see the module comment): the prepared document (probes
  * included) with every free input redrawn. `mirrored` is honoured in the global regime
- * only.
+ * only, and only when the figure's frame allows mirroring; the similarity is the identity
+ * when the frame does not allow it (frame.ts).
  */
 export function drawSample(
   prep: SamplerFigure,
@@ -250,7 +258,7 @@ export function drawSample(
 ): Document {
   const rng = createRng(seed);
   const size = figureSize(prep);
-  const sim = similarity(rng, prep, size, regime === 'global' && mirrored);
+  const sim = similarity(rng, prep, size, regime === 'global' && mirrored && prep.frame.mirror);
   const ctx: Context = {
     prep,
     size,

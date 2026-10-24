@@ -13,9 +13,12 @@ export interface RunLineProps {
   readonly label: string;
 }
 
-/** Opens a sample figure of a verdict as an edit of the text (undo returns). */
-function openDoc(store: EditorStore, doc: Document): void {
-  store.apply({ kind: 'replaceText', text: print(doc) });
+/**
+ * Opens a sample figure of a verdict as an edit of the text (undo returns), and fits the view
+ * to it: the sample lies anywhere in the plane (ADR-0028).
+ */
+export function openSample(store: EditorStore, doc: Document): void {
+  if (store.apply({ kind: 'replaceText', text: print(doc) }).ok) store.requestFit();
 }
 
 /** One test's state: progress, or its verdict line (SPEC §10.5 wording) with its documents. */
@@ -50,7 +53,7 @@ export function RunLine({ run, store, explain, label }: RunLineProps) {
             <button
               type="button"
               onClick={() => {
-                if (v.counterexample) openDoc(store, v.counterexample);
+                if (v.counterexample) openSample(store, v.counterexample);
               }}
             >
               Open counterexample
@@ -60,7 +63,7 @@ export function RunLine({ run, store, explain, label }: RunLineProps) {
             <button
               type="button"
               onClick={() => {
-                if (v.example) openDoc(store, v.example);
+                if (v.example) openSample(store, v.example);
               }}
             >
               Open example

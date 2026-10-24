@@ -16,7 +16,7 @@
  * (`Midpoint(A, B)` is midpoint(A, B)), and a capitalised statement keyword starts a line
  * (`Triangle ABC`); both are lowercased. Neither was a valid point name.
  */
-import { error, type Diagnostic } from './diagnostic';
+import { error, warning, type Diagnostic } from './diagnostic';
 import { GREEK, SYMBOL_ESCAPES } from './symbols';
 import { lexNumber, lexString } from './lex-literals';
 import type { Token } from './token';
@@ -110,7 +110,9 @@ export function lexLine(src: string, line: number): LexedLine {
       c.i += 1;
       c.space = true;
     } else if (ch === '#') {
-      return { tokens: c.tokens, comment: src.slice(c.i + 1), diagnostics: c.diags };
+      // Trailing CRs are not part of the comment (a CRLF file with a stray CR; P2).
+      const comment = src.slice(c.i + 1).replace(/\r+$/u, '');
+      return { tokens: c.tokens, comment, diagnostics: c.diags };
     } else {
       lexToken(c, ch);
     }
@@ -158,7 +160,9 @@ function lexToken(c: Cursor, ch: string): void {
     return;
   }
   const p = PUNCT[ch];
-  c.i += ch.length;
+  // A whole code point: a character outside the BMP is one character, not two halves.
+  const whole = String.fromCodePoint(c.src.codePointAt(c.i) ?? 0);
+  c.i += p === undefined ? whole.length : ch.length;
   if (p !== undefined) {
     push(c, 'punct', start, ch, p);
     return;
@@ -167,7 +171,32 @@ function lexToken(c: Cursor, ch: string): void {
     fail(c, start, '° follows a number', 'write 60°');
     return;
   }
-  fail(c, start, `unexpected character "${ch}"`, 'remove it');
+  fail(c, start, `unexpected character "${whole}"`, spellingHint(c, whole));
+}
+
+const POWERS: Readonly<Record<string, number>> = { '²': 2, '³': 3 };
+
+/**
+ * What to write for a character the language spells otherwise: a power (`a^2`, `a²`) is a
+ * product, a root `√2` is sqrt(2), `×` and `÷` are `*` and `/`; anything else is removed.
+ * `c.i` is just after the character.
+ */
+function spellingHint(c: Cursor, ch: string): string {
+  const prev = c.tokens.at(-1);
+  const base = prev === undefined ? 'x' : prev.value === ')' ? '(…)' : prev.text;
+  const exp = ch === '^' ? Number(/^[0-9]+/u.exec(c.src.slice(c.i))?.[0] ?? NaN) : POWERS[ch];
+  if (ch === '^' || exp !== undefined) {
+    return exp === 2 || exp === 3
+      ? `there is no power: write ${Array.from({ length: exp }, () => base).join(' * ')}`
+      : `there is no power: multiply, e.g. ${base} * ${base}`;
+  }
+  if (ch === '√') {
+    const arg = /^(?:[0-9.]+|[A-Za-zα-ω][A-Za-z0-9_α-ω']*)/u.exec(c.src.slice(c.i))?.[0];
+    return `write sqrt(${arg ?? '…'})`;
+  }
+  if (ch === '×') return 'write * for multiplication';
+  if (ch === '÷') return 'write / for division';
+  return 'remove it';
 }
 
 function lexEscape(c: Cursor): void {
@@ -191,11 +220,42 @@ function lexEscape(c: Cursor): void {
   );
 }
 
+/** Whether the last tokens are a division operator, optionally followed by a minus sign. */
+function afterDivision(c: Cursor): boolean {
+  const n = c.tokens.length;
+  const last = c.tokens[n - 1];
+  const before = c.tokens[n - 2];
+  if (last?.kind !== 'punct') return false;
+  return (
+    last.value === '/' || (last.value === '-' && before?.kind === 'punct' && before.value === '/')
+  );
+}
+
+/**
+ * A number. Right after `/` (or `/-`) a glued fraction is not one literal: `a/2/3` is
+ * (a/2)/3. The spaced form `a / 2/3`, which printers before ADR-0028 wrote for a/(2/3),
+ * warns that it is now read as (a / 2) / 3.
+ */
 function lexNumberToken(c: Cursor): void {
   const start = c.i;
-  const r = lexNumber(c.src, c.i);
+  const split = afterDivision(c);
+  const r = lexNumber(c.src, c.i, !split);
   c.i = r.end;
+  const spaced = c.space;
   push(c, 'number', start, c.src.slice(start, r.end));
+  const whole = lexNumber(c.src, start).end;
+  if (split && spaced && whole > r.end) {
+    const frac = c.src.slice(start, whole);
+    const num = c.src.slice(start, r.end);
+    const den = c.src.slice(r.end + 1, whole);
+    c.diags.push(
+      warning(
+        { line: c.line, column: start + 1, endColumn: whole + 1 },
+        `x / ${frac} is read as (x / ${num}) / ${den}`,
+        `to divide by the fraction write x / (${frac})`,
+      ),
+    );
+  }
 }
 
 /** Statement keywords a line may start with in capitals (Geomdraw's `Triangle A B C`). */

@@ -14,7 +14,8 @@
     "./canonical": "./src/canonical.ts",
     "./notation": "./src/notation.ts",
     "./grammar": "./src/grammar.ts",
-    "./docs": "./src/docs.ts"
+    "./docs": "./src/docs.ts",
+    "./same-construction": "./src/same-construction.ts"
   },
   "dependencies": {
     "@geomira/claims": "workspace:*",

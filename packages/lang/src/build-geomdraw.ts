@@ -15,8 +15,8 @@ import type { ExprNode, Statement } from './ast';
 import { convert } from './build-expr';
 import { define, freePoint } from './build-defs';
 import { exprEnv } from './build-env';
-import type { State } from './build-state';
-import { error } from './diagnostic';
+import { wholeLine, type State } from './build-state';
+import { error, hasErrors } from './diagnostic';
 import { freePlaces } from './free-points';
 
 type Points = Extract<Statement, { kind: 'points' }>;
@@ -28,10 +28,13 @@ export function pointsStatement(st: State, s: Points, line: number): number | un
     'points',
     s.points.map((p) => p.name),
   );
-  const ids = s.points.map((p, i) =>
-    define(st, p, freePoint(p, places[i] ?? ['0', '0']), s.attrs, line),
-  );
-  return ids.find((id) => id !== undefined);
+  const names = s.points.map((p) => p.name);
+  return wholeLine(st, names, line, () => {
+    const ids = s.points.map((p, i) =>
+      define(st, p, freePoint(p, places[i] ?? ['0', '0']), s.attrs, line),
+    );
+    return ids.find((id) => id !== undefined);
+  });
 }
 
 /** The branch shapes of a call for every combination of its arguments' static kinds. */
@@ -107,17 +110,20 @@ export function branchesStatement(st: State, s: Branches, line: number): number 
   const before = shapeProblem(s);
   const n = st.diags.length;
   const conv = before === undefined ? convert(s.expr, exprEnv(st)) : undefined;
-  const low = conv === undefined || st.diags.length > n ? undefined : lowOf(st, conv.expr);
+  const low = conv === undefined || hasErrors(st.diags.slice(n)) ? undefined : lowOf(st, conv.expr);
   const problem = before ?? (typeof low === 'object' ? low : undefined);
   if (problem !== undefined) st.diags.push(error(s.span, problem.message, problem.hint));
   if (low !== 'along' && low !== 'orient') {
     failed();
     return undefined;
   }
-  const ids = s.targets.map((t, i) => {
-    const sel = { kind: low, sign: i === 0 ? 1 : -1, span: s.expr.span } as const;
-    const branch: ExprNode = s.expr.kind === 'call' ? { ...s.expr, selectors: [sel] } : s.expr;
-    return define(st, t, branch, s.attrs, line);
+  const names = s.targets.map((t) => t.name);
+  return wholeLine(st, names, line, () => {
+    const ids = s.targets.map((t, i) => {
+      const sel = { kind: low, sign: i === 0 ? 1 : -1, span: s.expr.span } as const;
+      const branch: ExprNode = s.expr.kind === 'call' ? { ...s.expr, selectors: [sel] } : s.expr;
+      return define(st, t, branch, s.attrs, line);
+    });
+    return ids.find((id) => id !== undefined);
   });
-  return ids.find((id) => id !== undefined);
 }

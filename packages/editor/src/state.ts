@@ -30,6 +30,11 @@ export interface DragState {
   readonly base: number;
   /** The document before the drag (dragCancel restores it). */
   readonly before: Document;
+  /**
+   * The history before the drag: dragCancel restores its undo entries exactly (the drag's
+   * entry may have pushed the oldest one out of a full history).
+   */
+  readonly history: History;
   /** Whether a move has happened (then the history's last entry is this drag's). */
   readonly moved: boolean;
 }
@@ -48,7 +53,10 @@ export interface EditorState {
   /** The layer new objects are built in. */
   readonly activeLayer: string;
   readonly drag: DragState | null;
-  /** The most recent edits, oldest first (at most LOG_LENGTH), for the debug report. */
+  /**
+   * Recent edits, oldest first, for the debug report: at most LOG_LENGTH, and when full a UI
+   * edit leaves before any document edit (log.ts).
+   */
   readonly log: readonly unknown[];
 }
 
@@ -115,7 +123,7 @@ export function createEditor(doc: Document, env: EditorEnv): EditorState {
  * was refused, or bound to another object that later took the freed id).
  */
 function prunedTool(t: ToolState, ids: ReadonlySet<number>): ToolState {
-  return t.picks.every((id) => ids.has(id)) ? t : idleTool(t.claimKind, t.value);
+  return t.picks.every((id) => ids.has(id)) ? t : idleTool(t.claimKind, t.value, t.typed);
 }
 
 /**

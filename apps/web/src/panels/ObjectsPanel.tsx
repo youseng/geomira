@@ -1,4 +1,6 @@
 import { useMemo } from 'react';
+import type { Box } from '../card-place';
+import { LongPress, timeout } from '../long-press';
 import { objectsByLayer, type ObjectRow } from '@geomira/editor/panels';
 import type { EditorState } from '@geomira/editor/state';
 import { assertNever } from '@geomira/num/assert';
@@ -9,6 +11,8 @@ export interface ObjectsPanelProps {
   readonly state: EditorState;
   /** Ids of the curves the canvas cannot place at its zoom (ADR-0023). */
   readonly undrawable: readonly number[];
+  /** Opens an object's style card next to its row (ADR-0029). */
+  readonly onStyle: (id: number, anchor: Box) => void;
 }
 
 function statusText(r: ObjectRow): string {
@@ -24,15 +28,57 @@ function statusText(r: ObjectRow): string {
   }
 }
 
-function Row({ row, store, state, undrawable }: { row: ObjectRow } & ObjectsPanelProps) {
+/**
+ * A click on an object's name: a tool waiting for a pick takes the object (transforms are
+ * picked here: maps are not drawn); otherwise the object is selected. When the tool refuses
+ * the object, its reason stays shown after the selection (ADR-0028).
+ */
+export function pickObject(store: EditorStore, id: number): void {
+  const refusal = store.current().tool === 'move' ? null : store.input({ kind: 'object', id });
+  if (refusal?.ok === true) return;
+  const notice = store.getSnapshot().notice;
+  store.apply({ kind: 'select', ids: [id], mode: 'replace' });
+  if (refusal !== null && notice !== null && store.getSnapshot().notice !== notice)
+    store.setNotice(notice);
+}
+
+function Row(p: { row: ObjectRow } & ObjectsPanelProps) {
+  const { row, store, state, undrawable, onStyle } = p;
   const selected = state.selection.includes(row.id);
+  const press = useMemo(() => new LongPress(timeout), []);
   const pick = () => {
-    // A tool waiting for a pick takes the object (transforms are picked here: maps are not drawn).
-    if (state.tool !== 'move' && store.input({ kind: 'object', id: row.id }).ok) return;
-    store.apply({ kind: 'select', ids: [row.id], mode: 'replace' });
+    pickObject(store, row.id);
+  };
+  const style = (el: Element) => {
+    onStyle(row.id, el.getBoundingClientRect());
   };
   return (
-    <li className={`object-row status-${row.status}${selected ? ' selected' : ''}`}>
+    <li
+      className={`object-row status-${row.status}${selected ? ' selected' : ''}`}
+      // A right-click, or a long press, opens the object's style card (ADR-0029).
+      onContextMenu={(e) => {
+        e.preventDefault();
+        style(e.currentTarget);
+      }}
+      onPointerDown={(e) => {
+        const el = e.currentTarget;
+        press.down(e.clientX, e.clientY, e.pointerType !== 'mouse', () => {
+          style(el);
+        });
+      }}
+      onPointerMove={(e) => {
+        press.move(e.clientX, e.clientY);
+      }}
+      onPointerUp={() => {
+        press.stop();
+      }}
+      onPointerCancel={() => {
+        press.stop();
+      }}
+      onClickCapture={(e) => {
+        if (press.takeClick()) e.stopPropagation();
+      }}
+    >
       <button type="button" className="object-name" aria-pressed={selected} onClick={pick}>
         {row.name}
       </button>
@@ -51,9 +97,10 @@ function Row({ row, store, state, undrawable }: { row: ObjectRow } & ObjectsPane
  * Objects by layer (SPEC §15): every object with its definition and its value's kind; an
  * Undefined or Inexact value is listed with its reason (shown as undefined, never as a
  * wrong figure), and a curve the canvas cannot place at its zoom as "not drawable at this
- * zoom" (ADR-0023). A click selects the object, or gives it to a tool that waits for a pick.
+ * zoom" (ADR-0023). A click selects the object, or gives it to a tool that waits for a pick;
+ * a right-click or a long press opens its style card (ADR-0029).
  */
-export function ObjectsPanel({ store, state, undrawable }: ObjectsPanelProps) {
+export function ObjectsPanel({ store, state, undrawable, onStyle }: ObjectsPanelProps) {
   const groups = useMemo(() => objectsByLayer(state), [state]);
   return (
     <div className="objects">
@@ -68,7 +115,14 @@ export function ObjectsPanel({ store, state, undrawable }: ObjectsPanelProps) {
           ) : (
             <ul>
               {g.rows.map((r) => (
-                <Row key={r.id} row={r} store={store} state={state} undrawable={undrawable} />
+                <Row
+                  key={r.id}
+                  row={r}
+                  store={store}
+                  state={state}
+                  undrawable={undrawable}
+                  onStyle={onStyle}
+                />
               ))}
             </ul>
           )}

@@ -4,15 +4,21 @@
  * keeps the autosave and Restore previous figure works".
  *   - At startup a valid share link opens (origin `link`, not saved before its first edit);
  *     otherwise the autosave (`current`); otherwise a new figure.
- *   - While a link is open and NOT yet saved, the user's own figure is still the `current`
- *     slot, so that is what "Restore previous figure" offers; the link's text becomes
- *     `previous` (restoring again goes back to it).
+ *   - While a link or an example is open and NOT yet saved, the user's own figure is still
+ *     the `current` slot, so that is what "Restore previous figure" offers; the opened text
+ *     becomes `previous` (restoring again goes back to it).
  *   - Otherwise the offer is the `previous` slot, swapped with `current` (autosave.ts's
  *     restorePrevious); nothing when there is none.
  * After a restore the session counts as saved (its text is already `current`), so the next
  * save keeps `previous`.
  */
-import { restorePrevious, type AutosaveSlots, type Origin, type Session } from './autosave';
+import {
+  restorePrevious,
+  shouldSave,
+  type AutosaveSlots,
+  type Origin,
+  type Session,
+} from './autosave';
 
 export interface Startup {
   /** The text to open; null = a new, empty figure. */
@@ -33,8 +39,9 @@ export function restoreOffer(
   session: Session,
   openText: string,
 ): { text: string; slots: AutosaveSlots } | undefined {
-  const unsavedLink = session.origin === 'link' && !session.saved;
-  if (unsavedLink && slots.current !== null && slots.current !== openText)
+  // Not saved yet, and waiting for its first edit (a link or an example: autosave.ts).
+  const unsaved = !session.saved && !shouldSave({ ...session, edited: false });
+  if (unsaved && slots.current !== null && slots.current !== openText)
     return { text: slots.current, slots: { current: slots.current, previous: openText } };
   return restorePrevious(slots);
 }

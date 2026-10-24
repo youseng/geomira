@@ -8,7 +8,8 @@
  * changed character), and a text with errors all give a refusal with the reason. A link
  * without a checksum (written before ADR-0018) is still read: re-encoding its text must give
  * its payload back, so a cut link that still decodes to some text is refused instead of
- * opening a different figure.
+ * opening a different figure. A payload's %XX escapes (a client may write `+` as %2B) are
+ * decoded first, one byte each; a malformed escape is refused.
  */
 import type { Document } from '@geomira/kernel/document';
 import type { Registry } from '@geomira/kernel/registry';
@@ -79,10 +80,25 @@ function readPayload(payload: string): { readonly text: string } | { readonly re
   return checked.reason === 'the link cannot be read' ? old : checked;
 }
 
+/**
+ * The payload with its %XX escapes decoded (a chat or mail client may write `+` as %2B and `$`
+ * as %24), one byte each, or undefined when an escape is malformed (a `%` not followed by two
+ * hex digits). A decoded character outside the payload's alphabet is refused by the decoder.
+ */
+function unescaped(payload: string): string | undefined {
+  if (/%(?![0-9A-Fa-f]{2})/u.test(payload)) return undefined;
+  // One pass: a decoded `%` (from %25) is never read as an escape again.
+  return payload.replace(/%([0-9A-Fa-f]{2})/gu, (_m, hex: string) =>
+    String.fromCharCode(parseInt(hex, 16)),
+  );
+}
+
 /** The document of a link fragment ("#s=…"), or why there is none. */
 export function decodeShare(fragment: string, registry: Registry): Shared {
   if (!fragment.startsWith(SHARE_PREFIX)) return { ok: false, reason: 'not a share link' };
-  const read = readPayload(fragment.slice(SHARE_PREFIX.length));
+  const payload = unescaped(fragment.slice(SHARE_PREFIX.length));
+  if (payload === undefined) return { ok: false, reason: 'the link cannot be read' };
+  const read = readPayload(payload);
   if ('reason' in read) return { ok: false, reason: read.reason };
   const text = read.text;
   const r = parse(text, registry);

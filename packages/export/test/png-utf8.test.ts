@@ -42,21 +42,21 @@ describe('PNG', () => {
     expect(PNG_RATIOS).toEqual([1, 2, 3]);
   });
 
-  it('adds pHYs and the figure text before IEND; reading back gives the text', () => {
+  it('adds pHYs before IDAT and the figure text before IEND; reading back gives the text', () => {
     const text = '@version 1\nA = (0, 0) # ω ∠ é\n';
     const out = pngWithMetadata(tinyPng(), text, 192);
     const chunks = pngChunks(out) ?? [];
-    expect(chunks.map((c) => c.type)).toEqual(['IHDR', 'IDAT', 'pHYs', 'iTXt', 'IEND']);
+    expect(chunks.map((c) => c.type)).toEqual(['IHDR', 'pHYs', 'IDAT', 'iTXt', 'IEND']);
     expect(chunks.every((c) => c.crcOk)).toBe(true);
-    const phys = chunks[2]?.data ?? new Uint8Array();
+    const phys = chunks[1]?.data ?? new Uint8Array();
     expect([...phys]).toEqual([0, 0, 0x1d, 0x87, 0, 0, 0x1d, 0x87, 1]);
     expect(pngFigureText(out)).toBe(text);
     // Again: replaced, not added twice.
     const again = pngWithMetadata(out, 'B', 96);
     expect((pngChunks(again) ?? []).map((c) => c.type)).toEqual([
       'IHDR',
-      'IDAT',
       'pHYs',
+      'IDAT',
       'iTXt',
       'IEND',
     ]);

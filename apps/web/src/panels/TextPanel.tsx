@@ -19,8 +19,12 @@ export interface TextPanelProps {
   readonly kept: RefObject<TextDraft | null>;
 }
 
-function diagnosticsOf(text: string, registry: Registry): readonly Diagnostic[] {
-  return parse(text, registry).diagnostics;
+/**
+ * The draft's diagnostics. A definition that repeats an earlier construction is a warning
+ * (ADR-0029): the text is still accepted, so files saved with repeats stay editable.
+ */
+export function diagnosticsOf(text: string, registry: Registry): readonly Diagnostic[] {
+  return parse(text, registry, { sameConstruction: 'warning' }).diagnostics;
 }
 
 export function DiagnosticList({ items }: { items: readonly Diagnostic[] }) {

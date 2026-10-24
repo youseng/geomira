@@ -26,7 +26,7 @@ import { planAsy, exactNum, type AsyDecl, type AsyPlan } from './asy-plan';
 import { AsyDrawer, drawingCode } from './asy-draw';
 import type { ExportFrame } from './frame';
 import { paintOf, uniqueWarnings, type ExportText } from './paint';
-import { undefinedWarnings } from './undefined-objects';
+import { missingWarnings } from './undefined-objects';
 import { measureText, unitBp, warningLines } from './tex-common';
 
 export interface AsyExport extends ExportText {
@@ -68,7 +68,7 @@ function build(f: ExportFrame, registry: Registry, dialect: AsyDialect) {
   const helpers = helperClosure([...plan.decls.flatMap((x) => x.helpers), ...d.helpers]);
   const c = evalContextFor(f.doc);
   const band = bandThreshold('length', c.ok ? c.ctx : { scale: 1 });
-  const warnings = uniqueWarnings([...undefinedWarnings(f.scene), ...d.warnings]);
+  const warnings = uniqueWarnings([...missingWarnings(f), ...d.warnings]);
   const lines = [
     ...head.slice(0, 1),
     ...warningLines(warnings, '//'),

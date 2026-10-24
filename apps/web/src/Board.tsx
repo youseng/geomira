@@ -1,19 +1,16 @@
-import { useEffect, useMemo, useState, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { toolPreview } from '@geomira/editor/preview';
 import type { ToolState } from '@geomira/editor/tool-state';
 import { layout, type DisplayList } from '@geomira/scene/display';
 import { hitTest } from '@geomira/scene/hit';
 import type { Scene, Undrawable } from '@geomira/scene/types';
-import {
-  toWorld,
-  zoomViewport,
-  type Size,
-  type Vec2,
-  type Viewport,
-} from '@geomira/scene/viewport';
-import { Gestures } from './gestures';
+import { toWorld, type Size, type Vec2, type Viewport } from '@geomira/scene/viewport';
+import { around, type Box } from './card-place';
+import { Gestures, type Hold } from './gestures';
+import { timeout } from './long-press';
 import { drawDisplay, drawPreview, LIGHT_THEME, type UiState } from './render';
 import type { EditorStore } from './store';
+import { useSurface, useWheelZoom } from './surface';
 
 export interface BoardProps {
   readonly canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -27,40 +24,12 @@ export interface BoardProps {
   readonly onSize: (s: Size) => void;
   /** The curves of the current display that cannot be placed at its zoom (ADR-0023). */
   readonly onUndrawable: (u: readonly Undrawable[]) => void;
+  /** Opens the style card of an object next to `anchor` (viewport px; ADR-0029). */
+  readonly onStyle: (id: number, anchor: Box) => void;
 }
 
-/** Wheel steps of 100 (one notch) zoom by this factor. */
-const WHEEL_ZOOM = 1.15;
-
-/** The canvas's CSS size, kept in sync with its box; its pixel size is css × dpr (HiDPI). */
-function useSurface(
-  canvasRef: RefObject<HTMLCanvasElement | null>,
-  onSize: (s: Size) => void,
-): Size | null {
-  const [size, setSize] = useState<Size | null>(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas === null) return undefined;
-    const resize = () => {
-      const s = {
-        width: Math.max(1, canvas.clientWidth),
-        height: Math.max(1, canvas.clientHeight),
-      };
-      const ratio = window.devicePixelRatio;
-      canvas.width = Math.max(1, Math.round(s.width * ratio));
-      canvas.height = Math.max(1, Math.round(s.height * ratio));
-      setSize(s);
-      onSize(s);
-    };
-    resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(canvas);
-    return () => {
-      observer.disconnect();
-    };
-  }, [canvasRef, onSize]);
-  return size;
-}
+/** The anchor around a pressed spot: the hit radius's square (the card goes beside it). */
+const ANCHOR_PX = 10;
 
 /**
  * The label face (an @font-face of local fonts) loads on first use; a canvas does not redraw
@@ -123,7 +92,7 @@ function usePreview(
 /**
  * The drawing surface: the display list of the scene in the editor's viewport, drawn by the
  * canvas renderer (HiDPI) with hover and selection halos. Pointer input goes through
- * gestures.ts (tools, drags, pan, pinch); the wheel zooms about the cursor. The viewport is
+ * gestures.ts (tools, drags, pan, pinch); the wheel zooms about the cursor (surface.ts). The viewport is
  * also written to data attributes, so end-to-end tests can aim at world coordinates.
  */
 /**
@@ -146,10 +115,33 @@ function useFrame(props: BoardProps, display: DisplayList | null) {
   return { cursor, setCursor };
 }
 
+/**
+ * The pointer gestures, with the long press of touch (ADR-0029): it opens the style card of
+ * the object under the finger, as a right-click does.
+ */
+function useGestures(props: BoardProps): Gestures {
+  const { store, canvasRef } = props;
+  const onStyle = useRef(props.onStyle);
+  onStyle.current = props.onStyle;
+  return useMemo(() => {
+    const hold: Hold = {
+      schedule: timeout,
+      onHold: (q, display) => {
+        const id = hitTest(display, q).hits[0]?.id;
+        const r = canvasRef.current?.getBoundingClientRect();
+        if (id !== undefined && r !== undefined)
+          onStyle.current(id, around(r.left + q.x, r.top + q.y, ANCHOR_PX));
+      },
+    };
+    return new Gestures(store, hold);
+  }, [store, canvasRef]);
+}
+
 export function Board(props: BoardProps) {
-  const { canvasRef, store, scene, viewport, onSize, onUndrawable } = props;
-  const gestures = useMemo(() => new Gestures(store), [store]);
+  const { canvasRef, store, scene, viewport, onSize, onUndrawable, onStyle } = props;
+  const gestures = useGestures(props);
   const size = useSurface(canvasRef, onSize);
+  useWheelZoom(canvasRef, store, size);
   const display = useDisplay(scene, viewport, size, onUndrawable);
   const { cursor, setCursor } = useFrame(props, display);
   const local = (e: { clientX: number; clientY: number }) => {
@@ -161,17 +153,29 @@ export function Board(props: BoardProps) {
       ref={canvasRef}
       className="board"
       aria-label="Geometry canvas"
+      // Focusable from code only: the focus returns here after an example is chosen.
+      tabIndex={-1}
       data-cx={viewport.cx}
       data-cy={viewport.cy}
       data-zoom={viewport.zoom}
       onPointerDown={(e) => {
-        if (display === null) return;
+        // The right button opens the style card (contextmenu below): no press, no click.
+        if (display === null || (e.pointerType === 'mouse' && e.button === 2)) return;
         // Leave a focused field first, so its blur (the text panel applies its draft) comes
         // before the press starts a drag, which would refuse the text (Run 10 audit).
         const focused = document.activeElement;
         if (focused instanceof HTMLElement && focused !== e.currentTarget) focused.blur();
         e.currentTarget.setPointerCapture(e.pointerId);
-        gestures.down(e.pointerId, local(e), display);
+        gestures.down(e.pointerId, local(e), display, e.pointerType !== 'mouse');
+      }}
+      onContextMenu={(e) => {
+        // No browser menu on the canvas; on an object, its style card (ADR-0029).
+        e.preventDefault();
+        if (display === null) return;
+        const id = hitTest(display, local(e)).hits[0]?.id;
+        if (id === undefined) return;
+        gestures.endPress();
+        onStyle(id, around(e.clientX, e.clientY, ANCHOR_PX));
       }}
       onPointerMove={(e) => {
         if (display === null) return;
@@ -189,14 +193,6 @@ export function Board(props: BoardProps) {
       onPointerLeave={() => {
         gestures.leave();
         setCursor(null);
-      }}
-      onWheel={(e) => {
-        if (size === null) return;
-        const factor = WHEEL_ZOOM ** (-e.deltaY / 100);
-        store.apply({
-          kind: 'viewport',
-          viewport: zoomViewport({ viewport, size }, local(e), factor),
-        });
       }}
     />
   );

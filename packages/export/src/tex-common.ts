@@ -5,6 +5,7 @@
  * a label is placed by, and the `Warning` comment lines.
  */
 import type { PlacedLabel } from '@geomira/scene/labels';
+import type { DisplayItem, Path } from '@geomira/scene/types';
 import { toWorld, type Vec2 } from '@geomira/scene/viewport';
 import type { ExportFrame } from './frame';
 import { texLabel, texProse } from './tex-label';
@@ -69,6 +70,14 @@ export function labelSide(l: PlacedLabel): { readonly x: -1 | 0 | 1; readonly y:
     x: l.align === 'left' ? 1 : l.align === 'right' ? -1 : 0,
     y: l.baseline === 'bottom' ? 1 : l.baseline === 'top' ? -1 : 0,
   };
+}
+
+/**
+ * The paths of an item TikZ and Asymptote draw: all of them, except a text's handle (a
+ * radius-0 dot at its anchor that the canvas never paints; the text is its label, ADR-0028).
+ */
+export function inkPaths(item: DisplayItem): readonly Path[] {
+  return item.kind === 'text' ? [] : item.paths;
 }
 
 /** The `Warning` comment lines of an export (`%` for TikZ, `//` for Asymptote). */

@@ -8,11 +8,11 @@
  */
 import * as Q from '@geomira/num/rational';
 import type { Field } from '@geomira/num/field';
-import type { EvalContext, ExampleArg, ToolSpec } from '../tool';
+import type { ArgSymmetry, EvalContext, ExampleArg, Signature, ToolSpec } from '../tool';
 import { half, vAdd, vCross, vDot, vScale, vSub } from '../geom';
 import { pointOf, undef, type Circle, type Undefined, type Value, type Vec } from '../value';
 import { badArgs, circleAt, coincident, numAt, pointAt, pointsOf } from './args';
-import { circumcenterOf, triangle, triangleShape } from './triangle';
+import { ANY_ORDER, circumcenterOf, triangle, triangleShape } from './triangle';
 
 /** The circle with centre c through `through` (r2 = |through − c|²), anchored there. */
 export function circleThrough<T>(F: Field<T>, c: Vec<T>, through: Vec<T>): Circle<T> {
@@ -155,7 +155,7 @@ export const NINEPOINT_CENTER_TOOL: ToolSpec = {
   id: 'ninepoint_center',
   name: 'ninepoint_center',
   family: 'points',
-  signatures: [{ params: ['point', 'point', 'point'] }],
+  signatures: ANY_ORDER,
   outputKinds: ['point'],
   compute: ninepointCenter,
   degenerate: ['coincident vertices → Undefined', 'collinear vertices → Undefined'],
@@ -179,7 +179,24 @@ const ABC: readonly ExampleArg[] = [
   ['4', '0'],
   ['1', '3'],
 ];
-const THREE: readonly ToolSpec['signatures'][number][] = [{ params: ['point', 'point', 'point'] }];
+/**
+ * A circle of A, B, C anchored at A or on BC: B and C swap with the same value, any order
+ * gives the same circle with another anchor (ADR-0029).
+ */
+const ANCHORED_AT_A: readonly ArgSymmetry[] = [
+  { kind: 'permute', positions: [1, 2], same: 'value' },
+  { kind: 'permute', positions: [0, 1, 2], same: 'figure' },
+];
+const THREE: readonly Signature[] = [
+  { params: ['point', 'point', 'point'], symmetry: ANCHORED_AT_A },
+];
+/** cline: any order gives the same circle, or the same line (its direction B − A changes). */
+const CLINE: readonly Signature[] = [
+  {
+    params: ['point', 'point', 'point'],
+    symmetry: [{ kind: 'permute', positions: [0, 1, 2], same: 'figure' }],
+  },
+];
 
 export const CIRCLE_TOOLS: readonly ToolSpec[] = [
   {
@@ -189,7 +206,7 @@ export const CIRCLE_TOOLS: readonly ToolSpec[] = [
     signatures: [
       { params: ['point', 'point'] },
       { params: ['point', 'number'] },
-      { params: ['point', 'point', 'point'] },
+      { params: ['point', 'point', 'point'], symmetry: ANCHORED_AT_A },
     ],
     outputKinds: ['circle'],
     compute: circle,
@@ -212,6 +229,7 @@ export const CIRCLE_TOOLS: readonly ToolSpec[] = [
     signatures: THREE,
     outputKinds: ['circle'],
     compute: circumcircle,
+    sameAs: 'circle',
     degenerate: ['coincident vertices → Undefined', 'collinear vertices → Undefined (use cline)'],
     export: { constructive: 'circumcircle' },
     doc: 'The circle through A, B, C (the same as circle(A, B, C)); anchor A.',
@@ -221,7 +239,7 @@ export const CIRCLE_TOOLS: readonly ToolSpec[] = [
     id: 'cline',
     name: 'cline',
     family: 'circles',
-    signatures: THREE,
+    signatures: CLINE,
     outputKinds: ['circle', 'line'],
     compute: cline,
     degenerate: ['coincident points → Undefined', 'collinear points → the line through them'],
@@ -242,7 +260,12 @@ export const CIRCLE_TOOLS: readonly ToolSpec[] = [
     id: 'diameter_circle',
     name: 'diameter_circle',
     family: 'circles',
-    signatures: [{ params: ['point', 'point'] }],
+    signatures: [
+      {
+        params: ['point', 'point'],
+        symmetry: [{ kind: 'permute', positions: [0, 1], same: 'figure' }],
+      },
+    ],
     outputKinds: ['circle'],
     compute: diameterCircle,
     degenerate: ['diameter_circle(A, A) → Undefined (coincident points)'],

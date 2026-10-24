@@ -69,10 +69,19 @@ export interface ToolState {
   readonly claimKind: string;
   /** The text of the number a tool asks for (rotate's angle, homothety's ratio, a radius). */
   readonly value: string;
+  /**
+   * The last number typed for each tool that asks for one: a tool switch gives it back, so
+   * the field "keeps the last number for the next use" (ADR-0024 item 5).
+   */
+  readonly typed: Readonly<Partial<Record<ToolId, string>>>;
 }
 
 export const DEFAULT_CLAIM_KIND = 'collinear';
 
-export function idleTool(claimKind: string = DEFAULT_CLAIM_KIND, value = ''): ToolState {
-  return { picks: [], slots: [], claimKind, value };
+export function idleTool(
+  claimKind: string = DEFAULT_CLAIM_KIND,
+  value = '',
+  typed: ToolState['typed'] = {},
+): ToolState {
+  return { picks: [], slots: [], claimKind, value, typed };
 }

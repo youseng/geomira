@@ -3,13 +3,14 @@
  * document grows statement by statement through the kernel's helpers, so the invariants
  * hold at every step; derived layers are synchronised after every object (SPEC §8.2).
  */
+import type { KeyCache } from '@geomira/kernel/construction-key';
 import type { Document, Style } from '@geomira/kernel/document';
 import { emptyDocument } from '@geomira/kernel/document';
 import type { Registry } from '@geomira/kernel/registry';
 import type { ValueKind } from '@geomira/kernel/value';
 import type { NameRef } from './ast';
 import { newBook, type CommentBook } from './comments';
-import type { Diagnostic, Span } from './diagnostic';
+import type { Diagnostic, Severity, Span } from './diagnostic';
 
 /** A derived layer whose rule becomes active once its transformation is defined. */
 export interface PendingRule {
@@ -48,13 +49,21 @@ export interface State {
   readonly layerIds: Map<string, string>;
   readonly rules: PendingRule[];
   readonly book: CommentBook;
+  /**
+   * How a definition that is the same construction as an earlier object is reported
+   * (ParseOptions.sameConstruction, ADR-0029); undefined: it is not.
+   */
+  readonly sameConstruction: Severity | undefined;
+  /** Construction keys of the definitions seen (ADR-0029; definitions are immutable). */
+  readonly keys: KeyCache;
   /** The line being built (for "defined later" versus "refers to itself"). */
   line: number;
 }
 
-export function newState(registry: Registry): State {
+export function newState(registry: Registry, sameConstruction?: Severity): State {
   return {
     registry,
+    sameConstruction,
     doc: emptyDocument(),
     diags: [],
     ids: new Map(),
@@ -66,6 +75,7 @@ export function newState(registry: Registry): State {
     layerIds: new Map([['main', 'main']]),
     rules: [],
     book: newBook(),
+    keys: new WeakMap(),
     line: 0,
   };
 }
@@ -73,4 +83,53 @@ export function newState(registry: Registry): State {
 /** The name of an object id (for messages and expression text). */
 export function nameOf(st: State, id: number): string | undefined {
   return st.doc.objects.find((o) => o.id === id)?.name;
+}
+
+function refill<K, V>(m: Map<K, V>, from: ReadonlyMap<K, V>): void {
+  m.clear();
+  for (const [k, v] of from) m.set(k, v);
+}
+
+/**
+ * A snapshot of what defining objects changes (the document, names, kinds, the states of
+ * derived-layer rules, the use of waiting styles), and the function that restores it: a
+ * statement that defines several objects is applied whole or not at all (ADR-0009 decision
+ * 14). Diagnostics and failed names are kept.
+ */
+export function snapshot(st: State): () => void {
+  const doc = st.doc;
+  const ids = new Map(st.ids);
+  const staticKinds = new Map(st.staticKinds);
+  const kinds = new Map(st.kinds);
+  const rules = st.rules.map((r) => r.state);
+  const styles = new Map([...st.styles].map(([k, p]) => [k, { ...p, spans: [...p.spans] }]));
+  return () => {
+    st.doc = doc;
+    refill(st.ids, ids);
+    refill(st.staticKinds, staticKinds);
+    refill(st.kinds, kinds);
+    for (const [i, r] of st.rules.entries()) r.state = rules[i] ?? r.state;
+    refill(st.styles, styles);
+  };
+}
+
+/**
+ * Runs `f`, which defines the objects `names` of line `line`; when it reports an error,
+ * everything it defined is undone and the names that did not exist before are marked failed
+ * (later uses then say which line to fix). Returns f's result, or undefined when undone.
+ */
+export function wholeLine<T>(
+  st: State,
+  names: readonly string[],
+  line: number,
+  f: () => T,
+): T | undefined {
+  const restore = snapshot(st);
+  const existed = new Set(names.filter((n) => st.ids.has(n)));
+  const n = st.diags.length;
+  const r = f();
+  if (!st.diags.slice(n).some((d) => d.severity === 'error')) return r;
+  restore();
+  for (const name of names) if (!existed.has(name)) st.failed.set(name, line);
+  return undefined;
 }

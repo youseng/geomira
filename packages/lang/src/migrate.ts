@@ -20,11 +20,19 @@ export const MIGRATIONS: readonly Migration[] = Object.freeze([]);
 
 const VERSION_LINE = /^[ \t]*@version[ \t]+([0-9]+)[ \t]*(?:#.*)?$/u;
 
+/**
+ * The text without a leading byte order mark (U+FEFF, written by some editors at the start
+ * of a file): it is not part of the text (ADR-0028). Elsewhere U+FEFF is kept.
+ */
+function withoutBom(text: string): string {
+  return text.startsWith('\uFEFF') ? text.slice(1) : text;
+}
+
 /** The first `@version N` line: N and the 1-based line number. */
 export function readVersion(
   text: string,
 ): { readonly version: number; readonly line: number } | undefined {
-  const lines = text.split('\n');
+  const lines = withoutBom(text).split('\n');
   for (const [i, l] of lines.entries()) {
     const m = VERSION_LINE.exec(l.replace(/\r$/u, ''));
     const v = m === null ? NaN : Number(m[1]);
@@ -33,9 +41,13 @@ export function readVersion(
   return undefined;
 }
 
+/** Rewrites the number of the `@version` line, keeping the rest of it (indent, comment). */
 function setVersion(text: string, line: number, version: number): string {
   const lines = text.split('\n');
-  lines[line - 1] = `@version ${String(version)}`;
+  const old = lines[line - 1] ?? '';
+  lines[line - 1] = /@version[ \t]+[0-9]+/u.test(old)
+    ? old.replace(/@version[ \t]+[0-9]+/u, `@version ${String(version)}`)
+    : `@version ${String(version)}`;
   return lines.join('\n');
 }
 
@@ -55,10 +67,11 @@ export type MigrationResult =
  * `@version`.
  */
 export function migrateText(
-  text: string,
+  given: string,
   migrations: readonly Migration[] = MIGRATIONS,
   target: number = DOCUMENT_VERSION,
 ): MigrationResult {
+  const text = withoutBom(given);
   const found = readVersion(text);
   if (found === undefined) return { ok: true, text, from: target, applied: [] };
   if (found.version > target) {

@@ -9,6 +9,7 @@ import * as grammar from '../src/grammar';
 import * as migrate from '../src/migrate';
 import * as notation from '../src/notation';
 import * as parse from '../src/parse';
+import * as sameConstruction from '../src/same-construction';
 import * as parseInto from '../src/parse-into';
 import * as print from '../src/print';
 
@@ -32,6 +33,10 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   },
   './grammar': { module: grammar, names: ['GRAMMAR'] },
   './docs': { module: docs, names: ['renderLanguageDocs'] },
+  './same-construction': {
+    module: sameConstruction,
+    names: ['alreadyMessage', 'sameConstructionMessage'],
+  },
 };
 
 describe('@geomira/lang subpath surface', () => {

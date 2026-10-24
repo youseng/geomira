@@ -6,6 +6,7 @@
  * attributes above (`@red` is `[color=red]`).
  */
 import type { Attr, AttrValue } from './ast';
+import type { Token } from './token';
 import { describe, expect, fail, isPunct, next, peek, since, type Cursor } from './cursor';
 
 /** Geomdraw's style words: `@word` and the attribute it stands for (key, value). */
@@ -143,6 +144,28 @@ function group(c: Cursor): Attr[] | undefined {
   return expect(c, ']', 'close the attribute group with ]') === undefined ? undefined : out;
 }
 
+/**
+ * The hint for a token after a complete expression: `2a`, `2 a`, `2(…)` and `(…)(…)` are
+ * products, `sqrt 2` a call without parentheses, `1,5` a decimal comma; otherwise the token
+ * starts attributes outside brackets.
+ */
+function strayHint(c: Cursor, t: Token): string {
+  const prev = c.tokens[c.i - 1];
+  const after = c.tokens[c.i + 1];
+  const operand = t.kind === 'number' || t.kind === 'name' || t.kind === 'point' || t.value === '(';
+  const attr = t.kind === 'name' && after?.kind === 'punct' && after.value === '=';
+  const right = t.value === '(' ? '(…)' : t.text;
+  if (t.value === ',' && prev?.kind === 'number' && after?.kind === 'number' && !after.spaceBefore)
+    return `write ${prev.text}.${after.text}: decimals use a point`;
+  if (prev?.kind === 'number' && (t.text === 'deg' || t.text === 'degrees'))
+    return `angles are in degrees: write ${prev.text} or ${prev.text}°`;
+  if (operand && !attr && prev?.kind === 'name')
+    return `write ${prev.text}(${right}) to call ${prev.text}, or ${prev.text} * ${right} for a product`;
+  if (operand && !attr && (prev?.kind === 'number' || prev?.value === ')'))
+    return `write ${prev.kind === 'number' ? prev.text : '(…)'} * ${right} for a product`;
+  return 'attributes go in brackets: [color=red]';
+}
+
 /** Every attribute up to the end of the line; `bare` allows items outside brackets. */
 export function parseAttrs(c: Cursor, bare: boolean): Attr[] | undefined {
   const out: Attr[] = [];
@@ -163,7 +186,7 @@ export function parseAttrs(c: Cursor, bare: boolean): Attr[] | undefined {
       fail(
         c,
         `unexpected ${describe(t)}`,
-        bare ? 'attributes are key=value or [key=value]' : 'attributes go in brackets: [color=red]',
+        bare ? 'attributes are key=value or [key=value]' : strayHint(c, t),
       );
       return undefined;
     }

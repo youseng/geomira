@@ -4,16 +4,14 @@
  *   AB = CD, AB = k·CD (length) · AB/CD = EF/GH (ratio) · AB/CD = k (ratio_value) ·
  *   n∡ABC = ∡DEF (dangle) · ∡(l, m) = θ (dangle_lines) · ∠ABC = ∠DEF (angle_eq) ·
  *   ∠ABC + ∠DEF = θ, ∠ABC − ∠DEF = θ (angle_sum, angle_diff) · P = Q (equal).
- * A segment is two glued point names or dist(X, Y); an angle ∠ABC, ∠(X, Y, Z) or
- * angle(X, Y, Z); a directed angle ∡ABC or ∡(X, Y, Z).
- * An assumption is a kind call (`acute(A, B, C)`), a comparison of measures with <, > or
- * ≠ (`AB < AC`, `∠BAC > 90`), `P inside poly`, or `A, B, C in order on l`.
+ * A segment is two glued point names or dist(X, Y) (also written length(X, Y) or
+ * distance(X, Y)); an angle ∠ABC, ∠(X, Y, Z) or angle(X, Y, Z); a directed angle ∡ABC or
+ * ∡(X, Y, Z).
+ * Assumptions (parse-condition.ts) compare the sides of this notation.
  */
-import { assertNever } from '@geomira/num/assert';
 import type { Condition, ExprNode } from './ast';
 import { join, type Span } from './diagnostic';
 import {
-  atEnd,
   describe,
   expect,
   fail,
@@ -27,8 +25,9 @@ import {
 } from './cursor';
 import { parseExpr, parseUnary } from './parse-expr';
 import { geomdrawClaim } from './parse-geomdraw';
+import { TOOL_ALIASES } from './geomdraw';
 
-type Side =
+export type Side =
   | { readonly t: 'seg'; readonly pts: readonly ExprNode[]; readonly span: Span }
   | {
       readonly t: 'scaled';
@@ -58,7 +57,7 @@ const FORMS =
   'AB = k·CD, AB/CD = EF/GH, AB/CD = k, n∡ABC = ∡DEF, ∡(l, m) = θ, ∠ABC = ∠DEF, ∠ABC ± ∠DEF = θ, P = Q, or a call such as collinear(A, B, C)';
 
 /** `name(…)` that spans the rest of the tokens (a kind call), or undefined. */
-function kindCall(c: Cursor, stopAtBracket: boolean): Condition | undefined {
+export function kindCall(c: Cursor, stopAtBracket: boolean): Condition | undefined {
   const t = peek(c);
   if (t?.kind !== 'name' || !isPunct(c, '(', 1)) return undefined;
   let depth = 0;
@@ -110,16 +109,30 @@ function parenArgs(c: Cursor, what: string): ExprNode[] | undefined {
   return expect(c, ')', `write ${what}`) === undefined ? undefined : out;
 }
 
+/**
+ * The arguments of `word(…)` with a lone run of `n` glued names spread into its points, as in
+ * definitions (ADR-0025 decision 4): `dist(AB)` is dist(A, B), `angle(ABC)` angle(A, B, C).
+ */
+function spreadArgs(c: Cursor, what: string, n: number): ExprNode[] | undefined {
+  const args = parenArgs(c, what);
+  const [only] = args ?? [];
+  if (args?.length === 1 && only?.kind === 'call' && only.glued === true && only.args.length === n)
+    return [...only.args];
+  return args;
+}
+
 /** Three points: `ABC` glued or `(X, Y, Z)`; for ∡ also `(l, m)`. */
 function anglePoints(c: Cursor, sym: string, lines: boolean): ExprNode[] | undefined {
   if (isPunct(c, '(')) {
-    const args = parenArgs(c, `${sym}(X, Y, Z)`);
+    const start = here(c);
+    const args = spreadArgs(c, `${sym}(X, Y, Z)`, 3);
     if (args === undefined) return undefined;
     if (args.length === 3 || (lines && args.length === 2)) return args;
     fail(
       c,
       `${sym}(…) takes three points${lines ? ' or two lines' : ''}`,
       `write ${sym}ABC or ${sym}(X, Y, Z)`,
+      since(c, start),
     );
     return undefined;
   }
@@ -142,14 +155,24 @@ function segOrRatio(c: Cursor, pts: readonly ExprNode[], start: Span): Side | un
     : { t: 'ratio', pts: [...pts, ...den], span: since(c, start) };
 }
 
-/** A segment: `AB` or dist(X, Y). */
+/** `dist(` or one of its other names (`length(`, `distance(`; ADR-0025 decision 6). */
+function isDistAhead(c: Cursor): boolean {
+  const t = peek(c);
+  if (t?.kind !== 'name' || !isPunct(c, '(', 1)) return false;
+  return (
+    t.value === 'dist' || (Object.hasOwn(TOOL_ALIASES, t.value) && TOOL_ALIASES[t.value] === 'dist')
+  );
+}
+
+/** A segment: `AB` or dist(X, Y) (also written length(X, Y), distance(X, Y)). */
 function parseSegment(c: Cursor): ExprNode[] | undefined {
-  if (isWord(c, 'dist') && isPunct(c, '(', 1)) {
-    next(c);
-    const args = parenArgs(c, 'dist(X, Y)');
+  if (isDistAhead(c)) {
+    const start = here(c);
+    const word = next(c)?.value ?? 'dist';
+    const args = spreadArgs(c, `${word}(X, Y)`, 2);
     if (args === undefined) return undefined;
     if (args.length === 2) return args;
-    fail(c, 'dist takes two points', 'write dist(X, Y)');
+    fail(c, `${word} takes two points`, `write ${word}(X, Y)`, since(c, start));
     return undefined;
   }
   const pts = gluedPoints(c);
@@ -170,11 +193,12 @@ function isSegmentAhead(c: Cursor): boolean {
 
 function parseAngleTerm(c: Cursor): ExprNode[] | undefined {
   if (isWord(c, 'angle')) {
+    const start = here(c);
     next(c);
-    const args = parenArgs(c, 'angle(X, Y, Z)');
+    const args = spreadArgs(c, 'angle(X, Y, Z)', 3);
     if (args === undefined) return undefined;
     if (args.length === 3) return args;
-    fail(c, 'angle takes three points', 'write angle(X, Y, Z)');
+    fail(c, 'angle takes three points', 'write angle(X, Y, Z)', since(c, start));
     return undefined;
   }
   next(c);
@@ -220,14 +244,14 @@ function numberSide(c: Cursor, start: Span): Side | undefined {
   return pts === undefined ? undefined : { t: 'scaled', k, pts, span: since(c, start) };
 }
 
-function parseSide(c: Cursor): Side | undefined {
+export function parseSide(c: Cursor): Side | undefined {
   const start = here(c);
   const t = peek(c);
   if (t?.kind === 'number' || (isPunct(c, '-') && peek(c, 1)?.kind === 'number'))
     return numberSide(c, start);
   if (isPunct(c, '∡')) return dangleSide(c, start);
   if (isPunct(c, '∠') || (isWord(c, 'angle') && isPunct(c, '(', 1))) return angleSide(c, start);
-  if ((isWord(c, 'dist') && isPunct(c, '(', 1)) || isSegmentAhead(c)) {
+  if (isDistAhead(c) || isSegmentAhead(c)) {
     const pts = parseSegment(c);
     return pts === undefined ? undefined : segOrRatio(c, pts, start);
   }
@@ -259,7 +283,8 @@ function relation(c: Cursor, l: Side, r: Side, eq: Span): Condition | undefined 
   if (l.t === 'form' && r.t === 'num') {
     return { kind: l.minus ? 'angle_diff' : 'angle_sum', args: [...l.pts, r.e], span };
   }
-  if (l.t === 'expr' && r.t === 'expr') return { kind: 'equal', args: [l.e, r.e], span };
+  if (l.t === 'expr' && r.t === 'expr')
+    return { kind: 'equal', args: [l.e, r.e], span, relation: true };
   fail(c, 'this relation is not a claim the language knows', `write ${FORMS}`, span);
   return undefined;
 }
@@ -280,116 +305,4 @@ export function parseClaim(c: Cursor): Condition | undefined {
   next(c);
   const r = parseSide(c);
   return r === undefined || eq === undefined ? undefined : relation(c, l, r, eq);
-}
-
-function measure(s: Side): ExprNode | undefined {
-  switch (s.t) {
-    case 'seg':
-      return { kind: 'call', tool: 'dist', args: s.pts, selectors: [], span: s.span };
-    case 'angle':
-      return { kind: 'call', tool: 'angle', args: s.pts, selectors: [], span: s.span };
-    case 'num':
-    case 'expr':
-      return s.e;
-    case 'scaled':
-    case 'ratio':
-    case 'dangle':
-    case 'dlines':
-    case 'form':
-      return undefined;
-    default:
-      return assertNever(s, 'side');
-  }
-}
-
-const COMPARE: Readonly<Record<string, string>> = { '<': 'less', '>': 'greater', '≠': 'not_equal' };
-
-function comparison(c: Cursor, l: Side): Condition | undefined {
-  const op = next(c);
-  const r = parseSide(c);
-  const kind = op === undefined ? undefined : COMPARE[op.value];
-  if (r === undefined || kind === undefined) return undefined;
-  const [x, y] = [measure(l), measure(r)];
-  if (x === undefined || y === undefined) {
-    fail(
-      c,
-      'compare lengths (AB, dist(X, Y)), angles (∠ABC, angle(X, Y, Z)) or numbers',
-      'write AB < AC or ∠BAC > 90',
-      join(l.span, r.span),
-    );
-    return undefined;
-  }
-  return { kind, args: [x, y], span: join(l.span, r.span) };
-}
-
-/** `A, B, C in order on l` after the first point. */
-function inOrder(c: Cursor, first: ExprNode): Condition | undefined {
-  const pts = [first];
-  while (isPunct(c, ',')) {
-    next(c);
-    const e = parseExpr(c);
-    if (e === undefined) return undefined;
-    pts.push(e);
-  }
-  if (!(isWord(c, 'in') && isWord(c, 'order', 1) && isWord(c, 'on', 2))) {
-    fail(c, `expected "in order on", found ${describe(peek(c))}`, 'write A, B, C in order on l');
-    return undefined;
-  }
-  c.i += 3;
-  const curve = parseExpr(c);
-  return curve === undefined
-    ? undefined
-    : { kind: 'in_order', args: [...pts, curve], span: join(first.span, curve.span) };
-}
-
-/** The body of `assume …`. */
-export function parseCondition(c: Cursor): Condition | undefined {
-  const call = kindCall(c, false);
-  if (call !== undefined || c.diags.length > 0) return call;
-  const l = parseSide(c);
-  if (l === undefined) return undefined;
-  const t = peek(c);
-  if (t?.kind === 'punct' && COMPARE[t.value] !== undefined) return comparison(c, l);
-  if (t?.kind === 'punct' && (t.value === '=' || t.value === '≤' || t.value === '≥')) {
-    const msg =
-      t.value === '='
-        ? 'equality assumptions are not allowed: construct it instead'
-        : 'hypotheses are open conditions';
-    fail(
-      c,
-      msg,
-      t.value === '='
-        ? 'construct the equal objects (e.g. a midpoint, a reflection)'
-        : 'use < or >',
-      t,
-    );
-    return undefined;
-  }
-  if (l.t !== 'expr') {
-    fail(c, `expected <, > or ≠ after the measure, found ${describe(t)}`, 'write AB < AC');
-    return undefined;
-  }
-  if (isWord(c, 'inside')) {
-    next(c);
-    const poly = parseExpr(c);
-    return poly === undefined
-      ? undefined
-      : { kind: 'inside', args: [l.e, poly], span: join(l.span, poly.span) };
-  }
-  if (isPunct(c, ',') || isWord(c, 'in')) return inOrder(c, l.e);
-  if (atEnd(c)) {
-    fail(
-      c,
-      'this is not a condition',
-      'write acute(A, B, C), AB < AC, P inside poly or A, B, C in order on l',
-      l.span,
-    );
-    return undefined;
-  }
-  fail(
-    c,
-    `unexpected ${describe(t)}`,
-    'write acute(A, B, C), AB < AC, P inside poly or A, B, C in order on l',
-  );
-  return undefined;
 }

@@ -20,6 +20,8 @@ function useCommandBar(store: EditorStore, inputRef: CommandBarProps['inputRef']
   const [cursor, setCursor] = useState(0);
   const [active, setActive] = useState(0);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  // The completions show only while the bar has the focus (they stayed drawn after it left).
+  const [focused, setFocused] = useState(false);
   const state = store.current();
   const list = useMemo(
     () => (text === '' ? [] : completions(state, text, cursor, store.env)),
@@ -56,7 +58,16 @@ function useCommandBar(store: EditorStore, inputRef: CommandBarProps['inputRef']
     setActive(0);
     setFeedback(null);
   };
-  return { text, list, active, feedback, accept, onKey, onChange };
+  // The cursor also moves without a change (arrows, Home, a click): completions follow it.
+  const onSelect = (e: React.SyntheticEvent<HTMLInputElement>) => {
+    const at = e.currentTarget.selectionStart ?? e.currentTarget.value.length;
+    if (at !== cursor) {
+      setCursor(at);
+      setActive(0);
+    }
+  };
+  const shown = focused ? list : [];
+  return { text, list: shown, active, feedback, accept, onKey, onChange, onSelect, setFocused };
 }
 
 /**
@@ -82,6 +93,14 @@ export function CommandBar({ store, inputRef }: CommandBarProps) {
         value={c.text}
         onChange={c.onChange}
         onKeyDown={c.onKey}
+        onSelect={c.onSelect}
+        onKeyUp={c.onSelect}
+        onFocus={() => {
+          c.setFocused(true);
+        }}
+        onBlur={() => {
+          c.setFocused(false);
+        }}
       />
       {c.list.length > 0 && (
         <ul className="completions" role="listbox" aria-label="Completions">

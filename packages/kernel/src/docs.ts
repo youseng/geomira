@@ -18,6 +18,7 @@ import { formatExpr, formatSelector } from './selector';
 import type { Registry } from './registry';
 import {
   formatSignature,
+  type ArgSymmetry,
   type ExampleArg,
   type ExampleSelector,
   type ToolExample,
@@ -170,6 +171,42 @@ function exportText(m: ToolSpec['export']): string {
   return m === 'numeric' ? 'numeric' : `constructive (${m.constructive})`;
 }
 
+/** "arguments 1, 2 in any order (the same value)": a symmetry as the reference shows it. */
+function symmetryText(s: ArgSymmetry): string {
+  const same =
+    s.same === 'value'
+      ? 'the same value'
+      : 'the same figure; a direction, an anchor or the vertex order may differ';
+  switch (s.kind) {
+    case 'permute': {
+      const flips = s.flipsOrient === true ? ', and swapping them flips orient(±)' : '';
+      return `arguments ${s.positions.map((p) => String(p + 1)).join(', ')} in any order (${same})${flips}`;
+    }
+    case 'dihedral':
+      return `the arguments in any rotation or reversal (${same})`;
+    default:
+      return assertNever(s, 'argument symmetry');
+  }
+}
+
+/**
+ * When two calls of the tool are the same construction (ADR-0029): its argument symmetries,
+ * per overload, the tool it is the same as, or that it is a free input.
+ */
+function sameConstructionLines(t: ToolSpec): string[] {
+  if (t.input === true)
+    return ['- Same construction: never (a free input: two of them are independent objects)'];
+  const out: string[] = [];
+  if (t.sameAs !== undefined)
+    out.push(`- Same construction: \`${t.name}(…)\` is \`${t.sameAs}(…)\` with the same arguments`);
+  const syms = t.signatures.flatMap((s) =>
+    (s.symmetry ?? []).map((x) => `\`${formatSignature(t.name, s)}\`: ${symmetryText(x)}`),
+  );
+  out.push(`- Symmetry:${syms.length === 0 ? ' none' : ''}`);
+  for (const s of syms) out.push(`  - ${s}`);
+  return out;
+}
+
 function toolSection(registry: Registry, t: ToolSpec): string[] {
   const lines = [`### ${t.name}`, '', t.doc, ''];
   lines.push(
@@ -178,6 +215,7 @@ function toolSection(registry: Registry, t: ToolSpec): string[] {
   lines.push(`- Result: ${t.outputKinds.join(', ')}`);
   lines.push(`- Exact run (RationalField): ${exactness(registry, t)}`);
   lines.push(`- Export: ${exportText(t.export)}`);
+  lines.push(...sameConstructionLines(t));
   lines.push(`- Degenerate cases:${t.degenerate.length === 0 ? ' none' : ''}`);
   for (const d of t.degenerate) lines.push(`  - ${d}`);
   lines.push('- Examples:');

@@ -1,0 +1,193 @@
+/* The style card (ADR-0029): Geomdraw's right-click properties card, floating by its object. */
+
+.style-card {
+  position: fixed;
+  z-index: 95;
+  width: 280px;
+  max-width: calc(100vw - 12px);
+  max-height: calc(100vh - 12px);
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 0 0 8px;
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.style-card:focus {
+  outline: none;
+}
+
+.style-card header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.sc-name {
+  font-family: var(--math);
+  font-style: italic;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.sc-kind {
+  color: var(--muted);
+}
+
+.sc-x {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 0 2px;
+}
+
+.sc-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+}
+
+.sc-lab {
+  width: 68px;
+  flex: none;
+  color: var(--muted);
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  outline: 1px solid var(--border);
+}
+
+.swatch[aria-pressed='true'] {
+  border-color: var(--panel);
+  outline: 2px solid var(--accent);
+}
+
+/* The custom colour: a square swatch over the colour input (which opens the picker). */
+.swatch.custom {
+  position: relative;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.swatch.custom input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.sc-row input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+
+.sc-val {
+  width: 32px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.sc-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sc-text {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 5px;
+  background: var(--panel2);
+  color: var(--text);
+  font-family: var(--math);
+  font-style: italic;
+}
+
+.sc-text:disabled {
+  opacity: 0.5;
+}
+
+.sc-more {
+  padding: 2px 10px;
+}
+
+.sc-more summary {
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.sc-more .sc-check,
+.sc-number {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.sc-number input,
+.sc-number select {
+  width: 90px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel2);
+  color: var(--text);
+  padding: 0 5px;
+}
+
+.sc-more .sc-check {
+  justify-content: flex-start;
+}
+
+.style-card footer {
+  display: flex;
+  gap: 6px;
+  padding: 6px 10px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.style-card footer button {
+  flex: 1;
+  height: 28px;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  border-radius: 5px;
+  color: var(--text);
+}
+
+.style-card footer button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

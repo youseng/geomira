@@ -95,7 +95,10 @@ export function parseUnary(c: Cursor): ExprNode | undefined {
       next(c);
       return { kind: 'num', text: `-${n.text}`, span: join(t, n) };
     }
-    const operand = nested(c, () => parseUnary(c));
+    // `-(…)`: the parenthesis counts the level (parseParen → parseExpr), so the negation
+    // does not count it again; nesting then matches the tree's depth, and printed text
+    // (`-(-(a))`) parses whenever the text it came from did.
+    const operand = isPunct(c, '(') ? parseUnary(c) : nested(c, () => parseUnary(c));
     return operand === undefined
       ? undefined
       : { kind: 'neg', operand, span: join(t, operand.span) };

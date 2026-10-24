@@ -18,11 +18,15 @@ import { formatExpr, formatSelector } from '@geomira/kernel/selector';
 import type { ValueKind } from '@geomira/kernel/value';
 import { callsOf, type Path } from './expr-path';
 import type { ClaimKindSpec } from './kind';
+import { isProbe } from './probes';
 
 /** An along(±) or orient(±) selector of the closure. */
 export interface OrientationSite {
   readonly objectId: number;
+  /** The user object's name, or "the claim" for a selector written inside the claim. */
   readonly objectName: string;
+  /** The selector is written inside the claim (its object is a probe, never shown). */
+  readonly inClaim: boolean;
   /** The path of the call inside the object's definition, and the selector's index. */
   readonly path: Path;
   readonly index: number;
@@ -97,15 +101,19 @@ export function analyzeClaim(
   const sites: OrientationSite[] = [];
   for (const o of doc.objects) {
     if (!closure.has(o.id)) continue;
+    // A probe is an expression of the claim: its internal name never reaches a message.
+    const inClaim = isProbe(o);
+    const objectName = inClaim ? 'the claim' : o.name;
     for (const { call, path } of callsOf(o.def)) {
       const why = callExclusion(call, kinds, registry, show);
-      if (why !== undefined) exclusions.push(`${o.name}: ${why}`);
+      if (why !== undefined) exclusions.push(`${objectName}: ${why}`);
       call.selectors.forEach((s, index) => {
         if (s.kind !== 'along' && s.kind !== 'orient') return;
         const text = formatSelector(s, () => '');
         sites.push({
           objectId: o.id,
-          objectName: o.name,
+          objectName,
+          inClaim,
           path,
           index,
           selector: s.kind,

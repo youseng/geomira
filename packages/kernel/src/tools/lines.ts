@@ -78,6 +78,13 @@ function perpBisector<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContex
 }
 
 const TWO_POINTS: readonly Signature[] = [{ params: ['point', 'point'] }];
+/** Two points in either order: the same line, opposite directions (ADR-0029). */
+const EITHER_ORDER: readonly Signature[] = [
+  {
+    params: ['point', 'point'],
+    symmetry: [{ kind: 'permute', positions: [0, 1], same: 'figure' }],
+  },
+];
 const POINT_LINE: readonly Signature[] = [{ params: ['point', 'linear'] }];
 const A: readonly [string, string] = ['0', '0'];
 const B: readonly [string, string] = ['2', '1'];
@@ -88,7 +95,7 @@ export const LINE_TOOLS: readonly ToolSpec[] = [
     id: 'line',
     name: 'line',
     family: 'lines',
-    signatures: TWO_POINTS,
+    signatures: EITHER_ORDER,
     outputKinds: ['line'],
     compute: line,
     degenerate: ['line(A, A) → Undefined (coincident points)'],
@@ -100,7 +107,7 @@ export const LINE_TOOLS: readonly ToolSpec[] = [
     id: 'segment',
     name: 'segment',
     family: 'lines',
-    signatures: TWO_POINTS,
+    signatures: EITHER_ORDER,
     outputKinds: ['line'],
     compute: segment,
     degenerate: ['segment(A, A) → Undefined (coincident points)'],
@@ -148,7 +155,7 @@ export const LINE_TOOLS: readonly ToolSpec[] = [
     id: 'perp_bisector',
     name: 'perp_bisector',
     family: 'lines',
-    signatures: TWO_POINTS,
+    signatures: EITHER_ORDER,
     outputKinds: ['line'],
     compute: perpBisector,
     degenerate: ['perp_bisector(A, A) → Undefined (coincident points)'],

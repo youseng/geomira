@@ -22,13 +22,20 @@ export interface Notice {
   readonly tone: 'refusal' | 'info' | 'error';
   readonly text: string;
   readonly diagnostics?: readonly Diagnostic[];
+  /** Answered like a refusal by the next document edit or tool action (ADR-0029). */
+  readonly transient?: boolean;
 }
 
 export interface Snapshot {
   readonly state: EditorState;
   readonly notice: Notice | null;
-  /** Increases whenever a document is opened: the view is fitted again. */
+  /** Increases whenever a document is opened. */
   readonly openCount: number;
+  /**
+   * Increases whenever the view is to fit the figure: a document opened, or a sample figure
+   * of a verdict shown (ADR-0028).
+   */
+  readonly fits: number;
 }
 
 function errorText(e: unknown): string {
@@ -44,7 +51,12 @@ export class EditorStore {
     readonly env: EditorEnv,
     private readonly onInternal: (message: string) => void,
   ) {
-    this.snap = { state: createEditor(emptyDocument(), env), notice: null, openCount: 0 };
+    this.snap = {
+      state: createEditor(emptyDocument(), env),
+      notice: null,
+      openCount: 0,
+      fits: 0,
+    };
   }
 
   readonly subscribe = (listener: () => void): (() => void) => {
@@ -93,8 +105,20 @@ export class EditorStore {
       return r;
     }
     this.noteEdit(r.state, before);
-    // A refusal is answered by the next success; errors and information stay until dismissed.
-    const notice = this.snap.notice?.tone === 'refusal' ? null : this.snap.notice;
+    // A refusal is answered by the next document edit or tool action, not by hover, viewport
+    // or selection changes (ADR-0028); errors and information stay until dismissed.
+    const s = r.state;
+    const acted =
+      s.doc !== before.doc || s.tool !== before.tool || s.toolState !== before.toolState;
+    const old = this.snap.notice;
+    const answered = acted && (old?.tone === 'refusal' || old?.transient === true);
+    // A tool that reused an existing construction says so (ADR-0029).
+    const notice: Notice | null =
+      r.notice === undefined
+        ? answered
+          ? null
+          : old
+        : { tone: 'info', text: r.notice, transient: true };
     this.publish({ state: r.state, notice });
     return r;
   }
@@ -131,10 +155,22 @@ export class EditorStore {
   }
 
   open(doc: Document, origin: Origin, notice: Notice | null = null): void {
+    // The figure being left saves its last edit first (its save may still be pending).
+    this.autosave.flush();
     this.autosave.opened(origin);
     this.beforeDrag = null;
     const state = createEditor(doc, this.env);
-    this.publish({ state, notice, openCount: this.snap.openCount + 1 });
+    this.publish({
+      state,
+      notice,
+      openCount: this.snap.openCount + 1,
+      fits: this.snap.fits + 1,
+    });
+  }
+
+  /** Asks for the view to fit the figure once it is drawn (useFitOnOpen). */
+  requestFit(): void {
+    this.publish({ fits: this.snap.fits + 1 });
   }
 
   /** Opens a text (parse is total: lines with errors are left out and listed). */

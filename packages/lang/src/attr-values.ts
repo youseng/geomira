@@ -1,6 +1,7 @@
 /**
  * The meaning of attributes (ADR-0009): every Style field (color, width, dash, hidden,
- * noimage, label; z, label_angle, label_dist since ADR-0010), an object's layers, a claim's name, layer options and rules, view
+ * noimage, label; z, label_angle, label_dist since ADR-0010; opacity since ADR-0029), an
+ * object's layers, a claim's name, layer options and rules, view
  * contents, triangle types. Each statement kind accepts its own keys; anything else is an
  * error with the list of keys it takes.
  */
@@ -13,6 +14,7 @@ export const STYLE_KEYS: readonly string[] = Object.freeze([
   'color',
   'width',
   'dash',
+  'opacity',
   'hidden',
   'noimage',
   'label',
@@ -118,6 +120,7 @@ export function styleOf(m: ReadonlyMap<string, Attr>, out: Checked): Style {
   const color = m.get('color');
   const width = m.get('width');
   const dash = m.get('dash');
+  const opacity = m.get('opacity');
   const hidden = m.get('hidden');
   const noimage = m.get('noimage');
   const label = m.get('label');
@@ -135,6 +138,8 @@ export function styleOf(m: ReadonlyMap<string, Attr>, out: Checked): Style {
     else if (d !== undefined)
       out.diags.push(error(dash.span, `dash is ${DASHES.join(', ')}`, 'write dash=dashed'));
   }
+  const o = opacity === undefined ? undefined : numberAttr(opacity, 0, 1, out);
+  if (o !== undefined) s = { ...s, opacity: o };
   const h = hidden === undefined ? undefined : boolAttr(hidden, out);
   if (h !== undefined) s = { ...s, hidden: h };
   const n = noimage === undefined ? undefined : boolAttr(noimage, out);

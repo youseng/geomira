@@ -8,6 +8,12 @@
  * import packages/lang (SPEC §2: lang → claims), so the host parses first (ADR-0008).
  * Cryptographic randomness for the mod-p rung is supplied by the host (`env.entropy`,
  * e.g. num's cryptoSource over crypto.getRandomValues); without it the rung is skipped.
+ *
+ * Global jobs mirror every other tested figure (only when the figure's frame allows it:
+ * frame.ts), count attempts and acceptances per orientation (so a low acceptance caused by
+ * mirroring is not blamed on the hypotheses), and run the flip test on false figures and on
+ * undefined ones (an undefined figure that holds flipped failed through an orientation
+ * choice: law L16). Local jobs judge the current figure exactly as the live badge does.
  */
 import { createRng, deriveSeed, type EntropySource, type Seed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
@@ -15,6 +21,7 @@ import type { Registry } from '@geomira/kernel/registry';
 import { isOrientationDependent } from '@geomira/kernel/selector';
 import type { Value } from '@geomira/kernel/value';
 import { EXACT_BUDGET_BITS, HARD_ACCEPTANCE, RETRY_FACTOR } from './constants';
+import { CURRENT_FIGURE_SEED } from './current';
 import { valueOf } from './eval-claim';
 import { flipSelector } from './expr-path';
 import { prepare, type Prepared, type SiteProbe } from './prepare';
@@ -27,6 +34,7 @@ import {
   newCollector,
   record,
   type Collector,
+  type Common,
   type FlipSummary,
   type NamedSelector,
   type Verdict,
@@ -69,9 +77,22 @@ interface FlipState {
   failing: number;
   unrepaired: number;
   unrepairedDoc?: Document;
+  /** Undefined figures that held once flipped (counted in `failing` too). */
+  undefinedRepaired: number;
   /** Site index → whether flipping it alone repaired every failing sample so far. */
   alone: Map<number, boolean>;
   k: Set<number>;
+}
+
+function newFlipState(): FlipState {
+  return { failing: 0, unrepaired: 0, undefinedRepaired: 0, alone: new Map(), k: new Set() };
+}
+
+/** What flipping the orientation-dependent selectors of one figure gives. */
+interface Flips {
+  readonly sites: readonly number[];
+  readonly all: boolean;
+  readonly alone: readonly boolean[];
 }
 
 function chiralLine(
@@ -105,27 +126,61 @@ function flipped(prep: Prepared, doc: Document, sites: readonly number[]): Docum
   return { ...doc, objects };
 }
 
-/** k + 1 evaluations of a failing sample: all orientation-dependent selectors flipped, then each alone. */
+/** k + 1 evaluations of a figure: all orientation-dependent selectors flipped, then each alone. */
+function flipsOf(prep: Prepared, doc: Document, decide: (d: Document) => SampleOutcome): Flips {
+  const sites = dependentSites(prep, doc);
+  const all = sites.length > 0 && decide(flipped(prep, doc, sites)).kind === 'true';
+  const alone = sites.map((i) =>
+    sites.length === 1 ? all : decide(flipped(prep, doc, [i])).kind === 'true',
+  );
+  return { sites, all, alone };
+}
+
+/** Counts a failing figure (false, or undefined and repaired) in the flip state. */
+function countFailing(state: FlipState, r: Flips): void {
+  state.failing++;
+  for (const i of r.sites) state.k.add(i);
+  for (const [j, i] of r.sites.entries())
+    state.alone.set(i, (state.alone.get(i) ?? state.failing === 1) && r.alone[j] === true);
+  for (const i of state.alone.keys()) if (!r.sites.includes(i)) state.alone.set(i, false);
+}
+
+/** The flip test of a FALSE figure (SPEC §10.5). */
 function flipTest(
   prep: Prepared,
   doc: Document,
   state: FlipState,
   decide: (d: Document) => SampleOutcome,
 ): void {
-  state.failing++;
-  const sites = dependentSites(prep, doc);
-  for (const i of sites) state.k.add(i);
-  const all = sites.length > 0 && decide(flipped(prep, doc, sites)).kind === 'true';
-  const alone = sites.map((i) =>
-    sites.length === 1 ? all : decide(flipped(prep, doc, [i])).kind === 'true',
-  );
-  for (const [j, i] of sites.entries())
-    state.alone.set(i, (state.alone.get(i) ?? state.failing === 1) && alone[j] === true);
-  for (const i of state.alone.keys()) if (!sites.includes(i)) state.alone.set(i, false);
-  if (!all && !alone.some(Boolean)) {
+  const r = flipsOf(prep, doc, decide);
+  countFailing(state, r);
+  if (!r.all && !r.alone.some(Boolean)) {
     state.unrepaired++;
     state.unrepairedDoc ??= withoutProbes(doc);
   }
+}
+
+/**
+ * The flip test of an UNDEFINED (degenerate, ambiguous) figure: when flipping the
+ * orientation-dependent selectors makes the claim hold, the figure failed through an
+ * orientation choice (law L16) and counts as a repaired failure; otherwise it stays a figure
+ * that is not valid, as before.
+ */
+function flipUndefined(
+  prep: Prepared,
+  doc: Document,
+  state: FlipState,
+  decide: (d: Document) => SampleOutcome,
+): void {
+  if (prep.sites.length === 0) return;
+  const r = flipsOf(prep, doc, decide);
+  if (!r.all && !r.alone.some(Boolean)) return;
+  countFailing(state, r);
+  state.undefinedRepaired++;
+}
+
+function isUndefinedOutcome(o: SampleOutcome): boolean {
+  return o.kind === 'undefined' || o.kind === 'degenerate' || o.kind === 'ambiguous';
 }
 
 function advice(s: SiteProbe['site']): string {
@@ -140,11 +195,18 @@ function summary(prep: Prepared, state: FlipState): FlipSummary {
   const named: NamedSelector | undefined =
     site === undefined
       ? undefined
-      : { object: site.objectName, selector: site.text, call: site.callText, advice: advice(site) };
+      : {
+          object: site.objectName,
+          selector: site.text,
+          call: site.callText,
+          advice: advice(site),
+          ...(site.inClaim ? { inClaim: true } : {}),
+        };
   return {
     failing: state.failing,
     unrepaired: state.unrepaired,
     k: state.k.size,
+    ...(state.undefinedRepaired > 0 ? { undefinedRepaired: state.undefinedRepaired } : {}),
     ...(state.unrepairedDoc === undefined ? {} : { unrepairedDoc: state.unrepairedDoc }),
     ...(named === undefined ? {} : { named }),
   };
@@ -162,13 +224,19 @@ export function* runJob(
   const prep = p.prepared;
   const budgetBits = env.budgetBits ?? EXACT_BUDGET_BITS;
   const c: Collector = newCollector();
-  const flips: FlipState = { failing: 0, unrepaired: 0, alone: new Map(), k: new Set() };
+  const flips = newFlipState();
+  const parity = {
+    unmirrored: { attempts: 0, accepted: 0 },
+    mirrored: { attempts: 0, accepted: 0 },
+  };
   const maxAttempts = RETRY_FACTOR * job.n;
   let [done, attempts] = [0, 0];
   while (done < job.n && attempts < maxAttempts) {
-    const mirrored = job.regime === 'global' && done % 2 === 1;
+    const mirrored = job.regime === 'global' && prep.frame.mirror && done % 2 === 1;
+    const side = mirrored ? parity.mirrored : parity.unmirrored;
     const seed = deriveSeed(job.seed, attempts);
     attempts++;
+    side.attempts++;
     const doc = drawSample(prep, job.regime, seed, mirrored);
     const decide = (d: Document) =>
       decideSample(prep, d, {
@@ -181,26 +249,45 @@ export function* runJob(
     record(c, o, () => withoutProbes(doc));
     if (o.kind !== 'rejected') {
       done++;
+      side.accepted++;
       if (mirrored) c.mirrored++;
       if (job.regime === 'global' && o.kind === 'false') flipTest(prep, doc, flips, decide);
+      if (job.regime === 'global' && isUndefinedOutcome(o)) flipUndefined(prep, doc, flips, decide);
     }
     const cmd = yield { kind: 'progress', regime: job.regime, done, n: job.n, attempts };
     if (cmd === 'cancel') return { kind: 'cancelled', done, attempts };
   }
-  const common = {
+  const common: Common = {
     seed: job.seed,
     n: job.n,
     tested: done,
     attempts,
     hardToSatisfy: done / attempts < HARD_ACCEPTANCE,
+    frame: prep.frame,
+    ...(job.regime === 'global' ? { parity } : {}),
   };
-  if (job.regime === 'local') {
-    const current = valueOf(
-      decideSample(prep, prep.doc, { budgetBits, rng: createRng(job.seed), hypotheses: false }),
-    );
-    return { kind: 'verdict', verdict: localVerdict(c, common, current) };
-  }
-  return { kind: 'verdict', verdict: globalVerdict(c, common, summary(prep, flips)) };
+  return { kind: 'verdict', verdict: finalVerdict(job.regime, prep, c, common, flips, budgetBits) };
+}
+
+/** The verdict of a finished job. */
+function finalVerdict(
+  regime: Regime,
+  prep: Prepared,
+  c: Collector,
+  common: Common,
+  flips: FlipState,
+  budgetBits: number,
+): Verdict {
+  if (regime === 'global') return globalVerdict(c, common, summary(prep, flips));
+  // The current figure is judged exactly as the live badge judges it (evalClaim's seed).
+  const current = valueOf(
+    decideSample(prep, prep.doc, {
+      budgetBits,
+      rng: createRng(CURRENT_FIGURE_SEED),
+      hypotheses: false,
+    }),
+  );
+  return localVerdict(c, common, current);
 }
 
 /** Runs a job to completion (tests, hosts without workers that do not need slicing). */

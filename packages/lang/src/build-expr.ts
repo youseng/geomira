@@ -19,7 +19,7 @@ import { exprKinds, type KindTable } from '@geomira/kernel/derived';
 import { rejection, type Registry } from '@geomira/kernel/registry';
 import { callDiagnostics, type KindsOfRef } from '@geomira/kernel/selector-check';
 import type { ExprNode, SelectorNode } from './ast';
-import { error, type Diagnostic, type Span } from './diagnostic';
+import { error, warning, type Diagnostic, type Span } from './diagnostic';
 import { exactLiteral } from './lex-literals';
 import { spreadRuns, TOOL_ALIASES, toolName } from './geomdraw';
 import { makeSelector } from './selectors';
@@ -42,6 +42,8 @@ export interface ExprEnv {
 export interface CallSite {
   readonly call: CallExpr;
   readonly span: Span;
+  /** What the glued runs among the call's direct arguments mean (ADR-0025), for hints. */
+  readonly runs?: string;
 }
 
 export interface Converted {
@@ -136,8 +138,14 @@ function built(
     tool,
     xs.filter((x): x is Expr => x !== undefined),
   );
-  calls.splice(site, 0, { call: c, span });
+  calls.splice(site, 0, siteOf(c, span, args));
   return c;
+}
+
+/** A call site, with the meaning of the glued runs among its direct arguments. */
+function siteOf(c: CallExpr, span: Span, args: readonly ExprNode[]): CallSite {
+  const runs = args.flatMap((a) => (a.kind === 'call' && a.glued === true ? [runMeaning(a)] : []));
+  return runs.length === 0 ? { call: c, span } : { call: c, span, runs: runs.join('; ') };
 }
 
 function unknownTool(name: string, span: Span, env: ExprEnv): undefined {
@@ -173,7 +181,9 @@ function callExpr(
   }
   const site = calls.length;
   const before = env.diags.length;
-  const args = spreadRuns(tool, n.args, env.registry).map((a) => toExpr(a, env, calls));
+  const spread = spreadRuns(tool, n.args, env.registry);
+  circleThrough(tool, n, spread, env.diags);
+  const args = spread.map((a) => toExpr(a, env, calls));
   const sels = n.selectors.map((s) => toSelector(s, env, calls));
   if (args.some((x) => x === undefined) || sels.some((x) => x === undefined)) {
     if (n.glued === true) explainRun(n, env.diags, before);
@@ -194,8 +204,39 @@ function callExpr(
     argExprs,
     sels.filter((x): x is Selector => x !== undefined),
   );
-  calls.splice(site, 0, { call: c, span: n.span });
+  calls.splice(site, 0, siteOf(c, n.span, spread));
   return c;
+}
+
+/**
+ * `circle(O, AB)`: ADR-0025 spreads the run, so it is the circle through O, A and B; a
+ * warning (the line is applied) says so and how to write centre O, radius AB (ADR-0028).
+ */
+function circleThrough(
+  tool: string,
+  n: Extract<ExprNode, { kind: 'call' }>,
+  spread: readonly ExprNode[],
+  diags: Diagnostic[],
+): void {
+  const [o, run] = n.args;
+  if (tool !== 'circle' || n.args.length !== 2 || spread.length !== 3) return;
+  if (o?.kind !== 'name' || run?.kind !== 'call' || run.glued !== true) return;
+  const [a, b] = run.args.map((x) => (x.kind === 'name' ? x.name : '?'));
+  diags.push(
+    warning(
+      n.span,
+      `${n.tool}(${o.name}, ${a ?? '?'}${b ?? '?'}) is the circle through ${o.name}, ${a ?? '?'} and ${b ?? '?'}`,
+      `for centre ${o.name} and radius ${a ?? '?'}${b ?? '?'} write circle(${o.name}, dist(${a ?? '?'}, ${b ?? '?'}))`,
+    ),
+  );
+}
+
+/** `AB is line(A, B); the length AB is dist(A, B)`: what a glued run means (ADR-0025). */
+function runMeaning(n: Extract<ExprNode, { kind: 'call' }>): string {
+  const names = n.args.flatMap((a) => (a.kind === 'name' ? [a.name] : []));
+  const list = names.join(', ');
+  const length = names.length === 2 ? `; the length ${names.join('')} is dist(${list})` : '';
+  return `${names.join('')} is ${n.tool}(${list})${length}`;
 }
 
 /**
@@ -203,10 +244,7 @@ function callExpr(
  * and its length is dist(A, B).
  */
 function explainRun(n: Extract<ExprNode, { kind: 'call' }>, diags: Diagnostic[], from: number) {
-  const names = n.args.flatMap((a) => (a.kind === 'name' ? [a.name] : []));
-  const list = names.join(', ');
-  const length = names.length === 2 ? `; the length ${names.join('')} is dist(${list})` : '';
-  const meaning = `${names.join('')} is ${n.tool}(${list})${length}`;
+  const meaning = runMeaning(n);
   for (let i = from; i < diags.length; i++) {
     const d = diags[i];
     if (d !== undefined) diags[i] = { ...d, hint: `${d.hint} (${meaning})` };
@@ -259,7 +297,7 @@ export function checkCalls(
         tool,
         kinds.map((k) => ({ kind: k.join(' | ') })),
       );
-      out.push(error(site.span, msg, 'pass arguments of the kinds a signature takes'));
+      out.push(error(site.span, msg, site.runs ?? 'pass arguments of the kinds a signature takes'));
     }
   }
   return out;

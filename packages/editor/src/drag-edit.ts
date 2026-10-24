@@ -2,7 +2,7 @@
  * Drag edits (SPEC §12): dragStart(id) → dragMove(to)… → dragEnd | dragCancel. A gesture is
  * ONE history entry: the first move records it, later moves amend it (coalescing), dragEnd
  * rounds the moved coordinates (drag.ts) inside the same entry, dragCancel restores the
- * document from before the gesture and drops its entry. Out-of-order edits (a move without
+ * document and the undo entries from before the gesture, exactly. Out-of-order edits (a move without
  * a start, a second start, an end without a drag) are refused with the state unchanged.
  */
 import { applyDocEdit } from '@geomira/kernel/doc-edit';
@@ -19,7 +19,7 @@ import {
   withinRounding,
 } from './drag';
 import { dependentsKept } from './drag-dependents';
-import { amendLast, dropLast, record } from './history';
+import { amendLast, record } from './history';
 import { lockedDrag } from './locked';
 import { done, refuse, type EditResult } from './result';
 import { withDocument, type DragState, type EditorEnv, type EditorState } from './state';
@@ -37,7 +37,7 @@ function start(state: EditorState, id: number): EditResult {
   if (typeof base === 'string') return refuse(state, base);
   const locked = lockedDrag(state.doc, [id, base]);
   if (locked !== undefined) return refuse(state, locked);
-  const drag: DragState = { id, base, before: state.doc, moved: false };
+  const drag: DragState = { id, base, before: state.doc, history: state.history, moved: false };
   return done({ ...state, drag });
 }
 
@@ -54,13 +54,29 @@ function move(state: EditorState, drag: DragState, to: Vec<number>, env: EditorE
   return done({ ...next, history, drag: { ...drag, moved: true } });
 }
 
+/**
+ * The object whose image scale applies to a drag of `id`: a text's anchor (followed while it
+ * is a text anchored at an object, so a text at a scaled image rounds as that image does),
+ * else `id` itself.
+ */
+function scaled(state: EditorState, id: number): number {
+  let cur = id;
+  for (let guard = 0; guard < state.doc.objects.length; guard++) {
+    const def = findObject(state.doc, cur)?.def;
+    const anchor = def?.kind === 'call' && def.tool === 'text' ? def.args[0] : undefined;
+    if (anchor?.kind !== 'ref') return cur;
+    cur = anchor.id;
+  }
+  return cur;
+}
+
 /** Rounds the base's coordinates at drag end, unless that would move the object visibly. */
 function end(state: EditorState, drag: DragState, env: EditorEnv): EditResult {
   const finished = { ...state, drag: null };
   const base = findObject(state.doc, drag.base);
   const c = evalContextFor(state.doc);
   if (!drag.moved || base === undefined || !c.ok) return done(finished);
-  const k = chainScale(state.doc, drag.id, state.values);
+  const k = chainScale(state.doc, scaled(state, drag.id), state.values);
   const exp = dragGrid(c.ctx.scale, state.viewport.zoom, k);
   const def = roundedDefinition(state.doc, base, exp, state.values);
   const r = applyDocEdit(state.doc, env.registry, { kind: 'redefine', id: drag.base, def });
@@ -81,7 +97,12 @@ function end(state: EditorState, drag: DragState, env: EditorEnv): EditResult {
 
 function cancel(state: EditorState, drag: DragState, env: EditorEnv): EditResult {
   const restored = withDocument({ ...state, drag: null }, drag.before, env);
-  return done({ ...restored, history: drag.moved ? dropLast(state.history) : state.history });
+  // The undo entries come back exactly (the drag's entry may have pushed the oldest one out
+  // of a full history); the redo stack stays as the drag's first move left it (cleared).
+  const history = drag.moved
+    ? { past: drag.history.past, future: state.history.future }
+    : state.history;
+  return done({ ...restored, history });
 }
 
 export function dragEdit(state: EditorState, e: DragEdit, env: EditorEnv): EditResult {

@@ -5,18 +5,39 @@
  *   with an example and a counterexample document) · INCONCLUSIVE (fewer than half of the N
  *   figures valid: undefined, degenerate, ambiguous or ill-conditioned, with reasons).
  *   GLOBAL: HOLDS ACROSS THE DECLARED CONFIGURATION · ORIENTATION-DEPENDENT (every failing
- *   sample holds once the orientation-dependent selectors are flipped; one selector is
- *   named when flipping it alone repairs every failure) · CONFIGURATION-DEPENDENT (some
- *   failing sample does not hold even flipped; with an example document) · INCONCLUSIVE.
- * Verdicts state what was checked (rungs and counts) and carry the seed; they never use
- * the words reserved for the Phase 2 prover.
+ *   sample holds once the orientation-dependent selectors are flipped; an undefined sample
+ *   that holds flipped is a failing sample too, law L16; one selector is named when flipping
+ *   it alone repairs every failure) · CONFIGURATION-DEPENDENT (some failing sample does not
+ *   hold even flipped; with an example document) · INCONCLUSIVE.
+ * Verdicts state what was checked (rungs and counts), the figures that were not valid and
+ * the samples the hypotheses rejected (whenever there are any), a low acceptance (blaming
+ * mirroring when one orientation alone is rare), what the samplers could not do to the
+ * figure (frame.ts), and the seed (verdict-notes.ts); they never use the words reserved for
+ * the Phase 2 prover.
  */
 import type { Seed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
 import { MIN_VALID_FRACTION } from './constants';
 import type { ClaimValue } from './eval-claim';
+import type { SamplerFrame } from './frame';
 import { RUNG_NAMES, type RungName, type SampleOutcome } from './rungs';
 import type { Regime } from './sampler';
+import {
+  frameNotes,
+  hardParity,
+  invalidNote,
+  parityNote,
+  parityShortNote,
+  rejectedNote,
+  repairedText,
+  selectorPhrase,
+  type Parity,
+  type NamedSelector,
+  type ParityStats,
+} from './verdict-notes';
+
+// Defined beside the phrase that names it (verdict-notes.ts), so the two modules have no cycle.
+export type { NamedSelector } from './verdict-notes';
 
 export type LocalKind = 'holds' | 'false' | 'mixed' | 'inconclusive';
 export type GlobalKind =
@@ -31,14 +52,6 @@ export interface Tally {
   readonly illConditioned: number;
   readonly invalid: number;
   readonly rejected: number;
-}
-
-/** A selector named by an ORIENTATION-DEPENDENT verdict, with the equivariant alternative. */
-export interface NamedSelector {
-  readonly object: string;
-  readonly selector: string;
-  readonly call: string;
-  readonly advice: string;
 }
 
 export interface Verdict {
@@ -63,6 +76,17 @@ export interface Verdict {
   readonly mirrored?: number;
   /** Fewer than HARD_ACCEPTANCE of the attempts satisfied the hypotheses. */
   readonly hardToSatisfy?: boolean;
+  /**
+   * GLOBAL: figures of this orientation rarely satisfied the hypotheses while the other
+   * orientation's did (mirroring, not the hypotheses, explains the low acceptance).
+   */
+  readonly hardParity?: Parity;
+  /** GLOBAL: attempts and tested figures per orientation. */
+  readonly parity?: ParityStats;
+  /** GLOBAL: undefined figures that hold once the orientation-dependent selectors are flipped. */
+  readonly undefinedRepaired?: number;
+  /** What the samplers could not do to this figure (no similarity, no mirroring), and why. */
+  readonly frame?: SamplerFrame;
   readonly named?: NamedSelector;
 }
 
@@ -134,18 +158,24 @@ function topReasons(c: Collector): { reason: string; count: number }[] {
 }
 
 function enoughValid(c: Collector, n: number): boolean {
-  return (
-    c.tally.true + c.tally.false >= Math.ceil(MIN_VALID_FRACTION * n) &&
-    c.tally.true + c.tally.false > 0
-  );
+  return enough(c.tally.true + c.tally.false, n);
 }
 
 function inconclusiveText(c: Collector, tested: number): string {
   const valid = c.tally.true + c.tally.false;
-  const why = topReasons(c)
-    .map((r) => `${r.reason} ×${String(r.count)}`)
-    .join('; ');
-  return `INCONCLUSIVE (${String(valid)} of ${String(tested)} figures valid${why === '' ? '' : `; ${why}`})`;
+  const why = topReasons(c).map((r) => `${r.reason} ×${String(r.count)}`);
+  const notes = [...why, ...rejectedNote(c.tally.rejected)];
+  return `INCONCLUSIVE (${String(valid)} of ${String(tested)} figures valid${tail(notes)})`;
+}
+
+/** "; a; b", or nothing. */
+function tail(notes: readonly string[]): string {
+  return notes.length === 0 ? '' : `; ${notes.join('; ')}`;
+}
+
+/** The figures that were not valid and the rejected samples, after the counts. */
+function countNotes(c: Collector, tested: number): string[] {
+  return [...invalidNote(c.tally, tested), ...rejectedNote(c.tally.rejected)];
 }
 
 export interface Common {
@@ -154,6 +184,24 @@ export interface Common {
   readonly tested: number;
   readonly attempts: number;
   readonly hardToSatisfy: boolean;
+  /** GLOBAL: attempts and tested figures per orientation (job.ts). */
+  readonly parity?: ParityStats;
+  /** What the samplers may do to the figure (frame.ts). */
+  readonly frame?: SamplerFrame;
+}
+
+/** The notes after a verdict's parentheses: acceptance, shortfall and the samplers' frame. */
+function trailer(regime: Regime, k: Common, parity: Parity | undefined): string[] {
+  const out: string[] = [];
+  if (parity !== undefined && k.parity !== undefined) out.push(parityNote(k.parity, parity));
+  else if (k.hardToSatisfy) out.push('hard to satisfy: few figures satisfy the hypotheses');
+  if (k.tested < k.n)
+    out.push(
+      parity === undefined
+        ? `only ${String(k.tested)} of ${String(k.n)} figures satisfied the hypotheses`
+        : parityShortNote(k.tested, k.n),
+    );
+  return [...out, ...frameNotes(regime, k.frame)];
 }
 
 function base(
@@ -163,15 +211,17 @@ function base(
   c: Collector,
   k: Common,
 ): Verdict {
-  const hard = k.hardToSatisfy ? ' · hard to satisfy: few figures satisfy the hypotheses' : '';
-  const short =
-    k.tested < k.n
-      ? ` · only ${String(k.tested)} of ${String(k.n)} figures satisfied the hypotheses`
-      : '';
+  const parity = regime === 'global' ? hardParity(k.parity) : undefined;
+  const notes = trailer(regime, k, parity).map((x) => ` · ${x}`);
+  // The frame is reported only when it restricted what this regime does.
+  const frame =
+    k.frame !== undefined && (!k.frame.similarity || (regime === 'global' && !k.frame.mirror))
+      ? k.frame
+      : undefined;
   return {
     regime,
     kind,
-    text: `${text}${hard}${short} · seed ${String(k.seed)}`,
+    text: `${text}${notes.join('')} · seed ${String(k.seed)}`,
     seed: k.seed,
     n: k.n,
     tested: k.tested,
@@ -181,7 +231,10 @@ function base(
     reasons: topReasons(c),
     ...(c.example === undefined ? {} : { example: c.example }),
     ...(c.counterexample === undefined ? {} : { counterexample: c.counterexample }),
-    ...(k.hardToSatisfy ? { hardToSatisfy: true } : {}),
+    ...(k.hardToSatisfy && parity === undefined ? { hardToSatisfy: true } : {}),
+    ...(parity === undefined ? {} : { hardParity: parity }),
+    ...(regime === 'global' && k.parity !== undefined ? { parity: k.parity } : {}),
+    ...(frame === undefined ? {} : { frame }),
   };
 }
 
@@ -189,6 +242,7 @@ function base(
 export function localVerdict(c: Collector, k: Common, current: ClaimValue): Verdict {
   const { true: t, false: f } = c.tally;
   const valid = t + f;
+  const notes = tail(countNotes(c, k.tested));
   let kind: LocalKind;
   let text: string;
   if (!enoughValid(c, k.n)) {
@@ -196,18 +250,18 @@ export function localVerdict(c: Collector, k: Common, current: ClaimValue): Verd
   } else if (f === 0) {
     [kind, text] = [
       'holds',
-      `HOLDS IN THIS CONFIGURATION (${rungText(c.rungs)}, ${String(t)}/${String(valid)})`,
+      `HOLDS IN THIS CONFIGURATION (${rungText(c.rungs)}, ${String(t)}/${String(valid)}${notes})`,
     ];
   } else if (t === 0) {
     const only = current.value === 'true' ? '; true in the current figure only' : '';
     [kind, text] = [
       'false',
-      `FALSE (${rungText(c.rungs)}, ${String(f)}/${String(valid)} false${only})`,
+      `FALSE (${rungText(c.rungs)}, ${String(f)}/${String(valid)} false${only}${notes})`,
     ];
   } else {
     [kind, text] = [
       'mixed',
-      `MIXED (${rungText(c.rungs)}, ${String(t)} true and ${String(f)} false of ${String(valid)})`,
+      `MIXED (${rungText(c.rungs)}, ${String(t)} true and ${String(f)} false of ${String(valid)}${notes})`,
     ];
   }
   return { ...base('local', kind, text, c, k), current };
@@ -223,35 +277,52 @@ export interface FlipSummary {
   readonly named?: NamedSelector;
   /** Orientation-dependent selectors met (k). */
   readonly k: number;
+  /**
+   * Undefined (or degenerate, or ambiguous) figures that hold once the orientation-dependent
+   * selectors are flipped (law L16: such figures fail only through an orientation choice).
+   */
+  readonly undefinedRepaired?: number;
 }
 
-/** The GLOBAL verdict. */
+/** Whether `count` decided figures are enough for a verdict other than INCONCLUSIVE. */
+function enough(count: number, n: number): boolean {
+  return count >= Math.ceil(MIN_VALID_FRACTION * n) && count > 0;
+}
+
+function orientationVerdict(c: Collector, k: Common, flips: FlipSummary, notes: string[]): Verdict {
+  const valid = c.tally.true + c.tally.false;
+  const u = flips.undefinedRepaired ?? 0;
+  const what =
+    flips.named === undefined
+      ? `flipping its ${String(flips.k)} orientation-dependent selectors together repairs every failure`
+      : `${selectorPhrase(flips.named)} encodes a side; ${flips.named.advice}`;
+  const text = `ORIENTATION-DEPENDENT (${repairedText(c.tally.false, valid, u)}; ${what}${tail(notes)})`;
+  return {
+    ...base('global', 'orientation-dependent', text, c, k),
+    ...(flips.named === undefined ? {} : { named: flips.named }),
+    ...(u > 0 ? { undefinedRepaired: u } : {}),
+  };
+}
+
+/**
+ * The GLOBAL verdict. ORIENTATION-DEPENDENT when the closure has orientation-dependent
+ * selectors and flipping them repairs every false figure and makes some figure hold that was
+ * false or undefined (an undefined figure that holds once flipped is an orientation failure
+ * too: law L16); then HOLDS ACROSS, CONFIGURATION-DEPENDENT or INCONCLUSIVE on the valid ones.
+ */
 export function globalVerdict(c: Collector, k: Common, flips: FlipSummary): Verdict {
   const { true: t, false: f } = c.tally;
   const valid = t + f;
-  const rejected =
-    c.tally.rejected === 0 ? '' : `; ${String(c.tally.rejected)} samples rejected by hypotheses`;
-  const counts = `${rungText(c.rungs)}, ${String(t)}/${String(valid)}${rejected}; ${String(c.mirrored)} mirrored`;
+  const u = flips.undefinedRepaired ?? 0;
+  const notes = countNotes(c, k.tested);
+  const counts = `${rungText(c.rungs)}, ${String(t)}/${String(valid)}${tail([...notes, `${String(c.mirrored)} mirrored`])}`;
   let v: Verdict;
-  if (!enoughValid(c, k.n)) {
+  if (flips.k > 0 && flips.unrepaired === 0 && f + u > 0 && enough(valid + u, k.n)) {
+    v = orientationVerdict(c, k, flips, notes);
+  } else if (!enoughValid(c, k.n)) {
     v = base('global', 'inconclusive', inconclusiveText(c, k.tested), c, k);
   } else if (f === 0) {
     v = base('global', 'holds-across', `HOLDS ACROSS THE DECLARED CONFIGURATION (${counts})`, c, k);
-  } else if (flips.k > 0 && flips.unrepaired === 0) {
-    const what =
-      flips.named === undefined
-        ? `flipping its ${String(flips.k)} orientation-dependent selectors together repairs every failure`
-        : `${flips.named.object}'s \`${flips.named.selector}\` encodes a side; ${flips.named.advice}`;
-    v = {
-      ...base(
-        'global',
-        'orientation-dependent',
-        `ORIENTATION-DEPENDENT (${String(f)} of ${String(valid)} fail and hold with the selectors flipped; ${what})`,
-        c,
-        k,
-      ),
-      ...(flips.named === undefined ? {} : { named: flips.named }),
-    };
   } else {
     const why =
       flips.k === 0
@@ -260,7 +331,7 @@ export function globalVerdict(c: Collector, k: Common, flips: FlipSummary): Verd
     v = base(
       'global',
       'configuration-dependent',
-      `CONFIGURATION-DEPENDENT (${String(f)} of ${String(valid)} fail; ${why})`,
+      `CONFIGURATION-DEPENDENT (${String(f)} of ${String(valid)} fail; ${why}${tail(notes)})`,
       c,
       k,
     );

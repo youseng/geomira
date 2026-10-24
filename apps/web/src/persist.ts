@@ -57,6 +57,52 @@ function writeSlots(s: AutosaveSlots): void {
 
 export class Autosave {
   private session: Session = openSession('new');
+  /** The save waiting for its timer (useAutosave schedules it after each change). */
+  private pending: {
+    readonly task: () => void;
+    readonly timer: ReturnType<typeof setTimeout>;
+  } | null = null;
+  private readonly listeners = new Set<() => void>();
+  private version = 0;
+
+  /**
+   * Subscribers are told when the slots are written (the header's "Restore previous figure"
+   * depends on them, and a save writes them after the render: ADR-0028).
+   */
+  readonly subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  };
+
+  /** Changes whenever this object writes the slots. */
+  readonly getVersion = (): number => this.version;
+
+  private write(slots: AutosaveSlots): void {
+    writeSlots(slots);
+    this.version++;
+    for (const l of this.listeners) l();
+  }
+
+  /** Runs `task` (a save) after `ms`, replacing the save pending before it. */
+  schedule(task: () => void, ms: number): void {
+    if (this.pending !== null) clearTimeout(this.pending.timer);
+    const timer = setTimeout(() => {
+      this.flush();
+    }, ms);
+    this.pending = { task, timer };
+  }
+
+  /**
+   * Runs the pending save now, if any: before another figure opens or a restore reads the
+   * slots, and when the page hides, so the last edit is never lost (ADR-0028).
+   */
+  flush(): void {
+    const p = this.pending;
+    if (p === null) return;
+    clearTimeout(p.timer);
+    this.pending = null;
+    p.task();
+  }
 
   /** A document was opened (startup, example, file, link). */
   opened(origin: Origin): void {
@@ -78,8 +124,10 @@ export class Autosave {
 
   /** Saves `text` if the policy says so. */
   save(text: string): void {
-    const r = save(readSlots(), this.session, text);
-    if (shouldSave(this.session)) writeSlots(r.slots);
+    const before = readSlots();
+    const r = save(before, this.session, text);
+    const changed = r.slots.current !== before.current || r.slots.previous !== before.previous;
+    if (shouldSave(this.session) && changed) this.write(r.slots);
     this.session = r.session;
   }
 
@@ -90,9 +138,10 @@ export class Autosave {
 
   /** Performs "Restore previous figure" on the slots: the text to open, or undefined. */
   restore(openText: string): string | undefined {
+    this.flush();
     const offer = restoreOffer(readSlots(), this.session, openText);
     if (offer === undefined) return undefined;
-    writeSlots(offer.slots);
+    this.write(offer.slots);
     return offer.text;
   }
 

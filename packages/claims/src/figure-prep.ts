@@ -9,10 +9,12 @@ import type { Document } from '@geomira/kernel/document';
 import { evaluate } from '@geomira/kernel/evaluate';
 import type { Registry } from '@geomira/kernel/registry';
 import type { Value } from '@geomira/kernel/value';
+import { samplerFrame } from './frame';
 import { findFree } from './free';
 import { assumptionProblem } from './hypotheses';
 import {
   freeKey,
+  freeMap,
   gliderExprs,
   hypothesesOf,
   orderedGroups,
@@ -61,6 +63,13 @@ export function prepareFigure(doc: Document, registry: Registry): FigurePrepResu
       hypotheses: hypothesesOf(doc, hypProbes),
       free,
       ordered: orderedGroups(probed.doc, doc.assumptions, free),
+      frame: samplerFrame({
+        doc: probed.doc,
+        registry,
+        claimExprs: doc.claims.flatMap((cl) => cl.args),
+        assumptions: doc.assumptions,
+        mapped: freeMap(free),
+      }),
       baseCtx: c.ctx,
       gliderObjects,
     },

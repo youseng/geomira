@@ -5,8 +5,8 @@
  * grown by MARGIN_PX (clip.ts), then mapped by the viewport, so every coordinate is finite
  * and within MARGIN_PX of the surface (law L9). A View with a viewProblem gives an empty
  * list carrying the reason. A circle or line that may pass through the view but cannot be
- * placed within half a pixel at its zoom (placement.ts) is not drawn and is listed in
- * `undrawable` instead (ADR-0023).
+ * placed within half a pixel at its zoom (placement.ts), or a polygon with such an edge, is
+ * not drawn and is listed in `undrawable` instead (ADR-0023, ADR-0028).
  *
  * Colours (ADR-0016 decision 20): an item's and a label's style colour is resolved through
  * the named-colour palette (palette.ts), so the canvas and every export draw the same hex.
@@ -25,7 +25,7 @@ import { clipCircle, clipLine, clipPolygon, inside, type Span } from './clip';
 import { placeLabels, type PlacedLabel } from './labels';
 import { markPaths } from './mark-paths';
 import { paletteColour } from './palette';
-import { curvePlacement } from './placement';
+import { curvePlacement, polygonPlacement, type Placement } from './placement';
 import { MAX_WIDTH } from './style';
 import type { DisplayItem, Path, Primitive, Scene, Undrawable } from './types';
 import { toScreen, viewProblem, worldRect, type Rect, type Vec2, type View } from './viewport';
@@ -139,6 +139,24 @@ function itemOf(view: View, p: Primitive, rect: Rect): DisplayItem | null {
   return { id: p.id, name: p.name, kind: s.kind, style, paths, region, fill };
 }
 
+/** Curves and polygon edges are placed in doubles (ADR-0023); the rest is exact. */
+function placement(s: Primitive['shape'], rect: Rect, zoom: number): Placement {
+  switch (s.kind) {
+    case 'circle':
+    case 'line':
+      return curvePlacement(s, rect, zoom);
+    case 'polygon':
+      return polygonPlacement(s.pts, rect, zoom);
+    case 'point':
+    case 'angle_mark':
+    case 'segment_mark':
+    case 'text':
+      return 'ok';
+    default:
+      return assertNever(s, 'shape');
+  }
+}
+
 /** The display list of `scene` in `view` (see the module comment). */
 export function layout(scene: Scene, view: View): DisplayList {
   const problem = viewProblem(view) ?? null;
@@ -147,9 +165,7 @@ export function layout(scene: Scene, view: View): DisplayList {
   const items: DisplayItem[] = [];
   const undrawable: Undrawable[] = [];
   for (const p of scene.primitives) {
-    const s = p.shape;
-    const curve = s.kind === 'circle' || s.kind === 'line';
-    if (curve && curvePlacement(s, rect, view.viewport.zoom) === 'unplaceable') {
+    if (placement(p.shape, rect, view.viewport.zoom) === 'unplaceable') {
       if (!undrawable.some((u) => u.id === p.id)) undrawable.push({ id: p.id, name: p.name });
       continue;
     }

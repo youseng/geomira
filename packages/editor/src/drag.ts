@@ -1,8 +1,9 @@
 /**
  * Dragging (SPEC §8.4, §12). What can be dragged, and the definition a drag writes:
  *   - a free point `point(x, y)` (literal coordinates): the cursor's coordinates;
- *   - a glider `on(obj, …)`: the parameter of the point of obj nearest to the cursor
- *     (the kernel's dragParameter: line t, stereographic (u : v), or angle);
+ *   - a glider `on(obj, …)` with literal parameters: the parameter of the point of obj
+ *     nearest to the cursor (the kernel's dragParameter: line t, stereographic (u : v), or
+ *     angle); a glider whose parameter is computed (on(l, s)) is not draggable;
  *   - a managed image X*: its free source, through the kernel's dragThrough (X := T⁻¹(cursor);
  *     not draggable when a map of the chain depends on X);
  *   - a text: its anchor when that is a reference to a draggable point, or a literal point.
@@ -37,6 +38,7 @@ export function dragBase(doc: Document, id: number, values: Evaluation<number>):
   if (isFreePoint(o.def) || isGlider(o.def) || isLiteralText(o.def)) return o.id;
   const anchor = o.def.kind === 'call' && o.def.tool === 'text' ? o.def.args[0] : undefined;
   if (anchor?.kind === 'ref') return dragBase(doc, anchor.id, values);
+  if (isComputedGlider(o.def)) return computed(o.name);
   return `${o.name} is not draggable: only free points, gliders, their images and texts are`;
 }
 
@@ -59,8 +61,22 @@ function isFreePoint(e: Expr): boolean {
   return e.kind === 'call' && e.tool === 'point' && e.selectors.length === 0 && isLitPair(e.args);
 }
 
-function isGlider(e: Expr): boolean {
+function isOn(e: Expr): e is CallExpr {
   return e.kind === 'call' && e.tool === 'on' && e.selectors.length === 0 && e.args.length >= 2;
+}
+
+/** A free glider: on(obj, …) with literal parameters only (SPEC §5, claims' free inputs). */
+function isGlider(e: Expr): boolean {
+  return isOn(e) && e.args.slice(1).every((a) => a.kind === 'lit');
+}
+
+/** on(obj, s), on(c, 2 * angle(…)): its parameter is not free, so a drag never rewrites it. */
+function isComputedGlider(e: Expr): boolean {
+  return isOn(e) && !isGlider(e);
+}
+
+function computed(name: string): string {
+  return `${name} is not draggable: its parameter is computed`;
 }
 
 function isLiteralText(e: Expr): boolean {
@@ -125,6 +141,7 @@ export function dragDefinition(
   if (d.kind !== 'call') return `${b.name} is not draggable`;
   if (isFreePoint(d)) return at;
   if (isLiteralText(d)) return call('text', [at, ...d.args.slice(1)]);
+  if (isComputedGlider(d)) return computed(b.name);
   if (!isGlider(d)) return `${b.name} is not draggable`;
   const [objExpr, ...params] = d.args;
   const obj = objExpr === undefined ? undefined : argValue(doc, b, objExpr, values);

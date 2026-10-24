@@ -56,6 +56,7 @@ export const GLIDER_TOOLS: readonly ToolSpec[] = [
     ],
     outputKinds: ['point'],
     compute: on,
+    input: true,
     degenerate: [
       'a glider on an Undefined object → Undefined',
       'on(l, t) on a segment or ray clamps t to the range',

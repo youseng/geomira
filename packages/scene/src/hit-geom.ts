@@ -4,13 +4,22 @@
  * intersections, and the nearest point of a curve. Plain float geometry in CSS pixels;
  * every result is finite or absent (parallel segments, concentric or disjoint arcs, and
  * zero-length pieces have no intersection; a degenerate piece's nearest point is its end).
- * Arc angles are counter-clockwise as seen on the screen (display.ts).
+ * Curves that miss each other by at most TOUCH_PX touch (ADR-0028): their intersection is
+ * the double point in the middle of the gap, since a true tangency drawn in screen floats
+ * lands a hair on either side. Arc angles are counter-clockwise as seen on the screen
+ * (display.ts).
  */
 import { assertNever } from '@geomira/num/assert';
 import type { Path } from './types';
 import type { Vec2 } from './viewport';
 
 const TAU = 2 * Math.PI;
+
+/**
+ * Curves drawn at most this far apart (CSS px) touch: a fraction of a pixel, far below the
+ * pick radius, so only a drawn tangency (not two curves visibly apart) meets there.
+ */
+export const TOUCH_PX = 0.5;
 
 export type Piece =
   | { readonly id: number; readonly kind: 'seg'; readonly a: Vec2; readonly b: Vec2 }
@@ -114,6 +123,12 @@ function segSeg(a: Vec2, b: Vec2, c: Vec2, d: Vec2): Vec2[] {
   return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? [{ x: a.x + t * r.x, y: a.y + t * r.y }] : [];
 }
 
+/**
+ * Where a segment meets an arc: the roots of |a + t(b - a) - c| = r with t in [0, 1], on
+ * the arc's span. Degenerate cases: a zero-length or non-finite segment meets nothing; a
+ * line missing the circle by at most TOUCH_PX touches it at the foot of the perpendicular
+ * from the centre.
+ */
 function segArc(a: Vec2, b: Vec2, p: Extract<Piece, { kind: 'arc' }>): Vec2[] {
   const d = { x: b.x - a.x, y: b.y - a.y };
   const f = { x: a.x - p.c.x, y: a.y - p.c.y };
@@ -121,21 +136,41 @@ function segArc(a: Vec2, b: Vec2, p: Extract<Piece, { kind: 'arc' }>): Vec2[] {
   const B = 2 * (f.x * d.x + f.y * d.y);
   const C = f.x * f.x + f.y * f.y - p.r * p.r;
   const disc = B * B - 4 * A * C;
-  if (!(A > 0) || !(disc >= 0)) return [];
-  const sq = Math.sqrt(disc);
-  return [(-B - sq) / (2 * A), (-B + sq) / (2 * A)]
+  if (!(A > 0) || Number.isNaN(disc)) return [];
+  const gap = Math.abs(f.x * d.y - f.y * d.x) / Math.sqrt(A) - p.r;
+  const roots =
+    disc >= 0
+      ? [(-B - Math.sqrt(disc)) / (2 * A), (-B + Math.sqrt(disc)) / (2 * A)]
+      : gap <= TOUCH_PX
+        ? [-B / (2 * A)]
+        : [];
+  return roots
     .filter((t) => t >= 0 && t <= 1)
     .map((t) => ({ x: a.x + t * d.x, y: a.y + t * d.y }))
     .filter((x) => onSpan(angleAt(p.c, x), p.from, p.to));
 }
 
+/**
+ * Where two arcs meet, on both spans. Degenerate cases: concentric or non-finite arcs meet
+ * nothing; circles missing each other (outside or inside) by at most TOUCH_PX touch at the
+ * double point on the line of centres, in the middle of the gap.
+ */
 function arcArc(p: Extract<Piece, { kind: 'arc' }>, q: Extract<Piece, { kind: 'arc' }>): Vec2[] {
   const dx = q.c.x - p.c.x;
   const dy = q.c.y - p.c.y;
   const d = Math.hypot(dx, dy);
-  if (!(d > 0) || d > p.r + q.r || d < Math.abs(p.r - q.r)) return [];
-  const a = (d * d + p.r * p.r - q.r * q.r) / (2 * d);
-  const h = Math.sqrt(Math.max(0, p.r * p.r - a * a));
+  const [outer, inner] = [p.r + q.r, Math.abs(p.r - q.r)];
+  if (!(d > 0) || !(d <= outer + TOUCH_PX) || !(d >= inner - TOUCH_PX)) return [];
+  const touch = d > outer || d < inner;
+  // At a touch: the middle of the gap, measured from p's centre along the line of centres.
+  const a = !touch
+    ? (d * d + p.r * p.r - q.r * q.r) / (2 * d)
+    : d > outer
+      ? (p.r + d - q.r) / 2
+      : p.r >= q.r
+        ? (p.r + d + q.r) / 2
+        : (d - q.r - p.r) / 2;
+  const h = touch ? 0 : Math.sqrt(Math.max(0, p.r * p.r - a * a));
   const m = { x: p.c.x + (a * dx) / d, y: p.c.y + (a * dy) / d };
   return [
     { x: m.x - (h * dy) / d, y: m.y + (h * dx) / d },

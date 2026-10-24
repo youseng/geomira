@@ -152,7 +152,11 @@ export const MEASURE_TOOLS: readonly ToolSpec[] = [
     name: 'dist',
     family: 'measures',
     signatures: [
-      { params: ['point', 'point'], radical: true },
+      {
+        params: ['point', 'point'],
+        radical: true,
+        symmetry: [{ kind: 'permute', positions: [0, 1], same: 'value' }],
+      },
       { params: ['point', 'linear'], radical: true },
     ],
     outputKinds: ['number'],
