@@ -9,6 +9,8 @@
  *
  * `tsx scripts/mutation-shards.ts` prints the matrix as JSON for the workflow's plan job.
  */
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export interface Shard {
@@ -62,6 +64,22 @@ export function inScope(shard: Shard, file: string, start: number, end: number):
 }
 
 /**
+ * Run 13's tool files (v1.1: 554 mutants, 256 of them static, i.e. each runs the whole kernel
+ * suite). In the catch-all shard they would push it past its time limit, so they join the two
+ * lightest shards (kernel-a: geom.ts and similarity.ts, 80 static mutants on main; kernel-b:
+ * transforms.ts lines 1–132, 84): the conjugates and poles to kernel-a, the arc and its range
+ * to kernel-b. A file of these lists that does not exist at this commit is left out of its
+ * group; the catch-all's negations then do not exclude it either, so a renamed file is still
+ * mutated (by kernel-h) and never drops out.
+ */
+export const V11_A: readonly string[] = [`${K}/tools/conjugates.ts`, `${K}/tools/poles.ts`];
+export const V11_B: readonly string[] = [`${K}/tools/arc.ts`, `${K}/tools/arc-range.ts`];
+
+function present(files: readonly string[]): string[] {
+  return files.filter((f) => existsSync(join(import.meta.dirname, '..', f)));
+}
+
+/**
  * The kernel's file groups. The first split (four groups: kernel-1 … kernel-4) took 51–58
  * minutes per full shard on a GitHub runner, and two shards ran past 75; each group was
  * halved. In the eight-way split the full runs took 9–53 minutes, the "rest" shard the
@@ -73,10 +91,10 @@ export function inScope(shard: Shard, file: string, start: number, end: number):
  * shard's first run).
  */
 const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly parent: string }[] = [
-  { files: [`${K}/geom.ts`, `${K}/similarity.ts`], parent: 'kernel-1' },
+  { files: [`${K}/geom.ts`, `${K}/similarity.ts`, ...present(V11_A)], parent: 'kernel-1' },
   // transforms.ts alone took more than 50 minutes: three line ranges (Stryker's
   // `file:start-end` form) cover it, the last one open-ended so no line can drop out.
-  { files: [`${K}/tools/transforms.ts:1-132`], parent: 'kernel-b' },
+  { files: [`${K}/tools/transforms.ts:1-132`, ...present(V11_B)], parent: 'kernel-b' },
   {
     files: [`${K}/tools/pairs.ts`, `${K}/tools/intersect.ts`, `${K}/tools/range.ts`],
     parent: 'kernel-2',
