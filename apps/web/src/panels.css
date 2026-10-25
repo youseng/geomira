@@ -271,3 +271,48 @@ h3.sec {
   font: italic 600 9px var(--math);
   color: var(--muted);
 }
+
+/* ---- views (v1.1, in the Layers tab) ---- */
+.views {
+  margin-top: 10px;
+}
+
+.view-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.view-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.view-name {
+  flex: 1;
+  text-align: left;
+  font-family: var(--mono);
+}
+
+.view-name.shown {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.view-rename {
+  flex: 1;
+  min-width: 0;
+}
+
+.view-save {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.view-save input {
+  flex: 1;
+  min-width: 0;
+}

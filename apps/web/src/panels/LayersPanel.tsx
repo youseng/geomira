@@ -1,6 +1,7 @@
 import type { EditorState } from '@geomira/editor/state';
 import type { Layer } from '@geomira/kernel/document';
 import type { EditorStore } from '../store';
+import { ViewsPanel } from './ViewsPanel';
 
 export interface LayersPanelProps {
   readonly store: EditorStore;
@@ -42,9 +43,19 @@ function LockBox({ store, layer, index }: { store: EditorStore; layer: Layer; in
  * Layers (SPEC §8.2, §15): visibility and the lock (document edits: they are in the text;
  * a locked layer's objects cannot be dragged, edited or removed through the GUI, ADR-0020),
  * the active layer (where new objects are built), derived layers' rules, removal of a layer,
- * and how many images are not drawn because they coincide with their sources (SPEC §13).
+ * and how many images are not drawn because they coincide with their sources (SPEC §13);
+ * then the views (ViewsPanel, v1.1).
  */
 export function LayersPanel({ store, state, coincident }: LayersPanelProps) {
+  return (
+    <>
+      <LayerList store={store} state={state} coincident={coincident} />
+      <ViewsPanel store={store} state={state} />
+    </>
+  );
+}
+
+function LayerList({ store, state, coincident }: LayersPanelProps) {
   return (
     <fieldset className="layers">
       <legend>Layers</legend>
