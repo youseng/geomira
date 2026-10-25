@@ -11,6 +11,8 @@ export type ToWorker =
   | { readonly type: 'cancel'; readonly id: number };
 
 export type FromWorker =
+  /** Sent once when the worker's module has loaded (Run 12: until then the page may fall back). */
+  | { readonly type: 'ready'; readonly id: 0 }
   | { readonly type: 'progress'; readonly id: number; readonly progress: JobProgress }
   | { readonly type: 'result'; readonly id: number; readonly result: JobResult }
   | { readonly type: 'error'; readonly id: number; readonly message: string };
@@ -20,6 +22,12 @@ export const PROGRESS_MS = 100;
 
 /** The worker runs the generator for at most this long (ms) before reading its messages. */
 export const SLICE_MS = 12;
+
+/**
+ * A worker that has neither said `ready` nor failed this long after it was created (ms) counts
+ * as unavailable, and the page runs the tests itself (Run 12).
+ */
+export const READY_MS = 5000;
 
 function record(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x !== null;
@@ -37,6 +45,8 @@ export function isToWorker(x: unknown): x is ToWorker {
 export function isFromWorker(x: unknown): x is FromWorker {
   if (!record(x) || typeof x['id'] !== 'number') return false;
   switch (x['type']) {
+    case 'ready':
+      return true;
     case 'progress':
       return record(x['progress']);
     case 'result':

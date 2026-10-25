@@ -38,8 +38,11 @@ jobs:
         run: |
           grep -q "src=\"${GEOMIRA_BASE}assets/" apps/web/dist/index.html
           grep -q "href=\"${GEOMIRA_BASE}assets/" apps/web/dist/index.html
-      - name: Install Playwright browser
-        run: pnpm --filter @geomira/web exec playwright install --with-deps chromium
+          grep -q "href=\"${GEOMIRA_BASE}manifest.webmanifest\"" apps/web/dist/index.html
+          test -f apps/web/dist/sw.js
+      # Run 12: the end-to-end suite includes the single file from file:// in three engines.
+      - name: Install Playwright browsers
+        run: pnpm --filter @geomira/web exec playwright install --with-deps chromium firefox webkit
       - name: End-to-end under the base path
         run: pnpm e2e
       - uses: actions/upload-pages-artifact@v5

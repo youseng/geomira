@@ -11,7 +11,8 @@
     "packages/*/test",
     "apps/web/test",
     "apps/web/e2e",
-    "apps/web/*.config.ts"
+    "apps/web/*.config.ts",
+    "apps/web/build"
   ],
   "exclude": ["scripts/check-rules/fixtures"]
 }

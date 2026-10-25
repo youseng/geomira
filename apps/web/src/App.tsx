@@ -10,6 +10,7 @@ import {
 } from 'react';
 import type { Scene, Undrawable } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
+import { AboutContext, UpdateBanner } from './about';
 import { Board } from './Board';
 import { CommandBar } from './CommandBar';
 import { ErrorBanner, TextDialog } from './Dialogs';
@@ -203,6 +204,13 @@ function StageTop({ app }: { app: ReturnType<typeof useApp> }) {
           }}
         />
       )}
+      <UpdateBanner
+        onReload={() => {
+          page.about.pwa.applyUpdate(() => {
+            store.autosave.flush();
+          });
+        }}
+      />
       <NoticeLine
         notice={snap.notice}
         onClose={() => {
@@ -262,48 +270,50 @@ export function App() {
   const { state } = snap;
   const settled = useSettled(state);
   return (
-    <div className="app">
-      <Header {...header.props} />
-      <Tools store={store} state={settled} />
-      <Stage>
-        <Canvas app={app} />
-        <StageTop app={app} />
-        <DevBox
-          scene={scene}
-          undrawable={app.undrawable.length}
-          stats={header.stats}
-          times={header.times}
-        />
-        <ClaimChips store={store} state={state} onOpen={app.openClaims} />
-        <ZoomControls onZoom={header.props.onZoom} onFit={header.props.onFit} />
-        <Status state={settled} />
-      </Stage>
-      <Commands store={store} inputRef={commandRef} />
-      <Boundary onError={page.onInternal}>
-        <SidePanel
+    <AboutContext.Provider value={page.about}>
+      <div className="app">
+        <Header {...header.props} />
+        <Tools store={store} state={settled} />
+        <Stage>
+          <Canvas app={app} />
+          <StageTop app={app} />
+          <DevBox
+            scene={scene}
+            undrawable={app.undrawable.length}
+            stats={header.stats}
+            times={header.times}
+          />
+          <ClaimChips store={store} state={state} onOpen={app.openClaims} />
+          <ZoomControls onZoom={header.props.onZoom} onFit={header.props.onFit} />
+          <Status state={settled} />
+        </Stage>
+        <Commands store={store} inputRef={commandRef} />
+        <Boundary onError={page.onInternal}>
+          <SidePanel
+            store={store}
+            state={state}
+            scene={scene}
+            undrawable={app.undrawable}
+            runs={page.runs}
+            tab={panels.tab}
+            onTab={panels.showTab}
+            open={panels.open}
+            onClose={panels.close}
+            onTestClaim={app.onTestClaim}
+            onStyle={app.style.open}
+          />
+        </Boundary>
+        <StyleCardView app={app} />
+        <DialogView
+          dialog={dialog}
           store={store}
-          state={state}
-          scene={scene}
-          undrawable={app.undrawable}
-          runs={page.runs}
-          tab={panels.tab}
-          onTab={panels.showTab}
-          open={panels.open}
-          onClose={panels.close}
-          onTestClaim={app.onTestClaim}
-          onStyle={app.style.open}
+          size={size}
+          onError={page.onInternal}
+          onClose={() => {
+            setDialog(null);
+          }}
         />
-      </Boundary>
-      <StyleCardView app={app} />
-      <DialogView
-        dialog={dialog}
-        store={store}
-        size={size}
-        onError={page.onInternal}
-        onClose={() => {
-          setDialog(null);
-        }}
-      />
-    </div>
+      </div>
+    </AboutContext.Provider>
   );
 }

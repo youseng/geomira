@@ -1,6 +1,10 @@
 import { helpSections } from '@geomira/editor/keymap';
+import { AboutSection } from '../about';
 
-/** Keyboard shortcuts and tools, generated from the editor's keymap (SPEC §15, E10). */
+/**
+ * Keyboard shortcuts and tools, generated from the editor's keymap (SPEC §15, E10), and what
+ * this copy is (its build, offline use, where tests run; Run 12).
+ */
 export function HelpPanel() {
   return (
     <div className="help">
@@ -26,6 +30,7 @@ export function HelpPanel() {
         reference for every tool. Right-click an object, on the canvas or in the Objects panel (or
         hold a finger on it), to change its style.
       </p>
+      <AboutSection />
     </div>
   );
 }
