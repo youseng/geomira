@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { TRIANGLE_TYPES, type TriangleType } from '@geomira/claims/randomize';
 import { FORMATS, type ExportFormat } from '@geomira/export/formats';
+import { SINGLE_FILE, SITE_URL } from './build-info';
 import { EXAMPLES } from './examples';
 import { Glyph, SrOnly } from './icons';
 import { Menu, MenuItem } from './Menu';
@@ -286,7 +287,7 @@ function HelpMenu(p: HeaderProps) {
           <MenuItem onClick={p.onHelp} close={close} kbd="?">
             Shortcuts and tools
           </MenuItem>
-          <a className="menu-link" href="about.html">
+          <a className="menu-link" href={SINGLE_FILE ? `${SITE_URL}about.html` : 'about.html'}>
             About Geomira
           </a>
           <a
