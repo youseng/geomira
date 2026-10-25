@@ -17,7 +17,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
         with:
@@ -34,10 +34,17 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Verify (typecheck, lint, depcruise, rules, test)
         run: pnpm verify
-      - name: Build
+      - name: Build (the site and the single file)
         run: pnpm build
-      - name: Install Playwright browser
-        run: pnpm --filter @geomira/web exec playwright install --with-deps chromium
+      - name: Upload the single-file build
+        uses: actions/upload-artifact@v7
+        with:
+          name: geomira-single-file
+          path: apps/web/dist-single/index.html
+          retention-days: 30
+      # Run 12: the single file is tested from file:// in Chromium, Firefox and WebKit.
+      - name: Install Playwright browsers
+        run: pnpm --filter @geomira/web exec playwright install --with-deps chromium firefox webkit
       - name: End-to-end
         run: pnpm e2e
       - name: Upload Playwright report
