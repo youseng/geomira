@@ -1,5 +1,138 @@
 # STATUS
 
+## Run 12: single-file offline build and PWA: ACCEPTED (2026-10-25)
+
+SPEC §1 v1.1 and §16. Decisions: [ADR-0030](adr/0030-single-file-and-pwa.md).
+
+Base check: main = eaf9d28 (PR #19 merged). Run 10 counts as accepted twice (its second audit is
+the pre-beta review, PRs #17 and #18; see [docs/audit/2026-10-23.md](audit/2026-10-23.md) and the
+sections below). **Run 11 (beta triage) is skipped by the maintainer's decision (2026-10-25):
+there are no beta reports yet; this is not a red base.** Run 9b's examples part stays postponed
+(docs/examples-source.md does not exist). On eaf9d28 `pnpm verify` passed locally (2932 tests),
+and ci, deploy and nightly were green on GitHub (https://github.com/youseng/geomira/actions/runs/40164723583,
+https://github.com/youseng/geomira/actions/runs/40164723589, https://github.com/youseng/geomira/actions/runs/40164723579).
+The container's clone had no tags: `git fetch --tags` brought `run-10b`, which now points at
+eaf9d28, so every test file of that commit is frozen; the add-only guard compares with it.
+
+## Done (each item → the test file that proves it)
+
+1. **Single-file build** (`pnpm build` → `apps/web/dist-single/index.html`, 856 kB, one file;
+   CI uploads it as the artifact `geomira-single-file`). vite-plugin-singlefile inlines scripts
+   and styles; the test worker is inlined (`?worker&inline` through `worker/spawn-inline.ts`);
+   favicon as a data: URL, no manifest. → `apps/web/test/build-plugins.test.ts`;
+   `apps/web/e2e/file-url.spec.ts` ("one file and nothing else": no request but the file and
+   its data:/blob: URLs) in the projects file-chromium, file-firefox, file-webkit.
+2. **Time-sliced fallback without workers** (≤ 16 ms; the page's budget is 8 ms): one slice loop
+   for worker and page with a prediction of the next step; reports in their own tasks; fallback
+   when there is no Worker, the constructor throws, or the worker fails or is silent before
+   `ready`, with the jobs moved to the page. → `apps/web/test/slicer.test.ts`,
+   `apps/web/test/host-fallback.test.ts`; e2e "without Web Workers the page runs the tests
+   itself, with the same verdicts" in all three engines (`file-url.spec.ts`), and
+   `apps/web/e2e/fallback-long-task.spec.ts` (Chromium trace from file:// without workers: every
+   main-thread task ≤ 16 ms, no long task; CI measured a longest task of 8.3 ms).
+3. **Playwright from file:// in Chromium, Firefox and WebKit**: open, draw (polygon tool),
+   local test and the global test the assume line starts, export (SVG shown and downloaded,
+   TikZ), share link opened in a new page → `apps/web/e2e/file-url.spec.ts` (4 tests × 3
+   engines). In all three the tests ran in the inlined worker ("tests ran in: worker" for
+   file-chromium, file-firefox and file-webkit in the deploy log below).
+4. **Share link from a file** (bug found by item 3's design: Firefox's `location.origin` is
+   "null" for file pages) → `apps/web/test/share-url.test.ts`, and the share test of
+   `file-url.spec.ts`.
+5. **PWA**: manifest and icons, a generated service worker (precache of every file of the build,
+   content-hash version, navigations to index.html, old caches deleted), registration after load,
+   offline after the first visit → `apps/web/test/service-worker.test.ts`,
+   `apps/web/test/pwa.test.ts`, `apps/web/test/build-plugins.test.ts`,
+   `apps/web/e2e/pwa.spec.ts` ("after the first visit the site opens and works offline": the
+   test's own server stopped and the browser offline; reload, figure, local test in the cached
+   worker, export, an unvisited address). Also passes under the Pages base path `/geomira/`
+   (deploy's e2e).
+6. **Version banner**: a new version waits; the banner names its build and this page's;
+   Reload saves the figure and reloads into the new version; Later keeps the running one. Help's
+   "About this copy" gives the build, offline status and where tests run; the debug report names
+   the build. → `apps/web/test/pwa.test.ts`, `apps/web/test/about.test.ts`, `pwa.spec.ts` (banner,
+   Reload, Later).
+
+## Not done
+
+- Nothing of the run's four items. Run 13's scope (views UI, long-tail tools, mutation gates) is
+  untouched.
+- The single file is not published anywhere but as a CI artifact (30 days); the Pages site does
+  not link to it.
+
+## Known bugs
+
+None found in this run besides item 4 (fixed). Unchanged from earlier runs: the lists under
+round 2 and the style card below.
+
+Local only (this container): Playwright 1.56.1 expects Chromium build 1194, the container has
+1243 (used through a path shim outside the repository; nothing was installed). On it the three
+phone canvas baselines of `scene.spec.ts`, the pixel-ratio test of `flows-review.spec.ts` and the
+drag-frame budget (app median 22 ms) fail, and fail identically on the unmodified base eaf9d28;
+in CI (the reference) all pass.
+
+## Uncertain
+
+- The page's slice budget (8 ms) and the worker's start-up limit (5 s) are judgement calls. A
+  slice can exceed the budget only by a single step longer than the recent ones (a figure whose
+  one sample takes over 8 ms, i.e. far beyond SPEC §17's test budget of 7.5 ms per sample at 150
+  objects).
+- Whether every browser starts the inlined (blob:) worker from file:// depends on the browser's
+  settings; Playwright's Chromium 141, Firefox 142 and WebKit 26 do. Where one refuses, the page
+  runs the tests itself (tested in all three by removing `Worker`).
+- The icons are rendered once from `public/icon.svg` with Chromium and committed as PNGs.
+
+## Changed frozen tests
+
+None. (`run-10b` = eaf9d28; `pnpm rules`: "add-only: frozen tests compared with run-10b, 0
+violation(s)".) Not test files but configuration: `apps/web/playwright.config.ts` (new projects;
+existing projects block service workers; `measure` matches only `long-task.spec`).
+
+## Acceptance command output
+
+### Local (`pnpm verify`, on b243645)
+
+```
+✔ no dependency violations found (630 modules, 3379 dependencies cruised)
+ok   tolerance: 911 files scanned, 0 violation(s)
+ok   file-length: 911 files scanned, 0 violation(s)
+ok   test-count: 2978 tests, floor 2932, 0 violation(s)
+ok   disabled-tests: 911 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-10b, 0 violation(s)
+ok   forbidden-words: 911 files scanned, 0 violation(s)
+ Test Files  337 passed (337)
+      Tests  2978 passed (2978)
+```
+
+The test-count floor is now 2978. Playwright locally (Chromium only): file-chromium 4 passed,
+pwa 3 passed (3 runs each; also under `GEOMIRA_BASE=/geomira/` with pages), measure-fallback 1
+passed (longest task 10.1 ms alone).
+
+### CI on GitHub (b243645)
+
+- ci https://github.com/youseng/geomira/actions/runs/40167536605: `verify` success (typecheck,
+  lint, depcruise, rules, 2978 tests), build of the site and the single file, artifact
+  `geomira-single-file`, Playwright with Chromium, Firefox and WebKit: **111 passed** (file-chromium,
+  file-firefox, file-webkit 4 each; pwa 3; measure: longest task 6.6 ms; measure-drag: app median
+  6.35 ms; measure-fallback: longest task 8.3 ms without workers).
+- deploy https://github.com/youseng/geomira/actions/runs/40167536602: build under `/geomira/`
+  (manifest link and sw.js checked), the same 111 e2e tests passed under the base path; "tests ran
+  in: worker" for file-chromium, file-firefox and file-webkit.
+- tex https://github.com/youseng/geomira/actions/runs/40167536651 and nightly
+  https://github.com/youseng/geomira/actions/runs/40167536671: success.
+
+The commit that marks this run ACCEPTED changes only docs/STATUS.md and docs/test-count.txt
+(the raised floor); its own CI run is checked after the push.
+
+## Requests
+
+- **vite-plugin-singlefile 2.3.3** (devDependency of apps/web, exact; released 2026-04-17; it
+  depends on micromatch). Authorised by the maintainer for this run as a development dependency;
+  it ships nothing at runtime.
+- Tag this run's merge as `run-12` (Run 11 skipped), so the add-only guard freezes the new tests.
+- Decide whether the Pages site should link to the single file (for example a release asset).
+
+---
+
 ## Run 10, audit 2 of 2: ACCEPTED (2026-10-25)
 
 The maintainer counts the pre-beta bug review (round 1, PR #17; round 2 and the style card,
