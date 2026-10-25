@@ -103,6 +103,8 @@ intersect(a, b, selectors): the common point of two lines, a line and a circle, 
   - the intersection outside a segment or ray → Undefined
   - the intersection within the band of a segment end → Undefined (ambiguous)
   - a segment or ray range mod p → Inexact
+  - a candidate outside an arc is not a candidate (none left → Undefined)
+  - a candidate within the band of an arc end → Undefined (ambiguous)
   - line ∩ circle: the line misses the circle → Undefined
   - line ∩ circle: tangency (the gap within the band) → the double point
   - circle ∩ circle: apart or one inside the other → Undefined
@@ -202,6 +204,9 @@ Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range);
   - on(c, 0, 0) → Undefined
   - on(c, u, 0) → the anchor
   - on(c, θ) over Q or mod p → Inexact unless r, cos θ and sin θ are representable
+  - on an arc, the point is clamped to the nearer end
+  - on an arc, both ends equally far → Undefined (ambiguous)
+  - a hand-built arc mod p → Inexact
 - Examples:
   - `on(segment((0, 0), (4, 2)), 1/4)` → point (1, 1/2)
   - `on(circle((0, 0), (5, 0)), 1, 2)` → point (-3, 4)
@@ -225,6 +230,8 @@ other(a, b, P): the second intersection of a line and a circle, or of two circle
   - the other point outside a segment or ray → Undefined
   - the other point within the band of a segment end → Undefined (ambiguous)
   - a segment or ray range mod p → Inexact
+  - the other point outside an arc → Undefined
+  - a hand-built arc mod p → Inexact
 - Examples:
   - `other(line((3, 4), (-4, -3)), circle((0, 0), (3, 4)), (3, 4))` → point (-4, -3)
   - `other(circle((0, 0), (3, 4)), circle((6, 0), (3, 4)), (3, 4))` → point (3, -4)
@@ -297,9 +304,81 @@ tangent_point(P, c, selectors): a point where a tangent from P touches c; two ca
   - along(±) → Undefined (use orient(±))
   - other(T) with T not a touch point → Undefined
   - square roots not representable → Inexact over Q and mod p (other(T) is exact)
+  - a touch point outside an arc is not a candidate
 - Examples:
   - `tangent_point((5, 5), circle((0, 0), (5, 0)), orient(+))` → point (5, 0)
   - `tangent_point((6, 0), circle((0, 0), (5, 0)), orient(+))` → point (4.16666666667, -2.76385399196)
+
+### spiral_center
+
+spiral_center(A, B, C, D): the center of the spiral similarity taking A to C and B to D (the fixed point of spiral(A, B, C, D)); also the center of the one taking A to B and C to D; exact.
+
+- Signatures: `spiral_center(point, point, point, point)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `spiral_center(point, point, point, point)`: arguments 2, 3 in any order (the same value)
+  - `spiral_center(point, point, point, point)`: arguments 1, 4 in any order (the same value)
+- Degenerate cases:
+  - D − C = B − A (a translation; four equal points included) → Undefined
+  - A = B, C = D, A = C or B = D → that point
+- Examples:
+  - `spiral_center((0, 0), (4, 0), (1, 1), (3, 3))` → point (0, 2)
+
+### isogonal
+
+isogonal(P, A, B, C): the isogonal conjugate of P in triangle ABC (the reflections of AP, BP, CP in the bisectors at A, B, C meet there); (a²vw : b²wu : c²uv) in barycentrics; exact.
+
+- Signatures: `isogonal(point, point, point, point)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `isogonal(point, point, point, point)`: arguments 2, 3, 4 in any order (the same value)
+- Degenerate cases:
+  - coincident vertices → Undefined
+  - collinear vertices → Undefined
+  - P a vertex → Undefined
+  - P on the circumcircle → Undefined (the conjugate is at infinity)
+  - P on a side line (not a vertex) → the opposite vertex
+- Examples:
+  - `isogonal((2, 1), (0, 0), (4, 0), (1, 3))` → point (1, 1)
+  - `isogonal((1, 1), (0, 0), (4, 0), (1, 3))` → point (2, 1)
+
+### pole
+
+pole(l, c): the pole of the line l with respect to c, the point whose polar is l (the inverse of polar); exact.
+
+- Signatures: `pole(linear, round)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry: none
+- Degenerate cases:
+  - l through the center → Undefined (the pole is at infinity)
+  - l tangent to c → the touch point
+  - a segment or ray is extended to its carrier line
+- Examples:
+  - `pole(line((5, -5), (5, 5)), circle((0, 0), (5, 0)))` → point (5, 0)
+  - `pole(line((2, 0), (0, 2)), circle((0, 0), (5, 0)))` → point (25/2, 25/2)
+
+### radical_center
+
+radical_center(c1, c2, c3): the point with equal power to the three circles, where their radical axes meet; exact.
+
+- Signatures: `radical_center(round, round, round)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `radical_center(round, round, round)`: arguments 1, 2, 3 in any order (the same value)
+- Degenerate cases:
+  - two concentric circles → Undefined
+  - collinear centers → Undefined (parallel radical axes)
+  - coaxal circles → Undefined (the radical axes coincide)
+- Examples:
+  - `radical_center(circle((0, 0), 2), circle((6, 0), 3), circle((2, 5), 1))` → point (31/12, 13/6)
 
 ## Lines
 
@@ -494,9 +573,26 @@ tangent_from(P, c, selectors): a tangent from P to c, the line through its touch
   - along(±) → Undefined (use orient(±))
   - other(T) with T not a touch point → Undefined
   - square roots not representable → Inexact over Q and mod p (other(T) is exact)
+  - a touch point outside an arc is not a candidate
 - Examples:
   - `tangent_from((5, 5), circle((0, 0), (5, 0)), orient(-))` → line (0, 5) + t·(-5, 0), t ∈ [−∞, ∞], chiral
   - `tangent_from((6, 0), circle((0, 0), (5, 0)), orient(-))` → line (4.16666666667, 2.76385399196) + t·(-2.76385399196, 4.16666666667), t ∈ [−∞, ∞], chiral
+
+### symmedian
+
+symmedian(A, B, C): the symmedian of triangle ABC from A (the median from A reflected in the bisector at A): the line from A to D on BC with BD : DC = AB² : AC²; achiral; exact. The symmedian point is isogonal(centroid(A, B, C), A, B, C).
+
+- Signatures: `symmedian(point, point, point)`
+- Result: line
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `symmedian(point, point, point)`: arguments 2, 3 in any order (the same value)
+- Degenerate cases:
+  - coincident vertices → Undefined
+  - collinear vertices → Undefined
+- Examples:
+  - `symmedian((0, 0), (4, 0), (1, 3))` → line (0, 0) + t·(28/13, 24/13), t ∈ [−∞, ∞]
 
 ## Circles
 
@@ -626,6 +722,24 @@ excircle(A, B, C): the excircle opposite A; anchor: its touch point on BC.
 - Examples:
   - `excircle((5, 12), (0, 0), (14, 0))` → circle center (8, -12), r² = 144, anchor (8, 0)
   - `excircle((0, 0), (4, 0), (1, 3))` → circle center (5.70245917364, 4.1101000264), r² = 16.892922227, anchor (2.79617957362, 1.20382042638)
+
+### arc
+
+arc(A, B, C): the arc from A through B to C of the circle through A, B, C (a circle value whose arc runs counter-clockwise; anchor A). Points ON it (intersect, other, on, tangent_point, tangent_from) must lie on the arc; tools that use the whole circle (center, radius, power, tangent, polar, pole, radical_axis, radical_center) use its circle.
+
+- Signatures: `arc(point, point, point)`
+- Result: circle
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `arc(point, point, point)`: arguments 1, 3 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- Degenerate cases:
+  - coincident points → Undefined
+  - collinear points → Undefined (use segment)
+  - the orientation mod p → Inexact
+- Examples:
+  - `arc((4, 0), (0, 4), (-4, 0))` → circle center (0, 0), r² = 16, arc counter-clockwise from (4, 0) to (-4, 0), anchor (4, 0)
+  - `arc((-4, 0), (0, 4), (4, 0))` → circle center (0, 0), r² = 16, arc counter-clockwise from (4, 0) to (-4, 0), anchor (-4, 0)
 
 ## Transformations
 

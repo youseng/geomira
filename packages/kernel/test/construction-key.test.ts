@@ -33,6 +33,7 @@ function fixture(): Builder {
   b.call('d', 'circle', b.ref('F'), b.ref('G'));
   b.call('l', 'line', b.ref('H'), b.ref('I'));
   b.call('m', 'line', b.ref('A'), b.ref('C'));
+  b.call('k', 'circle', b.ref('A'), b.ref('D'));
   return b;
 }
 
@@ -62,6 +63,11 @@ const SAMPLES: Readonly<Record<string, readonly string[]>> = {
   foot: ['P', 'A', 'B'],
   polygon: ['A', 'B', 'C', 'D'],
   intersect: ['c', 'd'],
+  spiral_center: ['A', 'B', 'C', 'D'],
+  isogonal: ['P', 'A', 'B', 'C'],
+  symmedian: ['A', 'B', 'C'],
+  radical_center: ['c', 'd', 'k'],
+  arc: ['A', 'B', 'C'],
 };
 
 /** Selectors of a sample (intersect of two circles needs one). */

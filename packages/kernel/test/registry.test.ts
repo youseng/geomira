@@ -88,6 +88,12 @@ describe('createRegistry', () => {
       'mark_right',
       'mark_segment',
       'text',
+      'spiral_center',
+      'isogonal',
+      'symmedian',
+      'pole',
+      'radical_center',
+      'arc',
     ]);
     for (const t of REGISTRY.tools) {
       expect(t.id).toBe(t.name);

@@ -10,7 +10,7 @@
  * tangent_from's line is the tangent at T: through T, direction rot90(T − O), CHIRAL (a
  * quarter turn of T − O, as tangent(T, c)); it passes through P.
  */
-import type { Field } from '@geomira/num/field';
+import { isInexact, type Field } from '@geomira/num/field';
 import { circleGap } from '../incidence';
 import type { BranchShape, EvalContext, ExampleArg, ToolSpec } from '../tool';
 import { isZeroVec, vAdd, vDot, vRot90, vScale, vSub } from '../geom';
@@ -26,6 +26,7 @@ import {
   type Vec,
 } from '../value';
 import { badArgs, circleAt, degenerateCircle, pointAt } from './args';
+import { offArcs, onArcs } from './arc-range';
 import { countFromGap, midOff, reflectIn, type Pair } from './pairs';
 
 type Output = 'tangent_point' | 'tangent_from';
@@ -48,7 +49,8 @@ function output<T>(F: Field<T>, c: Circle<T>, tool: Output, X: Vec<T>): Value<T>
 
 /**
  * Degenerate cases: a circle with no positive radius → Undefined; P = the centre or P
- * inside c → Undefined; P on c → the double point.
+ * inside c → Undefined; P on c → the double point; on an arc, a touch point off the arc is
+ * not a candidate (arc-range.ts).
  */
 function tangentPair<T>(
   F: Field<T>,
@@ -76,17 +78,22 @@ function tangentPair<T>(
     shape: SHAPES[tool],
     noun: tool === 'tangent_point' ? 'touch point' : 'tangent',
     low: { kind: 'orient', from: P, to: c.c },
+    ranged: c.arc !== null,
     count: () => countFromGap(F, circleGap(F, P, c), ctx, inside),
     list: (n) => {
       const rad = F.div(F.mul(c.r2, F.sub(ww, c.r2)), F.mul(ww, ww));
-      return midOff(F, n, mid, rad, vRot90(F, w), true);
+      const list = midOff(F, n, mid, rad, vRot90(F, w), true);
+      return isInexact(list) ? list : onArcs(F, [c], list, ctx, 'touch point');
     },
     other: {
       curves: [
         { obj: c, name: 'the circle' },
         { obj: polar, name: 'the polar of P (the chord of contact)' },
       ],
-      point: (X) => reflectIn(F, c.c, w, X),
+      point: (X) => {
+        const T = reflectIn(F, c.c, w, X);
+        return offArcs(F, [c], T, ctx, 'touch point') ?? T;
+      },
     },
     output: (X) => output(F, c, tool, X),
   };
@@ -139,6 +146,7 @@ const DEGENERATE = [
   'along(±) → Undefined (use orient(±))',
   'other(T) with T not a touch point → Undefined',
   'square roots not representable → Inexact over Q and mod p (other(T) is exact)',
+  'a touch point outside an arc is not a candidate',
 ];
 
 export const TANGENT_FROM_TOOLS: readonly ToolSpec[] = [

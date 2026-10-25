@@ -1,11 +1,13 @@
 /**
- * The v1 tools of Runs 2, 3a, 3b, 4 and 8a, in registry order (read only by registry.ts; the generated
+ * The v1 tools of Runs 2, 3a, 3b, 4 and 8a and the v1.1 tools of Run 13, in registry order (read only by registry.ts; the generated
  * docs group them by family).
  */
 import type { ToolSpec } from '../tool';
+import { ARC_TOOLS } from './arc';
 import { ARITHMETIC_TOOLS } from './arithmetic';
 import { CIRCLE_MEASURE_TOOLS } from './circle-measures';
 import { CIRCLE_TOOLS, NINEPOINT_CENTER_TOOL } from './circles';
+import { CONJUGATE_TOOLS } from './conjugates';
 import { DISPLAY_TOOLS } from './display';
 import { FUNCTION_TOOLS } from './functions';
 import { INCIRCLE_TOOLS } from './incircle';
@@ -16,6 +18,7 @@ import { MEASURE_TOOLS } from './measures';
 import { GLIDER_TOOLS } from './on';
 import { OTHER_TOOLS } from './other';
 import { POINT_TOOLS } from './points';
+import { POLE_TOOLS } from './poles';
 import { TANGENT_FROM_TOOLS } from './tangent-from';
 import { TANGENT_TOOLS } from './tangents';
 import { TRANSFORM_TOOLS } from './transforms';
@@ -40,4 +43,7 @@ export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze([
   ...TANGENT_FROM_TOOLS,
   ...TRANSFORM_TOOLS,
   ...MARK_TOOLS,
+  ...CONJUGATE_TOOLS,
+  ...POLE_TOOLS,
+  ...ARC_TOOLS,
 ]);
