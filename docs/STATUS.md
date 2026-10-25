@@ -51,13 +51,15 @@ eaf9d28, so every test file of that commit is frozen; the add-only guard compare
    "About this copy" gives the build, offline status and where tests run; the debug report names
    the build. → `apps/web/test/pwa.test.ts`, `apps/web/test/about.test.ts`, `pwa.spec.ts` (banner,
    Reload, Later).
+7. **The single file in the repository** (maintainer request after acceptance):
+   `releases/geomira.html`, the build of 5f0ce3be (sha256 728059b7…4162), with
+   `releases/README.md`; a snapshot, not checked against later code (ADR-0030 item 15).
 
 ## Not done
 
 - Nothing of the run's four items. Run 13's scope (views UI, long-tail tools, mutation gates) is
   untouched.
-- The single file is not published anywhere but as a CI artifact (30 days); the Pages site does
-  not link to it.
+- The Pages site does not link to the single file.
 
 ## Known bugs
 
@@ -129,7 +131,8 @@ The commit that marks this run ACCEPTED changes only docs/STATUS.md and docs/tes
   depends on micromatch). Authorised by the maintainer for this run as a development dependency;
   it ships nothing at runtime.
 - Tag this run's merge as `run-12` (Run 11 skipped), so the add-only guard freezes the new tests.
-- Decide whether the Pages site should link to the single file (for example a release asset).
+- Decide whether the Pages site should link to the single file, and whether
+  `releases/geomira.html` should be refreshed at every run (it is a hand-made snapshot).
 
 ---
 
