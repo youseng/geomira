@@ -24,6 +24,7 @@ import { fitMargin } from './hooks';
 import type { HeaderProps } from './Header';
 import { LIGHT_THEME } from './render';
 import { useSettled } from './settled';
+import { shareUrl } from './share-url';
 import { EditorStore, useSnapshot, type Snapshot } from './store';
 import { TestRuns } from './test-runs';
 import { TestHost } from './worker/host';
@@ -221,7 +222,7 @@ function actions(env: HeaderEnv) {
     onUndo: () => store.apply({ kind: 'undo' }),
     onRedo: () => store.apply({ kind: 'redo' }),
     onShare: () => {
-      const url = `${location.origin}${location.pathname}${encodeShare(store.current().doc)}`;
+      const url = shareUrl(location.href, encodeShare(store.current().doc));
       env.setDialog({ kind: 'share', text: url });
     },
     onReport: () => {
