@@ -163,9 +163,9 @@ test('views from the file: save and switch; the share link and a reload keep the
   await page.getByRole('button', { name: 'Save view', exact: true }).click();
   await page.getByRole('button', { name: 'Show view whole', exact: true }).click();
   await expect(page.getByLabel('aux', { exact: true })).toBeChecked();
+  await expect(await textArea(page)).toHaveValue(/^@view whole \[layers=main,aux\] /mu);
+  await expect(await textArea(page)).toHaveValue(/^@view bare \[layers=main,-aux\] /mu);
   const figure = await text(page);
-  expect(figure).toMatch(/^@view whole \[layers=main,aux\] /mu);
-  expect(figure).toMatch(/^@view bare \[layers=main,-aux\] /mu);
   // A reload of the file opens the autosaved figure with its views (before another page
   // edits, which would save its own figure).
   await page.reload();

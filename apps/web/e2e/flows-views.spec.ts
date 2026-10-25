@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { command, openApp, tab, text } from './helpers';
+import { command, openApp, tab, textArea } from './helpers';
 
 /**
  * The views UI (SPEC §8.3, §15; v1.1, Run 13): save, show, cycle with ] and [, rename and
@@ -30,7 +30,7 @@ test('views: save, show, cycle, rename, delete, undo; each in the text', async (
   // Save the whole figure at the current zoom.
   const wide = await canvasZoom(page);
   await saveView(page, 'whole');
-  expect(await text(page)).toMatch(
+  await expect(await textArea(page)).toHaveValue(
     new RegExp(
       `^@view whole \\[layers=main,aux\\] \\[viewport=[-0-9.e]+,[-0-9.e]+,${String(wide)}\\]$`,
       'mu',
@@ -45,14 +45,14 @@ test('views: save, show, cycle, rename, delete, undo; each in the text', async (
   expect(close).not.toBe(wide);
   await page.getByLabel('New view name', { exact: true }).fill('close');
   await page.getByLabel('New view name', { exact: true }).press('Enter');
-  expect(await text(page)).toMatch(/^@view close \[layers=main,-aux\] /mu);
+  await expect(await textArea(page)).toHaveValue(/^@view close \[layers=main,-aux\] /mu);
 
   // Showing a view sets the layers, writes @viewport and moves the canvas.
   await tab(page, 'Layers');
   await page.getByRole('button', { name: 'Show view whole', exact: true }).click();
   expect(await auxVisible(page)).toBe(true);
   await expect.poll(() => canvasZoom(page)).toBe(wide);
-  expect(await text(page)).toMatch(/^@viewport /mu);
+  await expect(await textArea(page)).toHaveValue(/^@viewport /mu);
 
   // ] switches to the next view, [ back.
   await page.getByLabel('Geometry canvas').focus();
@@ -69,14 +69,14 @@ test('views: save, show, cycle, rename, delete, undo; each in the text', async (
   const field = page.getByLabel('New name of view close', { exact: true });
   await field.fill('detail');
   await field.press('Enter');
-  expect(await text(page)).toMatch(/^@view detail \[layers=main,-aux\] /mu);
+  await expect(await textArea(page)).toHaveValue(/^@view detail \[layers=main,-aux\] /mu);
 
   // Delete, then one undo brings the view back.
   await tab(page, 'Layers');
   await page.getByRole('button', { name: 'Delete view whole', exact: true }).click();
-  expect(await text(page)).not.toMatch(/^@view whole /mu);
+  await expect(await textArea(page)).not.toHaveValue(/^@view whole /mu);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
-  expect(await text(page)).toMatch(/^@view whole /mu);
+  await expect(await textArea(page)).toHaveValue(/^@view whole /mu);
 
   // A used name is refused with the reason; nothing changes.
   await saveView(page, 'detail');
