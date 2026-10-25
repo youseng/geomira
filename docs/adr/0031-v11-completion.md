@@ -82,10 +82,10 @@ constructive, and a constructive mapping needs an Asymptote helper checked by te
    - on(arc, …): the glider's point is clamped to the arc, at the nearer end (as a segment
      glider's t is clamped); the choice of end flips where both are equally far, on the far
      side of the circle, so there it is Undefined within the band.
-   Tools that use the circle as a whole (center, radius, power, tangent(P, c), polar, pole,
-   radical_axis, radical_center, inside / outside) use the carrier circle, as foot and parallel
-   extend a segment to its line. Arcs mod p only arise from hand-built values (arc() itself is
-   Inexact there); those cases are tested by calling compute directly.
+     Tools that use the circle as a whole (center, radius, power, tangent(P, c), polar, pole,
+     radical_axis, radical_center, inside / outside) use the carrier circle, as foot and parallel
+     extend a segment to its line. Arcs mod p only arise from hand-built values (arc() itself is
+     Inexact there); those cases are tested by calling compute directly.
 8. The scene, the canvas and every exporter already drew arc values (images of arcs, ADR-0007;
    marks); `export/test/arc-tool.test.ts` checks that SVG, TikZ, Asymptote and the PNG plan draw
    only the arc, with the style card's colour, width, dash and opacity, and the mirror image.
