@@ -40,9 +40,10 @@ export it for an AoPS post or a handout.
 - **On a phone** too: a tool strip, the panels as a drawer, pan, pinch and drag by touch.
 - **Offline.** After one visit the site opens and works without a network, and can be installed
   as an app; a new version is offered in a banner and applied when you reload. There is also a
-  single-file copy (one HTML file, the artifact `geomira-single-file` of each CI run, or
-  `pnpm build` → `apps/web/dist-single/index.html`) that works opened from disk, in Chromium,
-  Firefox and Safari's engine.
+  single-file copy, [`releases/geomira.html`](releases/geomira.html) (one HTML file; a fresh one
+  is also the artifact `geomira-single-file` of each CI run, or `pnpm build` →
+  `apps/web/dist-single/index.html`), that works opened from disk, in Chromium, Firefox and
+  Safari's engine.
 
 ## An Asymptote export
 

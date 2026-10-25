@@ -2,6 +2,8 @@ pnpm-lock.yaml
 node_modules/
 dist/
 dist-single/
+# The committed single-file build (minified output, ADR-0030).
+releases/geomira.html
 coverage/
 playwright-report/
 test-results/

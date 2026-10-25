@@ -111,6 +111,16 @@ Chromium. SPEC leaves open: what "workers unavailable" means, how the slices are
     manifest link and `sw.js` in the Pages build. `tsconfig.tests.json` covers `apps/web/build`;
     ESLint, Prettier and git ignore `dist-single/`.
 
+### Revision (maintainer request, same run)
+
+15. **A committed copy.** The maintainer asked for the single file in the repository:
+    `releases/geomira.html` is the single-file build of commit 5f0ce3be, committed by hand, with
+    `releases/README.md`. It is a snapshot: it embeds its build id, so it can never equal the
+    build of the commit that contains it, and no check compares it with the code; it is updated
+    by hand when the maintainer asks. SPEC §2's directory list gains `releases/` for it. Prettier
+    skips it (minified output); it is within the 400-line limit (182 lines) and has none of the
+    reserved words, so `pnpm rules` checks it as any file.
+
 ## Consequences
 
 - The site works offline after one visit and updates only when the user reloads into a new
