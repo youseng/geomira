@@ -18,6 +18,8 @@ import { buildScene } from '@geomira/scene/build';
 import type { Scene } from '@geomira/scene/types';
 import { zoomViewport, type Size } from '@geomira/scene/viewport';
 import { measureFrames, type FrameTimes } from './bench';
+import { BUILD } from './build-info';
+import { browserPwa, startPwa } from './pwa-browser';
 import { EXAMPLES } from './examples';
 import { figureOf, viewportFor } from './figure';
 import { fitMargin } from './hooks';
@@ -51,7 +53,11 @@ function freshSeed(): number {
 
 export function reportOf(store: EditorStore): string {
   const agent = typeof navigator === 'undefined' ? 'unknown' : navigator.userAgent;
-  return debugReport(store.current(), { appVersion: VERSION, userAgent: agent });
+  // The build id tells which copy a report comes from (an offline copy may be old; Run 12).
+  return debugReport(store.current(), {
+    appVersion: `${VERSION} (build ${BUILD})`,
+    userAgent: agent,
+  });
 }
 
 /** The page's long-lived objects and the current snapshot and scene. */
@@ -64,7 +70,10 @@ export function usePage() {
     () => new EditorStore({ registry: createRegistry() }, onInternal),
     [onInternal],
   );
-  const runs = useMemo(() => new TestRuns(new TestHost(), onInternal), [onInternal]);
+  const host = useMemo(() => new TestHost(), []);
+  const runs = useMemo(() => new TestRuns(host, onInternal), [host, onInternal]);
+  const pwa = useMemo(browserPwa, []);
+  useEffect(() => startPwa(pwa, window, document), [pwa]);
   useEffect(() => {
     // Off the critical path: the worker is ready before the first Test click.
     const id = setTimeout(() => {
@@ -82,7 +91,8 @@ export function usePage() {
   const sceneRef = useRef<Scene>(scene);
   sceneRef.current = scene;
   const sceneOf = useCallback(() => sceneRef.current, []);
-  return { internal, setInternal, onInternal, store, runs, snap, scene, sceneOf };
+  const about = useMemo(() => ({ pwa, host }), [pwa, host]);
+  return { internal, setInternal, onInternal, store, runs, snap, scene, sceneOf, about };
 }
 
 /** Fits the current figure into the canvas. */
