@@ -123,7 +123,9 @@ export function createEditor(doc: Document, env: EditorEnv): EditorState {
  * was refused, or bound to another object that later took the freed id).
  */
 function prunedTool(t: ToolState, ids: ReadonlySet<number>): ToolState {
-  return t.picks.every((id) => ids.has(id)) ? t : idleTool(t.claimKind, t.value, t.typed);
+  return t.picks.every((id) => ids.has(id))
+    ? t
+    : idleTool(t.claimKind, t.value, t.typed, t.mapOnly === true);
 }
 
 /**

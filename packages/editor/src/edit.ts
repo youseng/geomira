@@ -297,6 +297,7 @@ function apply(state: EditorState, e: Edit, env: EditorEnv): EditResult {
     case 'activeLayer':
     case 'tool':
     case 'toolValue':
+    case 'toolMapOnly':
       return uiEdit(state, e);
     case 'dragStart':
     case 'dragMove':

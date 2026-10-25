@@ -16,6 +16,7 @@ const UI_KINDS: readonly string[] = Object.freeze([
   'activeLayer',
   'tool',
   'toolValue',
+  'toolMapOnly',
 ]);
 
 /** Whether a log entry is a UI edit (outside the document and its history). */

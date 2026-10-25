@@ -15,7 +15,7 @@
  * circle) take them in either order (`anyOrder`), as Geomdraw's did.
  */
 import type { ToolId } from './tool-state';
-import { anyOrder, C, call, L, P, type ToolUI } from './tool-ui';
+import { anyOrder, C, call, L, mapTool, P, type ToolUI } from './tool-ui';
 import { CENTER_TOOLS, TRIANGLE_CIRCLE_TOOLS } from './tools-centers';
 import {
   CIRCLE_RADIUS,
@@ -27,6 +27,7 @@ import {
   RADICAL_AXIS,
   SECOND_INTERSECTION,
 } from './tools-more';
+import { APPLY_MAP_TOOL, ARC_TOOL, SYMMEDIAN_TOOL, V11_POINT_TOOLS } from './tools-v11';
 
 export type { Build, PickKind, ToolStep, ToolUI } from './tool-ui';
 
@@ -144,6 +145,7 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     'The bisector of angle ABC (at B).',
   ),
   EXT_BISECTOR,
+  SYMMEDIAN_TOOL,
   call(
     'circle',
     'Circle (center, point)',
@@ -164,8 +166,10 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     'The circle through three points.',
   ),
   DIAMETER_CIRCLE,
+  ARC_TOOL,
   ...TRIANGLE_CIRCLE_TOOLS,
   ...CENTER_TOOLS,
+  ...V11_POINT_TOOLS,
   {
     id: 'tangent',
     label: 'Tangent',
@@ -188,19 +192,22 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
       'The foot of the perpendicular from a point to a line (click them in either order).',
     ),
   ),
-  call(
-    'reflect',
-    'Reflect',
-    'x',
-    'reflect',
-    'point',
-    [
-      { pick: 'figure', prompt: 'object to reflect' },
-      { pick: 'mirror', prompt: 'mirror line or center' },
-    ],
-    'The mirror image of an object in a line or a point.',
+  mapTool(
+    call(
+      'reflect',
+      'Reflect',
+      'x',
+      'reflect',
+      'point',
+      [
+        { pick: 'figure', prompt: 'object to reflect' },
+        { pick: 'mirror', prompt: 'mirror line or center' },
+      ],
+      'The mirror image of an object in a line or a point (or, with “Transformation only”, the reflection itself).',
+    ),
   ),
   ...MAP_TOOLS,
+  APPLY_MAP_TOOL,
   {
     id: 'polygon',
     label: 'Polygon',

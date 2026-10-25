@@ -64,6 +64,11 @@ export interface ToolUI {
   readonly repeats?: boolean;
   /** The number the tool asks for, written as the call's last argument. */
   readonly value?: ToolValue;
+  /**
+   * An image tool whose first step is the object to map (reflect(X, l), rotate(X, O, θ), …):
+   * with ToolState.mapOnly it leaves that step out and builds the map alone (reflect(l)).
+   */
+  readonly map?: true;
   readonly build: Build;
 }
 
@@ -90,6 +95,11 @@ export function call(
 /** `call` whose picks may come in any order (ADR-0024). */
 export function anyOrder(t: ToolUI): ToolUI {
   return { ...t, anyOrder: true };
+}
+
+/** A map tool (ToolUI.map): its first step is the object to map. */
+export function mapTool(t: ToolUI): ToolUI {
+  return { ...t, map: true };
 }
 
 /** `call` with a number typed in the tool's field, written last (rotate(X, O, 60)). */

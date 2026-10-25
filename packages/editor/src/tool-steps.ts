@@ -36,11 +36,15 @@ function pickOfParam(p: ClaimParam): PickKind {
   return p === 'point' || p === 'line' || p === 'circle' ? p : 'curve';
 }
 
-/** The steps of the active tool (the claim tool's come from its claim kind). */
+/**
+ * The steps of the active tool (the claim tool's come from its claim kind; a map tool's
+ * without its object step when it builds the map alone, ToolState.mapOnly).
+ */
 export function stepsOf(
   tool: ToolUI,
   ts: ToolState,
 ): { steps: readonly ToolStep[]; rest?: ToolStep } {
+  if (tool.map === true && ts.mapOnly === true) return { steps: tool.steps.slice(1) };
   if (tool.build.kind !== 'claim') return tool;
   const k = CLAIM_KINDS.find((x) => x.name === ts.claimKind);
   if (k === undefined || !claimToolKinds().includes(k.name)) return { steps: [] };

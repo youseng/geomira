@@ -20,12 +20,14 @@ export type ToolId =
   | 'perp_bisector'
   | 'bisector'
   | 'ext_bisector'
+  | 'symmedian'
   | 'polar'
   | 'radical_axis'
   | 'circle'
   | 'circle_radius'
   | 'circle3'
   | 'diameter_circle'
+  | 'arc'
   | 'circumcircle'
   | 'incircle'
   | 'excircle'
@@ -36,6 +38,10 @@ export type ToolId =
   | 'orthocenter'
   | 'ninepoint_center'
   | 'excenter'
+  | 'isogonal'
+  | 'spiral_center'
+  | 'pole'
+  | 'radical_center'
   | 'tangent'
   | 'foot'
   | 'reflect'
@@ -43,6 +49,7 @@ export type ToolId =
   | 'translate'
   | 'homothety'
   | 'spiral'
+  | 'apply_map'
   | 'polygon'
   | 'mark_angle'
   | 'mark_right'
@@ -74,6 +81,12 @@ export interface ToolState {
    * the field "keeps the last number for the next use" (ADR-0024 item 5).
    */
   readonly typed: Readonly<Partial<Record<ToolId, string>>>;
+  /**
+   * The map tools (reflect, rotate, translate, homothety, spiral; ToolUI.map) build the
+   * transformation alone, `f = reflect(l)`, instead of an object's image (Run 13, ADR-0031):
+   * the object step is left out. Kept across builds and across switches between map tools.
+   */
+  readonly mapOnly?: true;
 }
 
 export const DEFAULT_CLAIM_KIND = 'collinear';
@@ -82,6 +95,8 @@ export function idleTool(
   claimKind: string = DEFAULT_CLAIM_KIND,
   value = '',
   typed: ToolState['typed'] = {},
+  mapOnly = false,
 ): ToolState {
-  return { picks: [], slots: [], claimKind, value, typed };
+  const ts: ToolState = { picks: [], slots: [], claimKind, value, typed };
+  return mapOnly ? { ...ts, mapOnly: true } : ts;
 }

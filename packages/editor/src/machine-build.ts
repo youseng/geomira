@@ -29,7 +29,8 @@ import type { ToolUI } from './tool-ui';
 
 /** The idle tool after a build: no picks; the claim kind and the typed number stay. */
 export function reset(state: EditorState): ToolState {
-  return idleTool(state.toolState.claimKind, state.toolState.value, state.toolState.typed);
+  const t = state.toolState;
+  return idleTool(t.claimKind, t.value, t.typed, t.mapOnly === true);
 }
 
 export function withTool(r: EditResult, ts: ToolState): EditResult {
@@ -267,7 +268,9 @@ function callBuild(
   const value = tool.value === undefined ? undefined : typedValue(tool, state.toolState.value);
   if (typeof value === 'string') return refuse(state, value);
   const args = [...picks.map(ref), ...(value === undefined ? [] : [value])];
-  return add(state, call(b.tool, args), b.name, env, wanted);
+  // A map tool that builds the map alone (reflect(l)) names it as a transformation.
+  const kind = tool.map === true && state.toolState.mapOnly === true ? 'transform' : b.name;
+  return add(state, call(b.tool, args), kind, env, wanted);
 }
 
 /** Builds the tool's object(s) from complete picks, in the order of the tool's steps. */
