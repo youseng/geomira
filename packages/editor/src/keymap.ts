@@ -16,7 +16,9 @@ export type KeyAction =
   | { readonly kind: 'delete' }
   | { readonly kind: 'command' }
   | { readonly kind: 'help' }
-  | { readonly kind: 'fit' };
+  | { readonly kind: 'fit' }
+  /** The next (1) or previous (−1) view of the document (views.ts cycleView). */
+  | { readonly kind: 'view'; readonly step: 1 | -1 };
 
 export interface KeyBinding {
   /** KeyboardEvent.key (letters lowercase unless shift is part of the binding). */
@@ -64,6 +66,18 @@ const COMMANDS: readonly KeyBinding[] = [
   { key: '/', action: { kind: 'command' }, help: 'Go to the command bar', section: 'Editing' },
   { key: '?', action: { kind: 'help' }, help: 'Show or hide this help', section: 'View' },
   { key: '0', action: { kind: 'fit' }, help: 'Fit the figure to the canvas', section: 'View' },
+  {
+    key: ']',
+    action: { kind: 'view', step: 1 },
+    help: 'Switch to the next saved view (Layers panel)',
+    section: 'View',
+  },
+  {
+    key: '[',
+    action: { kind: 'view', step: -1 },
+    help: 'Switch to the previous saved view',
+    section: 'View',
+  },
 ];
 
 export const KEYMAP: readonly KeyBinding[] = Object.freeze([
