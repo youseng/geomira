@@ -1,5 +1,51 @@
 # STATUS
 
+## Run 10, audit 2 of 2: ACCEPTED (2026-10-25)
+
+The maintainer counts the pre-beta bug review (round 1, PR #17; round 2 and the style card,
+PR #18) as Run 10's second audit. Report: [docs/audit/2026-10-23.md](audit/2026-10-23.md),
+including the Run 10 prompt items it did not cover. The sections below give the details; CI was
+green on both PRs (links there). Run 9b's examples part stays postponed: docs/examples-source.md
+does not exist yet (the maintainer's choice, 2026-10-25).
+
+Tags: `run-10b` points at 5c97751 (PR #16, before the review). For the add-only guard to freeze
+the review's tests, the maintainer moves it to de3aaf2 (PR #18's merge):
+`git tag -f run-10b de3aaf2 && git push -f origin run-10b`. Not done here: moving a pushed tag
+needs a force-push.
+
+## Done (each item → the test file that proves it)
+
+- The audit report → [docs/audit/2026-10-23.md](audit/2026-10-23.md); every fix's test is listed
+  in the round sections below.
+
+## Not done
+
+- The Run 10 prompt items listed in the report's §2 as not covered (the full STATUS-vs-CI check,
+  the mutation survivors, three hunt items).
+
+## Known bugs
+
+As in the round sections below (round 2 "Not done" and "Known bugs").
+
+## Uncertain
+
+None new.
+
+## Changed frozen tests
+
+None (documentation only).
+
+## Acceptance command output
+
+No code changed; `pnpm verify` and CI on de3aaf2 are those of PR #18 (below).
+
+## Requests
+
+- Move the `run-10b` tag to de3aaf2 (above).
+- Run 11 needs beta reports in `docs/beta-reports/*.txt`.
+
+---
+
 ## Style card and repeated constructions (maintainer request, 2026-10-23): ACCEPTED (2026-10-23)
 
 Two changes the maintainer asked for after round 2, on the same branch (PR #18). Decisions:
