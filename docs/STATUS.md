@@ -1,5 +1,180 @@
 # STATUS
 
+## Run 13: v1.1 completion: ACCEPTED (2026-10-26)
+
+SPEC §1 v1.1 (views UI, long-tail tools, mutation gates), §6.2, §8.3, §15, §17 L15. Decisions:
+[ADR-0031](adr/0031-v11-completion.md). PR: this branch (claude/happy-einstein-n8z4sd) against main.
+
+Base check: main = 8ff2d56 (PR #20 = Run 12, PR #21 = releases/geomira.html). Run 12 is ACCEPTED
+above; `git fetch --tags` brought `run-12` = 8ff2d56, so the add-only guard compares with it
+("add-only: frozen tests compared with run-12"). On 8ff2d56 `pnpm install && pnpm verify` passed
+locally (337 files, 2978 tests, exit 0). Run 11 (beta triage) and Run 9b's examples part stay
+skipped by the maintainer's decision (no beta reports; docs/examples-source.md does not exist):
+not a red base.
+
+The latest nightly on main before this run (run 40176673374, schedule, 8ff2d56,
+https://github.com/youseng/geomira/actions/runs/40176673374), each shard's report scored with
+`scripts/mutation-summary.ts` (incremental reports; only in-scope mutants counted):
+
+```
+num mutation score: 87.58% (684 detected, 97 undetected; target 80%, gated from v1.1)
+claims mutation score: 83.83% (1965 detected, 379 undetected; target 75%, gated from v1.1)
+kernel-a mutation score: 85.42% (41 detected, 7 undetected; target 75%, gated from v1.1)
+kernel-b mutation score: 100.00% (18 detected, 0 undetected; target 75%, gated from v1.1)
+kernel-c mutation score: 99.02% (203 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-d mutation score: 99.46% (185 detected, 1 undetected; target 75%, gated from v1.1)
+kernel-e mutation score: 98.88% (176 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-f mutation score: 99.59% (241 detected, 1 undetected; target 75%, gated from v1.1)
+kernel-g mutation score: 98.99% (196 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-h mutation score: 97.63% (329 detected, 8 undetected; target 75%, gated from v1.1)
+kernel-i mutation score: 100.00% (82 detected, 0 undetected; target 75%, gated from v1.1)
+kernel-j mutation score: 100.00% (31 detected, 0 undetected; 2 mutants outside the shard not counted; target 75%, gated from v1.1)
+kernel-k mutation score: 100.00% (180 detected, 0 undetected; target 75%, gated from v1.1)
+```
+
+## Done (each item → the test file that proves it)
+
+1. **The six v1.1 tools** (ADR-0031 decisions 1–6), each with one compute<T>, its registry
+   entry and argument symmetry, its degenerate cases as tests, L3 (all six are exact over Q:
+   `L3 spiral_center: 2398 defined`, `isogonal: 2190`, `symmedian: 2150`, `pole: 2070`,
+   `radical_center: 1666`, `arc: 2141`), a 'numeric' export mapping and generated docs
+   (docs/tools.md, docs/language.md):
+   - degenerate cases → `packages/kernel/test/helpers/degenerate-v11.ts` (spread into
+     `degenerate.test.ts`);
+   - properties (exact over Q, symmedians also in floats) →
+     `packages/kernel/test/helpers/v11-properties.ts` (spread into `tools.property.test.ts`);
+   - theorems (float and exact/Heronian) → `packages/kernel/test/theorems-v11.test.ts`:
+     isogonal(H) = O, isogonal(I) = I, the tangents at B and C meet on the A-symmedian at the
+     pole of BC, the spiral center lies on circles ABX and CDX (X = AC ∩ BD), the radical
+     center of the circles on the sides as diameters is H, the midpoint of arc BAC lies on the
+     external bisector at A;
+   - symmetries (same key, same exact value or figure) → `construction-key.test.ts` (samples
+     added); the arc's mirror equivariance → `packages/kernel/test/arcs.test.ts`.
+2. **Arcs are honoured by the tools that put a point on a curve** (decision 7: intersect,
+   other, on, tangent_point, tangent_from; the carrier circle elsewhere) →
+   `packages/kernel/test/arcs.test.ts`, the arc cases of `helpers/degenerate-v11.ts`.
+3. **Every exporter draws only the arc** (SVG, TikZ, Asymptote, the PNG plan; style card
+   attributes; the mirror image) → `packages/export/test/arc-tool.test.ts`; the style card
+   treats an arc as a curve → `apps/web/test/style-card-arc.test.ts`.
+4. **Building a transformation alone** (the maintainer's note; decisions 9–10): "Transformation
+   only" on Reflect, Rotate, Translate, Homothety and Spiral (`f = reflect(l)`, …), and Apply
+   transformation → `packages/editor/test/maps-and-v11-tools.test.ts`,
+   `apps/web/e2e/flows-maps.spec.ts`.
+5. **GUI tools over the six kernel tools** (decision 11: ⇧K arc, ⇧Y symmedian, ⇧I isogonal,
+   ⇧Z spiral center, ⇧X radical center, ⇧E pole; ⇧G apply; keys checked unique) →
+   `packages/editor/test/maps-and-v11-tools.test.ts`.
+6. **Views UI** (decisions 12–17: save, switch, cycle with `]` / `[`, rename, delete; each one
+   document edit; the canvas follows a switch) → `packages/kernel/test/view-rename.test.ts`,
+   `packages/editor/test/views-ui.test.ts`, `packages/editor/test/keymap-views.test.ts`,
+   `apps/web/e2e/flows-views.spec.ts`; from file:// (the single file) with reload and share link
+   → the test appended to `apps/web/e2e/file-url.spec.ts`.
+7. **Mutation gates** (decisions 18–21): `scripts/mutation-summary.ts --gate` and the
+   `mutation-gate` job of nightly.yml → `scripts/mutation-gate.test.ts`; the new tool files'
+   shards → `scripts/mutation-shards-v11.test.ts`. Survivors killed by behaviour tests →
+   `packages/num/test/mutation-kills.test.ts`, `packages/num/test/precondition-reasons.test.ts`,
+   `packages/kernel/test/mutation-kills.test.ts`, `packages/kernel/test/arcs.test.ts`,
+   `packages/claims/test/mutation-kills.test.ts`, `packages/claims/test/mutation-kills-sampler.test.ts`.
+   The full run (dispatch with `full`, every shard from scratch) and its gate:
+
+```
+num mutation gate: 93.85% (733 detected, 48 undetected; threshold 80%): pass
+kernel mutation gate: 98.27% (1932 detected, 34 undetected; threshold 75%): pass
+claims mutation gate: 85.40% (2000 detected, 342 undetected; threshold 75%): pass
+num mutation score: 93.85% (733 detected, 48 undetected; target 80%, gated from v1.1)
+kernel-a mutation score: 97.44% (190 detected, 5 undetected; target 75%, gated from v1.1)
+kernel-b mutation score: 94.95% (94 detected, 5 undetected; target 75%, gated from v1.1)
+kernel-c mutation score: 95.13% (215 detected, 11 undetected; target 75%, gated from v1.1)
+kernel-d mutation score: 99.00% (198 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-e mutation score: 98.88% (176 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-f mutation score: 99.59% (241 detected, 1 undetected; target 75%, gated from v1.1)
+kernel-g mutation score: 98.99% (196 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-i mutation score: 100.00% (82 detected, 0 undetected; target 75%, gated from v1.1)
+kernel-j mutation score: 96.77% (30 detected, 1 undetected; target 75%, gated from v1.1)
+kernel-k mutation score: 100.00% (175 detected, 0 undetected; target 75%, gated from v1.1)
+kernel-h mutation score: 98.53% (335 detected, 5 undetected; target 75%, gated from v1.1)
+claims mutation score: 85.40% (2000 detected, 342 undetected; target 75%, gated from v1.1)
+```
+
+8. **Bug found and fixed** (by L1 when the registry grew): `ninepoint_circle` threw "division by
+   zero" in FloatField for a tiny triangle far from the origin (the medial triangle's cross
+   product recomputed from rounded midpoints rounded to 0) →
+   `packages/kernel/test/ninepoint-tiny.test.ts` (fails before the fix).
+
+## Not done
+
+- Nothing of the run's three items. The Pages site still does not link to the single file;
+  `releases/geomira.html` is not rebuilt (ADR-0030: the maintainer refreshes it on request).
+- No constructive Asymptote mapping for the six tools (they export their coordinates;
+  ADR-0031 Alternatives).
+
+## Known bugs
+
+None found besides item 8 (fixed). Unchanged: the open lists of docs/audit/2026-10-23.md §3.
+
+Local only (this container): ESLint, Prettier and `pnpm rules` read the subagents' git
+worktrees under `.claude/worktrees/` while they existed (ESLint ran out of memory, rules read a
+directory as a file); after they were removed `pnpm verify` passes. Playwright needs the Chromium
+build shim of Run 12 here; Firefox and WebKit run only in CI.
+
+## Uncertain
+
+- symmedian(A, B, C) is the symmedian LINE from A (the point is isogonal(centroid)); SPEC names
+  the tool only. ADR-0031 decision 3 says why; the maintainer may prefer the point.
+- arc(A, B, C) names the arc by a point on it (not arc(c, P, Q) counter-clockwise), to stay
+  reflection-equivariant (L16). A glider on an arc is clamped at the nearer end; the far point
+  where both ends are equally far is Undefined.
+- Equivalent mutants judged by hand (not killed): in arc.ts, the `assertNever` message, `case -1`
+  folded into the band case and `>` vs `>=` on a nonzero cross product (same results); in
+  arc-range.ts, the two `assertNever` messages and the fast path for circles without arcs.
+- The `mutation-gate` job uses actions/download-artifact@v8 (the full run above shows it works).
+
+## Changed frozen tests
+
+None modified (`add-only: frozen tests compared with run-12, 0 violation(s)`). Lines added to
+frozen files: `packages/kernel/test/registry.test.ts` (six names), `degenerate.test.ts` (the
+table's new entries), `construction-key.test.ts` (a third circle, five samples),
+`tools.property.test.ts` (the spread), `packages/editor/test/exports.test.ts` (`./views`),
+`apps/web/e2e/file-url.spec.ts` (one test).
+
+## Acceptance command output
+
+### Local (`pnpm verify`, on 006fb8b; later commits change only docs)
+
+```
+✔ no dependency violations found (653 modules, 3531 dependencies cruised)
+ok   tolerance: 942 files scanned, 0 violation(s)
+ok   file-length: 942 files scanned, 0 violation(s)
+ok   test-count: 3154 tests, floor 2978, 0 violation(s)
+ok   disabled-tests: 942 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-12, 0 violation(s)
+ok   forbidden-words: 942 files scanned, 0 violation(s)
+ Test Files  353 passed (353)
+      Tests  3154 passed (3154)
+Lines        : 98.27% ( 9482/9648 )
+```
+
+The test-count floor is now 3154. Playwright locally (Chromium): flows-maps 2, flows-views 1,
+file-url (file-chromium) 5 passed.
+
+### CI on GitHub
+
+- ci https://github.com/youseng/geomira/actions/runs/40262200196 (2476118): success (verify,
+  both builds, Playwright in Chromium, Firefox and WebKit).
+- deploy https://github.com/youseng/geomira/actions/runs/40262200199 (2476118): success.
+- tex https://github.com/youseng/geomira/actions/runs/40261615919 (006fb8b; 2476118 changes
+  docs only): success.
+- nightly, full mutation run with the gate: https://github.com/youseng/geomira/actions/runs/40262200358 (dispatch with `full`, 2476118): success; every shard from scratch (the longest, kernel-g, 46 min), the `mutation-gate` job passed with the report pasted under Done item 7 (num 93.85 %, kernel 98.27 %, claims 85.40 %, against 87.58 %, 85–100 % per shard and 83.83 % on main before).
+
+The commit that marks this run ACCEPTED changes only docs/STATUS.md and docs/test-count.txt
+(the raised floor); its own CI run is checked after the push.
+
+## Requests
+
+- Tag this run's merge as `run-13`, so the add-only guard freezes the new tests.
+- Decide whether symmedian should also exist as the symmedian point (Uncertain above).
+
+---
+
 ## Run 12: single-file offline build and PWA: ACCEPTED (2026-10-25)
 
 SPEC §1 v1.1 and §16. Decisions: [ADR-0030](adr/0030-single-file-and-pwa.md).
