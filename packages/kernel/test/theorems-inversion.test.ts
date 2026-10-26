@@ -12,6 +12,11 @@
  *   - incidence and tangency are kept: a point on a curve maps to a point on the image curve;
  *     a tangent line and its circle map to tangent curves (two parallel lines when the touch
  *     point is the center).
+ *   - feet_inversion(A, B, C) (ADR-0034) maps B to the foot from C, C to the foot from B, the
+ *     orthocenter H to the foot from A, the circumcircle to line EF and line BC to the circle
+ *     AEF, which is the circle on diameter AH;
+ *   - sqrt_bc2(A, B, C) (ADR-0034) maps B to the midpoint of AC, C to the midpoint of AB, the
+ *     circumcircle to the midline through them, and applied twice is the identity.
  * The checks state what they compare; nothing here is a verdict of the claim tester.
  */
 import type { Field } from '@geomira/num/field';
@@ -184,6 +189,56 @@ const THEOREMS: readonly Theorem[] = [
         tangent(f, f.get('c_s'), f.get('t_s'))
       );
     },
+  },
+  {
+    name: 'feet_inversion: B, C, H go to the feet from C, B, A; the circumcircle to line EF, BC to circle AEF',
+    modes: ALL,
+    build: (b, [A, B, C]) => {
+      const f = b.call('f', 'feet_inversion', A, B, C);
+      const H = b.call('H_o', 'orthocenter', A, B, C);
+      const E = b.call('E_b', 'foot', B, C, A);
+      const F = b.call('F_c', 'foot', C, A, B);
+      b.call('D_a', 'foot', A, B, C);
+      b.call('X', 'apply', f, B);
+      b.call('Y', 'apply', f, C);
+      b.call('Z', 'apply', f, H);
+      b.call('k', 'apply', f, call('circumcircle', [A, B, C]));
+      b.call('m', 'apply', f, call('line', [B, C]));
+      b.call('aef', 'circumcircle', A, E, F);
+      b.call('ah', 'diameter_circle', A, H);
+    },
+    required: ['E_b', 'F_c', 'D_a', 'X', 'Y', 'Z', 'k', 'm', 'aef', 'ah'],
+    check: (f) =>
+      samePoints(f, 'X', 'F_c') &&
+      samePoints(f, 'Y', 'E_b') &&
+      samePoints(f, 'Z', 'D_a') &&
+      f.get('k').kind === 'line' &&
+      onCurve(f, asPoint(f.get('E_b')), f.get('k')) &&
+      onCurve(f, asPoint(f.get('F_c')), f.get('k')) &&
+      sameCircles(f, 'm', 'aef') &&
+      sameCircles(f, 'm', 'ah'),
+  },
+  {
+    name: 'sqrt_bc2: B, C go to the midpoints of AC, AB; the circumcircle to their midline; twice = id',
+    modes: SIDES,
+    build: (b, [A, B, C]) => {
+      const s = b.call('s', 'sqrt_bc2', A, B, C);
+      b.call('M_b', 'midpoint', A, C);
+      b.call('M_c', 'midpoint', A, B);
+      b.call('X', 'apply', s, B);
+      b.call('Y', 'apply', s, C);
+      b.call('k', 'apply', s, call('circumcircle', [A, B, C]));
+      const P = b.call('P', 'midpoint', B, C);
+      b.call('Z', 'apply', s, call('apply', [s, P]));
+    },
+    required: ['X', 'Y', 'k', 'Z', 'P'],
+    check: (f) =>
+      samePoints(f, 'X', 'M_b') &&
+      samePoints(f, 'Y', 'M_c') &&
+      f.get('k').kind === 'line' &&
+      onCurve(f, asPoint(f.get('M_b')), f.get('k')) &&
+      onCurve(f, asPoint(f.get('M_c')), f.get('k')) &&
+      samePoints(f, 'Z', 'P'),
   },
 ];
 

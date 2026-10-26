@@ -1,9 +1,10 @@
 /**
  * Property tests of Run 14's inversion tools (ADR-0032), spread into tools.property.test.ts's
- * PROPERTIES (whose meta-test checks that every registry tool has one). inversion and every
- * preset but sqrt_bc are rational, so their identities are checked exactly over Q; sqrt_bc
- * needs square roots (Inexact over Q on random figures: the theorem tests use Heronian ones)
- * and is checked in floats here.
+ * PROPERTIES (whose meta-test checks that every registry tool has one), and of ADR-0034's
+ * feet_inversion and sqrt_bc2. inversion and every preset but sqrt_bc and sqrt_bc2 are
+ * rational, so their identities are checked exactly over Q; sqrt_bc and sqrt_bc2 need square
+ * roots (Inexact over Q on random figures: the theorem tests use Heronian ones) and are
+ * checked in floats here.
  */
 import { isInexact, type Field } from '@geomira/num/field';
 import { FloatField } from '@geomira/num/float-field';
@@ -75,6 +76,32 @@ export const MOBIUS_PROPERTIES: readonly V11Property[] = [
     required: ['X', 'Y'],
     check: (f) => samePoints(f, 'X', 'C') && samePoints(f, 'Y', 'B'),
     fields: FLOAT,
+  },
+  {
+    tools: ['sqrt_bc2'],
+    name: 'sqrt_bc2(A, B, C) maps B to the midpoint of AC and that midpoint back to B',
+    build: (b, [A, B, C]) => {
+      const s = b.call('s', 'sqrt_bc2', A, B, C);
+      b.call('M', 'midpoint', A, C);
+      b.call('X', 'apply', s, B);
+      b.call('Y', 'apply', s, b.ref('M'));
+    },
+    required: ['X', 'Y'],
+    check: (f) => samePoints(f, 'X', 'M') && samePoints(f, 'Y', 'B'),
+    fields: FLOAT,
+  },
+  {
+    tools: ['feet_inversion'],
+    name: 'feet_inversion(A, B, C) maps B to the foot from C, and back',
+    build: (b, [A, B, C]) => {
+      const f = b.call('f', 'feet_inversion', A, B, C);
+      b.call('F_c', 'foot', C, A, B);
+      b.call('X', 'apply', f, B);
+      b.call('Y', 'apply', f, b.ref('F_c'));
+    },
+    required: ['X', 'Y'],
+    check: (f) => samePoints(f, 'X', 'F_c') && samePoints(f, 'Y', 'B'),
+    fields: BOTH,
   },
   {
     tools: ['orthocenter_inversion'],

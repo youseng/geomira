@@ -994,6 +994,40 @@ inversion_swap(O, A, B): the inversion centered at O that swaps A and B, for O o
 - Examples:
   - `inversion_swap((0, 0), (1, 0), (4, 0))` → Möbius map (anti) z ↦ ((0, 0)·z̄ + (4, 0)) / ((1, 0)·z̄ + (0, 0))
 
+### feet_inversion
+
+feet_inversion(A, B, C): the inversion at A with power AB·AC·cos A (the dot product of AB and AC), inversion(A, power(A, diameter_circle(B, C))). It maps B and C to the feet of the altitudes from C and B, the orthocenter to the foot from A, the circumcircle to line EF and line BC to the circle on diameter AH.
+
+- Signatures: `feet_inversion(point, point, point)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `feet_inversion(point, point, point)`: arguments 2, 3 in any order (the same value)
+- Degenerate cases:
+  - AB⃗·AC⃗ = 0 (a right angle at A, or A = B or A = C) → Undefined
+  - B = C → Undefined
+  - AB⃗·AC⃗ < 0 (an obtuse angle at A) → the inversion followed by the half turn about A
+  - collinear A, B, C → still defined (it swaps B and C)
+- Examples:
+  - `feet_inversion((0, 0), (4, 0), (1, 3))` → Möbius map (anti) z ↦ ((0, 0)·z̄ + (4, 0)) / ((1, 0)·z̄ + (0, 0))
+
+### sqrt_bc2
+
+sqrt_bc2(A, B, C): the √(bc/2) inversion of triangle ABC at A, compose(reflect(bisector(B, A, C)), inversion(A, AB·AC/2)). It maps B and C to the midpoints of AC and AB, the circumcircle to the midline through them, and is its own inverse.
+
+- Signatures: `sqrt_bc2(point, point, point)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `sqrt_bc2(point, point, point)`: arguments 2, 3 in any order (the same value)
+- Degenerate cases:
+  - A = B or A = C → Undefined
+  - collinear A, B, C → still defined (B goes to the midpoint of AC)
+- Examples:
+  - `sqrt_bc2((0, 0), (3, 4), (5, 0))` → Möbius map z ↦ ((0, 0)·z + (15/2, 10)) / ((1, 0)·z + (0, 0))
+
 ## Measures
 
 ### dist

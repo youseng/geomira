@@ -341,6 +341,8 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `orthocenter_inversion` | transformations | `orthocenter_inversion(point, point, point)` | transform | can succeed | — |
 | `inversion_fixing` | transformations | `inversion_fixing(point, round)` | transform | can succeed | — |
 | `inversion_swap` | transformations | `inversion_swap(point, point, point)` | transform | can succeed | — |
+| `feet_inversion` | transformations | `feet_inversion(point, point, point)` | transform | can succeed | — |
+| `sqrt_bc2` | transformations | `sqrt_bc2(point, point, point)` | transform | can succeed | — |
 
 ## Versions
 

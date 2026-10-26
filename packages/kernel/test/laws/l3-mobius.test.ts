@@ -45,6 +45,8 @@ function map(rng: Rng): Expr {
     () => call('inversion_fixing', [P(), call('circle', [P(), P()])]),
     () => call('inversion_swap', [P(), P(), P()]),
     () => call('sqrt_bc', [P(), P(), P()]),
+    () => call('feet_inversion', [P(), P(), P()]),
+    () => call('sqrt_bc2', [P(), P(), P()]),
   ])();
   const sim = () =>
     pick(rng, [

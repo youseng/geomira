@@ -85,13 +85,41 @@ describe('the presets are compositions of registry tools (decision 4)', () => {
           T('power', d.ref('A'), T('diameter_circle', d.ref('C'), d.ref('E'))),
         ),
     ],
+    [
+      'sqrt_bc2',
+      (d) => T('sqrt_bc2', d.ref('A'), d.ref('B'), d.ref('C')),
+      (d) =>
+        T(
+          'compose',
+          T('reflect', T('bisector', d.ref('B'), d.ref('A'), d.ref('C'))),
+          T(
+            'inversion',
+            d.ref('A'),
+            T(
+              'div',
+              T('mul', T('dist', d.ref('A'), d.ref('B')), T('dist', d.ref('A'), d.ref('C'))),
+              num(2),
+            ),
+          ),
+        ),
+    ],
+    [
+      'feet_inversion',
+      (d) => T('feet_inversion', d.ref('A'), d.ref('B'), d.ref('C')),
+      (d) =>
+        T(
+          'inversion',
+          d.ref('A'),
+          T('power', d.ref('A'), T('diameter_circle', d.ref('B'), d.ref('C'))),
+        ),
+    ],
   ];
   for (const [name, a, b] of cases)
     it(`${name}: equal in every field`, () => {
       for (const F of FIELDS) {
         const [x, y] = pair(F, a, b);
         expect(x, `${name} over ${F.name}`).toEqual(y);
-        if (F !== ModPField || name !== 'sqrt_bc')
+        if (F !== ModPField || !name.startsWith('sqrt_bc'))
           expect(x?.kind, `${name} over ${F.name}`).toBe('transform');
       }
     });

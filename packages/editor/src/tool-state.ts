@@ -53,6 +53,8 @@ export type ToolId =
   | 'apply_map'
   | 'inversion'
   | 'sqrt_bc'
+  | 'sqrt_bc2'
+  | 'feet_inversion'
   | 'inversion_fixing'
   | 'polygon'
   | 'mark_angle'

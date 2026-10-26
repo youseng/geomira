@@ -65,6 +65,8 @@ const GROUP_OF: Readonly<Record<ToolId, ToolGroupId>> = {
   apply_map: 'transform',
   inversion: 'transform',
   sqrt_bc: 'transform',
+  sqrt_bc2: 'transform',
+  feet_inversion: 'transform',
   inversion_fixing: 'transform',
   derived_layer: 'transform',
   mark_angle: 'marks',

@@ -6,7 +6,9 @@
  *   sqrt_bc(A, B, C)            = compose(reflect(bisector(B, A, C)), inversion(A, AB·AC))
  *   orthocenter_inversion(A, B, C) = inversion(H, power(H, circumcircle(A, B, C)) / 2)
  *   inversion_fixing(O, c)      = inversion(O, power(O, c))
- *   inversion_swap(O, A, B)     = inversion(O, power(O, diameter_circle(A, B))), O on line AB.
+ *   inversion_swap(O, A, B)     = inversion(O, power(O, diameter_circle(A, B))), O on line AB
+ *   feet_inversion(A, B, C)     = inversion(A, power(A, diameter_circle(B, C))) (ADR-0034)
+ *   sqrt_bc2(A, B, C)           = compose(reflect(bisector(B, A, C)), inversion(A, AB·AC/2)).
  * Every map here is a Möbius map: its overloads output ['transform', 'mobius'] (the static
  * kind of ADR-0032 decision 13), and an inversion's power is an `absolute` argument (a squared
  * length: decision 14).
@@ -26,7 +28,15 @@ import { MAP_OPERATIONS } from '../tools/map-ops';
 import { MEASURE_TOOLS } from '../tools/measures';
 import { TRANSFORM_TOOLS } from '../tools/transforms';
 import { TRIANGLE_TOOLS } from '../tools/triangle';
-import { isUnavailable, numOf, undef, type Value, type ValueKind, type Vec } from '../value';
+import {
+  isUnavailable,
+  numOf,
+  undef,
+  type Num,
+  type Value,
+  type ValueKind,
+  type Vec,
+} from '../value';
 import { mobius } from './mobius';
 
 /** The tools the presets compose (looked up by name in their own modules). */
@@ -57,6 +67,12 @@ function run<T>(F: Field<T>, ctx: EvalContext, name: string, args: readonly Valu
 }
 
 const c = <T>(v: Vec<T>): Complex<T> => complex(v.x, v.y);
+const two = <T>(F: Field<T>): Num<T> => numOf(F.add(F.one, F.one), rational(2n));
+
+/** Whether a power is 0: on its exact value when it has one (ADR-0005 decision 2), else EPS. */
+function zeroPower<T>(F: Field<T>, n: Num<T>, ctx: EvalContext): boolean {
+  return n.exact === undefined ? F.isZero(n.v, 'area', ctx) : isZeroRational(n.exact);
+}
 
 /**
  * w = O + k/conj(z − O): the anti Möbius map (O, k − |O|², 1, −Ō), ad − bc = −k. k < 0 is the
@@ -83,18 +99,38 @@ function inversion<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext):
   }
   const [O, n] = [pointAt(args, 0), numAt(args, 1)];
   if (O === undefined || n === undefined || args.length !== 2) return badArgs('inversion');
-  const zero = n.exact === undefined ? F.isZero(n.v, 'area', ctx) : isZeroRational(n.exact);
-  return inversionAt(F, O, n.v, zero);
+  return inversionAt(F, O, n.v, zeroPower(F, n, ctx));
 }
 
-/** sqrt_bc(A, B, C) = compose(reflect(bisector(B, A, C)), inversion(A, AB·AC)). */
-function sqrtBc<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
+/**
+ * sqrt_bc(A, B, C) = compose(reflect(bisector(B, A, C)), inversion(A, AB·AC)); with `half`,
+ * sqrt_bc2(A, B, C), the same with power AB·AC/2 (ADR-0034).
+ */
+function sqrtMap(name: string, half: boolean) {
+  return <T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> => {
+    const [A, B, C] = [pointAt(args, 0), pointAt(args, 1), pointAt(args, 2)];
+    if (args.length !== 3 || A === undefined || B === undefined || C === undefined)
+      return badArgs(name);
+    const mirror = run(F, ctx, 'reflect', [run(F, ctx, 'bisector', [B, A, C])]);
+    const bc = run(F, ctx, 'mul', [run(F, ctx, 'dist', [A, B]), run(F, ctx, 'dist', [A, C])]);
+    const k = half ? run(F, ctx, 'div', [bc, two(F)]) : bc;
+    return run(F, ctx, 'compose', [mirror, run(F, ctx, 'inversion', [A, k])]);
+  };
+}
+
+/**
+ * feet_inversion(A, B, C) = inversion(A, power(A, diameter_circle(B, C))), power AB⃗·AC⃗
+ * (ADR-0034). Degenerate: AB⃗·AC⃗ = 0 (a right angle at A, A = B or A = C) → Undefined with
+ * that reason; B = C → Undefined (the diameter circle).
+ */
+function feetInversion<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const [A, B, C] = [pointAt(args, 0), pointAt(args, 1), pointAt(args, 2)];
   if (args.length !== 3 || A === undefined || B === undefined || C === undefined)
-    return badArgs('sqrt_bc');
-  const mirror = run(F, ctx, 'reflect', [run(F, ctx, 'bisector', [B, A, C])]);
-  const k = run(F, ctx, 'mul', [run(F, ctx, 'dist', [A, B]), run(F, ctx, 'dist', [A, C])]);
-  return run(F, ctx, 'compose', [mirror, run(F, ctx, 'inversion', [A, k])]);
+    return badArgs('feet_inversion');
+  const k = run(F, ctx, 'power', [A, run(F, ctx, 'diameter_circle', [B, C])]);
+  if (k.kind === 'number' && zeroPower(F, k, ctx))
+    return undef('feet_inversion(A, B, C): AB⃗·AC⃗ = 0 (a right angle at A, or A = B or A = C)');
+  return run(F, ctx, 'inversion', [A, k]);
 }
 
 /** orthocenter_inversion(A, B, C) = inversion(H, power(H, circumcircle(A, B, C)) / 2). */
@@ -107,8 +143,7 @@ function orthocenterInversion<T>(
     return badArgs('orthocenter_inversion');
   const H = run(F, ctx, 'orthocenter', args);
   const pow = run(F, ctx, 'power', [H, run(F, ctx, 'circumcircle', args)]);
-  const two = numOf(F.add(F.one, F.one), rational(2n));
-  return run(F, ctx, 'inversion', [H, run(F, ctx, 'div', [pow, two])]);
+  return run(F, ctx, 'inversion', [H, run(F, ctx, 'div', [pow, two(F)])]);
 }
 
 /** inversion_fixing(O, c) = inversion(O, power(O, c)). */
@@ -187,7 +222,7 @@ export const INVERSION_TOOLS: readonly ToolSpec[] = [
       }),
     ],
     outputKinds: ['transform'],
-    compute: sqrtBc,
+    compute: sqrtMap('sqrt_bc', false),
     degenerate: [
       'A = B or A = C → Undefined',
       'collinear A, B, C → still defined (it swaps B and C)',
@@ -257,5 +292,53 @@ export const INVERSION_TOOLS: readonly ToolSpec[] = [
       'AB: inversion(O, power(O, diameter_circle(A, B))), power OA·OB (negative when O is ' +
       'between A and B).',
     examples: [{ args: [P('0', '0'), P('1', '0'), P('4', '0')] }],
+  },
+  {
+    id: 'feet_inversion',
+    name: 'feet_inversion',
+    family: 'transformations',
+    signatures: [
+      sig(['point', 'point', 'point'], {
+        symmetry: [{ kind: 'permute', positions: [1, 2], same: 'value' }],
+      }),
+    ],
+    outputKinds: ['transform'],
+    compute: feetInversion,
+    degenerate: [
+      'AB⃗·AC⃗ = 0 (a right angle at A, or A = B or A = C) → Undefined',
+      'B = C → Undefined',
+      'AB⃗·AC⃗ < 0 (an obtuse angle at A) → the inversion followed by the half turn about A',
+      'collinear A, B, C → still defined (it swaps B and C)',
+    ],
+    export: 'numeric',
+    doc:
+      'feet_inversion(A, B, C): the inversion at A with power AB·AC·cos A (the dot product of ' +
+      'AB and AC), inversion(A, power(A, diameter_circle(B, C))). It maps B and C to the feet ' +
+      'of the altitudes from C and B, the orthocenter to the foot from A, the circumcircle to ' +
+      'line EF and line BC to the circle on diameter AH.',
+    examples: [{ args: [P('0', '0'), P('4', '0'), P('1', '3')] }],
+  },
+  {
+    id: 'sqrt_bc2',
+    name: 'sqrt_bc2',
+    family: 'transformations',
+    signatures: [
+      sig(['point', 'point', 'point'], {
+        radical: true,
+        symmetry: [{ kind: 'permute', positions: [1, 2], same: 'value' }],
+      }),
+    ],
+    outputKinds: ['transform'],
+    compute: sqrtMap('sqrt_bc2', true),
+    degenerate: [
+      'A = B or A = C → Undefined',
+      'collinear A, B, C → still defined (B goes to the midpoint of AC)',
+    ],
+    export: 'numeric',
+    doc:
+      'sqrt_bc2(A, B, C): the √(bc/2) inversion of triangle ABC at A, compose(reflect(' +
+      'bisector(B, A, C)), inversion(A, AB·AC/2)). It maps B and C to the midpoints of AC and ' +
+      'AB, the circumcircle to the midline through them, and is its own inverse.',
+    examples: [{ args: [P('0', '0'), P('3', '4'), P('5', '0')] }],
   },
 ];

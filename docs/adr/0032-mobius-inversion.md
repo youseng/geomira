@@ -77,9 +77,10 @@ c, d }` (complex entries): z ↦ (a·ẑ + b)/(c·ẑ + d), ẑ = z̄ when `anti
      Checked symmetric in A ↔ B ('value'): the diameter circle's centre and radius and the
      incidence of O with line AB do not depend on the order (its anchor does, and is not
      used). Degenerate: A = B → Undefined; O = A or O = B → the power is 0 → Undefined.
-   - **sqrt_bc2** and **feet_inversion** are NOT built: SPEC does not define them and their
-     standard meaning is not certain. STATUS (Uncertain) proposes definitions for the
-     maintainer to confirm.
+   - **sqrt_bc2** and **feet_inversion** were not built in the first pass: SPEC does not
+     define them and their standard meaning was not certain. STATUS (Uncertain) proposed
+     definitions; the maintainer confirmed them, and [ADR-0034](0034-feet-inversion-sqrt-bc2.md)
+     builds both as compositions.
 
 ### apply on every kind (transform/apply-map.ts, j-core.ts, j-lines.ts, j-circles.ts, proj-range.ts)
 

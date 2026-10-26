@@ -100,6 +100,8 @@ describe('createRegistry', () => {
       'orthocenter_inversion',
       'inversion_fixing',
       'inversion_swap',
+      'feet_inversion',
+      'sqrt_bc2',
     ]);
     for (const t of REGISTRY.tools) {
       expect(t.id).toBe(t.name);

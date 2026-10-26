@@ -164,7 +164,8 @@ hash of the line), polygon, `assume` lines. Right angles are constructed, never 
 v1.1 tools (Run 13): `spiral_center`, `isogonal`, `symmedian`, `pole`,
 `radical_center`, `arc`.
 `symmedian_point` (ADR-0033, the Lemoine point). Run 14 (ADR-0032): `inversion(c)`, `inversion(O, k)`, and the presets `sqrt_bc`,
-`orthocenter_inversion`, `inversion_fixing`, `inversion_swap` (compositions of the tools above).
+`orthocenter_inversion`, `inversion_fixing`, `inversion_swap`, and (ADR-0034) `feet_inversion`,
+`sqrt_bc2` (compositions of the tools above).
 
 ### 6.3 Degenerate behaviour (each item is a test)
 Parallel / coincident lines → Undefined; coincident defining points → Undefined;

@@ -1,10 +1,11 @@
 # STATUS
 
-## Run 14: inversion via Möbius transformations: ACCEPTED (2026-10-26)
+## Run 14: inversion via Möbius transformations: NOT ACCEPTED (re-verifying after ADR-0034)
 
 SPEC §1 (inversion leaves "Phase 2, documented only"), §4 (`outside`), §6.2, §8.1, §18 E3/E5.
 Decisions: [ADR-0032](adr/0032-mobius-inversion.md); the maintainer's extra item 6:
-[ADR-0033](adr/0033-symmedian-point.md). PR: https://github.com/youseng/geomira/pull/23
+[ADR-0033](adr/0033-symmedian-point.md); the two presets the maintainer confirmed after the
+first acceptance: [ADR-0034](adr/0034-feet-inversion-sqrt-bc2.md). PR: https://github.com/youseng/geomira/pull/23
 (branch claude/exciting-dirac-h0mxvl) against main.
 
 Base check: main = 8f5c147 (PR #22 = Run 13, ACCEPTED above). `git fetch --tags` brought
@@ -44,7 +45,7 @@ a red base. No contest problem was added (docs/examples-source.md does not exist
    no preset file contains a mapping formula); registry symmetries (sqrt_bc B ↔ C value,
    orthocenter_inversion any order value, inversion_swap A ↔ B value, checked; inversion and
    inversion_fixing none) → the samples added to `construction-key.test.ts`. `sqrt_bc2` and
-   `feet_inversion` are NOT built (Uncertain below).
+   `feet_inversion`: item 13.
 4. **apply on every kind, one compute<T>** (item 2; decisions 5–9): the centre →
    Undefined("… the center of inversion: its image is at infinity"); lines ↔ circles by kind
    at run time; segment → arc (Circle `arc`, ADR-0031); a segment ending at the centre → a ray;
@@ -109,11 +110,25 @@ a red base. No contest problem was added (docs/examples-source.md does not exist
     with A = B); the redundant guards were removed (`mobiusProblem`'s entry check and `n > 0`,
     the Undefined guard before S₂, `den > 0` in `localScale`, the pole line of
     `containsPole`), each a no-op the tests show.
+13. **feet_inversion and sqrt_bc2** (maintainer decision after the first acceptance,
+    [ADR-0034](adr/0034-feet-inversion-sqrt-bc2.md), own commit): feet_inversion(A, B, C) =
+    inversion(A, power(A, diameter_circle(B, C))), power AB⃗·AC⃗ (signed; a right angle at A,
+    or A = B or A = C → Undefined with that reason); sqrt_bc2(A, B, C) =
+    compose(reflect(bisector(B, A, C)), inversion(A, AB·AC/2)). Both compositions only, symmetry
+    B ↔ C with the same value (checked), export 'numeric', GUI "Feet inversion" (`o`) and
+    "√(bc/2) inversion" (`,`) after √(bc) inversion, docs regenerated →
+    degenerate cases `packages/kernel/test/helpers/degenerate-presets.ts`; equal to their
+    compositions in every field `packages/kernel/test/mobius-kinds.test.ts`; theorems
+    `packages/kernel/test/theorems-inversion.test.ts` (feet_inversion over floats and exactly:
+    `B*` = the foot from C, `C*` = the foot from B, `H*` = the foot from A, the circumcircle →
+    line EF, line BC → circle AEF = the circle on diameter AH; sqrt_bc2 over floats and Heronian
+    figures: `B*` = the midpoint of AC, `C*` = the midpoint of AB, the circumcircle → the midline
+    through them, twice = the identity); properties `helpers/mobius-properties.ts`; L3
+    (`feet_inversion: 2306 defined`, mod p 2306; `sqrt_bc2` radical like sqrt_bc); the samples in
+    `construction-key.test.ts`; GUI `packages/editor/test/inversion-presets-tools.test.ts`.
 
 ## Not done
 
-- `sqrt_bc2` and `feet_inversion`: SPEC does not define them; definitions proposed under
-  Uncertain, not built until the maintainer confirms (as instructed).
 - No constructive Asymptote mapping for a Möbius map (Asymptote has no such `transform`); its
   images export as coordinates (ADR-0032 decision 15).
 - Images of polygons and segment marks under a Möbius map are Undefined with a reason (a
@@ -129,17 +144,6 @@ repository); Firefox and WebKit run only in CI.
 
 ## Uncertain
 
-- **sqrt_bc2 (not built).** Proposed: compose(reflect(bisector(B, A, C)), inversion(A, AB·AC/2)),
-  i.e. the √(bc/2) map at A (with A at 0: z ↦ bc/(2z)). √(bc) sends the midpoint M of BC to
-  the point L where the A-symmedian meets the circumcircle again; halving the power sends M to
-  the midpoint of AL instead, and B, C to the midpoints of AC, AB. I am not certain this is the
-  standard meaning of "sqrt_bc2" (other readings: √(2bc), or √(bc) followed by the half turn
-  about A). Please confirm or give the definition.
-- **feet_inversion (not built).** Proposed: inversion(A, power(A, diameter_circle(B, C))), the
-  inversion at A with power AB⃗·AC⃗ = AF·AB = AE·AC (E, F the feet of the altitudes from B, C;
-  negative when the angle at A is obtuse, then followed by the half turn). It swaps B ↔ F,
-  C ↔ E and H ↔ D (D the foot from A). Alternative reading: the orthocentre inversion
-  (built as orthocenter_inversion), which swaps each vertex with its foot. Please confirm.
 - **inversion_swap(O, A, B)** is defined only when O lies on line AB (an inversion centred at O
   maps A onto ray OA); otherwise Undefined with that reason. Checked symmetric in A ↔ B.
 - **The layer line names the map** (ADR-0032 decision 19): the brief's
@@ -167,9 +171,9 @@ Two frozen files modified under [ADR-0032](adr/0032-mobius-inversion.md) (commit
 ADR-0032; type-level, equivalent for similarities):
 `packages/kernel/test/inverse-range.test.ts` and `packages/kernel/test/laws/l13-model.test.ts`
 (`Transform.t` became a union; details in the ADR's "Frozen tests changed" section). Lines only
-added to frozen files: `registry.test.ts` (six names), `radical.test.ts` (sqrt_bc),
-`construction-key.test.ts` (four samples), `degenerate.test.ts` and `tools.property.test.ts`
-(imports and spreads), the kernel's `exports.test.ts` (two subpaths). `pnpm rules`:
+added to frozen files: `registry.test.ts` (eight names), `radical.test.ts` (sqrt_bc,
+sqrt_bc2), `construction-key.test.ts` (six samples), `degenerate.test.ts` and
+`tools.property.test.ts` (imports and spreads), the kernel's `exports.test.ts` (two subpaths). `pnpm rules`:
 "add-only: frozen tests compared with run-13, 0 violation(s)".
 
 ### Files changed outside packages/kernel/src/transform and the registry
@@ -284,8 +288,9 @@ https://github.com/youseng/geomira/actions/runs/40317332814).
 ## Requests
 
 - Tag this run's merge as `run-14`, so the add-only guard freezes the new tests.
-- Confirm or give the definitions of `sqrt_bc2` and `feet_inversion` (Uncertain above); they
-  will be built only then.
+- The GUI keys: every Shift letter is taken, so ADR-0034 put Feet inversion on `o` (the last
+  free letter) and √(bc/2) inversion on `,`. The next GUI tool needs a key scheme (for example
+  a second palette page or keys made optional, which is an editor change for its own ADR).
 - The test-count floor is raised to 3282 (docs/test-count.txt).
 
 ---
