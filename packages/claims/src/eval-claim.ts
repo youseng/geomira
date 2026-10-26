@@ -11,6 +11,7 @@ import { createRng, type Seed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
 import type { Registry } from '@geomira/kernel/registry';
 import { EXACT_BUDGET_BITS } from './constants';
+import type { ClaimKinds } from './kind-registry';
 import { CURRENT_FIGURE_SEED } from './current';
 import { prepare } from './prepare';
 import { decideSample, type RungName, type SampleOutcome } from './rungs';
@@ -29,6 +30,8 @@ export interface EvalOptions {
   readonly seed?: Seed;
   /** The exact rung's size budget in bits (default EXACT_BUDGET_BITS). */
   readonly budgetBits?: number;
+  /** The claim kinds (default: v1's; ADR-0035). */
+  readonly kinds?: ClaimKinds;
 }
 
 /** A sample outcome as a claim value (hypothesis rejections cannot occur here). */
@@ -57,7 +60,7 @@ export function evalClaim(
   registry: Registry,
   options: EvalOptions = {},
 ): ClaimValue {
-  const p = prepare(doc, claimId, registry);
+  const p = prepare(doc, claimId, registry, options.kinds);
   if (!p.ok) return { value: 'undefined', status: 'invalid', reason: p.reason };
   const outcome = decideSample(p.prepared, p.prepared.doc, {
     budgetBits: options.budgetBits ?? EXACT_BUDGET_BITS,

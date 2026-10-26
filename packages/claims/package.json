@@ -18,7 +18,10 @@
     "./rungs": "./src/rungs.ts",
     "./constants": "./src/constants.ts",
     "./check": "./src/check.ts",
-    "./randomize": "./src/randomize.ts"
+    "./randomize": "./src/randomize.ts",
+    "./kind-registry": "./src/kind-registry.ts",
+    "./symmetry": "./src/symmetry.ts",
+    "./screen": "./src/screen.ts"
   },
   "dependencies": {
     "@geomira/kernel": "workspace:*",

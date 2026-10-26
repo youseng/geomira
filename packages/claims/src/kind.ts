@@ -77,6 +77,59 @@ export interface ClaimKindSpec {
    * mod-p rung (L17).
    */
   needsTrig?(lits: readonly Rational[]): string | undefined;
+  /**
+   * Generators of the argument symmetries (ADR-0035): each permutation of the argument
+   * positions gives the same claim. Two claims whose arguments differ by the group they
+   * generate are one claim (the finder's candidates are deduplicated by it).
+   */
+  readonly symmetry?: readonly ClaimSymmetry[];
+  /** How the finder searches this kind (ADR-0035); absent: plain enumeration of its params. */
+  readonly finder?: FinderHints;
+}
+
+/**
+ * A generator of a claim's argument symmetries: the claim with argument i replaced by
+ * argument perm[i] is the same claim, for every literal assignment (or, with `when`, for the
+ * literals it accepts: AB = CD is CD = AB only for k = 1). Literal positions map to themselves.
+ */
+export interface ClaimSymmetry {
+  readonly perm: readonly number[];
+  readonly when?: (lits: readonly Rational[]) => boolean;
+}
+
+/**
+ * A measure the finder screens by (ADR-0035): the claim relates a float measure of two
+ * groups of point arguments (a length, an angle), m(first) = target(m(second), literals), so
+ * candidate pairs are found by sorting measures instead of enumerating every tuple.
+ */
+export interface MeasureHint {
+  /** The point argument positions of the two groups, in order. */
+  readonly groups: readonly [readonly number[], readonly number[]];
+  /** The measure of one group's points, or undefined when it has none (coincident points). */
+  measure(pts: readonly Vec<number>[]): number | undefined;
+  /**
+   * The measure the first group must have, given the second group's and the literals (for the
+   * literal assignments of `FinderHints.literals`, the only ones the finder screens with).
+   */
+  target(m: number, lits: readonly Rational[]): number;
+  /** Lengths are measured in the figure's scale, angles in radians. */
+  readonly unit: 'length' | 'angle';
+  /** Measures are taken modulo this (directed angles: π). */
+  readonly period?: number;
+  /** Measures within the screening window of these values say nothing (flat angles: 0, π). */
+  readonly trivialAt: readonly number[];
+  /** Permutations of a group's positions that keep its measure (∠ABC = ∠CBA). */
+  readonly groupSymmetry?: readonly (readonly number[])[];
+}
+
+export interface FinderHints {
+  /** The number of arguments searched (a `rest` kind: its minimum). */
+  readonly arity?: number;
+  /** The literal assignments tried, each in literal-parameter order. */
+  readonly literals?: readonly (readonly Rational[])[];
+  readonly measure?: MeasureHint;
+  /** Not searched, with the reason the result states. */
+  readonly notSearched?: string;
 }
 
 export function badClaim(kind: string): Undefined {

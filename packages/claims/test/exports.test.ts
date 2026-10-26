@@ -15,6 +15,9 @@ import * as verdict from '../src/verdict';
 import * as verdictLine from '../src/verdict-line';
 import * as figureHypotheses from '../src/figure-hypotheses';
 import * as randomize from '../src/randomize';
+import * as kindRegistry from '../src/kind-registry';
+import * as screen from '../src/screen';
+import * as symmetry from '../src/symmetry';
 
 /** The public modules of @geomira/claims (ADR-0002, ADR-0008) and the runtime names each exports. */
 const SURFACE: Record<string, { module: object; names: string[] }> = {
@@ -64,6 +67,9 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'randomFigure',
     ],
   },
+  './kind-registry': { module: kindRegistry, names: ['claimKindRegistry'] },
+  './screen': { module: screen, names: ['screenFigure'] },
+  './symmetry': { module: symmetry, names: ['claimKey', 'orbit', 'transposition'] },
   './rungs': { module: rungs, names: ['RUNG_NAMES', 'claimArgs', 'decideSample', 'floatValues'] },
   './constants': {
     module: constants,
