@@ -1,0 +1,32 @@
+/**
+ * Icons of Run 14's GUI tools (ADR-0032 decision 16), in the style of icons.tsx (24 × 24,
+ * strokes in currentColor, the accent dot in the accent colour); icons.tsx spreads them into
+ * its Record, so the compiler still requires one per tool. Decorative.
+ */
+import type { ReactNode } from 'react';
+import type { ToolId } from '@geomira/editor/tool-state';
+
+export const INVERSION_ICONS: Readonly<
+  Record<Extract<ToolId, 'inversion' | 'sqrt_bc' | 'inversion_fixing'>, readonly ReactNode[]>
+> = {
+  inversion: [
+    <circle key="0" cx="12" cy="12" r="7.5" strokeDasharray="2.5 2" />,
+    <circle key="1" cx="12" cy="12" r="1.9" fill="currentColor" stroke="none" />,
+    <line key="2" x1="12" y1="12" x2="21" y2="6" />,
+    <circle key="3" cx="15.8" cy="9.5" r="1.6" fill="currentColor" stroke="none" />,
+    <circle key="4" cx="20.2" cy="6.5" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  sqrt_bc: [
+    <path key="0" d="M4 20 L12 4 L20 20" />,
+    <path key="1" d="M7.5 13 Q12 21 16.5 13" strokeDasharray="2.5 2" />,
+    <circle key="2" cx="12" cy="4" r="1.9" fill="currentColor" stroke="none" />,
+    <circle key="3" cx="7.5" cy="13" r="2.4" className="icon-accent" stroke="none" />,
+    <circle key="4" cx="16.5" cy="13" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  inversion_fixing: [
+    <circle key="0" cx="10" cy="13" r="7" />,
+    <circle key="1" cx="20" cy="5" r="1.9" fill="currentColor" stroke="none" />,
+    <path key="2" d="M20 5 L15 8.5" strokeDasharray="2 1.6" />,
+    <circle key="3" cx="15" cy="8.5" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+};
