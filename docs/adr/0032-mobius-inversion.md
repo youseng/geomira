@@ -81,7 +81,7 @@ c, d }` (complex entries): z ↦ (a·ẑ + b)/(c·ẑ + d), ẑ = z̄ when `anti
      standard meaning is not certain. STATUS (Uncertain) proposes definitions for the
      maintainer to confirm.
 
-### apply on every kind (transform/apply-map.ts, mobius-apply.ts, unit-inversion.ts)
+### apply on every kind (transform/apply-map.ts, j-core.ts, j-lines.ts, j-circles.ts, proj-range.ts)
 
 5. **One decomposition.** For c ≠ 0, M = S₂ ∘ J ∘ S₁ with J(w) = 1/w̄ (the inversion in the
    unit circle about the origin), S₁(z) = ẑ + d/c and S₂(w) = a/c + e·w̄, e = (bc − ad)/c²
@@ -145,12 +145,14 @@ c, d }` (complex entries): z ↦ (a·ẑ + b)/(c·ẑ + d), ẑ = z̄ when `anti
    cannot list its consumers, so every reader of `lo` / `hi` was found by search and handles
    it, each with a test: kernel `tools/range.ts` (rangeStatus: on the two rays, the band at
    each end), `glider.ts` (a glider in the gap is clamped to the nearer end; the middle of the
-   gap is Undefined within the band, as an arc glider's far point), `tools/pairs.ts`,
+   gap is Undefined within the band, as an arc glider's far point),
    `docs.ts`, `similarity.ts` (images keep the flag); claims `kinds-curves.ts` (`on`: one
    order item (t − lo)(t − hi) ≥ 0) and `sampler.ts` (glider samples on the two rays);
    scene `shapes.ts`, `display.ts` (two clipped rays: drawn and hit, L8), `placement.ts`,
-   `bounds.ts`, `coincide.ts`; export `asy-plan.ts` (no Asymptote variable: drawn from the
-   display list like an arc) and `check.ts`; apps/web `style-draft.ts`.
+   `coincide.ts`; export `asy-plan.ts` (no Asymptote variable: drawn from the
+   display list like an arc) and `check.ts`; apps/web `style-draft.ts`. Two readers are
+   correct for the two rays unchanged: kernel `tools/pairs.ts` asks only whether a line is
+   ranged (it is), and scene `bounds.ts` takes the finite ends (the rays' ends).
 9. **Chirality** (SPEC §4). An image line through the pole keeps its source's flag (S₁, J and
    S₂ keep its direction). An image line from a circle through the pole has direction
    rot90(c) in J's frame, a quarter turn of the achiral direction from the pole to the
@@ -265,9 +267,9 @@ Lines only added: `registry.test.ts` (five names), `radical.test.ts` (sqrt_bc),
   centre they are Undefined.
 - The image of a polygon or a segment mark under an inversion is Undefined with its reason.
 - Kernel core files changed (decisions 8, 11, 13): value.ts, kinds.ts, tool.ts (`absolute`),
-  similarity.ts, drag.ts, docs.ts, glider.ts, tools/range.ts, tools/pairs.ts. Outside the
-  kernel: claims frame.ts, kinds-curves.ts, sampler.ts; scene shapes, display, placement,
-  bounds, coincide; export asy-plan.ts, check.ts; editor drag.ts; apps/web style-draft.ts and
+  similarity.ts, drag.ts, docs.ts, glider.ts, tools/range.ts. Outside the
+  kernel: claims frame.ts, kinds-curves.ts, sampler.ts; scene types, shapes, display,
+  placement, coincide; export asy-plan.ts, check.ts; editor drag.ts; apps/web style-draft.ts and
   the icons of the new tools. STATUS lists them.
 
 ## Alternatives considered

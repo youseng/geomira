@@ -36,13 +36,13 @@ function triangle(map: (f: Figure) => Figure): Figure {
 }
 
 describe('claims in an inverted layer, both regimes', () => {
-  it('the √(bc) map: B* = C holds locally and globally; B* = B is false', () => {
+  it('the √(bc) map: B* = C and C* = B hold locally and globally; B* = B is false', () => {
     const f = triangle((g) => g.def('f', 'sqrt_bc', 'A', 'B', 'C'));
-    const holds = f.claim('equal', 'B*', 'C');
-    for (const regime of ['local', 'global'] as const) {
-      const v = run(f, holds, regime, 3);
-      expect(v.kind, v.text).toBe(regime === 'local' ? 'holds' : 'holds-across');
-    }
+    for (const holds of [f.claim('equal', 'B*', 'C'), f.claim('equal', 'C*', 'B')])
+      for (const regime of ['local', 'global'] as const) {
+        const v = run(f, holds, regime, 3);
+        expect(v.kind, v.text).toBe(regime === 'local' ? 'holds' : 'holds-across');
+      }
     expect(run(f, f.claim('equal', 'B*', 'B'), 'local', 3).kind).toBe('false');
   });
 
