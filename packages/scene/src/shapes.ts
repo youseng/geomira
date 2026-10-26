@@ -45,7 +45,8 @@ function lineShape(v: Extract<Value<number>, { kind: 'line' }>): ShapeResult {
   const hi = v.hi === null ? null : v.hi * n;
   if ((lo !== null && !Number.isFinite(lo)) || (hi !== null && !Number.isFinite(hi)))
     return NOT_FINITE;
-  return { kind: 'shape', shape: { kind: 'line', p: v.p, u, lo, hi } };
+  const shape = { kind: 'line' as const, p: v.p, u, lo, hi };
+  return { kind: 'shape', shape: v.outside === true ? { ...shape, outside: true } : shape };
 }
 
 function circleShape(v: Extract<Value<number>, { kind: 'circle' }>): ShapeResult {

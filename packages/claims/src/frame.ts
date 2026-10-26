@@ -18,6 +18,8 @@
  *   - on(c, u, v): relative to c's anchor, so a direct similarity maps it, but a mirror
  *     does not (X(u : v) turns the other way). Free → redrawn (global); otherwise → no
  *     mirroring; when the parameter depends on the figure (below) → no similarity either.
+ *   - a number argument a Signature declares `absolute` (an inversion's power, ADR-0032): a
+ *     SIZE the samplers never map → no similarity (mirroring keeps sizes).
  *   - every other number argument (on(l, t), divide, rotate, homothety, marks) is RELATIVE
  *     (dimensionless, or an angle relative to the figure): safe when it is a PURE NUMBER
  *     (built from literals, params and arithmetic only, never from the figure); a number
@@ -81,7 +83,18 @@ interface Walk {
   readonly pure: Map<number, boolean>;
 }
 
-type Role = 'position' | 'length' | 'direction' | 'anchored' | 'relative';
+type Role = 'position' | 'length' | 'size' | 'direction' | 'anchored' | 'relative';
+
+/**
+ * Whether argument i of the call is an absolute size by registry data (Signature.absolute,
+ * ADR-0032 decision 14: an inversion's power), for an overload of the call's arity.
+ */
+function absoluteArg(call: CallExpr, i: number, w: Walk): boolean {
+  const tool = w.registry.get(call.tool);
+  return (tool?.signatures ?? []).some(
+    (s) => s.params.length === call.args.length && (s.absolute ?? []).includes(i),
+  );
+}
 
 function numberOnly(ks: readonly ValueKind[] | undefined): boolean {
   return ks !== undefined && ks.length === 1 && ks[0] === 'number';
@@ -118,6 +131,7 @@ function roleOf(call: CallExpr, i: number, w: Walk): Role {
   const n = call.args.length;
   if (call.tool === 'point' && n === 2) return 'position';
   if (call.tool === 'circle' && n === 2 && i === 1) return 'length';
+  if (absoluteArg(call, i, w)) return 'size';
   if (call.tool === 'on' && n === 3 && i >= 1) return 'anchored';
   if (call.tool === 'on' && n === 2 && i === 1) {
     const obj = call.args[0];
@@ -133,6 +147,7 @@ function finding(role: Role, pure: boolean, text: string): Finding | undefined {
     case 'direction':
       return { text, similarity: true, mirror: true };
     case 'length':
+    case 'size':
       return { text, similarity: true, mirror: false };
     case 'anchored':
       return { text, similarity: !pure, mirror: true };
@@ -149,6 +164,8 @@ function describe(role: Role, where: string, call: string, arg: string): string 
       return `${where} has the fixed coordinates ${call}`;
     case 'length':
       return `${where} has the fixed radius ${arg} in ${call}`;
+    case 'size':
+      return `${where} has the fixed size ${arg} (a length or an area) in ${call}`;
     case 'direction':
       return `${where} measures the angle ${arg} from the x-axis in ${call}`;
     case 'anchored':

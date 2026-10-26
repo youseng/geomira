@@ -28,6 +28,8 @@ import * as similarity from '../src/similarity';
 import * as views from '../src/views';
 import * as tool from '../src/tool';
 import * as value from '../src/value';
+import * as mobius from '../src/transform/mobius';
+import * as applyMap from '../src/transform/apply-map';
 
 /** The public modules of @geomira/kernel (ADR-0002) and the runtime names each exports. */
 const SURFACE: Record<string, { module: object; names: string[] }> = {
@@ -181,6 +183,20 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     module: constructionKey,
     names: ['constructionKey', 'sameConstruction', 'symmetriesFor'],
   },
+  './transform/mobius': {
+    module: mobius,
+    names: [
+      'asMobius',
+      'composeMaps',
+      'determinant',
+      'hasNoPole',
+      'inverseMap',
+      'mapProblem',
+      'mobius',
+      'mobiusProblem',
+    ],
+  },
+  './transform/apply-map': { module: applyMap, names: ['applyMap', 'localScale'] },
 };
 
 describe('@geomira/kernel subpath surface', () => {

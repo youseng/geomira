@@ -104,7 +104,8 @@ export function formatValue<T>(v: Value<T>, show: (x: T) => string): string {
       return `point ${pair(v)}`;
     case 'line': {
       const range = `[${v.lo === null ? '−∞' : show(v.lo)}, ${v.hi === null ? '∞' : show(v.hi)}]`;
-      return `line ${pair(v.p)} + t·${pair(v.d)}, t ∈ ${range}${v.chiral ? ', chiral' : ''}`;
+      const where = v.outside === true ? `t ∉ (${range.slice(1, -1)})` : `t ∈ ${range}`;
+      return `line ${pair(v.p)} + t·${pair(v.d)}, ${where}${v.chiral ? ', chiral' : ''}`;
     }
     case 'circle': {
       const anchor = v.anchor === undefined ? '' : `, anchor ${pair(v.anchor)}`;
@@ -119,7 +120,7 @@ export function formatValue<T>(v: Value<T>, show: (x: T) => string): string {
     case 'polygon':
       return `polygon ${v.pts.map(pair).join(' ')}`;
     case 'transform':
-      return `similarity${v.t.anti ? ' (anti)' : ''}`;
+      return `${v.t.type === 'mobius' ? 'Möbius map' : 'similarity'}${v.t.anti ? ' (anti)' : ''}`;
     case 'angle_mark': {
       const what = v.right ? 'right-angle mark' : `angle mark (${String(v.arcs)} arc(s))`;
       return `${what} at ${pair(v.b)} from ${pair(v.from)} to ${pair(v.to)}`;
@@ -146,7 +147,11 @@ export function formatValue<T>(v: Value<T>, show: (x: T) => string): string {
 function formatDocValue<T>(v: Value<T>, show: (x: T) => string): string {
   if (v.kind !== 'transform') return formatValue(v, show);
   const c = (z: { readonly re: T; readonly im: T }): string => `(${show(z.re)}, ${show(z.im)})`;
-  return `${formatValue(v, show)} z ↦ ${c(v.t.a)}·${v.t.anti ? 'z̄' : 'z'} + ${c(v.t.b)}`;
+  const z = v.t.anti ? 'z̄' : 'z';
+  const num = `${c(v.t.a)}·${z} + ${c(v.t.b)}`;
+  return v.t.type === 'mobius'
+    ? `${formatValue(v, show)} z ↦ (${num}) / (${c(v.t.c)}·${z} + ${c(v.t.d)})`
+    : `${formatValue(v, show)} z ↦ ${num}`;
 }
 
 const showFloat = (x: number): string => String(Number.parseFloat(x.toPrecision(12)));

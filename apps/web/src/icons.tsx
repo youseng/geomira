@@ -7,8 +7,10 @@
  */
 import type { ReactNode } from 'react';
 import type { ToolId } from '@geomira/editor/tool-state';
+import { INVERSION_ICONS } from './icons-inversion';
 
 const TOOL_PARTS: Readonly<Record<ToolId, readonly ReactNode[]>> = {
+  ...INVERSION_ICONS,
   move: [
     <path
       key="0"

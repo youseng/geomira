@@ -75,6 +75,20 @@ export function inScope(shard: Shard, file: string, start: number, end: number):
 export const V11_A: readonly string[] = [`${K}/tools/conjugates.ts`, `${K}/tools/poles.ts`];
 export const V11_B: readonly string[] = [`${K}/tools/arc.ts`, `${K}/tools/arc-range.ts`];
 
+/**
+ * Run 14's Möbius code (ADR-0032): transform/ joins stryker.kernel.json's scope and tools/
+ * gains map-ops.ts (compose, inverse and apply, moved out of transforms.ts). The frozen shard
+ * test keeps eleven kernel shards, so the files join existing ones by weight: the unit
+ * inversion's small helpers kernel-a, its per-kind maps kernel-b, the tool specs (mostly static
+ * literals) the light kernel-j, the map core kernel-k (lighter since compose, inverse and apply
+ * left transforms.ts).
+ */
+const T = `${K}/transform`;
+export const MOBIUS_A: readonly string[] = [`${T}/j-core.ts`, `${T}/proj-range.ts`];
+export const MOBIUS_B: readonly string[] = [`${T}/j-lines.ts`, `${T}/j-circles.ts`];
+export const MOBIUS_J: readonly string[] = [`${K}/tools/map-ops.ts`, `${T}/inversion-tools.ts`];
+export const MOBIUS_K: readonly string[] = [`${T}/mobius.ts`, `${T}/apply-map.ts`];
+
 function present(files: readonly string[]): string[] {
   return files.filter((f) => existsSync(join(import.meta.dirname, '..', f)));
 }
@@ -91,10 +105,16 @@ function present(files: readonly string[]): string[] {
  * shard's first run).
  */
 const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly parent: string }[] = [
-  { files: [`${K}/geom.ts`, `${K}/similarity.ts`, ...present(V11_A)], parent: 'kernel-1' },
+  {
+    files: [`${K}/geom.ts`, `${K}/similarity.ts`, ...present(V11_A), ...present(MOBIUS_A)],
+    parent: 'kernel-1',
+  },
   // transforms.ts alone took more than 50 minutes: three line ranges (Stryker's
   // `file:start-end` form) cover it, the last one open-ended so no line can drop out.
-  { files: [`${K}/tools/transforms.ts:1-132`, ...present(V11_B)], parent: 'kernel-b' },
+  {
+    files: [`${K}/tools/transforms.ts:1-132`, ...present(V11_B), ...present(MOBIUS_B)],
+    parent: 'kernel-b',
+  },
   {
     files: [`${K}/tools/pairs.ts`, `${K}/tools/intersect.ts`, `${K}/tools/range.ts`],
     parent: 'kernel-2',
@@ -110,8 +130,11 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     parent: 'kernel-4',
   },
   { files: [`${K}/tools/lines.ts`], parent: 'kernel-h' },
-  { files: [`${K}/tools/transforms.ts:133-249`], parent: 'kernel-b' },
-  { files: [`${K}/tools/transforms.ts:250-${String(OPEN_END)}`], parent: 'kernel-b' },
+  { files: [`${K}/tools/transforms.ts:133-265`, ...present(MOBIUS_J)], parent: 'kernel-b' },
+  {
+    files: [`${K}/tools/transforms.ts:266-${String(OPEN_END)}`, ...present(MOBIUS_K)],
+    parent: 'kernel-b',
+  },
 ];
 
 const toolsInGroups = [

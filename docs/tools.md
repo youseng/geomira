@@ -346,6 +346,22 @@ isogonal(P, A, B, C): the isogonal conjugate of P in triangle ABC (the reflectio
   - `isogonal((2, 1), (0, 0), (4, 0), (1, 3))` → point (1, 1)
   - `isogonal((1, 1), (0, 0), (4, 0), (1, 3))` → point (2, 1)
 
+### symmedian_point
+
+symmedian_point(A, B, C): the symmedian (Lemoine) point K, where the three symmedians meet: the isogonal conjugate of the centroid, a² : b² : c² in barycentrics; exact.
+
+- Signatures: `symmedian_point(point, point, point)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `symmedian_point(point, point, point)`: arguments 1, 2, 3 in any order (the same value)
+- Degenerate cases:
+  - coincident vertices → Undefined
+  - collinear vertices → Undefined
+- Examples:
+  - `symmedian_point((0, 0), (4, 0), (1, 3))` → point (14/11, 12/11)
+
 ### pole
 
 pole(l, c): the pole of the line l with respect to c, the point whose polar is l (the inverse of polar); exact.
@@ -580,7 +596,7 @@ tangent_from(P, c, selectors): a tangent from P to c, the line through its touch
 
 ### symmedian
 
-symmedian(A, B, C): the symmedian of triangle ABC from A (the median from A reflected in the bisector at A): the line from A to D on BC with BD : DC = AB² : AC²; achiral; exact. The symmedian point is isogonal(centroid(A, B, C), A, B, C).
+symmedian(A, B, C): the symmedian of triangle ABC from A (the median from A reflected in the bisector at A): the line from A to D on BC with BD : DC = AB² : AC²; achiral; exact. The symmedian point is symmedian_point(A, B, C).
 
 - Signatures: `symmedian(point, point, point)`
 - Result: line
@@ -830,7 +846,7 @@ spiral(A, B, C, D): the direct similarity taking A to C and B to D (a spiral sim
 
 ### compose
 
-compose(T1, T2): the map X ↦ T1(T2(X)) (T2 first).
+compose(T1, T2): the map X ↦ T1(T2(X)) (T2 first). Similarities and Möbius maps (inversions) compose in any combination.
 
 - Signatures: `compose(transform, transform)`
 - Result: transform
@@ -842,8 +858,11 @@ compose(T1, T2): the map X ↦ T1(T2(X)) (T2 first).
   - a scale factor beyond the double range (floats) → Inexact
   - compose(T, inverse(T)) → the identity
   - two anti-similarities → a direct similarity
+  - two inversions → a direct Möbius map (the same center: a homothety, with no pole)
+  - a hand-built Möbius map with ad − bc = 0 → Undefined
 - Examples:
   - `compose(reflect(line((0, 0), (1, 0))), reflect(line((0, 0), (0, 1))))` → similarity z ↦ (-1, 0)·z + (0, 0)
+  - `compose(inversion((0, 0), 4), inversion((0, 0), 1))` → Möbius map z ↦ ((4, 0)·z + (0, 0)) / ((0, 0)·z + (1, 0))
 
 ### inverse
 
@@ -857,12 +876,14 @@ inverse(T): the inverse map (the preimage of Y is apply(inverse(T), Y)).
 - Degenerate cases:
   - a reflection or a half turn → itself
   - a hand-built map with scale factor 0 → Undefined
+  - an inversion → itself (its matrix up to a factor)
 - Examples:
   - `inverse(homothety((1, 1), 2))` → similarity z ↦ (1/2, 0)·z + (1/2, 1/2)
+  - `inverse(inversion((1, 1), 2))` → Möbius map (anti) z ↦ ((-1, -1)·z̄ + (0, 0)) / ((-1, 0)·z̄ + (1, -1))
 
 ### apply
 
-apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mark or text. Ranges are kept, an anti-similarity reverses arcs, the chirality flag and the anchor of a circle are mapped with it (gliders on an image circle stay exact).
+apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mark or text. Ranges are kept, an anti-similarity reverses arcs, the chirality flag and the anchor of a circle are mapped with it (gliders on an image circle stay exact). Under an inversion lines and circles exchange kinds, segments become arcs or rays, and the center has no image.
 
 - Signatures: `apply(transform, point)`, `apply(transform, curve)`, `apply(transform, polygon)`, `apply(transform, annotation)`
 - Result: point, line, circle, polygon, angle_mark, segment_mark, text
@@ -875,9 +896,137 @@ apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mar
   - an anti-similarity reverses arcs; ranges and the chirality flag are kept
   - a circle without an anchor → an image without one
   - an anti-similarity reverses an angle mark (its arms swap)
+  - the center of an inversion → Undefined (its image is at infinity)
+  - a point within the band of the center → Undefined (ambiguous)
+  - a line through the center → that line; a circle through it → a line (chiral)
+  - a line off the center → a circle through it; a circle off it → a circle
+  - a curve within the band of the center → Undefined (ambiguous)
+  - a segment → an arc; a segment with an end at the center → a ray
+  - a segment containing the center → the two rays outside
+  - an arc through the center → a segment, a ray or two rays
+  - a polygon under an inversion → Undefined (its sides become arcs)
+  - a segment mark under an inversion → Undefined (lengths are not kept)
+  - an angle mark under an inversion → the mark on the tangents (arms swapped)
+  - mod p, an arc or a range through an inversion → Inexact (needs an order)
 - Examples:
   - `apply(rotate((0, 0), 90), polygon((1, 0), (2, 0), (2, 1)))` → polygon (0, 1) (0, 2) (-1, 2)
   - `apply(reflect(line((0, 0), (1, 0))), circle((1, 2), (1, 3)))` → circle center (1, -2), r² = 1, anchor (1, -3)
+  - `apply(inversion((0, 0), 4), line((1, 0), (1, 1)))` → circle center (2, 0), r² = 4, anchor (4, 0)
+
+### inversion
+
+inversion(c): the inversion in the circle c; inversion(O, k): the inversion with center O and power k (k < 0: followed by the half turn about O). An anti Möbius map: apply it with apply(T, X) or a derived layer. Exact for an exact power.
+
+- Signatures: `inversion(round)`, `inversion(point, number)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry: none
+- Degenerate cases:
+  - k = 0 → Undefined
+  - k < 0 → the inversion with power |k| followed by the half turn about O
+  - an arc → the inversion in its carrier circle
+- Examples:
+  - `inversion(circle((1, 1), (3, 1)))` → Möbius map (anti) z ↦ ((1, 1)·z̄ + (2, 0)) / ((1, 0)·z̄ + (-1, 1))
+  - `inversion((0, 0), 4)` → Möbius map (anti) z ↦ ((0, 0)·z̄ + (4, 0)) / ((1, 0)·z̄ + (0, 0))
+
+### sqrt_bc
+
+sqrt_bc(A, B, C): the √(bc) inversion of triangle ABC at A, compose(reflect(bisector(B, A, C)), inversion(A, AB·AC)). It swaps B and C and maps the circumcircle to line BC.
+
+- Signatures: `sqrt_bc(point, point, point)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `sqrt_bc(point, point, point)`: arguments 2, 3 in any order (the same value)
+- Degenerate cases:
+  - A = B or A = C → Undefined
+  - collinear A, B, C → still defined (it swaps B and C)
+- Examples:
+  - `sqrt_bc((0, 0), (3, 4), (5, 0))` → Möbius map z ↦ ((0, 0)·z + (15, 20)) / ((1, 0)·z + (0, 0))
+
+### orthocenter_inversion
+
+orthocenter_inversion(A, B, C): the inversion at the orthocenter H with power HA·HD (D the foot from A; negative in an acute triangle), inversion(H, power(H, circumcircle(A, B, C)) / 2). It swaps each vertex with the foot of its altitude and the circumcircle with the nine-point circle.
+
+- Signatures: `orthocenter_inversion(point, point, point)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `orthocenter_inversion(point, point, point)`: arguments 1, 2, 3 in any order (the same value)
+- Degenerate cases:
+  - coincident or collinear vertices → Undefined
+  - a right angle (H on the circumcircle) → Undefined (power 0)
+- Examples:
+  - `orthocenter_inversion((0, 0), (4, 0), (1, 3))` → Möbius map (anti) z ↦ ((1, 1)·z̄ + (-4, 0)) / ((1, 0)·z̄ + (-1, 1))
+
+### inversion_fixing
+
+inversion_fixing(O, c): the inversion centered at O that maps c to itself, inversion(O, power(O, c)) (O inside c: a negative power, with the half turn).
+
+- Signatures: `inversion_fixing(point, round)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry: none
+- Degenerate cases:
+  - O on c → Undefined (power 0)
+  - O inside c → a negative power (still fixes c)
+- Examples:
+  - `inversion_fixing((5, 0), circle((0, 0), (3, 0)))` → Möbius map (anti) z ↦ ((5, 0)·z̄ + (-9, 0)) / ((1, 0)·z̄ + (-5, 0))
+
+### inversion_swap
+
+inversion_swap(O, A, B): the inversion centered at O that swaps A and B, for O on line AB: inversion(O, power(O, diameter_circle(A, B))), power OA·OB (negative when O is between A and B).
+
+- Signatures: `inversion_swap(point, point, point)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `inversion_swap(point, point, point)`: arguments 2, 3 in any order (the same value)
+- Degenerate cases:
+  - O off line AB → Undefined (no inversion centered at O swaps them)
+  - A = B → Undefined
+  - O = A or O = B → Undefined (power 0)
+- Examples:
+  - `inversion_swap((0, 0), (1, 0), (4, 0))` → Möbius map (anti) z ↦ ((0, 0)·z̄ + (4, 0)) / ((1, 0)·z̄ + (0, 0))
+
+### feet_inversion
+
+feet_inversion(A, B, C): the inversion at A with power AB·AC·cos A (the dot product of AB and AC), inversion(A, power(A, diameter_circle(B, C))). It maps B and C to the feet of the altitudes from C and B, the orthocenter to the foot from A, the circumcircle to line EF and line BC to the circle on diameter AH.
+
+- Signatures: `feet_inversion(point, point, point)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `feet_inversion(point, point, point)`: arguments 2, 3 in any order (the same value)
+- Degenerate cases:
+  - AB⃗·AC⃗ = 0 (a right angle at A, or A = B or A = C) → Undefined
+  - B = C → Undefined
+  - AB⃗·AC⃗ < 0 (an obtuse angle at A) → the inversion followed by the half turn about A
+  - collinear A, B, C → still defined (it swaps B and C)
+- Examples:
+  - `feet_inversion((0, 0), (4, 0), (1, 3))` → Möbius map (anti) z ↦ ((0, 0)·z̄ + (4, 0)) / ((1, 0)·z̄ + (0, 0))
+
+### sqrt_bc2
+
+sqrt_bc2(A, B, C): the √(bc/2) inversion of triangle ABC at A, compose(reflect(bisector(B, A, C)), inversion(A, AB·AC/2)). It maps B and C to the midpoints of AC and AB, the circumcircle to the midline through them, and is its own inverse.
+
+- Signatures: `sqrt_bc2(point, point, point)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `sqrt_bc2(point, point, point)`: arguments 2, 3 in any order (the same value)
+- Degenerate cases:
+  - A = B or A = C → Undefined
+  - collinear A, B, C → still defined (B goes to the midpoint of AC)
+- Examples:
+  - `sqrt_bc2((0, 0), (3, 4), (5, 0))` → Möbius map z ↦ ((0, 0)·z + (15/2, 10)) / ((1, 0)·z + (0, 0))
 
 ## Measures
 

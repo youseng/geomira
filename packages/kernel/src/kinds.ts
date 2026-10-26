@@ -4,7 +4,10 @@
  * `staticKinds`) and the derived layers (derived.ts `exprKinds`), so both narrow a call to
  * the overloads its arguments can resolve to (ADR-0007 decisions 4 and 8): reflect(l) is a
  * transform, reflect(A, l) a point, and an image keeps its figure's kinds (Signature
- * `preserves`): reflect(l, k), apply(T, l) and a managed image l* are lines, never circles.
+ * `preserves`): reflect(l, k), apply(T, l) and a managed image l* are lines, never circles,
+ * unless the map may be a Möbius map (ADR-0032 decision 13): a transform whose kinds include
+ * the static kind 'mobius' (the inversion tools' output; compose and inverse of one) images a
+ * line or a circle as a line or a circle.
  */
 import type { Signature, ToolSpec } from './tool';
 import { capabilityKinds, type ValueKind } from './value';
@@ -24,17 +27,34 @@ export function fits(s: Signature, args: ArgKinds): boolean {
   });
 }
 
+/** Whether an argument of a 'transform' parameter of `s` may be a Möbius map. */
+function mobiusArg(s: Signature, args: ArgKinds): boolean {
+  return args.some((k, i) => (s.params[i] ?? s.rest) === 'transform' && k?.includes('mobius'));
+}
+
+/** A line or a circle under a map that may be Möbius may be either (ADR-0032). */
+function exchangeCurves(kinds: readonly ValueKind[]): readonly ValueKind[] {
+  const curve = kinds.includes('line') || kinds.includes('circle');
+  return curve ? [...new Set<ValueKind>([...kinds, 'line', 'circle'])] : kinds;
+}
+
 /**
  * The kinds of an overload's result: the kinds of the preserved argument that its parameter
- * takes (an unknown argument: every kind of the parameter), else `output`, else the tool's
- * outputKinds.
+ * takes (an unknown argument: every kind of the parameter), lines and circles exchanged under
+ * a map that may be Möbius; else `output` (with 'mobius' added to a transform computed from
+ * one), else the tool's outputKinds.
  */
 function overloadKinds(tool: ToolSpec, s: Signature, args: ArgKinds): readonly ValueKind[] {
   const cap = s.preserves === undefined ? undefined : s.params[s.preserves];
-  if (s.preserves === undefined || cap === undefined) return s.output ?? tool.outputKinds;
+  const mob = mobiusArg(s, args);
+  if (s.preserves === undefined || cap === undefined) {
+    const out = s.output ?? tool.outputKinds;
+    return mob && out.includes('transform') && !out.includes('mobius') ? [...out, 'mobius'] : out;
+  }
   const taken = capabilityKinds(cap);
   const arg = args[s.preserves];
-  return arg === undefined ? taken : taken.filter((k) => arg.includes(k));
+  const kept = arg === undefined ? taken : taken.filter((k) => arg.includes(k));
+  return mob ? exchangeCurves(kept) : kept;
 }
 
 /**

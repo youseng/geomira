@@ -1,5 +1,312 @@
 # STATUS
 
+## Run 14: inversion via Möbius transformations: ACCEPTED (2026-10-26)
+
+SPEC §1 (inversion leaves "Phase 2, documented only"), §4 (`outside`), §6.2, §8.1, §18 E3/E5.
+Decisions: [ADR-0032](adr/0032-mobius-inversion.md); the maintainer's extra item 6:
+[ADR-0033](adr/0033-symmedian-point.md); the two presets the maintainer confirmed after the
+first acceptance: [ADR-0034](adr/0034-feet-inversion-sqrt-bc2.md). PR: https://github.com/youseng/geomira/pull/23
+(branch claude/exciting-dirac-h0mxvl) against main.
+
+Base check: main = 8f5c147 (PR #22 = Run 13, ACCEPTED above). `git fetch --tags` brought
+`run-13` = 8f5c147, so the add-only guard compares with it ("add-only: frozen tests compared
+with run-13"). On 8f5c147 `pnpm install && pnpm verify` passed locally (3154 tests, exit 0), and
+CI on main was green: ci https://github.com/youseng/geomira/actions/runs/40283299700, deploy
+https://github.com/youseng/geomira/actions/runs/40283299598, tex
+https://github.com/youseng/geomira/actions/runs/40283299720, nightly (push to main, mutation)
+https://github.com/youseng/geomira/actions/runs/40283299751 and the scheduled nightly
+https://github.com/youseng/geomira/actions/runs/40295998953, whose gate was:
+
+```
+num mutation gate: 93.47% (730 detected, 51 undetected; threshold 80%): pass
+kernel mutation gate: 98.33% (1938 detected, 33 undetected; threshold 75%): pass
+claims mutation gate: 85.79% (2011 detected, 333 undetected; threshold 75%): pass
+```
+
+Run 11 (beta triage) and Run 9b's examples part stay skipped by the maintainer's decision: not
+a red base. No contest problem was added (docs/examples-source.md does not exist).
+
+## Done (each item → the test file that proves it)
+
+1. **ADR and SPEC** (item 1): [ADR-0032](adr/0032-mobius-inversion.md) records the Möbius
+   design and that inversion leaves Phase 2; SPEC §1, §4 (Line `outside?`, Transform
+   'mobius'), §6.2, §8.1, §18 E3/E5 updated in the same commit (9396020). Each preset's exact
+   composition is written in ADR-0032 decision 4 before its code.
+2. **TransformData 'mobius' {anti, a, b, c, d}** (decisions 1–3), compose and inverse of any
+   pair (matrix product, adjugate), validity ad − bc ≠ 0 →
+   `packages/kernel/test/laws/l13-mobius.test.ts` (involution apply∘apply = id, apply∘inverse =
+   id, compose then apply = apply twice, as point sets; Float, Rational and mod p),
+   `packages/kernel/test/helpers/degenerate-mobius.ts` (spread into `degenerate.test.ts`).
+3. **Constructors and presets** (item 1): `inversion(c)`, `inversion(O, k)` (k < 0 = inversion
+   then half turn; k = 0 → Undefined), and the presets as compositions only: `sqrt_bc`,
+   `orthocenter_inversion`, `inversion_fixing`, `inversion_swap` → "the presets are
+   compositions of registry tools" in `packages/kernel/test/mobius-kinds.test.ts` (each preset
+   equals the composition built from the registry tools, entry by entry, in all three fields;
+   no preset file contains a mapping formula); registry symmetries (sqrt_bc B ↔ C value,
+   orthocenter_inversion any order value, inversion_swap A ↔ B value, checked; inversion and
+   inversion_fixing none) → the samples added to `construction-key.test.ts`. `sqrt_bc2` and
+   `feet_inversion`: item 13.
+4. **apply on every kind, one compute<T>** (item 2; decisions 5–9): the centre →
+   Undefined("… the center of inversion: its image is at infinity"); lines ↔ circles by kind
+   at run time; segment → arc (Circle `arc`, ADR-0031); a segment ending at the centre → a ray;
+   a segment through the centre → the two rays `outside`; the chirality of image lines →
+   `packages/kernel/test/mobius-ranges.test.ts` (every range and arc through an inversion,
+   exactly, point by point: more than 10 000 checks), `packages/kernel/test/mobius-kinds.test.ts`
+   (chirality against actually mirrored figures, static kinds, a tangency at the centre, the
+   inversion circle fixed), `packages/kernel/test/outside-range.test.ts` (the two rays in
+   intersect, other, on, gliders, the drag map), the degenerate cases above.
+5. **Exact runs over Rational and ModP (L3)** (item 3) → `packages/kernel/test/laws/l3-mobius.test.ts`
+   (random Möbius chains of inversions, presets, compositions and similarities applied to
+   points, lines, circles, segments, rays and arcs: Float agrees with Rational, mod p reduces the
+   exact value; "1927 defined") and the registry-wide L3 (every new tool sampled; e.g.
+   `inversion: 2192 defined`, `inversion_fixing: 2109`).
+6. **Laws and theorems** (item 4) → `l13-mobius.test.ts` (involution), incidence and tangency
+   preserved on fuzzed figures (`packages/kernel/test/theorems-inversion.test.ts`: 200/200
+   exactly; in floats 196 hold and 4 are set aside as ill-conditioned, none fails), and the
+   theorem tests in the same file (200/200 each, outputs below): √(bc) swaps B and C and maps
+   the circumcircle to line BC; the orthocentre inversion maps the circumcircle to the
+   nine-point circle and A to the foot of its altitude; Ptolemy through the inversion at A
+   (`B*`, `C*`, `D*` collinear, AB·CD + AD·BC = AC·BD).
+7. **Acceptance: under sqrt_bc(A, B, C) in a derived layer `B*` = C and `C*` = B** (local and
+   global regimes; `B*` = B is false) → `packages/claims/test/mobius-claims.test.ts`.
+8. **Acceptance: Playwright "derive an inverted layer, build in it, drag an image"** →
+   `apps/web/e2e/flows-inversion.spec.ts` (Inversion tool → `f = inversion(w)`; Layer from
+   transform → `@layer image = image(f, main)`; the centre's image listed as undefined with its
+   reason; a midpoint built in the layer; dragging `C*` moves C to its preimage). Passed locally
+   (Chromium) and in CI.
+9. **Downstream consumers** (decisions 10–15): claims (the frame's `absolute` size argument,
+   `on` and gliders on two rays) → `packages/claims/test/mobius-claims.test.ts`; scene (two rays
+   drawn and hit as two pieces, placement, coincidence; the inversion circle and its points
+   hidden as coincident, the centre unavailable) → `packages/scene/test/two-rays.test.ts`;
+   export (no Asymptote variable for a Möbius map, images numeric, two rays in every format,
+   arcs only) → `packages/export/test/inversion-export.test.ts` with
+   `tests/fixtures/export/inversion.geo`; editor (GUI tools ⇧W, ⇧U, ⇧F; drag-through; chain
+   scale |f′| at the source) → `packages/editor/test/inversion-tools.test.ts`; style card →
+   `apps/web/test/style-card-inversion.test.ts`. docs/tools.md and docs/language.md regenerated
+   from the registry.
+10. **Maintainer request (not Run 14 scope): `symmedian_point(A, B, C)`**, the Lemoine point,
+    own commit 0ed6541, [ADR-0033](adr/0033-symmedian-point.md): one compute<T>, exact over Q
+    (a² : b² : c²), symmetry any order of A, B, C with the same value, degenerate cases as the
+    other triangle centres, export 'numeric', GUI "Symmedian point" (⇧D) right after Symmedian
+    → `packages/kernel/test/helpers/degenerate-symmedian-point.ts`,
+    `packages/kernel/test/helpers/symmedian-point-properties.ts` (exact: equals
+    isogonal(centroid) and lies on symmedian(A, B, C), (B, C, A), (C, A, B)),
+    `packages/kernel/test/theorems-symmedian-point.test.ts`, the sample in
+    `construction-key.test.ts`, `packages/editor/test/symmedian-point-tool.test.ts`; L3
+    `symmedian_point: 2180 defined`.
+11. **Bug found and fixed** (by L3 on the new Möbius images): `power(P, c)` lost every digit
+    for a huge circle (|P − O|² − r² cancels when the circle is the cline through three nearly
+    collinear points); it is now measured from the circle's anchor → failing test first,
+    `packages/kernel/test/power-huge-circle.test.ts`, fix in the same commit (3c430b1).
+12. **Mutation scope** (decision 18): the new files under `packages/kernel/src/transform/` are
+    in stryker.kernel.json and in the eleven kernel shards (scripts/mutation-shards.ts) → the
+    frozen shard tests pass unchanged; the nightly on this branch is under "Acceptance command
+    output". Its first run (40317340317, all gates passed) left kernel-k at 41.27 %: the
+    double-range verdicts of a Möbius map and `localScale` had no kernel test, and five checks
+    were redundant. Killed by behaviour tests → `packages/kernel/test/mobius-mutation-kills.test.ts`
+    (overflow, underflow and non-finite entries in floats, none over Q or mod p; |f′| with the
+    conjugate of an anti map; apply on a string or number; the centre, ranges and arcs mod p; an
+    arc whose ends are both the centre; rangeStatus's "ray" and "pair of rays"; inversion_swap
+    with A = B); the redundant guards were removed (`mobiusProblem`'s entry check and `n > 0`,
+    the Undefined guard before S₂, `den > 0` in `localScale`, the pole line of
+    `containsPole`), each a no-op the tests show.
+13. **feet_inversion and sqrt_bc2** (maintainer decision after the first acceptance,
+    [ADR-0034](adr/0034-feet-inversion-sqrt-bc2.md), own commit): feet_inversion(A, B, C) =
+    inversion(A, power(A, diameter_circle(B, C))), power AB⃗·AC⃗ (signed; a right angle at A,
+    or A = B or A = C → Undefined with that reason); sqrt_bc2(A, B, C) =
+    compose(reflect(bisector(B, A, C)), inversion(A, AB·AC/2)). Both compositions only, symmetry
+    B ↔ C with the same value (checked), export 'numeric', GUI "Feet inversion" (`o`) and
+    "√(bc/2) inversion" (`,`) after √(bc) inversion, docs regenerated →
+    degenerate cases `packages/kernel/test/helpers/degenerate-presets.ts`; equal to their
+    compositions in every field `packages/kernel/test/mobius-kinds.test.ts`; theorems
+    `packages/kernel/test/theorems-inversion.test.ts` (feet_inversion over floats and exactly:
+    `B*` = the foot from C, `C*` = the foot from B, `H*` = the foot from A, the circumcircle →
+    line EF, line BC → circle AEF = the circle on diameter AH; sqrt_bc2 over floats and Heronian
+    figures: `B*` = the midpoint of AC, `C*` = the midpoint of AB, the circumcircle → the midline
+    through them, twice = the identity); properties `helpers/mobius-properties.ts`; L3
+    (`feet_inversion: 2306 defined`, mod p 2306; `sqrt_bc2` radical like sqrt_bc); the samples in
+    `construction-key.test.ts`; GUI `packages/editor/test/inversion-presets-tools.test.ts`.
+
+## Not done
+
+- No constructive Asymptote mapping for a Möbius map (Asymptote has no such `transform`); its
+  images export as coordinates (ADR-0032 decision 15).
+- Images of polygons and segment marks under a Möbius map are Undefined with a reason (a
+  polygon's sides would become arcs; ADR-0032 decision 6).
+- `releases/geomira.html` is not rebuilt (ADR-0030: on request).
+
+## Known bugs
+
+None open. Found and fixed: item 11. Unchanged: the open lists of docs/audit/2026-10-23.md §3.
+
+Local only (this container): Playwright needs the Chromium build shim of Run 12 (outside the
+repository); Firefox and WebKit run only in CI.
+
+## Uncertain
+
+- **inversion_swap(O, A, B)** is defined only when O lies on line AB (an inversion centred at O
+  maps A onto ray OA); otherwise Undefined with that reason. Checked symmetric in A ↔ B.
+- **The layer line names the map** (ADR-0032 decision 19): the brief's
+  `image(inversion(w), main)` is written as `f = inversion(w)` and `@layer inv = image(f, main)`,
+  because ADR-0009's grammar takes a transform name there; the language is unchanged.
+- **The static kind 'mobius'** (decision 13): the v1 extension point (static kinds of
+  `apply`) was not enough; this is the one kernel-core change the run needed beyond the
+  transform files, recorded in the ADR as asked.
+- **Equivalent mutants judged by hand** (not killed): the `assertNever` messages (mobius.ts
+  twice, apply-map.ts twice, j-core.ts); `applyJ`'s cases for strings, numbers and transforms
+  (S₁ refuses them first with the same reason); `poleTest`'s `||` as `&&` (a field without
+  order gives 'none' for both signs); rangeStatus's `lo !== null && hi !== null` beside
+  `outside` (an `outside` line always has both ends); inversion_swap's early return for an
+  undefined diameter circle (the power step propagates the same reason; kept for clarity) and
+  its helper line's `chiral` flag (unused by the incidence test); `run`'s reason for a tool
+  that is not a preset part (unreachable: a bug); `arcStatus`'s "center of inversion" (the pole
+  test of the arc's ends decides first in every case found); and, re-tested because the new
+  feet_inversion theorem calls `foot`, the pre-existing `chiral: false` of foot(P, A, B)'s
+  helper line in points.ts (footOn never reads the flag).
+- The angle mark's image under an inversion is the mark of the images' tangents at the image
+  vertex (conformality), with the arms swapped by the orientation reversal; a mark at the
+  centre is Undefined.
+
+## Changed frozen tests
+
+Two frozen files modified under [ADR-0032](adr/0032-mobius-inversion.md) (commit 6a5cba1 cites
+ADR-0032; type-level, equivalent for similarities):
+`packages/kernel/test/inverse-range.test.ts` and `packages/kernel/test/laws/l13-model.test.ts`
+(`Transform.t` became a union; details in the ADR's "Frozen tests changed" section). Lines only
+added to frozen files: `registry.test.ts` (eight names), `radical.test.ts` (sqrt_bc,
+sqrt_bc2), `construction-key.test.ts` (six samples), `degenerate.test.ts` and
+`tools.property.test.ts` (imports and spreads), the kernel's `exports.test.ts` (two subpaths). `pnpm rules`:
+"add-only: frozen tests compared with run-13, 0 violation(s)".
+
+### Files changed outside packages/kernel/src/transform and the registry
+
+The brief asked for none ideally. Each change below is a type switch the compiler listed, a
+reader of the new `outside` flag, or registry data (GUI entries, icons); the reasons are in
+ADR-0032 decisions 8, 11, 13 and 14.
+
+- kernel core: `value.ts` (Mobius, `outside?`, static kind 'mobius'), `kinds.ts` (images under
+  a maybe-Möbius map), `tool.ts` (Signature `absolute`), `similarity.ts` (keeps `outside`),
+  `drag.ts` (inverse of a Möbius map), `docs.ts` (formatting), `glider.ts` (gliders on two
+  rays), `tools/range.ts` (status on two rays), `tools/transforms.ts` → `tools/map-ops.ts`
+  (compose, inverse, apply moved, the 400-line limit), `tools/index.ts` (registry),
+  `tools/circle-measures.ts` (item 11's bug fix), `tools/conjugates.ts` (item 10),
+  `package.json` (two subpaths).
+- claims: `frame.ts` (`absolute`), `kinds-curves.ts` (`on` two rays), `sampler.ts` (gliders on
+  two rays).
+- scene: `types.ts`, `shapes.ts`, `display.ts`, `placement.ts`, `coincide.ts` (two rays).
+- export: `asy-plan.ts`, `check.ts` (no Asymptote variable for a Möbius map or two rays).
+- editor: `drag.ts` (`chainScale` = |f′| at the source: a type switch), and as registry data
+  `tool-state.ts`, `tool-groups.ts`, `tools.ts`, `tools-inversion.ts`, `tools-v11.ts`.
+- apps/web: `style-draft.ts` ('mobius' and "two rays"), `icons.tsx`, `icons-inversion.tsx`.
+- scripts and config: `scripts/mutation-shards.ts`, `stryker.kernel.json`.
+
+No editor logic changed besides `chainScale`'s type switch (the layer, view and drag machinery
+reads the transform object unchanged).
+
+## Acceptance command output
+
+### Local (`pnpm verify`, on 143eb86, exit 0; de484e8 adds one assertion to an existing test)
+
+```
+✔ no dependency violations found (684 modules, 3762 dependencies cruised)
+ok   add-only: frozen tests compared with run-13, 0 violation(s)
+ok   disabled-tests: 979 files scanned, 0 violation(s)
+ok   file-length: 979 files scanned, 0 violation(s)
+ok   forbidden-words: 979 files scanned, 0 violation(s)
+ok   test-count: 3305 tests, floor 3282, 0 violation(s)
+ok   tolerance: 979 files scanned, 0 violation(s)
+L3 Möbius images: 1787 defined + 493 Undefined agree, 716 not exact, 4 excluded (band); mod p 1006; [["circle",1143],["undefined",493],["text",227],["point",198],["angle_mark",194],["line",20],["line (two rays)",5]]
+L3 feet_inversion: 2306 defined + 82 Undefined agree, 0 not exact, 12 excluded (band); mod p 2306
+L3 inversion: 2192 defined + 200 Undefined agree, 0 not exact, 8 excluded (band); mod p 2192
+L3 inversion_fixing: 2109 defined + 278 Undefined agree, 0 not exact, 13 excluded (band); mod p 2109
+L3 inversion_swap: 215 defined + 2150 Undefined agree, 0 not exact, 35 excluded (band); mod p 250
+L3 orthocenter_inversion: 1949 defined + 390 Undefined agree, 0 not exact, 61 excluded (band); mod p 1949
+L3 sqrt_bc2: 352 defined + 7 Undefined agree, 2025 not exact, 16 excluded (band); mod p 0
+L3 sqrt_bc: 379 defined + 5 Undefined agree, 1998 not exact, 18 excluded (band); mod p 0
+L3 symmedian_point: 2180 defined + 180 Undefined agree, 0 not exact, 40 excluded (band); mod p 2180
+theorem (float) Ptolemy through the inversion at A: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) feet_inversion: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) incidence and tangency are kept: 196 hold, 0 degenerate, 4 ill-conditioned
+theorem (float) sqrt_bc2: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) symmedian_point is isogonal(centroid) and lies on the three symmedians: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) the orthocenter inversion maps the circumcircle to the nine-point circle, A to its foot: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) the √(bc) map swaps B and C and maps the circumcircle to line BC: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (heronian) sqrt_bc2: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (heronian) the √(bc) map swaps B and C and maps the circumcircle to line BC: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) Ptolemy through the inversion at A: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) feet_inversion: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) incidence and tangency are kept: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) symmedian_point is isogonal(centroid) and lies on the three symmedians: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) the orthocenter inversion maps the circumcircle to the nine-point circle, A to its foot: 200 hold, 0 degenerate, 0 ill-conditioned
+      Tests  3305 passed (3305)
+ Test Files  369 passed (369)
+Lines        : 98.32% ( 9793/9960 )
+```
+
+### Nightly on this branch (mutation gate, CI-blocking since ADR-0031)
+
+Dispatch on de484e8: https://github.com/youseng/geomira/actions/runs/40341985091 (incremental):
+
+```
+num mutation gate: 93.47% (730 detected, 51 undetected; threshold 80%): pass
+kernel mutation gate: 97.95% (2391 detected, 50 undetected; threshold 75%): pass
+claims mutation gate: 85.75% (2034 detected, 338 undetected; threshold 75%): pass
+num mutation score: 93.47% (730 detected, 51 undetected; target 80%, gated from v1.1)
+kernel-a mutation score: 96.40% (241 detected, 9 undetected; target 75%, gated from v1.1)
+kernel-b mutation score: 96.10% (148 detected, 6 undetected; target 75%, gated from v1.1)
+kernel-c mutation score: 94.51% (241 detected, 14 undetected; target 75%, gated from v1.1)
+kernel-d mutation score: 99.00% (198 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-e mutation score: 98.88% (176 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-f mutation score: 99.59% (241 detected, 1 undetected; target 75%, gated from v1.1)
+kernel-g mutation score: 98.99% (196 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-i mutation score: 100.00% (82 detected, 0 undetected; target 75%, gated from v1.1)
+kernel-j mutation score: 99.40% (497 detected, 3 undetected; 4 mutants outside the shard not counted; target 75%, gated from v1.1)
+kernel-k mutation score: 85.37% (35 detected, 6 undetected; 143 mutants outside the shard not counted; target 75%, gated from v1.1)
+kernel-h mutation score: 98.53% (336 detected, 5 undetected; target 75%, gated from v1.1)
+claims mutation score: 85.75% (2034 detected, 338 undetected; target 75%, gated from v1.1)
+```
+
+Against main before this run (scheduled nightly 40295998953): num 93.47 %, kernel 98.33 %,
+claims 85.79 %. The history of this branch's nightlies: the first dispatch
+(https://github.com/youseng/geomira/actions/runs/40317340317, 24a9e94) passed the gate with
+kernel-k at 41.27 % (Done item 12; kernel-j took about 80 minutes for its 730 new mutants);
+f7592cd (https://github.com/youseng/geomira/actions/runs/40330537339) brought kernel-k to
+85.37 %; 143eb86 (https://github.com/youseng/geomira/actions/runs/40338887012, ADR-0034) left
+one new survivor in `mobiusProblem` (`re² − im²`, no test had a complex determinant), killed by
+de484e8, and showed the pre-existing `foot` mutant listed under Uncertain. Every kernel-k
+survivor left is an equivalent mutant listed there. Dispatches cancelled by a later push
+reported "no report" for their shards, not a failure of the code.
+
+### CI on GitHub (code head de484e8; the commit marking the run ACCEPTED changes only docs)
+
+- ci (push) https://github.com/youseng/geomira/actions/runs/40341976203: success (verify, both
+  builds, Playwright in Chromium, Firefox and WebKit, including `e2e/flows-inversion.spec.ts`).
+- deploy https://github.com/youseng/geomira/actions/runs/40341976329: success (build and e2e;
+  the Pages deploy and smoke run only on main).
+- tex https://github.com/youseng/geomira/actions/runs/40341976108 (push) and
+  https://github.com/youseng/geomira/actions/runs/40341984711 (pull request): success.
+- nightly https://github.com/youseng/geomira/actions/runs/40341985091 (dispatch): success (the
+  test suite with NIGHTLY=1, every mutation shard and the gate above).
+- ci (pull request) https://github.com/youseng/geomira/actions/runs/40341984837: its verify
+  step (typecheck, lint, depcruise, rules, every unit test) passed; the job then sat over 20
+  minutes in `playwright install --with-deps` (the runner's apt mirror, as twice before on
+  24a9e94; no test of ours had started). The docs commit's own PR run replaces it and is
+  checked after the push.
+
+On 24a9e94 the PR's ci verify and the deploy build were cancelled the same way at their time
+limits and passed on one re-run (https://github.com/youseng/geomira/actions/runs/40317338161,
+https://github.com/youseng/geomira/actions/runs/40317332814).
+
+## Requests
+
+- Tag this run's merge as `run-14`, so the add-only guard freezes the new tests.
+- The GUI keys: every Shift letter is taken, so ADR-0034 put Feet inversion on `o` (the last
+  free letter) and √(bc/2) inversion on `,`. The next GUI tool needs a key scheme (for example
+  a second palette page or keys made optional, which is an editor change for its own ADR).
+- The test-count floor is raised to 3305 (docs/test-count.txt).
+
+---
+
 ## Run 13: v1.1 completion: ACCEPTED (2026-10-26)
 
 SPEC §1 v1.1 (views UI, long-tail tools, mutation gates), §6.2, §8.3, §15, §17 L15. Decisions:

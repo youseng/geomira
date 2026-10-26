@@ -27,6 +27,17 @@ export const SYMMEDIAN_TOOL: ToolUI = call(
   'The symmedian of triangle ABC from A: the median from A reflected in the bisector at A.',
 );
 
+/** The symmedian (Lemoine) point, next to Symmedian (ADR-0033): ⇧D, a free Shift letter. */
+export const SYMMEDIAN_POINT_TOOL: ToolUI = call(
+  'symmedian_point',
+  'Symmedian point',
+  'D',
+  'symmedian_point',
+  'point',
+  [P('first vertex'), P('second vertex'), P('third vertex')],
+  'The symmedian (Lemoine) point K of triangle ABC, where the three symmedians meet.',
+);
+
 /** Points defined by a triangle or by maps and circles (after the Centers group's tools). */
 export const V11_POINT_TOOLS: readonly ToolUI[] = [
   call(

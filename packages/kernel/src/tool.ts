@@ -92,6 +92,12 @@ export interface Signature {
    * too, unless the call selects with other(P); that rule reads BranchShape instead.
    */
   readonly radical?: boolean;
+  /**
+   * Positions of number arguments that carry an absolute SIZE (a length or an area), such as
+   * an inversion's power (ADR-0032 decision 14): a random similarity of the figure would
+   * change their meaning, so packages/claims' samplers do not apply one unless they map them.
+   */
+  readonly absolute?: readonly number[];
 }
 
 /**

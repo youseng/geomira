@@ -332,9 +332,17 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `spiral_center` | points | `spiral_center(point, point, point, point)` | point | can succeed | — |
 | `isogonal` | points | `isogonal(point, point, point, point)` | point | can succeed | — |
 | `symmedian` | lines | `symmedian(point, point, point)` | line | can succeed | — |
+| `symmedian_point` | points | `symmedian_point(point, point, point)` | point | can succeed | — |
 | `pole` | points | `pole(linear, round)` | point | can succeed | — |
 | `radical_center` | points | `radical_center(round, round, round)` | point | can succeed | — |
 | `arc` | circles | `arc(point, point, point)` | circle | can succeed | — |
+| `inversion` | transformations | `inversion(round)` · `inversion(point, number)` | transform | can succeed | — |
+| `sqrt_bc` | transformations | `sqrt_bc(point, point, point)` | transform | can succeed | — |
+| `orthocenter_inversion` | transformations | `orthocenter_inversion(point, point, point)` | transform | can succeed | — |
+| `inversion_fixing` | transformations | `inversion_fixing(point, round)` | transform | can succeed | — |
+| `inversion_swap` | transformations | `inversion_swap(point, point, point)` | transform | can succeed | — |
+| `feet_inversion` | transformations | `feet_inversion(point, point, point)` | transform | can succeed | — |
+| `sqrt_bc2` | transformations | `sqrt_bc2(point, point, point)` | transform | can succeed | — |
 
 ## Versions
 

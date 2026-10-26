@@ -47,8 +47,13 @@ function errorAndDistance(s: Curve, at: Vec2): { err: number; dist: number } {
     return { err, dist: Math.abs(Math.hypot(at.x - s.c.x, at.y - s.c.y) - s.r) };
   }
   let t = (at.x - s.p.x) * s.u.x + (at.y - s.p.y) * s.u.y;
-  if (s.lo !== null) t = Math.max(t, s.lo);
-  if (s.hi !== null) t = Math.min(t, s.hi);
+  if (s.outside === true && s.lo !== null && s.hi !== null) {
+    // Two rays (ADR-0032): a parameter in the gap goes to the nearer end.
+    if (t > s.lo && t < s.hi) t = t - s.lo < s.hi - t ? s.lo : s.hi;
+  } else {
+    if (s.lo !== null) t = Math.max(t, s.lo);
+    if (s.hi !== null) t = Math.min(t, s.hi);
+  }
   const q = { x: s.p.x + t * s.u.x, y: s.p.y + t * s.u.y };
   const err = ROUNDING * (Math.abs(s.p.x) + Math.abs(s.p.y) + Math.abs(t));
   return { err, dist: Math.hypot(at.x - q.x, at.y - q.y) };

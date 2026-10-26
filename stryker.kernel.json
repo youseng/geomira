@@ -9,7 +9,8 @@
   "mutate": [
     "packages/kernel/src/geom.ts",
     "packages/kernel/src/similarity.ts",
-    "packages/kernel/src/tools/**/*.ts"
+    "packages/kernel/src/tools/**/*.ts",
+    "packages/kernel/src/transform/**/*.ts"
   ],
   "coverageAnalysis": "perTest",
   "incremental": true,

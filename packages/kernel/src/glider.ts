@@ -40,11 +40,42 @@ function along<T>(F: Field<T>, l: Line<T>, X: Vec<T>): T {
   return F.div(vDot(F, vSub(F, X, l.p), l.d), vDot(F, l.d, l.d));
 }
 
+/** Whether a clamped parameter is the Undefined of clampOutside (field elements are never). */
+function isUndefinedValue(x: unknown): x is Undefined {
+  return typeof x === 'object' && x !== null && 'kind' in x && x.kind === 'undefined';
+}
+
+/**
+ * t on the two rays t ≤ lo, t ≥ hi (ADR-0032): unchanged on them; in the gap, the nearer end.
+ * Which end is a decision: the middle of the gap within the band → Undefined (ambiguous), as
+ * the far point of an arc glider (ADR-0031 decision 7). Mod p → Inexact.
+ */
+function clampOutside<T>(
+  F: Field<T>,
+  lo: T,
+  hi: T,
+  t: T,
+  ctx: EvalContext,
+): T | Inexact | Undefined {
+  const below = F.sign(F.sub(lo, t), 'dimensionless', ctx);
+  const above = F.sign(F.sub(t, hi), 'dimensionless', ctx);
+  if (below === 'none' || above === 'none')
+    return inexact(`clamping to two rays needs an order, which ${F.name} lacks`);
+  if (below !== -1 || above !== -1) return t;
+  const mid = F.sign(F.sub(F.sub(t, lo), F.sub(hi, t)), 'dimensionless', ctx);
+  if (mid === -1) return lo;
+  if (mid === 1) return hi;
+  return undef('ambiguous: the glider is in the middle of the gap between the two rays');
+}
+
 /**
  * t clamped to l's range. Clamping is continuous (no decision can jump), so there is no
- * band case. Degenerate: a bounded range mod p (no order) → Inexact.
+ * band case, except between two rays (clampOutside). Degenerate: a bounded range mod p (no
+ * order) → Inexact.
  */
-function clamp<T>(F: Field<T>, l: Line<T>, t: T, ctx: EvalContext): T | Inexact {
+function clamp<T>(F: Field<T>, l: Line<T>, t: T, ctx: EvalContext): T | Inexact | Undefined {
+  if (l.outside === true && l.lo !== null && l.hi !== null)
+    return clampOutside(F, l.lo, l.hi, t, ctx);
   const below = l.lo === null ? 1 : F.sign(F.sub(t, l.lo), 'dimensionless', ctx);
   const above = l.hi === null ? 1 : F.sign(F.sub(l.hi, t), 'dimensionless', ctx);
   if (below === 'none' || above === 'none') {
@@ -109,7 +140,7 @@ export function gliderPoint<T>(
     const bad = degenerateLine(F, obj, ctx);
     if (bad !== undefined) return bad;
     const t = clamp(F, obj, p.t, ctx);
-    if (isInexact(t)) return t;
+    if (isInexact(t) || isUndefinedValue(t)) return t;
     const x = vAdd(F, obj.p, vScale(F, obj.d, t));
     return pointOf(x.x, x.y);
   }
@@ -215,7 +246,7 @@ export function dragParameter<T>(
   if (o.kind === 'undefined') return o;
   if (o.kind === 'line') {
     const t = clamp(F, o, along(F, o, cursor), ctx);
-    return isInexact(t) ? t : { form: 'line', t };
+    return isInexact(t) || isUndefinedValue(t) ? t : { form: 'line', t };
   }
   const w = vSub(F, cursor, o.c);
   if (isZeroVec(F, w, ctx)) return undef('the cursor is at the center: no nearest point');

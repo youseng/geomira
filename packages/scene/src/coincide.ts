@@ -69,11 +69,16 @@ function sameCarrier(a: Line<number>, b: Line<number>, ctx: ToleranceContext): b
   return parallel && normalizedWithin(cross(sub(b.p, a.p), a.d), dot(a.d, a.d), 'length', ctx);
 }
 
-/** The finite ends of a line's range and the directions of its open sides. */
+/**
+ * The finite ends of a line's range and the directions of its open sides. Two rays
+ * (ADR-0032) have both ends and both open sides; sameRange also compares the flag.
+ */
 function extent(l: Line<number>): { ends: V[]; open: V[] } {
   const at = (t: number): V => ({ x: l.p.x + t * l.d.x, y: l.p.y + t * l.d.y });
   const ends: V[] = [];
   const open: V[] = [];
+  if (l.outside === true && l.lo !== null && l.hi !== null)
+    return { ends: [at(l.lo), at(l.hi)], open: [{ x: -l.d.x, y: -l.d.y }, l.d] };
   if (l.lo === null) open.push({ x: -l.d.x, y: -l.d.y });
   else ends.push(at(l.lo));
   if (l.hi === null) open.push(l.d);
@@ -82,6 +87,7 @@ function extent(l: Line<number>): { ends: V[]; open: V[] } {
 }
 
 function sameRange(a: Line<number>, b: Line<number>, ctx: ToleranceContext): boolean {
+  if ((a.outside === true) !== (b.outside === true)) return false;
   const [ea, eb] = [extent(a), extent(b)];
   if (ea.ends.length !== eb.ends.length) return false;
   const [a0, a1] = ea.ends;

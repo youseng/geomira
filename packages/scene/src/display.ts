@@ -110,11 +110,20 @@ function itemOf(view: View, p: Primitive, rect: Rect): DisplayItem | null {
       paths = dotPaths(view, s.at, p.style.width, rect);
       break;
     case 'line': {
-      const seg = clipLine(s.p, s.u, s.lo, s.hi, rect);
-      paths =
-        seg === null
+      // Two rays (ADR-0032) are drawn, and hit, as two clipped pieces.
+      const spans: [number | null, number | null][] =
+        s.outside === true
+          ? [
+              [null, s.lo],
+              [s.hi, null],
+            ]
+          : [[s.lo, s.hi]];
+      paths = spans.flatMap(([lo, hi]) => {
+        const seg = clipLine(s.p, s.u, lo, hi, rect);
+        return seg === null
           ? []
-          : [{ kind: 'poly', pts: seg.map((q) => toScreen(view, q)), closed: false }];
+          : [{ kind: 'poly' as const, pts: seg.map((q) => toScreen(view, q)), closed: false }];
+      });
       break;
     }
     case 'circle':

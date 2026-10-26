@@ -2,9 +2,8 @@
  * Similarity transformations (SPEC §4, §8.1), field-generic: z ↦ a·z + b (direct) or
  * z ↦ a·z̄ + b (anti). Everything here is a polynomial in the coordinates, so it is exact
  * over Q and mod p; the only division (`inverse`) is by |a|² (or by a itself), which
- * `similarityProblem` guarantees is not zero. A Transform holds a Similarity in v1; 'mobius' and 'projective'
- * are reserved (SPEC §18 E3): when they arrive, `Transform.t` becomes a union and the
- * compiler points at every place (here and in tools/transforms.ts) that must switch on it.
+ * `similarityProblem` guarantees is not zero. A Transform holds a Similarity or, since
+ * Run 14, a Möbius map (transform/, ADR-0032); 'projective' is reserved (SPEC §18 E3).
  */
 import { assertNever } from '@geomira/num/assert';
 import {
@@ -153,12 +152,12 @@ function mapArc<T>(F: Field<T>, s: Similarity<T>, arc: Arc<T>): Arc<T> {
 }
 
 /**
- * The image of a line, segment or ray: p' = s(p), d' = a·d̂, the same parameter range
- * (s(p + t·d) = p' + t·d'), and the same chirality flag (SPEC §4: transformed images keep
- * their input's flag).
+ * The image of a line, segment, ray or pair of rays: p' = s(p), d' = a·d̂, the same parameter
+ * range (s(p + t·d) = p' + t·d'), including the `outside` flag (ADR-0032), and the same
+ * chirality flag (SPEC §4: transformed images keep their input's flag).
  */
 function mapLine<T>(F: Field<T>, s: Similarity<T>, l: Line<T>): Line<T> {
-  return {
+  const line: Line<T> = {
     kind: 'line',
     p: mapPoint(F, s, l.p),
     d: mapDirection(F, s, l.d),
@@ -166,6 +165,7 @@ function mapLine<T>(F: Field<T>, s: Similarity<T>, l: Line<T>): Line<T> {
     hi: l.hi,
     chiral: l.chiral,
   };
+  return l.outside === true ? { ...line, outside: true } : line;
 }
 
 /** The image of a circle: centre, r² scaled by |a|², the anchor and the arc mapped. */

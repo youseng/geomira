@@ -27,7 +27,14 @@ import {
   RADICAL_AXIS,
   SECOND_INTERSECTION,
 } from './tools-more';
-import { APPLY_MAP_TOOL, ARC_TOOL, SYMMEDIAN_TOOL, V11_POINT_TOOLS } from './tools-v11';
+import {
+  APPLY_MAP_TOOL,
+  ARC_TOOL,
+  SYMMEDIAN_POINT_TOOL,
+  SYMMEDIAN_TOOL,
+  V11_POINT_TOOLS,
+} from './tools-v11';
+import { INVERSION_TOOLS } from './tools-inversion';
 
 export type { Build, PickKind, ToolStep, ToolUI } from './tool-ui';
 
@@ -146,6 +153,7 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
   ),
   EXT_BISECTOR,
   SYMMEDIAN_TOOL,
+  SYMMEDIAN_POINT_TOOL,
   call(
     'circle',
     'Circle (center, point)',
@@ -208,6 +216,7 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
   ),
   ...MAP_TOOLS,
   APPLY_MAP_TOOL,
+  ...INVERSION_TOOLS,
   {
     id: 'polygon',
     label: 'Polygon',
