@@ -140,6 +140,33 @@ constructive, and a constructive mapping needs an Asymptote helper checked by te
     autosave and the share link; `e2e/file-url.spec.ts` gains a test that saves and shows a
     view from file://, reloads, and opens a share link with it.
 
+### The mutation gates (SPEC §17 L15; scripts/mutation-summary.ts, nightly.yml)
+
+18. **The gate is per package over all its shards**: `tsx scripts/mutation-summary.ts --gate
+    <dir>` reads each shard's `mutation-report-<id>/mutation.json` (the layout
+    actions/download-artifact writes), tallies each shard's own mutants with the existing
+    `inScope` rule (incremental reports carry other shards' old mutants; those never count),
+    sums detected (Killed, Timeout) and undetected (Survived, NoCoverage) per package — num;
+    kernel = every kernel-* shard, the scope of stryker.kernel.json as it is plus the new tool
+    files; claims — and compares in integers: num ≥ 80 %, kernel ≥ 75 %, claims ≥ 75 %. A shard
+    whose report is missing or malformed fails its package: the gate never passes by omission.
+    It prints one line per package and one per shard.
+19. **A new job `mutation-gate`** (`needs: [plan, mutation]`, `if: always() &&
+needs.plan.result == 'success'`) downloads every `mutation-report-*` artifact and runs the
+    gate, so the nightly workflow fails when a score is below its threshold. It runs on the
+    schedule, on dispatch (also with `full`) and on every push to main (ADR-0022); branch
+    pushes still run no mutation. The per-shard summary step and its frozen tests are unchanged.
+20. **The new tool files get their own place in the shards**: their 554 mutants include 256
+    static ones (ToolSpec literals, each running the whole kernel suite), which would have
+    pushed the catch-all shard past its time limit. `conjugates.ts` and `poles.ts` join
+    kernel-a, `arc.ts` and `arc-range.ts` kernel-b (the two lightest shards); a listed file
+    that does not exist at a commit stays in the catch-all, so no file can drop out.
+21. **Survivors are killed by behaviour tests** (new files only: `packages/num/test/
+mutation-kills.test.ts`, `precondition-reasons.test.ts`, `packages/kernel/test/
+mutation-kills.test.ts`, `arcs.test.ts`, `packages/claims/test/mutation-kills.test.ts`,
+    `mutation-kills-sampler.test.ts`), never by snapshots of messages. Survivors judged
+    equivalent are listed in STATUS.
+
 ## Frozen tests changed
 
 None modified. Lines were added to frozen files only: `packages/kernel/test/registry.test.ts`
