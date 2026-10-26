@@ -56,9 +56,9 @@ export function hasNoPole<T>(F: Field<T>, m: Mobius<T>): boolean {
  * Why `m` is not a valid Möbius map, or undefined when it is. Degenerate cases:
  *   - ad − bc = 0 exactly (every field; also a = b = c = d = 0) → Undefined "the map is not
  *     invertible (ad − bc = 0)";
- *   - FloatField: an entry or ad − bc that is not finite, or a determinant whose squared size
- *     is not a positive finite double → Inexact "beyond the double range" (ADR-0019 decision 3:
- *     a limit of doubles, not a collapse).
+ *   - FloatField: ad − bc not finite (also whenever an entry is not finite), or a determinant
+ *     whose squared size is not a positive finite double with a finite reciprocal → Inexact
+ *     "beyond the double range" (ADR-0019 decision 3: a limit of doubles, not a collapse).
  * Mod p (p ≡ 3 mod 4), |z|² = 0 only for z = 0.
  */
 export function mobiusProblem<T>(
@@ -71,15 +71,12 @@ export function mobiusProblem<T>(
     kind: 'inexact',
     reason: `${tool}: the map is beyond the double range`,
   };
-  if (F.kind === 'float') {
-    const xs = [m.a, m.b, m.c, m.d, det].flatMap((z) => [F.toNumber(z.re), F.toNumber(z.im)]);
-    if (!xs.every(Number.isFinite)) return beyond;
-  }
   if (isZeroC(F, det)) return undef(`${tool}: the map is not invertible (ad − bc = 0)`);
   if (F.kind !== 'float') return undefined;
   const [dr, di] = [F.toNumber(det.re), F.toNumber(det.im)];
   const n = dr * dr + di * di;
-  return n > 0 && Number.isFinite(n) && Number.isFinite(1 / n) ? undefined : beyond;
+  // n ≥ 0; n = 0 (underflow) fails the reciprocal test.
+  return Number.isFinite(n) && Number.isFinite(1 / n) ? undefined : beyond;
 }
 
 /** Why a map of either type is not valid (similarityProblem or mobiusProblem). */

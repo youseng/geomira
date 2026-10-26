@@ -48,12 +48,12 @@ function mapEnd<T>(F: Field<T>, l: Line<T>, e: End<T>, ctx: EvalContext): Mapped
 
 /**
  * Whether the arc from `start` increasing to `end` contains the pole strictly inside. An end
- * before the pole has −1 (e < t₀), after it 1. The two rays `outside` run from hi through ∞
- * to lo: they contain the pole when it lies beyond hi or before lo.
+ * before the pole has −1 (e < t₀), after it 1; an end at the pole ('pole') never gives true
+ * below. The two rays `outside` run from hi through ∞ to lo: they contain the pole when it
+ * lies beyond hi or before lo.
  */
 function containsPole(start: Where, end: Where, outside: boolean): boolean {
   if (outside) return start === -1 || end === 1;
-  if (start === 'pole' || end === 'pole') return false;
   if (start === 'inf') return end === 1;
   if (end === 'inf') return start === -1;
   return start === -1 && end === 1;

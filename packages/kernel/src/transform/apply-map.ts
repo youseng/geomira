@@ -103,8 +103,8 @@ function applyMobius<T>(F: Field<T>, m: Mobius<T>, v: Value<T>, ctx: EvalContext
   if (hasNoPole(F, m))
     return applySimilarity(F, similarity(m.anti, cDiv(F, m.a, m.d), cDiv(F, m.b, m.d)), v);
   const [s1, s2] = factors(F, m);
-  const w = applyJ(F, applySimilarity(F, s1, v), ctx);
-  return w.kind === 'undefined' || w.kind === 'inexact' ? w : applySimilarity(F, s2, w);
+  // An Undefined or Inexact result of J passes through S₂ unchanged (applySimilarity).
+  return applySimilarity(F, s2, applyJ(F, applySimilarity(F, s1, v), ctx));
 }
 
 /** apply(t, v) for either map type (t valid: mapProblem passed). */
@@ -134,7 +134,7 @@ export function localScale(t: TransformData<number>, x: Vec<number>): number {
   const F = FloatField;
   if (t.type === 'similarity') return finiteScale(Math.hypot(t.a.re, t.a.im));
   const den = cAbs2(F, cAdd(F, cMul(F, t.c, t.anti ? cConj(F, toC(x)) : toC(x)), t.d));
-  return den > 0 ? finiteScale(Math.sqrt(cAbs2(F, determinant(F, t))) / den) : 1;
+  return finiteScale(Math.sqrt(cAbs2(F, determinant(F, t))) / den);
 }
 
 function finiteScale(k: number): number {
