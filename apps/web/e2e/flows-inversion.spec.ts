@@ -20,6 +20,7 @@ test('derive an inverted layer, build in it, drag an image', async ({ page }) =>
   await tab(page, 'Objects');
   await page.getByRole('button', { name: 'f', exact: true }).click();
   await expectLines(page, '@layer image = image(f, main)');
+  await tab(page, 'Objects');
   await expect(page.getByText('center of inversion').first()).toBeVisible();
 
   // Build in the derived layer: the midpoint of the images C* and D*.
@@ -30,7 +31,7 @@ test('derive an inverted layer, build in it, drag an image', async ({ page }) =>
   await clickWorld(page, 0, 1);
   await expect
     .poll(async () => text(page))
-    .toMatch(/^E = midpoint\(C\*, D\*\) \[layers=image\]$/mu);
+    .toMatch(/^B = midpoint\(C\*, D\*\) \[layers=image\]$/mu);
 
   // Dragging C* to (0.8, 1.6) moves C to its preimage (1, 2) (drag-through, SPEC §8.4).
   await tool(page, 'Move');
