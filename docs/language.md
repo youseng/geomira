@@ -329,6 +329,12 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `mark_right` | display | `mark_right(point, point, point)` | angle_mark | can succeed | — |
 | `mark_segment` | display | `mark_segment(point, point)` · `mark_segment(point, point, number)` | segment_mark | can succeed | — |
 | `text` | display | `text(point, string)` | text | can succeed | — |
+| `spiral_center` | points | `spiral_center(point, point, point, point)` | point | can succeed | — |
+| `isogonal` | points | `isogonal(point, point, point, point)` | point | can succeed | — |
+| `symmedian` | lines | `symmedian(point, point, point)` | line | can succeed | — |
+| `pole` | points | `pole(linear, round)` | point | can succeed | — |
+| `radical_center` | points | `radical_center(round, round, round)` | point | can succeed | — |
+| `arc` | circles | `arc(point, point, point)` | circle | can succeed | — |
 
 ## Versions
 

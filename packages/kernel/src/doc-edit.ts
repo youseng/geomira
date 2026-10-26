@@ -41,6 +41,7 @@ import {
 } from './derived-edit';
 import { addLayer, removeLayer, updateLayer, type LayerOptions } from './layers';
 import type { Registry } from './registry';
+import { renameView } from './view-rename';
 import { addView, applyView, removeView } from './views';
 
 export type DocEdit =
@@ -63,7 +64,8 @@ export type DocEdit =
   | { readonly kind: 'removeRule'; readonly layerId: string }
   | { readonly kind: 'addView'; readonly view: View }
   | { readonly kind: 'applyView'; readonly name: string }
-  | { readonly kind: 'removeView'; readonly name: string };
+  | { readonly kind: 'removeView'; readonly name: string }
+  | { readonly kind: 'renameView'; readonly from: string; readonly to: string };
 
 export interface Applied {
   /** What the edit deleted: dependents, and images that no longer belong to their rule. */
@@ -211,6 +213,8 @@ function step(doc: Document, registry: Registry, e: DocEdit): Step {
       return applyView(doc, e.name);
     case 'removeView':
       return removeView(doc, e.name);
+    case 'renameView':
+      return renameView(doc, e.from, e.to);
     default:
       return assertNever(e, 'document edit');
   }

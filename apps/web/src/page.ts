@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import type { TriangleType } from '@geomira/claims/randomize';
 import type { DocumentEdit } from '@geomira/editor/edit';
 import { randomizeEdit } from '@geomira/editor/randomize';
+import { cycleView } from '@geomira/editor/views';
 import type { ExportFormat } from '@geomira/export/formats';
 import type { KeyAction } from '@geomira/editor/keymap';
 import { debugReport } from '@geomira/editor/report';
@@ -142,6 +143,9 @@ export function useKeyActions(
           return;
         case 'fit':
           fit();
+          return;
+        case 'view':
+          store.run((st, env) => cycleView(st, a.step, env));
           return;
       }
     },

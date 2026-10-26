@@ -26,7 +26,12 @@ export type UiEdit =
    */
   | { readonly kind: 'tool'; readonly tool: ToolId; readonly claimKind?: string }
   /** The text of the active tool's number (rotate's angle, …); its picks stay. */
-  | { readonly kind: 'toolValue'; readonly value: string };
+  | { readonly kind: 'toolValue'; readonly value: string }
+  /**
+   * A map tool builds the map alone (`f = reflect(l)`) or an object's image (ToolUI.map,
+   * ToolState.mapOnly). The picks are cleared: the steps change.
+   */
+  | { readonly kind: 'toolMapOnly'; readonly on: boolean };
 
 function selection(state: EditorState, ids: readonly number[], mode: 'replace' | 'add' | 'toggle') {
   const missing = ids.find((id) => !state.doc.objects.some((o) => o.id === id));
@@ -71,13 +76,21 @@ export function uiEdit(state: EditorState, e: UiEdit): EditResult {
       const kind = e.claimKind ?? state.toolState.claimKind;
       const typed = state.toolState.typed;
       const value = typed[e.tool] ?? toolUI(e.tool)?.value?.initial ?? '';
-      return ok({ ...state, tool: e.tool, toolState: idleTool(kind, value, typed) });
+      // Building maps alone stays chosen while the user switches between map tools.
+      const mapOnly = state.toolState.mapOnly === true && toolUI(e.tool)?.map === true;
+      return ok({ ...state, tool: e.tool, toolState: idleTool(kind, value, typed, mapOnly) });
     }
     case 'toolValue': {
       if (toolUI(state.tool)?.value === undefined)
         return refuse(state, 'the active tool takes no number');
       const typed = { ...state.toolState.typed, [state.tool]: e.value };
       return ok({ ...state, toolState: { ...state.toolState, value: e.value, typed } });
+    }
+    case 'toolMapOnly': {
+      if (toolUI(state.tool)?.map !== true)
+        return refuse(state, 'the active tool does not build a transformation');
+      const t = state.toolState;
+      return ok({ ...state, toolState: idleTool(t.claimKind, t.value, t.typed, e.on) });
     }
     default:
       return assertNever(e, 'UI edit');

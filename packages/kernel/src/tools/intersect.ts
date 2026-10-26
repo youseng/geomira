@@ -96,6 +96,8 @@ export const INTERSECT_TOOLS: readonly ToolSpec[] = [
       'the intersection outside a segment or ray → Undefined',
       'the intersection within the band of a segment end → Undefined (ambiguous)',
       'a segment or ray range mod p → Inexact',
+      'a candidate outside an arc is not a candidate (none left → Undefined)',
+      'a candidate within the band of an arc end → Undefined (ambiguous)',
       'line ∩ circle: the line misses the circle → Undefined',
       'line ∩ circle: tangency (the gap within the band) → the double point',
       'circle ∩ circle: apart or one inside the other → Undefined',

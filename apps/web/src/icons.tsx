@@ -123,6 +123,37 @@ const TOOL_PARTS: Readonly<Record<ToolId, readonly ReactNode[]>> = {
     <circle key="1" cx="12" cy="12" r="1.9" fill="currentColor" stroke="none" />,
     <line key="2" x1="12" y1="12" x2="17.7" y2="6.3" />,
   ],
+  arc: [
+    <path key="0" d="M4 16 A9 9 0 0 1 20 16" />,
+    <circle key="1" cx="4" cy="16" r="1.9" fill="currentColor" stroke="none" />,
+    <circle key="2" cx="12" cy="7.5" r="1.9" fill="currentColor" stroke="none" />,
+    <circle key="3" cx="20" cy="16" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  symmedian: [
+    <path key="0" d="M12 3 L3 20 L21 20 Z" />,
+    <line key="1" x1="12" y1="3" x2="16" y2="20" />,
+    <circle key="2" cx="16" cy="20" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  isogonal: [
+    <path key="0" d="M3 20 L21 20 L10 5 Z" />,
+    <circle key="1" cx="9" cy="16" r="1.6" fill="currentColor" stroke="none" />,
+    <circle key="2" cx="14" cy="15" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  spiral_center: [
+    <path key="0" d="M12 12 C14 10 16 13 14 15 C11 18 6 15 7 10 C8 5 15 4 18 7" />,
+    <circle key="1" cx="12" cy="12" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  pole: [
+    <circle key="0" cx="9" cy="12" r="6" />,
+    <line key="1" x1="14.5" y1="3" x2="14.5" y2="21" />,
+    <circle key="2" cx="21" cy="12" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  radical_center: [
+    <circle key="0" cx="8" cy="9" r="5" />,
+    <circle key="1" cx="16" cy="9" r="5" />,
+    <circle key="2" cx="12" cy="16" r="5" />,
+    <circle key="3" cx="12" cy="11" r="2.2" className="icon-accent" stroke="none" />,
+  ],
   circle3: [
     <circle key="0" cx="12" cy="12" r="8" />,
     <circle key="1" cx="4.4" cy="9.6" r="1.9" fill="currentColor" stroke="none" />,
@@ -204,6 +235,15 @@ const TOOL_PARTS: Readonly<Record<ToolId, readonly ReactNode[]>> = {
   spiral: [
     <path key="0" d="M12 12 C14 10 16 13 14 15 C11 18 6 15 7 10 C8 5 15 4 18 7" />,
     <circle key="1" cx="18" cy="7" r="2.4" className="icon-accent" stroke="none" />,
+  ],
+  apply_map: [
+    <path key="0" d="M4 7 h7 M4 7 l3 -3 M4 7 l3 3" />,
+    <text key="1" x="5" y="20" fontSize="9" fontStyle="italic" fill="currentColor" stroke="none">
+      f
+    </text>,
+    <path key="2" d="M10 16 L19 16" />,
+    <path key="3" d="M16 13 L19 16 L16 19" />,
+    <circle key="4" cx="20" cy="7" r="2.4" className="icon-accent" stroke="none" />,
   ],
   derived_layer: [
     <path key="0" d="M3 9 L12 4.5 L21 9 L12 13.5 Z" />,

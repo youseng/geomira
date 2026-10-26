@@ -132,6 +132,7 @@ function textProblem(doc: Document, e: DocumentEdit, registry: Registry): string
     case 'addView':
     case 'applyView':
     case 'removeView':
+    case 'renameView':
     case 'removeClaim':
     case 'renameClaim':
     case 'removeAssumption':
@@ -169,6 +170,7 @@ function docStep(doc: Document, e: DocumentEdit, env: EditorEnv): Step {
     case 'addView':
     case 'applyView':
     case 'removeView':
+    case 'renameView':
       return kernelStep(doc, e, env);
     case 'addClaim': {
       const r = addClaim(doc, e.claim);
@@ -297,6 +299,7 @@ function apply(state: EditorState, e: Edit, env: EditorEnv): EditResult {
     case 'activeLayer':
     case 'tool':
     case 'toolValue':
+    case 'toolMapOnly':
       return uiEdit(state, e);
     case 'dragStart':
     case 'dragMove':
@@ -324,6 +327,7 @@ function apply(state: EditorState, e: Edit, env: EditorEnv): EditResult {
     case 'addView':
     case 'applyView':
     case 'removeView':
+    case 'renameView':
     case 'addClaim':
     case 'removeClaim':
     case 'renameClaim':

@@ -117,22 +117,43 @@ function ToolValueField({ store, state, tool }: ToolBarProps & { tool: ToolUI })
 }
 
 /**
+ * A map tool's switch (Run 13, ADR-0031): build the transformation itself (`f = reflect(l)`),
+ * to apply it later or to make a layer from it, instead of one object's image.
+ */
+function MapOnlyField({ store, state, tool }: ToolBarProps & { tool: ToolUI }) {
+  if (tool.map !== true) return null;
+  return (
+    <label className="tool-value">
+      <input
+        type="checkbox"
+        checked={state.toolState.mapOnly === true}
+        onChange={(e) => {
+          store.apply({ kind: 'toolMapOnly', on: e.target.checked });
+        }}
+      />
+      Transformation only
+    </label>
+  );
+}
+
+/**
  * The active tool's controls on the canvas (top left, Geomdraw's hint box): the claim tool's
- * kind, the text tool's string, the tool's number, Finish and Cancel; shown only when the tool
- * has one.
+ * kind, the text tool's string, a map tool's "Transformation only", the tool's number, Finish
+ * and Cancel; shown only when the tool has one.
  */
 export function ToolHint({ store, state }: ToolBarProps) {
   const tool = toolUI(state.tool);
   const ts = state.toolState;
   const hasRest = tool !== undefined && stepsOf(tool, ts).rest !== undefined;
   const text = tool?.build.kind === 'text' && ts.picks.length > 0;
-  const value = tool?.value !== undefined;
+  const value = tool?.value !== undefined || tool?.map === true;
   const cancel = ts.picks.length > 0;
   if (state.tool !== 'claim' && !text && !hasRest && !cancel && !value) return null;
   return (
     <div className="tool-hint">
       {state.tool === 'claim' && <ClaimKind store={store} state={state} />}
       {text && <TextInput store={store} />}
+      {tool !== undefined && <MapOnlyField store={store} state={state} tool={tool} />}
       {tool !== undefined && <ToolValueField store={store} state={state} tool={tool} />}
       {hasRest && (
         <button

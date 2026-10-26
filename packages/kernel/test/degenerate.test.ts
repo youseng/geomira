@@ -32,6 +32,13 @@ import { INTERSECT_CURVE_CASES, TANGENT_CASES } from './helpers/degenerate-branc
 import { NEARLY_COINCIDENT_CASES } from './helpers/degenerate-nearly';
 import { TRANSFORM_CASES } from './helpers/degenerate-transforms';
 import { APPLY_DISPLAY_CASES, DISPLAY_CASES } from './helpers/degenerate-display';
+import {
+  ARC_INTERSECT_CASES,
+  ARC_ON_CASES,
+  ARC_OTHER_CASES,
+  ARC_TANGENT_CASES,
+  V11_CASES,
+} from './helpers/degenerate-v11';
 
 const CASES: Record<string, Record<string, () => void>> = {
   point: {},
@@ -159,6 +166,7 @@ const CASES: Record<string, Record<string, () => void>> = {
     },
     ...INTERSECT_CURVE_CASES,
     ...NEARLY_COINCIDENT_CASES,
+    ...ARC_INTERSECT_CASES,
   },
   circumcenter: {
     'coincident vertices → Undefined': () => {
@@ -255,6 +263,11 @@ const CASES: Record<string, Record<string, () => void>> = {
   ...TRANSFORM_CASES,
   ...DISPLAY_CASES,
   apply: { ...TRANSFORM_CASES.apply, ...APPLY_DISPLAY_CASES },
+  ...V11_CASES,
+  on: { ...GLIDER_CASES.on, ...ARC_ON_CASES },
+  other: { ...GLIDER_CASES.other, ...ARC_OTHER_CASES },
+  tangent_point: { ...TANGENT_CASES.tangent_point, ...ARC_TANGENT_CASES },
+  tangent_from: { ...TANGENT_CASES.tangent_from, ...ARC_TANGENT_CASES },
 };
 
 describe('degenerate cases (ToolSpec.degenerate), each a test', () => {

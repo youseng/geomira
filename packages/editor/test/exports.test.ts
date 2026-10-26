@@ -32,6 +32,7 @@ import * as randomizeMod from '../src/randomize';
 import * as toolGroupsMod from '../src/tool-groups';
 import * as promptMod from '../src/prompt';
 import * as previewMod from '../src/preview';
+import * as viewsMod from '../src/views';
 
 const SURFACE: Record<string, { module: object; names: string[] }> = {
   './state': {
@@ -103,6 +104,20 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './tool-groups': { module: toolGroupsMod, names: ['TOOL_GROUPS', 'keyCap', 'toolGroup'] },
   './prompt': { module: promptMod, names: ['toolPrompt'] },
   './preview': { module: previewMod, names: ['toolPreview'] },
+  './views': {
+    module: viewsMod,
+    names: [
+      'currentView',
+      'cycleView',
+      'deleteView',
+      'renameView',
+      'saveView',
+      'suggestedViewName',
+      'switchView',
+      'viewOf',
+      'viewShown',
+    ],
+  },
 };
 
 describe('@geomira/editor subpath surface', () => {

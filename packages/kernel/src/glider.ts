@@ -15,6 +15,7 @@ import { assertNever } from '@geomira/num/assert';
 import { inexact, isInexact, type Field, type Inexact } from '@geomira/num/field';
 import { isZeroVec, two, vAdd, vDot, vRot90, vScale, vSub } from './geom';
 import type { EvalContext } from './tool';
+import { clampToArc } from './tools/arc-range';
 import { degenerateCircle, degenerateLine } from './tools/args';
 import {
   pointOf,
@@ -94,7 +95,8 @@ function anglePoint<T>(F: Field<T>, c: Circle<T>, degrees: T): Value<T> {
  * The point of a glider on `obj`. Degenerate cases: a line with no direction or a circle
  * with no positive radius → Undefined; a bounded range mod p → Inexact; a parameter form
  * that does not fit the object (a line with (u : v), a line with an angle) → Undefined;
- * as in stereoPoint and anglePoint.
+ * as in stereoPoint and anglePoint; on an arc, the point is clamped to the arc (the nearer
+ * end; equally far → Undefined, ambiguous; mod p → Inexact: arc-range.ts clampToArc).
  */
 export function gliderPoint<T>(
   F: Field<T>,
@@ -114,13 +116,26 @@ export function gliderPoint<T>(
   if (obj.kind !== 'circle') return undef(`a glider needs a line or a circle, not ${obj.kind}`);
   const bad = degenerateCircle(F, obj, ctx);
   if (bad !== undefined) return bad;
+  const X = circlePoint(F, obj, p, ctx);
+  if (X.kind !== 'point') return X;
+  const on = clampToArc(F, obj, X, ctx);
+  return 'kind' in on ? on : pointOf(on.x, on.y);
+}
+
+/** The point of a circle glider (before an arc's clamp). */
+function circlePoint<T>(
+  F: Field<T>,
+  c: Circle<T>,
+  p: GliderParameter<T>,
+  ctx: EvalContext,
+): Value<T> {
   switch (p.form) {
     case 'line':
       return undef('a glider on a circle takes (u : v) or an angle');
     case 'stereo':
-      return stereoPoint(F, obj, p.u, p.v, ctx);
+      return stereoPoint(F, c, p.u, p.v, ctx);
     case 'angle':
-      return anglePoint(F, obj, p.degrees);
+      return anglePoint(F, c, p.degrees);
     default:
       return assertNever(p, 'glider parameter');
   }

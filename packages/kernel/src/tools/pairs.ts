@@ -8,7 +8,7 @@
  *   - list(n): the candidates as mid ∓ off (off needs a square root: Inexact when it is
  *     not representable), each with its STRUCTURAL low-level label (along: mid + off is
  *     further along d; orient: the sign of the orientation), a double point labelled 0;
- *     candidates outside a segment or ray are not candidates;
+ *     candidates outside a segment, ray or arc are not candidates (arc-range.ts);
  *   - other: for other(P), the two curves P must lie on and the other common point given
  *     one, without square roots (exact; absent for line ∩ line, which meets once).
  * select.ts applies the selectors.
@@ -37,6 +37,7 @@ import {
   type Vec,
 } from '../value';
 import { degenerateCircle, degenerateLine } from './args';
+import { offArcs, onArcs } from './arc-range';
 import { outsideReason, rangeStatus } from './range';
 
 export type Side = -1 | 0 | 1;
@@ -76,7 +77,10 @@ export interface Pair<T> {
   /** What a candidate is called in messages: "intersection", "touch point", "tangent". */
   readonly noun: string;
   readonly low: Low<T>;
-  /** A segment or ray takes part in a two-candidate pair: list() must run before counting. */
+  /**
+   * A segment, ray or arc takes part in a two-candidate pair: list() must run before
+   * counting.
+   */
   readonly ranged?: boolean;
   count(): 1 | 2 | Undefined | Inexact;
   list(n: 1 | 2): readonly Cand<T>[] | Undefined | Inexact;
@@ -249,12 +253,13 @@ export function lineCirclePair<T>(
     shape: LINE_CIRCLE,
     noun: 'intersection',
     low: { kind: 'along', d: l.d },
-    ranged: l.lo !== null || l.hi !== null,
+    ranged: l.lo !== null || l.hi !== null || c.arc !== null,
     count: () =>
       countFromGap(F, rootGap(F, c.r2, h2), ctx, 'no intersection: the line misses the circle'),
     list: (n) => {
       const list = midOff(F, n, foot, F.div(diff, dd), l.d, false);
-      return isInexact(list) ? list : onRange(F, l, list, ctx);
+      const ranged = isInexact(list) ? list : onRange(F, l, list, ctx);
+      return 'kind' in ranged ? ranged : onArcs(F, [c], ranged, ctx, 'intersection');
     },
     other: {
       curves: lineFirst ? curves : [curves[1], curves[0]],
@@ -265,7 +270,9 @@ export function lineCirclePair<T>(
         const t = F.sub(F.add(tc, tc), paramOn(F, l, P));
         const r = rangeStatus(F, l, t, ctx, 'other intersection');
         if (r === 'out') return outsideReason(l, 'other intersection');
-        return r === 'in' ? vAdd(F, l.p, vScale(F, l.d, t)) : r;
+        if (r !== 'in') return r;
+        const X = vAdd(F, l.p, vScale(F, l.d, t));
+        return offArcs(F, [c], X, ctx, 'other intersection') ?? X;
       },
     },
     output: asPoint,
@@ -349,18 +356,24 @@ export function circleCirclePair<T>(
     shape: CIRCLE_CIRCLE,
     noun: 'intersection',
     low: { kind: 'orient', from: c1.c, to: c2.c },
+    ranged: c1.arc !== null || c2.arc !== null,
     count: () => ('kind' in counted ? counted : counted.n),
     // Called only after count() gave n (so `counted` is not Undefined; D = 0 is never used).
     list: (n) => {
       const D = 'kind' in counted ? F.zero : counted.D;
-      return midOff(F, n, mid, F.div(D, F.mul(F.add(s, s), F.add(s, s))), vRot90(F, w), false);
+      const r = F.div(D, F.mul(F.add(s, s), F.add(s, s)));
+      const list = midOff(F, n, mid, r, vRot90(F, w), false);
+      return isInexact(list) ? list : onArcs(F, [c1, c2], list, ctx, 'intersection');
     },
     other: {
       curves: [
         { obj: c1, name: 'the first circle' },
         { obj: c2, name: 'the second circle' },
       ],
-      point: (P) => reflectIn(F, c1.c, w, P),
+      point: (P) => {
+        const X = reflectIn(F, c1.c, w, P);
+        return offArcs(F, [c1, c2], X, ctx, 'other intersection') ?? X;
+      },
     },
     output: asPoint,
   };

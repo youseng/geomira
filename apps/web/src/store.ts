@@ -137,6 +137,11 @@ export class EditorStore {
     return this.guarded(() => applyEdit(this.current(), e, this.env));
   }
 
+  /** An editor action built of edits (the views actions of @geomira/editor/views). */
+  run(action: (s: EditorState, env: EditorEnv) => EditResult): EditResult {
+    return this.guarded(() => action(this.current(), this.env));
+  }
+
   input(i: ToolInput): EditResult {
     return this.guarded(() => toolInput(this.current(), i, this.env));
   }

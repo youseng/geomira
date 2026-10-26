@@ -13,6 +13,7 @@ import { vAdd, vDot, vScale, vSub } from '../geom';
 import { requireOnCircle, requireOnLine } from '../incidence';
 import { pointOf, undef, type Circle, type Line, type Point, type Value } from '../value';
 import { badArgs, circleAt, degenerateCircle, degenerateLine, lineAt, pointAt } from './args';
+import { offArcs } from './arc-range';
 import { outOfRange } from './range';
 
 /** The parameter of X's projection on l (X ↦ (X − p)·d / |d|²). */
@@ -23,7 +24,8 @@ function along<T>(F: Field<T>, l: Line<T>, X: { readonly x: T; readonly y: T }):
 /**
  * Line and circle. Degenerate cases: P off the carrier line or off c → Undefined; within
  * the band → Undefined (ambiguous); tangency → P; the other point outside a segment or ray
- * → Undefined, within the band of an end → Undefined (ambiguous), mod p → Inexact.
+ * → Undefined, within the band of an end → Undefined (ambiguous), mod p → Inexact; the
+ * same for an arc (arc-range.ts).
  */
 function lineCircle<T>(
   F: Field<T>,
@@ -42,12 +44,14 @@ function lineCircle<T>(
   const range = outOfRange(F, l, t, ctx, 'other intersection');
   if (range !== undefined) return range;
   const q = vAdd(F, l.p, vScale(F, l.d, t));
-  return pointOf(q.x, q.y);
+  return offArcs(F, [c], q, ctx, 'other intersection') ?? pointOf(q.x, q.y);
 }
 
 /**
  * Two circles. Degenerate cases: concentric circles (equal ones included) → Undefined;
- * P off either circle → Undefined; within the band → Undefined (ambiguous); tangency → P.
+ * P off either circle → Undefined; within the band → Undefined (ambiguous); tangency → P;
+ * the other point off an arc → Undefined (within the band of an end: ambiguous; mod p:
+ * Inexact).
  */
 function twoCircles<T>(
   F: Field<T>,
@@ -68,7 +72,8 @@ function twoCircles<T>(
   if (on !== undefined) return on;
   const k = F.div(vDot(F, vSub(F, P, c1.c), w), vDot(F, w, w));
   const foot = vAdd(F, c1.c, vScale(F, w, k));
-  return pointOf(F.sub(F.add(foot.x, foot.x), P.x), F.sub(F.add(foot.y, foot.y), P.y));
+  const q = { x: F.sub(F.add(foot.x, foot.x), P.x), y: F.sub(F.add(foot.y, foot.y), P.y) };
+  return offArcs(F, [c1, c2], q, ctx, 'other intersection') ?? pointOf(q.x, q.y);
 }
 
 function other<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
@@ -104,6 +109,8 @@ export const OTHER_TOOLS: readonly ToolSpec[] = [
       'the other point outside a segment or ray → Undefined',
       'the other point within the band of a segment end → Undefined (ambiguous)',
       'a segment or ray range mod p → Inexact',
+      'the other point outside an arc → Undefined',
+      'a hand-built arc mod p → Inexact',
     ],
     export: 'numeric',
     doc: 'other(a, b, P): the second intersection of a line and a circle, or of two circles, given one common point P (Vieta; exact).',

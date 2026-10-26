@@ -147,3 +147,42 @@ test('a share link from the file opens the same figure', async ({ page, context 
   await expect(await textArea(other)).toHaveValue(figure);
   expect(errors).toEqual([]);
 });
+
+test('views from the file: save and switch; the share link and a reload keep them (Run 13)', async ({
+  page,
+  context,
+}) => {
+  const { errors } = await openSingle(page);
+  for (const line of ['@layer aux', 'A = (0, 0)', 'B = (4, 0)', 'M = midpoint(A, B) [layers=aux]'])
+    await command(page, line);
+  await tab(page, 'Layers');
+  await page.getByLabel('New view name', { exact: true }).fill('whole');
+  await page.getByRole('button', { name: 'Save view', exact: true }).click();
+  await page.getByLabel('aux', { exact: true }).uncheck();
+  await page.getByLabel('New view name', { exact: true }).fill('bare');
+  await page.getByRole('button', { name: 'Save view', exact: true }).click();
+  await page.getByRole('button', { name: 'Show view whole', exact: true }).click();
+  await expect(page.getByLabel('aux', { exact: true })).toBeChecked();
+  await expect(await textArea(page)).toHaveValue(/^@view whole \[layers=main,aux\] /mu);
+  await expect(await textArea(page)).toHaveValue(/^@view bare \[layers=main,-aux\] /mu);
+  const figure = await text(page);
+  // A reload of the file opens the autosaved figure with its views (before another page
+  // edits, which would save its own figure).
+  await page.reload();
+  await expect(await textArea(page)).toHaveValue(figure);
+  // The share link carries the views.
+  await page.getByRole('button', { name: 'Export', exact: true }).click();
+  await page.getByRole('button', { name: 'Share link' }).click();
+  const link = await page
+    .getByRole('dialog', { name: 'Share link' })
+    .getByRole('textbox')
+    .inputValue();
+  const other = await context.newPage();
+  const otherErrors = await openApp(other, link);
+  await expect(await textArea(other)).toHaveValue(figure);
+  await tab(other, 'Layers');
+  await other.getByRole('button', { name: 'Show view bare', exact: true }).click();
+  await expect(other.getByLabel('aux', { exact: true })).not.toBeChecked();
+  expect(otherErrors).toEqual([]);
+  expect(errors).toEqual([]);
+});

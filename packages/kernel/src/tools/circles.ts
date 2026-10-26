@@ -9,7 +9,7 @@
 import * as Q from '@geomira/num/rational';
 import type { Field } from '@geomira/num/field';
 import type { ArgSymmetry, EvalContext, ExampleArg, Signature, ToolSpec } from '../tool';
-import { half, vAdd, vCross, vDot, vScale, vSub } from '../geom';
+import { half, two, vAdd, vDot, vScale, vSub } from '../geom';
 import { pointOf, undef, type Circle, type Undefined, type Value, type Vec } from '../value';
 import { badArgs, circleAt, coincident, numAt, pointAt, pointsOf } from './args';
 import { ANY_ORDER, circumcenterOf, triangle, triangleShape } from './triangle';
@@ -123,10 +123,12 @@ function ninepointOf<T>(
     return pointOf(m.x, m.y);
   };
   const [ma, mb, mc] = [mid(t.b, t.c), mid(t.c, t.a), mid(t.a, t.b)];
-  const [u, v] = [vSub(F, mb, ma), vSub(F, mc, ma)];
-  // The medial triangle is ABC scaled by −1/2: its cross product is cross/4, never 0
-  // (rounding changes it by far less than the EPS margin triangle() checked).
-  const medial = { a: ma, b: mb, c: mc, u, v, cross: vCross(F, u, v) };
+  // The medial triangle is ABC scaled by −1/2: its sides are −u/2 and −v/2 and its cross
+  // product is cross/4, taken from ABC's own (never 0: triangle() checked it). Recomputing
+  // them from the rounded midpoints could give 0 for a tiny triangle far from the origin.
+  const minusHalf = F.neg(half(F));
+  const [u, v] = [vScale(F, t.u, minusHalf), vScale(F, t.v, minusHalf)];
+  const medial = { a: ma, b: mb, c: mc, u, v, cross: F.div(t.cross, F.add(two(F), two(F))) };
   return circleThrough(F, circumcenterOf(F, medial), ma);
 }
 
