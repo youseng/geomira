@@ -2,7 +2,8 @@
  * The nightly mutation matrix (nightly.yml, SPEC §17 L15). Each shard is one job with its own
  * incremental file and cache key, so a shard that finishes saves its progress even when
  * another times out. The kernel is split into eleven shards by file group (its full run takes
- * about four hours on a GitHub runner); num and claims finish within an hour and run whole.
+ * about four hours on a GitHub runner); num, claims and discovery finish within an hour and
+ * run whole.
  * The last kernel shard is "every other tool file" (negated globs), so a new file under
  * tools/ is always mutated by some shard. scripts/mutation-shards.test.ts checks that the
  * kernel shards partition the files of stryker.kernel.json's `mutate`.
@@ -17,7 +18,7 @@ export interface Shard {
   /** Job and cache name: the incremental file is cached under `stryker-<id>-…`. */
   readonly id: string;
   /** The package whose stryker.<pkg>.json and `pnpm mutation:<pkg>` the shard runs. */
-  readonly pkg: 'num' | 'kernel' | 'claims';
+  readonly pkg: 'num' | 'kernel' | 'claims' | 'discovery';
   /** `--mutate` globs (negations allowed); empty = the config's own `mutate`. */
   readonly mutate: readonly string[];
   /**
@@ -163,6 +164,8 @@ export const SHARDS: readonly Shard[] = [
     parent: 'kernel-4',
   },
   { id: 'claims', pkg: 'claims', mutate: [], parent: '' },
+  // Run 17 (ADR-0035): the finder's package, whole, gated at 75 % like claims.
+  { id: 'discovery', pkg: 'discovery', mutate: [], parent: '' },
 ];
 
 /** The GitHub Actions matrix: one entry per shard, `mutate` joined for Stryker's `--mutate`. */

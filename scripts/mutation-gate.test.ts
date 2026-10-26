@@ -30,6 +30,7 @@ function report(file: string, killed: number, survived: number, line = 10) {
 function fileOfShard(id: string): string {
   if (id === 'num') return 'packages/num/src/rational.ts';
   if (id === 'claims') return 'packages/claims/src/kinds.ts';
+  if (id === 'discovery') return 'packages/discovery/src/find.ts';
   const s = SHARDS.find((x) => x.id === id);
   const first = s?.mutate.find((m) => !m.startsWith('!'));
   if (first === undefined) throw new Error(id);
@@ -86,7 +87,7 @@ describe('the nightly mutation gate', () => {
     );
     expect(line(lines, 'num')).toContain('num mutation gate: 90.00% (9 detected, 1 undetected');
     // One line per package, then one per shard.
-    expect(lines).toHaveLength(3 + SHARDS.length);
+    expect(lines).toHaveLength(4 + SHARDS.length);
   });
 
   it('fails when any one package is below its threshold', () => {
@@ -170,7 +171,7 @@ describe('the nightly mutation gate', () => {
       shard,
       tally: { detected: 0, undetected: 0, outside: 0 },
     }));
-    expect(gate(empty).map((p) => p.pass)).toEqual([false, false, false]);
+    expect(gate(empty).map((p) => p.pass)).toEqual([false, false, false, false]);
     expect(gate([]).every((p) => !p.pass)).toBe(true);
   });
 

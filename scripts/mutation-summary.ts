@@ -12,7 +12,7 @@
  * shard's report from `<dir>/mutation-report-<id>/mutation.json` (the layout
  * actions/download-artifact writes), sums each package's in-scope mutants over its shards
  * (kernel: every kernel-* shard), prints one line per package and per shard, and exits 1 when a
- * package scores below its threshold (num 80%, kernel and claims 75%) or a shard's report is
+ * package scores below its threshold (num 80%, kernel, claims and discovery 75%) or a shard's report is
  * missing or malformed: the gate never passes by omission.
  */
 import { existsSync, readFileSync } from 'node:fs';
@@ -136,7 +136,7 @@ export function readShard(dir: string, shard: Shard): ShardResult {
  * measured).
  */
 export function gate(results: readonly ShardResult[]): PackageResult[] {
-  const pkgs: readonly Shard['pkg'][] = ['num', 'kernel', 'claims'];
+  const pkgs: readonly Shard['pkg'][] = ['num', 'kernel', 'claims', 'discovery'];
   return pkgs.map((pkg) => {
     const own = results.filter((r) => r.shard.pkg === pkg);
     let detected = 0;

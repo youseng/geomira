@@ -10,8 +10,9 @@ const allowed = {
   claims: ['kernel', 'num'],
   lang: ['kernel', 'claims', 'num'],
   scene: ['kernel', 'num'],
-  editor: ['kernel', 'claims', 'lang', 'scene', 'num'],
+  editor: ['kernel', 'claims', 'lang', 'scene', 'num', 'discovery'],
   export: ['scene', 'kernel', 'lang', 'num'],
+  discovery: ['kernel', 'claims', 'num'],
 };
 
 /** npm packages a pure package's src may import (SPEC §12: share links use lz-string). */

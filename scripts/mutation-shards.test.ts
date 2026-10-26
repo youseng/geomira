@@ -110,6 +110,7 @@ describe('nightly mutation shards', () => {
       [
         ['num', [], ''],
         ['claims', [], ''],
+        ['discovery', [], ''],
       ],
     );
     expect(new Set(SHARDS.map((s) => s.id)).size).toBe(SHARDS.length);
