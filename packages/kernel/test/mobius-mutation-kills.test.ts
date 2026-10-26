@@ -50,6 +50,10 @@ describe('mobiusProblem: the double range (FloatField only)', () => {
 
   it('a valid map has no problem; ad − bc = 0 is not invertible', () => {
     expect(mobiusProblem(FloatField, diag(1e-50, 1e50), 'x')).toBeUndefined();
+    // ad − bc = 1 + i: |ad − bc|² = 2 (re² + im², not re² − im² = 0).
+    expect(
+      mobiusProblem(FloatField, mobius(false, C(1, 1), C(0), C(0), C(1)), 'x'),
+    ).toBeUndefined();
     expect(mobiusProblem(FloatField, mobius(true, C(1), C(2), C(2), C(4)), 'x')).toEqual({
       kind: 'undefined',
       reason: 'x: the map is not invertible (ad − bc = 0)',
