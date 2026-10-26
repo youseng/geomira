@@ -12,9 +12,11 @@ hypotheses, canvas editor, exports (SVG, PNG, TikZ, Asymptote) compiled in CI, s
 links, static site.
 v1.1 (Runs 12–13, before Phase 2): single-file offline build, PWA, views UI, long-tail
 tools (spiral_center, isogonal, symmedian, pole, radical_center, arc), mutation-testing
-gates.
+gates. Run 14 (ADR-0032): inversion through Möbius maps (`inversion` and the presets of
+ADR-0032), the range `outside` flag.
 Phase 2 (must not be referenced by v1 code; the extension points in §18 are built and
-tested in v1): inversion and Möbius maps, conics and projective tools, the symbolic
+tested in v1): projective maps (inversion and Möbius maps moved to Run 14 by ADR-0032),
+conics and projective tools, the symbolic
 prover, the finder, special-position hunting, branch-fix diagnosis, the problem library,
 write-ups, loci, animation, macros, accounts.
 
@@ -88,8 +90,8 @@ its exact run can succeed. Known main gap: `rotate(O, θ)` for θ not a multiple
 ## 4. Values and capabilities (packages/kernel/value.ts)
 Generic over the number type T:
 - `Point { kind:'point', x, y }`
-- `Line { kind:'line', p, d, lo, hi, chiral }`: points p + t·d, d ≠ 0 not normalised,
-  t ∈ [lo, hi]. `chiral` records how d behaves when the whole figure is mirrored:
+- `Line { kind:'line', p, d, lo, hi, chiral, outside? }`: points p + t·d, d ≠ 0 not
+  normalised, t ∈ [lo, hi]; with `outside` (ADR-0032), t ≤ lo or t ≥ hi (two rays). `chiral` records how d behaves when the whole figure is mirrored:
   directions from two points (line, segment, ray) and bisectors are achiral; every 90°
   turn of a direction TOGGLES the flag (perp toggles its line's flag; perp_bisector,
   tangent, polar, radical_axis and ext_bisector turn an achiral direction, so they are
@@ -104,7 +106,8 @@ Generic over the number type T:
   layers keep exact gliders). Only circle(O, r) has none.
 - `Num { kind:'number', v, exact? }` · `Polygon { kind:'polygon', pts }`
 - `Transform { kind:'transform', t: { type:'similarity', anti, a, b } }` (z ↦ az + b or
-  a·z̄ + b); reserved, documented only: 'mobius', 'projective'.
+  a·z̄ + b) or `t: { type:'mobius', anti, a, b, c, d }` (z ↦ (aẑ + b)/(cẑ + d), ADR-0032);
+  reserved, documented only: 'projective'.
 - `Undefined { kind:'undefined', reason }` and `Inexact { kind:'inexact', reason }`.
 Reserved kinds (documented only): IdealPoint, Conic, Locus. Capabilities: point; curve
 (line | circle); linear; round; number; transform; polygon. A kind a tool does not
@@ -160,6 +163,8 @@ Sugar: `triangle A B C [acute|obtuse_at_A|…]` → three free points (determini
 hash of the line), polygon, `assume` lines. Right angles are constructed, never assumed.
 v1.1 tools (Run 13): `spiral_center`, `isogonal`, `symmedian`, `pole`,
 `radical_center`, `arc`.
+Run 14 (ADR-0032): `inversion(c)`, `inversion(O, k)`, and the presets `sqrt_bc`,
+`orthocenter_inversion`, `inversion_fixing`, `inversion_swap` (compositions of the tools above).
 
 ### 6.3 Degenerate behaviour (each item is a test)
 Parallel / coincident lines → Undefined; coincident defining points → Undefined;
@@ -196,7 +201,8 @@ for a named point incident (within BAND) with the clicked candidate.
 
 ## 8. Transformations, layers, views
 ### 8.1 Transformations
-Similarities in v1. `apply` maps every kind (ranges and arcs mapped, anti-similarities
+Similarities in v1; Möbius maps (inversion) from Run 14 (ADR-0032: images of lines and
+circles change kind, segments become arcs or rays, the centre's image is Undefined). `apply` maps every kind (ranges and arcs mapped, anti-similarities
 reverse arc orientation, the chirality flag is kept). Laws: apply∘inverse = id; compose
 associative; apply(compose(S,T)) = apply(S)∘apply(T); incidence preserved.
 
@@ -397,10 +403,11 @@ test (N = 200, 150 objects) ≤ 1.5 s in the worker; page interactive ≤ 1.5 s.
 E1 Field<T> with Rational and ModP in v1 → the prover adds PolyFraction, DegreeBound
 and QuadExt and reuses the same tool and claim code (guard: L3, L17).
 E2 Capability dispatch; kinds safe by default (guard: a test-only kind).
-E3 Transform union → 'mobius', 'projective' (guard: exhaustive switches, §8 laws).
+E3 Transform union → 'mobius' (built in Run 14, ADR-0032), 'projective' (guard: exhaustive
+switches, §8 laws).
 E4 Derived layers, exclusion rules, drag-through (guard: L13, editor tests).
 E5 Arcs, cline, chirality flag (guard: tests; inversion maps segments → arcs and needs
-   an `outside` range flag, decided by ADR in Run 14).
+   an `outside` range flag: built in Run 14, ADR-0032).
 E6 Claim conditions/NDG as field-generic data (guard: L12, L17).
 E7 Worker job protocol (guard: job tests).
 E8 Reserved kinds IdealPoint, Conic, Locus (v1 parallel lines → Undefined).
