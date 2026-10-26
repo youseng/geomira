@@ -1,6 +1,6 @@
 # STATUS
 
-## Run 14: inversion via Möbius transformations: NOT ACCEPTED (re-verifying after ADR-0034)
+## Run 14: inversion via Möbius transformations: ACCEPTED (2026-10-26)
 
 SPEC §1 (inversion leaves "Phase 2, documented only"), §4 (`outside`), §6.2, §8.1, §18 E3/E5.
 Decisions: [ADR-0032](adr/0032-mobius-inversion.md); the maintainer's extra item 6:
@@ -160,7 +160,9 @@ repository); Firefox and WebKit run only in CI.
   undefined diameter circle (the power step propagates the same reason; kept for clarity) and
   its helper line's `chiral` flag (unused by the incidence test); `run`'s reason for a tool
   that is not a preset part (unreachable: a bug); `arcStatus`'s "center of inversion" (the pole
-  test of the arc's ends decides first in every case found).
+  test of the arc's ends decides first in every case found); and, re-tested because the new
+  feet_inversion theorem calls `foot`, the pre-existing `chiral: false` of foot(P, A, B)'s
+  helper line in points.ts (footOn never reads the flag).
 - The angle mark's image under an inversion is the mark of the images' tangents at the image
   vertex (conformality), with the arms swapped by the orientation reversal; a mark at the
   centre is Undefined.
@@ -203,86 +205,96 @@ reads the transform object unchanged).
 
 ## Acceptance command output
 
-### Local (`pnpm verify`, on f7592cd, exit 0)
+### Local (`pnpm verify`, on 143eb86, exit 0; de484e8 adds one assertion to an existing test)
 
 ```
-✔ no dependency violations found (682 modules, 3753 dependencies cruised)
+✔ no dependency violations found (684 modules, 3762 dependencies cruised)
 ok   add-only: frozen tests compared with run-13, 0 violation(s)
-ok   disabled-tests: 976 files scanned, 0 violation(s)
-ok   file-length: 976 files scanned, 0 violation(s)
-ok   forbidden-words: 976 files scanned, 0 violation(s)
-ok   test-count: 3282 tests, floor 3154, 0 violation(s)
-ok   tolerance: 976 files scanned, 0 violation(s)
-L3 Möbius images: 1927 defined + 626 Undefined agree, 446 not exact, 1 excluded (band); mod p 1081; [["circle",1216],["undefined",626],["point",224],["angle_mark",232],["text",224],["line",24],["line (two rays)",7]]
+ok   disabled-tests: 979 files scanned, 0 violation(s)
+ok   file-length: 979 files scanned, 0 violation(s)
+ok   forbidden-words: 979 files scanned, 0 violation(s)
+ok   test-count: 3305 tests, floor 3282, 0 violation(s)
+ok   tolerance: 979 files scanned, 0 violation(s)
+L3 Möbius images: 1787 defined + 493 Undefined agree, 716 not exact, 4 excluded (band); mod p 1006; [["circle",1143],["undefined",493],["text",227],["point",198],["angle_mark",194],["line",20],["line (two rays)",5]]
+L3 feet_inversion: 2306 defined + 82 Undefined agree, 0 not exact, 12 excluded (band); mod p 2306
 L3 inversion: 2192 defined + 200 Undefined agree, 0 not exact, 8 excluded (band); mod p 2192
 L3 inversion_fixing: 2109 defined + 278 Undefined agree, 0 not exact, 13 excluded (band); mod p 2109
 L3 inversion_swap: 215 defined + 2150 Undefined agree, 0 not exact, 35 excluded (band); mod p 250
 L3 orthocenter_inversion: 1949 defined + 390 Undefined agree, 0 not exact, 61 excluded (band); mod p 1949
+L3 sqrt_bc2: 352 defined + 7 Undefined agree, 2025 not exact, 16 excluded (band); mod p 0
 L3 sqrt_bc: 379 defined + 5 Undefined agree, 1998 not exact, 18 excluded (band); mod p 0
 L3 symmedian_point: 2180 defined + 180 Undefined agree, 0 not exact, 40 excluded (band); mod p 2180
 theorem (float) Ptolemy through the inversion at A: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (float) feet_inversion: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (float) incidence and tangency are kept: 196 hold, 0 degenerate, 4 ill-conditioned
+theorem (float) sqrt_bc2: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (float) symmedian_point is isogonal(centroid) and lies on the three symmedians: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (float) the orthocenter inversion maps the circumcircle to the nine-point circle, A to its foot: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (float) the √(bc) map swaps B and C and maps the circumcircle to line BC: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (heronian) sqrt_bc2: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (heronian) the √(bc) map swaps B and C and maps the circumcircle to line BC: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (rational) Ptolemy through the inversion at A: 200 hold, 0 degenerate, 0 ill-conditioned
+theorem (rational) feet_inversion: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (rational) incidence and tangency are kept: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (rational) symmedian_point is isogonal(centroid) and lies on the three symmedians: 200 hold, 0 degenerate, 0 ill-conditioned
 theorem (rational) the orthocenter inversion maps the circumcircle to the nine-point circle, A to its foot: 200 hold, 0 degenerate, 0 ill-conditioned
-      Tests  3282 passed (3282)
- Test Files  368 passed (368)
-Lines        : 98.32% ( 9784/9951 )
+      Tests  3305 passed (3305)
+ Test Files  369 passed (369)
+Lines        : 98.32% ( 9793/9960 )
 ```
 
 ### Nightly on this branch (mutation gate, CI-blocking since ADR-0031)
 
-Dispatch on f7592cd: https://github.com/youseng/geomira/actions/runs/40330537339 (incremental;
-the caches were filled by the first dispatch on 24a9e94,
-https://github.com/youseng/geomira/actions/runs/40317340317, gate passed, where kernel-j took
-about 80 minutes for its 730 new mutants and kernel-k scored 41.27 %; Done item 12):
+Dispatch on de484e8: https://github.com/youseng/geomira/actions/runs/40341985091 (incremental):
 
 ```
 num mutation gate: 93.47% (730 detected, 51 undetected; threshold 80%): pass
-kernel mutation gate: 97.94% (2328 detected, 49 undetected; threshold 75%): pass
+kernel mutation gate: 97.95% (2391 detected, 50 undetected; threshold 75%): pass
 claims mutation gate: 85.75% (2034 detected, 338 undetected; threshold 75%): pass
 num mutation score: 93.47% (730 detected, 51 undetected; target 80%, gated from v1.1)
 kernel-a mutation score: 96.40% (241 detected, 9 undetected; target 75%, gated from v1.1)
 kernel-b mutation score: 96.10% (148 detected, 6 undetected; target 75%, gated from v1.1)
 kernel-c mutation score: 94.51% (241 detected, 14 undetected; target 75%, gated from v1.1)
 kernel-d mutation score: 99.00% (198 detected, 2 undetected; target 75%, gated from v1.1)
-kernel-e mutation score: 99.44% (177 detected, 1 undetected; target 75%, gated from v1.1)
+kernel-e mutation score: 98.88% (176 detected, 2 undetected; target 75%, gated from v1.1)
 kernel-f mutation score: 99.59% (241 detected, 1 undetected; target 75%, gated from v1.1)
 kernel-g mutation score: 98.99% (196 detected, 2 undetected; target 75%, gated from v1.1)
 kernel-i mutation score: 100.00% (82 detected, 0 undetected; target 75%, gated from v1.1)
-kernel-j mutation score: 99.31% (433 detected, 3 undetected; 4 mutants outside the shard not counted; target 75%, gated from v1.1)
+kernel-j mutation score: 99.40% (497 detected, 3 undetected; 4 mutants outside the shard not counted; target 75%, gated from v1.1)
 kernel-k mutation score: 85.37% (35 detected, 6 undetected; 143 mutants outside the shard not counted; target 75%, gated from v1.1)
 kernel-h mutation score: 98.53% (336 detected, 5 undetected; target 75%, gated from v1.1)
 claims mutation score: 85.75% (2034 detected, 338 undetected; target 75%, gated from v1.1)
 ```
 
 Against main before this run (scheduled nightly 40295998953): num 93.47 %, kernel 98.33 %,
-claims 85.79 %. The kernel's six remaining kernel-k survivors are the equivalent mutants listed
-under Uncertain. The first dispatch on the earlier head 0ed6541 (run 40316909058) was cancelled
-by a push; its gate reported "no report" for the cancelled shards, not a failure of the code.
+claims 85.79 %. The history of this branch's nightlies: the first dispatch
+(https://github.com/youseng/geomira/actions/runs/40317340317, 24a9e94) passed the gate with
+kernel-k at 41.27 % (Done item 12; kernel-j took about 80 minutes for its 730 new mutants);
+f7592cd (https://github.com/youseng/geomira/actions/runs/40330537339) brought kernel-k to
+85.37 %; 143eb86 (https://github.com/youseng/geomira/actions/runs/40338887012, ADR-0034) left
+one new survivor in `mobiusProblem` (`re² − im²`, no test had a complex determinant), killed by
+de484e8, and showed the pre-existing `foot` mutant listed under Uncertain. Every kernel-k
+survivor left is an equivalent mutant listed there. Dispatches cancelled by a later push
+reported "no report" for their shards, not a failure of the code.
 
-### CI on GitHub (head f7592cd; the commit marking the run ACCEPTED changes only docs)
+### CI on GitHub (code head de484e8; the commit marking the run ACCEPTED changes only docs)
 
-- ci (push) https://github.com/youseng/geomira/actions/runs/40330531463: success (verify, both
-  builds, Playwright in Chromium, Firefox and WebKit, including
-  `e2e/flows-inversion.spec.ts`).
-- ci (pull request) https://github.com/youseng/geomira/actions/runs/40330537560: success.
-- deploy https://github.com/youseng/geomira/actions/runs/40330531477: success (build and e2e;
-  Pages deploy and smoke run only on main).
-- tex https://github.com/youseng/geomira/actions/runs/40330531564 (push) and
-  https://github.com/youseng/geomira/actions/runs/40330537529 (pull request): success.
-- nightly https://github.com/youseng/geomira/actions/runs/40330537339 (dispatch): success (the
+- ci (push) https://github.com/youseng/geomira/actions/runs/40341976203: success (verify, both
+  builds, Playwright in Chromium, Firefox and WebKit, including `e2e/flows-inversion.spec.ts`).
+- deploy https://github.com/youseng/geomira/actions/runs/40341976329: success (build and e2e;
+  the Pages deploy and smoke run only on main).
+- tex https://github.com/youseng/geomira/actions/runs/40341976108 (push) and
+  https://github.com/youseng/geomira/actions/runs/40341984711 (pull request): success.
+- nightly https://github.com/youseng/geomira/actions/runs/40341985091 (dispatch): success (the
   test suite with NIGHTLY=1, every mutation shard and the gate above).
+- ci (pull request) https://github.com/youseng/geomira/actions/runs/40341984837: its verify
+  step (typecheck, lint, depcruise, rules, every unit test) passed; the job then sat over 20
+  minutes in `playwright install --with-deps` (the runner's apt mirror, as twice before on
+  24a9e94; no test of ours had started). The docs commit's own PR run replaces it and is
+  checked after the push.
 
-On the earlier head 24a9e94 the PR's ci verify and the deploy build were cancelled at their
-time limits inside `playwright install --with-deps` (the runner's apt mirror delivered packages
-minutes apart; no test had started); each was re-run once and passed
-(https://github.com/youseng/geomira/actions/runs/40317338161,
+On 24a9e94 the PR's ci verify and the deploy build were cancelled the same way at their time
+limits and passed on one re-run (https://github.com/youseng/geomira/actions/runs/40317338161,
 https://github.com/youseng/geomira/actions/runs/40317332814).
 
 ## Requests
@@ -291,7 +303,7 @@ https://github.com/youseng/geomira/actions/runs/40317332814).
 - The GUI keys: every Shift letter is taken, so ADR-0034 put Feet inversion on `o` (the last
   free letter) and √(bc/2) inversion on `,`. The next GUI tool needs a key scheme (for example
   a second palette page or keys made optional, which is an editor change for its own ADR).
-- The test-count floor is raised to 3282 (docs/test-count.txt).
+- The test-count floor is raised to 3305 (docs/test-count.txt).
 
 ---
 
