@@ -21,6 +21,7 @@ export type ToolId =
   | 'bisector'
   | 'ext_bisector'
   | 'symmedian'
+  | 'symmedian_point'
   | 'polar'
   | 'radical_axis'
   | 'circle'

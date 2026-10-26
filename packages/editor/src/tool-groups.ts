@@ -33,6 +33,7 @@ const GROUP_OF: Readonly<Record<ToolId, ToolGroupId>> = {
   bisector: 'lines',
   ext_bisector: 'lines',
   symmedian: 'lines',
+  symmedian_point: 'lines',
   tangent: 'lines',
   polar: 'lines',
   radical_axis: 'lines',

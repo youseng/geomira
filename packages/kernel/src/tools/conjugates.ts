@@ -1,6 +1,6 @@
 /**
  * v1.1 tools (SPEC §6.2, Run 13, ADR-0031): isogonal(P, A, B, C), symmedian(A, B, C) and
- * spiral_center(A, B, C, D). Each is rational in its arguments (no square root), so exact
+ * spiral_center(A, B, C, D); symmedian_point(A, B, C) (ADR-0033). Each is rational in its arguments (no square root), so exact
  * over Q and mod p.
  */
 import type { Field } from '@geomira/num/field';
@@ -64,6 +64,24 @@ function symmedian<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext):
   const sum = vAdd(F, vScale(F, t.u, b2), vScale(F, t.v, c2));
   const d = vScale(F, sum, F.div(F.one, F.add(b2, c2)));
   return { kind: 'line', p: { x: t.a.x, y: t.a.y }, d, lo: null, hi: null, chiral: false };
+}
+
+/**
+ * The symmedian (Lemoine) point K of triangle ABC (ADR-0033), the isogonal conjugate of the
+ * centroid: barycentrics a² : b² : c², computed relative to A (u = B − A, v = C − A):
+ * K = A + (b²·u + c²·v)/(a² + b² + c²), a² = |v − u|², b² = |v|², c² = |u|². Rational, so
+ * exact over Q and mod p. Degenerate cases (as the other triangle centers): coincident
+ * vertices → Undefined; collinear vertices → Undefined.
+ */
+function symmedianPoint<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
+  const t = triangle(F, args, ctx, 'symmedian_point');
+  if ('kind' in t) return t;
+  const [b2, c2] = [vDot(F, t.v, t.v), vDot(F, t.u, t.u)];
+  const a2 = d2(F, t.v, t.u);
+  // a² + b² + c² > 0: the vertices are distinct (triangle() checked them).
+  const sum = vAdd(F, vScale(F, t.u, b2), vScale(F, t.v, c2));
+  const K = vAdd(F, t.a, vScale(F, sum, F.div(F.one, F.add(a2, F.add(b2, c2)))));
+  return pointOf(K.x, K.y);
 }
 
 /**
@@ -162,7 +180,24 @@ export const CONJUGATE_TOOLS: readonly ToolSpec[] = [
     compute: symmedian,
     degenerate: ['coincident vertices → Undefined', 'collinear vertices → Undefined'],
     export: 'numeric',
-    doc: 'symmedian(A, B, C): the symmedian of triangle ABC from A (the median from A reflected in the bisector at A): the line from A to D on BC with BD : DC = AB² : AC²; achiral; exact. The symmedian point is isogonal(centroid(A, B, C), A, B, C).',
+    doc: 'symmedian(A, B, C): the symmedian of triangle ABC from A (the median from A reflected in the bisector at A): the line from A to D on BC with BD : DC = AB² : AC²; achiral; exact. The symmedian point is symmedian_point(A, B, C).',
+    examples: [{ args: [A, B, C] }],
+  },
+  {
+    id: 'symmedian_point',
+    name: 'symmedian_point',
+    family: 'points',
+    signatures: [
+      {
+        params: ['point', 'point', 'point'],
+        symmetry: [{ kind: 'permute', positions: [0, 1, 2], same: 'value' }],
+      },
+    ],
+    outputKinds: ['point'],
+    compute: symmedianPoint,
+    degenerate: ['coincident vertices → Undefined', 'collinear vertices → Undefined'],
+    export: 'numeric',
+    doc: 'symmedian_point(A, B, C): the symmedian (Lemoine) point K, where the three symmedians meet: the isogonal conjugate of the centroid, a² : b² : c² in barycentrics; exact.',
     examples: [{ args: [A, B, C] }],
   },
 ];

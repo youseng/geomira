@@ -20,6 +20,7 @@ import { TRANSFORM_PROPERTIES } from './helpers/transform-properties';
 import { DISPLAY_PROPERTIES } from './helpers/display-properties';
 import { V11_PROPERTIES } from './helpers/v11-properties';
 import { MOBIUS_PROPERTIES } from './helpers/mobius-properties';
+import { SYMMEDIAN_POINT_PROPERTIES } from './helpers/symmedian-point-properties';
 
 interface Property {
   readonly tools: readonly string[];
@@ -284,6 +285,7 @@ const PROPERTIES: readonly Property[] = [
   ...DISPLAY_PROPERTIES,
   ...V11_PROPERTIES,
   ...MOBIUS_PROPERTIES,
+  ...SYMMEDIAN_POINT_PROPERTIES,
   {
     tools: ['add', 'sub', 'mul', 'div', 'neg'],
     name: 'arithmetic: a − b = a + (−b), (a·b)/b = a, exact values carried',

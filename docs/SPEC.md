@@ -163,7 +163,7 @@ Sugar: `triangle A B C [acute|obtuse_at_A|…]` → three free points (determini
 hash of the line), polygon, `assume` lines. Right angles are constructed, never assumed.
 v1.1 tools (Run 13): `spiral_center`, `isogonal`, `symmedian`, `pole`,
 `radical_center`, `arc`.
-Run 14 (ADR-0032): `inversion(c)`, `inversion(O, k)`, and the presets `sqrt_bc`,
+`symmedian_point` (ADR-0033, the Lemoine point). Run 14 (ADR-0032): `inversion(c)`, `inversion(O, k)`, and the presets `sqrt_bc`,
 `orthocenter_inversion`, `inversion_fixing`, `inversion_swap` (compositions of the tools above).
 
 ### 6.3 Degenerate behaviour (each item is a test)

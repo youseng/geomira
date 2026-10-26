@@ -91,6 +91,7 @@ describe('createRegistry', () => {
       'spiral_center',
       'isogonal',
       'symmedian',
+      'symmedian_point',
       'pole',
       'radical_center',
       'arc',

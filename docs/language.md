@@ -332,6 +332,7 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `spiral_center` | points | `spiral_center(point, point, point, point)` | point | can succeed | — |
 | `isogonal` | points | `isogonal(point, point, point, point)` | point | can succeed | — |
 | `symmedian` | lines | `symmedian(point, point, point)` | line | can succeed | — |
+| `symmedian_point` | points | `symmedian_point(point, point, point)` | point | can succeed | — |
 | `pole` | points | `pole(linear, round)` | point | can succeed | — |
 | `radical_center` | points | `radical_center(round, round, round)` | point | can succeed | — |
 | `arc` | circles | `arc(point, point, point)` | circle | can succeed | — |

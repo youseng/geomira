@@ -71,6 +71,7 @@ const SAMPLES: Readonly<Record<string, readonly string[]>> = {
   sqrt_bc: ['B', 'A', 'C'],
   orthocenter_inversion: ['A', 'B', 'C'],
   inversion_swap: ['E', 'B', 'C'],
+  symmedian_point: ['A', 'B', 'C'],
 };
 
 /** Selectors of a sample (intersect of two circles needs one). */

@@ -346,6 +346,22 @@ isogonal(P, A, B, C): the isogonal conjugate of P in triangle ABC (the reflectio
   - `isogonal((2, 1), (0, 0), (4, 0), (1, 3))` → point (1, 1)
   - `isogonal((1, 1), (0, 0), (4, 0), (1, 3))` → point (2, 1)
 
+### symmedian_point
+
+symmedian_point(A, B, C): the symmedian (Lemoine) point K, where the three symmedians meet: the isogonal conjugate of the centroid, a² : b² : c² in barycentrics; exact.
+
+- Signatures: `symmedian_point(point, point, point)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `symmedian_point(point, point, point)`: arguments 1, 2, 3 in any order (the same value)
+- Degenerate cases:
+  - coincident vertices → Undefined
+  - collinear vertices → Undefined
+- Examples:
+  - `symmedian_point((0, 0), (4, 0), (1, 3))` → point (14/11, 12/11)
+
 ### pole
 
 pole(l, c): the pole of the line l with respect to c, the point whose polar is l (the inverse of polar); exact.
@@ -580,7 +596,7 @@ tangent_from(P, c, selectors): a tangent from P to c, the line through its touch
 
 ### symmedian
 
-symmedian(A, B, C): the symmedian of triangle ABC from A (the median from A reflected in the bisector at A): the line from A to D on BC with BD : DC = AB² : AC²; achiral; exact. The symmedian point is isogonal(centroid(A, B, C), A, B, C).
+symmedian(A, B, C): the symmedian of triangle ABC from A (the median from A reflected in the bisector at A): the line from A to D on BC with BD : DC = AB² : AC²; achiral; exact. The symmedian point is symmedian_point(A, B, C).
 
 - Signatures: `symmedian(point, point, point)`
 - Result: line
