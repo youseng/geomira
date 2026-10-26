@@ -19,6 +19,7 @@ import type { Registry } from './registry';
 import {
   formatSignature,
   type ArgSymmetry,
+  type GuaranteeTerm,
   type ExampleArg,
   type ExampleSelector,
   type ToolExample,
@@ -216,6 +217,31 @@ function sameConstructionLines(t: ToolSpec): string[] {
   return out;
 }
 
+/** A guarantee term as the reference shows it: `result`, `#1` (the first argument), calls. */
+function termText(x: GuaranteeTerm): string {
+  if (x === 'result') return 'result';
+  if (typeof x === 'number') return `#${String(x + 1)}`;
+  if ('lit' in x) return x.lit;
+  return `${x.tool}(${x.args.map(termText).join(', ')})`;
+}
+
+/** The facts the tool's results have by construction (ADR-0035), per overload. */
+function guaranteeLines(t: ToolSpec): string[] {
+  const facts = t.signatures.flatMap((s) =>
+    (s.guarantees ?? []).length === 0
+      ? []
+      : [
+          `\`${formatSignature(t.name, s)}\`: ${(s.guarantees ?? [])
+            .map((g) => `${g.claim}(${g.args.map(termText).join(', ')})`)
+            .join('; ')}`,
+        ],
+  );
+  return [
+    `- By construction:${facts.length === 0 ? ' nothing' : ''}`,
+    ...facts.map((f) => `  - ${f}`),
+  ];
+}
+
 function toolSection(registry: Registry, t: ToolSpec): string[] {
   const lines = [`### ${t.name}`, '', t.doc, ''];
   lines.push(
@@ -225,6 +251,7 @@ function toolSection(registry: Registry, t: ToolSpec): string[] {
   lines.push(`- Exact run (RationalField): ${exactness(registry, t)}`);
   lines.push(`- Export: ${exportText(t.export)}`);
   lines.push(...sameConstructionLines(t));
+  lines.push(...guaranteeLines(t));
   lines.push(`- Degenerate cases:${t.degenerate.length === 0 ? ' none' : ''}`);
   for (const d of t.degenerate) lines.push(`  - ${d}`);
   lines.push('- Examples:');
