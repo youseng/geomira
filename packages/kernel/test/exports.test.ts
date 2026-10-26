@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import pkg from '../package.json' with { type: 'json' };
 import * as context from '../src/context';
 import * as constructionKey from '../src/construction-key';
+import * as guarantees from '../src/guarantees';
 import * as figureSize from '../src/figure-size';
 import * as limits from '../src/limits';
 import * as derived from '../src/derived';
@@ -178,6 +179,55 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './incidence': {
     module: incidence,
     names: ['circleGap', 'requireOnCircle', 'requireOnLine', 'rootGap'],
+  },
+  './guarantees': {
+    module: guarantees,
+    names: [
+      'BISECTOR',
+      'CENTROID',
+      'CIRCLE_CENTER_POINT',
+      'CIRCLE_CENTER_RADIUS',
+      'CIRCLE_THREE',
+      'CIRCUMCENTER',
+      'DIAMETER_CIRCLE',
+      'DIVIDE',
+      'EXCENTER',
+      'EXCIRCLE',
+      'EXT_BISECTOR',
+      'FOOT_LINE',
+      'FOOT_POINTS',
+      'GUARANTEE_TABLE',
+      'HOMOTHETY_POINT',
+      'INCENTER',
+      'INCIRCLE',
+      'MIDPOINT',
+      'NINEPOINT_CENTER',
+      'NINEPOINT_CIRCLE',
+      'ON_BOTH',
+      'ON_FIRST',
+      'ORTHOCENTER',
+      'PARALLEL',
+      'PERP',
+      'PERP_BISECTOR',
+      'POLAR',
+      'POLE',
+      'RADICAL_AXIS',
+      'RADICAL_CENTER',
+      'REFLECT_IN_LINE',
+      'REFLECT_IN_POINT',
+      'ROTATE_POINT',
+      'SYMMEDIAN',
+      'SYMMEDIAN_POINT',
+      'TANGENT_AT',
+      'TANGENT_FROM',
+      'TANGENT_POINT',
+      'THROUGH_BOTH',
+      'THROUGH_THREE',
+      'TRANSLATE_POINT',
+      'guaranteesFor',
+      'paramsKey',
+      'withGuarantees',
+    ],
   },
   './construction-key': {
     module: constructionKey,

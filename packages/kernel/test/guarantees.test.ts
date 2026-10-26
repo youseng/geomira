@@ -6,7 +6,14 @@
  * claims: guarantees-hold.test.ts.)
  */
 import { describe, expect, it } from 'vitest';
-import { GUARANTEE_TABLE, paramsKey, withGuarantees } from '../src/guarantees';
+import {
+  GUARANTEE_TABLE,
+  guaranteesFor,
+  ON_BOTH,
+  paramsKey,
+  REFLECT_IN_LINE,
+  withGuarantees,
+} from '../src/guarantees';
 import { createRegistry } from '../src/registry';
 import type { GuaranteeTerm } from '../src/tool';
 
@@ -74,7 +81,12 @@ describe('Signature.guarantees (ADR-0035)', () => {
     if (raw === undefined) throw new Error('point');
     expect(withGuarantees(raw)).toBe(raw);
     const mid = registry.get('midpoint');
-    expect(mid?.signatures[0]?.guarantees?.map((g) => g.claim)).toEqual(['collinear', 'length']);
+    expect(mid?.signatures[0]?.guarantees?.map((g) => g.claim)).toEqual([
+      'collinear',
+      'length',
+      'length',
+      'length',
+    ]);
     expect(mid?.signatures[0]?.symmetry).toBeDefined();
   });
 
@@ -83,5 +95,17 @@ describe('Signature.guarantees (ADR-0035)', () => {
       'point,point,point,point…',
     );
     expect(paramsKey({ params: [] })).toBe('');
+  });
+
+  it('guaranteesFor: the guarantees every fitting overload declares', () => {
+    const inter = registry.get('intersect');
+    const refl = registry.get('reflect');
+    expect(guaranteesFor(inter, [['line'], ['circle']])).toEqual(ON_BOTH);
+    expect(guaranteesFor(inter, [undefined, undefined])).toEqual(ON_BOTH);
+    expect(guaranteesFor(refl, [['point'], ['line']])).toEqual(REFLECT_IN_LINE);
+    // X of unknown kind: a point, a curve or a polygon; only the point's image has facts.
+    expect(guaranteesFor(refl, [undefined, ['line']])).toEqual([]);
+    expect(guaranteesFor(refl, [['transform']])).toEqual([]);
+    expect(guaranteesFor(undefined, [])).toEqual([]);
   });
 });

@@ -1,0 +1,25 @@
+{
+  "name": "@geomira/discovery",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts",
+    "./job": "./src/job.ts",
+    "./find": "./src/find.ts",
+    "./hunt": "./src/hunt.ts",
+    "./branch-fix": "./src/branch-fix.ts",
+    "./lemmas": "./src/lemmas.ts",
+    "./text": "./src/text.ts"
+  },
+  "dependencies": {
+    "@geomira/claims": "workspace:*",
+    "@geomira/kernel": "workspace:*",
+    "@geomira/num": "workspace:*"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

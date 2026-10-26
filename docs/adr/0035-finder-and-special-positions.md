@@ -144,8 +144,10 @@ what "trivial" means, or how positions are searched.
 
 ### Special positions (`hunt` job)
 
-13. **Search**: the screened candidates that are FALSE now and not construction facts, nearest
-    first (smallest residual; at most 24 targets, a cap shown), each solved for one free input of
+13. **Search**: the screened candidates that are FALSE now and not construction facts, the
+    simplest first (fewest objects: right angles, isosceles triangles, collinearities), the
+    nearest (smallest residual) among equals (at most 24 targets, a cap shown; the nearest by
+    residual alone are near misses of the measure pairing among six unrelated points), each solved for one free input of
     its closure at a time (free points: two degrees of freedom, gliders and params: one), by
     Gauss–Newton on the kind's float conditions (`algebra` over FloatField) with finite
     differences of step √EPS·size, at most 16 iterations and a move of at most half the figure's

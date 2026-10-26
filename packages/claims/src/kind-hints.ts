@@ -95,7 +95,7 @@ const HINTS: Readonly<Record<string, Pick<ClaimKindSpec, 'symmetry' | 'finder'>>
       { perm: [2, 3, 0, 1, 4], when: (lits) => is(lits, 0, 1n) },
     ],
     finder: {
-      literals: [[rational(1n)], [rational(2n)], [rational(3n)], [rational(3n, 2n)]],
+      literals: [[rational(1n)], [rational(2n)]],
       measure: LENGTH,
     },
   },

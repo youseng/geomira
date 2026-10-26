@@ -21,7 +21,9 @@
     "./randomize": "./src/randomize.ts",
     "./kind-registry": "./src/kind-registry.ts",
     "./symmetry": "./src/symmetry.ts",
-    "./screen": "./src/screen.ts"
+    "./screen": "./src/screen.ts",
+    "./free": "./src/free.ts",
+    "./expr-path": "./src/expr-path.ts"
   },
   "dependencies": {
     "@geomira/kernel": "workspace:*",

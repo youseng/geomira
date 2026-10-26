@@ -6,6 +6,7 @@
  * checks every one of them on registry-built figures (a wrong guarantee would hide a fact).
  * Terms: 'result', an argument position (0-based), a nested call, an exact literal.
  */
+import { fits, type ArgKinds } from './kinds';
 import type { Guarantee, GuaranteeTerm, Signature, ToolSpec } from './tool';
 
 const R = 'result';
@@ -25,9 +26,13 @@ export const ON_BOTH: readonly Guarantee[] = [g('on', R, 0), g('on', R, 1)];
 /** A glider lies on its curve. */
 export const ON_FIRST: readonly Guarantee[] = [g('on', R, 0)];
 
+const TWO: GuaranteeTerm = { lit: '2' };
+
 export const MIDPOINT: readonly Guarantee[] = [
   g('collinear', R, 0, 1),
   g('length', 0, R, R, 1, ONE),
+  g('length', 0, 1, 0, R, TWO),
+  g('length', 0, 1, R, 1, TWO),
 ];
 
 export const DIVIDE: readonly Guarantee[] = [g('collinear', R, 0, 1)];
@@ -289,4 +294,17 @@ export function withGuarantees(spec: ToolSpec): ToolSpec {
     return facts === undefined ? s : { ...s, guarantees: facts };
   });
   return { ...spec, signatures };
+}
+
+/**
+ * The guarantees every overload that arguments of these static kinds can match declares (a
+ * key does not evaluate, so it cannot know the overload a call resolves to; an unknown kind
+ * matches every overload of the arity), as symmetriesFor does for symmetries. Degenerate: no
+ * overload fits, or the overloads disagree → none.
+ */
+export function guaranteesFor(spec: ToolSpec | undefined, args: ArgKinds): readonly Guarantee[] {
+  const takes = (spec?.signatures ?? []).filter((s) => fits(s, args));
+  const [first, ...others] = takes;
+  if (first === undefined) return [];
+  return (first.guarantees ?? []).filter((g) => others.every((o) => o.guarantees?.includes(g)));
 }
