@@ -13,11 +13,14 @@ links, static site.
 v1.1 (Runs 12–13, before Phase 2): single-file offline build, PWA, views UI, long-tail
 tools (spiral_center, isogonal, symmedian, pole, radical_center, arc), mutation-testing
 gates. Run 14 (ADR-0032): inversion through Möbius maps (`inversion` and the presets of
-ADR-0032), the range `outside` flag.
+ADR-0032), the range `outside` flag. Run 17 (ADR-0035, ADR-0036; before Run 16, Run 15
+skipped): discovery: the finder ("what is special?"), special-position hunting, lemma tags,
+branch-fix diagnosis.
 Phase 2 (must not be referenced by v1 code; the extension points in §18 are built and
 tested in v1): projective maps (inversion and Möbius maps moved to Run 14 by ADR-0032),
 conics and projective tools, the symbolic
-prover, the finder, special-position hunting, branch-fix diagnosis, the problem library,
+prover (the finder, special-position hunting and branch-fix diagnosis moved to Run 17 by
+ADR-0035 and ADR-0036), the problem library,
 write-ups, loci, animation, macros, accounts.
 
 ## 2. Repository and dependency rules
@@ -31,6 +34,7 @@ packages/scene    viewport, scene builder, clipping, labels, hit-testing
 packages/editor   editor core: applyEdit, history, selection, tool state machine, GUI
                   selector choice, autosave policy, share links, debug report (no DOM)
 packages/export   SVG, PNG (via scene), TikZ, Asymptote, LaTeX text escaping
+packages/discovery the finder, special positions, lemma tags, branch-fix diagnosis (ADR-0035)
 apps/web          React UI, canvas renderer, worker host
 docs/             SPEC.md, STATUS.md, adr/, language.md (generated),
                   examples-source.md, library-source.md (maintainer), beta-reports/
@@ -38,9 +42,9 @@ examples/         *.geo files (maintainer statements + classical theorems)
 
 Allowed imports (dependency-cruiser enforces): num → (none) · kernel → num ·
 claims → kernel, num · lang → kernel, claims, num · scene → kernel, num ·
-editor → kernel, claims, lang, scene, num · export → scene, kernel, lang, num ·
-apps/web → all. The tool registry is a VALUE from `createRegistry()`, passed as a
-parameter, never a singleton; tests may build extended registries.
+editor → kernel, claims, lang, scene, num, discovery · export → scene, kernel, lang, num ·
+discovery → kernel, claims, num (ADR-0035) · apps/web → all. The tool registry is a VALUE
+from `createRegistry()`, passed as a parameter, never a singleton; tests may build extended registries.
 
 ## 3. Numerics (packages/num)
 ### 3.1 Tolerances (tolerance.ts is the only file with tolerance literals)
@@ -134,6 +138,8 @@ existing layers; I8 version current.
   compute<T>(F: Field<T>, args, selectors, ctx) → Value<T>   // the ONLY implementation
   candidates?<T>(F, args, ctx) → Value<T>[]                   // branchable tools
   degenerate: string[] (each a test), export mapping or 'numeric', doc, examples }
+Signatures also carry data read elsewhere: `symmetry` (ADR-0029), `guarantees` (the facts a
+result has by construction, as claim templates: ADR-0035), `radical`, `absolute`, `preserves`.
 Nothing outside the registry enumerates tools.
 
 ### 6.2 v1 tool set
@@ -252,7 +258,8 @@ Im(z₁ⁿ·conj(z₂)) = 0, NDG z₁ ≠ 0 and z₂ ≠ 0 (for n = 1 this is th
 Lengths enter as squares. POLYNOMIAL KINDS (the whitelist for the prime-field rung):
 collinear, concyclic, concurrent, parallel, perpendicular, on, tangent, equal points,
 length and ratio equalities, directed angles. Undirected angles and anything involving
-order or inequality are NOT polynomial kinds.
+order or inequality are NOT polynomial kinds. Kinds also carry their argument symmetries and
+optional finder hints (ADR-0035); the kinds are a registry value (`claimKindRegistry`).
 
 ### 10.2 Three-valued evaluation
 `evalClaim` → true | false | undefined(reason) for the current figure: NDG failure →
@@ -375,7 +382,8 @@ generated from data; mobile (390×664) pan, pinch, drag and panels work. Views U
 ## 16. Worker job protocol
 `runJob(job)` is a pure generator in packages/claims yielding progress after each sample
 (cancellable, time-sliceable). Jobs: `{ kind: 'testClaim', regime: 'local'|'global',
-docText, claim, seed, n }` (Phase 2 adds 'prove', 'find'). apps/web runs jobs in a Web
+docText, claim, seed, n }`; packages/discovery adds 'find', 'hunt' and 'branchFix' (Run 17,
+ADR-0035, ADR-0036; Phase 2 adds 'prove'). apps/web runs jobs in a Web
 Worker; without workers, the page runs them in ≤ 16 ms slices (tested in v1.1 from
 file://).
 
