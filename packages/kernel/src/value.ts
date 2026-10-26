@@ -34,6 +34,8 @@ export interface Point<T> extends Vec<T> {
  * unbounded. Line: (null, null); segment AB: p = A, d = B − A, [0, 1]; ray: [0, null).
  * `chiral` records how d behaves when the whole figure is mirrored (SPEC §4): directions
  * from two points are achiral, every 90° turn toggles the flag, parallels keep it.
+ * `outside` (ADR-0032, SPEC §18 E5): the two rays t ≤ lo and t ≥ hi instead (lo < hi, both
+ * bounded): the image of a segment through the center of an inversion. Absent = false.
  */
 export interface Line<T> {
   readonly kind: 'line';
@@ -42,6 +44,7 @@ export interface Line<T> {
   readonly lo: T | null;
   readonly hi: T | null;
   readonly chiral: boolean;
+  readonly outside?: true;
 }
 
 /** An arc runs counter-clockwise from `from` to `to` (points on the circle). */
@@ -109,7 +112,7 @@ export interface Str {
   readonly s: string;
 }
 
-/** z ↦ a·z + b, or a·z̄ + b when `anti`. Reserved, documented only: 'mobius', 'projective'. */
+/** z ↦ a·z + b, or a·z̄ + b when `anti`. Reserved, documented only: 'projective'. */
 export interface Similarity<T> {
   readonly type: 'similarity';
   readonly anti: boolean;
@@ -117,9 +120,24 @@ export interface Similarity<T> {
   readonly b: Complex<T>;
 }
 
+/**
+ * z ↦ (a·ẑ + b)/(c·ẑ + d), ẑ = z̄ when `anti` (ADR-0032): a Möbius map, defined up to a
+ * non-zero factor (never normalised), valid when ad − bc ≠ 0. Inversions are anti.
+ */
+export interface Mobius<T> {
+  readonly type: 'mobius';
+  readonly anti: boolean;
+  readonly a: Complex<T>;
+  readonly b: Complex<T>;
+  readonly c: Complex<T>;
+  readonly d: Complex<T>;
+}
+
+export type TransformData<T> = Similarity<T> | Mobius<T>;
+
 export interface Transform<T> {
   readonly kind: 'transform';
-  readonly t: Similarity<T>;
+  readonly t: TransformData<T>;
 }
 
 /** A degenerate or invalid result, with the reason shown to the user. */
@@ -142,7 +160,12 @@ export type DefinedValue<T> =
 
 export type Value<T> = DefinedValue<T> | Undefined | Inexact;
 
-export type ValueKind = Value<unknown>['kind'];
+/**
+ * The kinds of values, plus one STATIC kind (ADR-0032 decision 13): 'mobius' marks, beside
+ * 'transform', a transformation that may be a Möbius map, whose images of lines and circles
+ * may change kind. No value has kind 'mobius'.
+ */
+export type ValueKind = Value<unknown>['kind'] | 'mobius';
 
 /**
  * The kinds of SPEC §4's Value union. The display kinds ADR-0011 added are DISPLAY_KINDS;
@@ -266,6 +289,18 @@ export function numOf<T>(v: T, exact?: Rational): Num<T> {
   return exact === undefined ? { kind: 'number', v } : { kind: 'number', v, exact };
 }
 
+/** The entries of a map: a and b, then c and d for a Möbius map. */
+function transformNumbers<T>(t: TransformData<T>): T[] {
+  switch (t.type) {
+    case 'similarity':
+      return [t.a.re, t.a.im, t.b.re, t.b.im];
+    case 'mobius':
+      return [t.a.re, t.a.im, t.b.re, t.b.im, t.c.re, t.c.im, t.d.re, t.d.im];
+    default:
+      return assertNever(t, 'transform');
+  }
+}
+
 /** Every field element inside a value (coordinates, bounds, radii…), in a fixed order. */
 export function numbersOf<T>(v: Value<T>): T[] {
   switch (v.kind) {
@@ -290,7 +325,7 @@ export function numbersOf<T>(v: Value<T>): T[] {
     case 'polygon':
       return v.pts.flatMap((p) => [p.x, p.y]);
     case 'transform':
-      return [v.t.a.re, v.t.a.im, v.t.b.re, v.t.b.im];
+      return transformNumbers(v.t);
     case 'angle_mark':
       return [v.b.x, v.b.y, v.from.x, v.from.y, v.to.x, v.to.y];
     case 'segment_mark':

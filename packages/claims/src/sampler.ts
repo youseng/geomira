@@ -125,14 +125,27 @@ function gliderObject(ctx: Context, input: FreeInput): Value<number> | undefined
   return ctx.prep.gliderObjects.get(freeKey(input.id, input.path));
 }
 
-/** The t-range a line glider is drawn from (bounded sides as they are, open sides ±2·spread). */
-function lineRange(ctx: Context, input: FreeInput, t0: number): readonly [number, number, number] {
+/**
+ * The t-range a line glider is drawn from (bounded sides as they are, open sides ±2·spread),
+ * as [lo, hi, spread, toT]: a draw x in [lo, hi] gives the parameter toT(x). On the two rays
+ * `outside` (ADR-0032) the draw covers 2·spread on each ray, increasing across the gap, so
+ * sorted draws stay sorted.
+ */
+function lineRange(
+  ctx: Context,
+  input: FreeInput,
+  t0: number,
+): readonly [number, number, number, (x: number) => number] {
   const l = gliderObject(ctx, input);
   const len = l?.kind === 'line' ? Math.hypot(l.d.x, l.d.y) : 0;
   const spread = len > 0 ? ctx.size / len : 1;
+  if (l?.kind === 'line' && l.outside === true && l.lo !== null && l.hi !== null) {
+    const [a, b, w] = [l.lo, l.hi, 2 * spread];
+    return [0, 2 * w, spread, (x) => (x < w ? a - w + x : b + x - w)];
+  }
   const lo = l?.kind === 'line' && l.lo !== null ? l.lo : t0 - 2 * spread;
   const hi = l?.kind === 'line' && l.hi !== null ? l.hi : t0 + 2 * spread;
-  return [lo, hi, spread];
+  return [lo, hi, spread, (x) => x];
 }
 
 function tExponent(spread: number): number {
@@ -165,8 +178,10 @@ function sampleInput(ctx: Context, input: FreeInput, v: readonly Rational[]): Ra
       return [r.num === 0n ? dyadic(2 ** ctx.k, ctx.k) : r];
     }
     case 'line-glider': {
-      const [lo, hi, spread] = lineRange(ctx, input, at(0));
-      const t = local ? at(0) + (ctx.sigma / ctx.size) * spread * g() : ctx.rng.uniform(lo, hi);
+      const [lo, hi, spread, toT] = lineRange(ctx, input, at(0));
+      const t = local
+        ? at(0) + (ctx.sigma / ctx.size) * spread * g()
+        : toT(ctx.rng.uniform(lo, hi));
       return [dyadic(t, tExponent(spread))];
     }
     case 'stereo': {
@@ -232,8 +247,8 @@ function orderedAssignments(ctx: Context, group: OrderedGroup): Assignment[] {
     }
     case 'line-glider': {
       const t0 = toNumber(readFree(ctx.prep.doc, first)?.[0] ?? fromInteger(0));
-      const [lo, hi, spread] = lineRange(ctx, first, t0);
-      const ts = sorted(lo, hi);
+      const [lo, hi, spread, toT] = lineRange(ctx, first, t0);
+      const ts = sorted(lo, hi).map(toT);
       return group.inputs.map((input, i) => ({
         input,
         values: [dyadic(ts[i] ?? 0, tExponent(spread))],

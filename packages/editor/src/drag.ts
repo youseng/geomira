@@ -19,6 +19,7 @@ import { dragThrough } from '@geomira/kernel/drag';
 import { evaluate, type Evaluation } from '@geomira/kernel/evaluate';
 import { call, lit, type CallExpr, type Expr } from '@geomira/kernel/expr';
 import { dragParameter, type GliderForm } from '@geomira/kernel/glider';
+import { localScale } from '@geomira/kernel/transform/apply-map';
 import type { Value, Vec } from '@geomira/kernel/value';
 import { isInexact } from '@geomira/num/field';
 import { FloatField } from '@geomira/num/float-field';
@@ -157,15 +158,21 @@ export function dragDefinition(
   return call('on', [objExpr, ...args]);
 }
 
-/** |a| of every map from an image down to its user source (the image's scale factor). */
+/**
+ * The scale factor of every map from an image down to its user source (the image's scale
+ * factor): |a| of a similarity, and for a Möbius map its local scale |f′(x)| at the source's
+ * current position x (ADR-0032 decision 11; 1 when the source is not a point).
+ */
 export function chainScale(doc: Document, id: number, values: Evaluation<number>): number {
   let k = 1;
   let cur = findObject(doc, id);
   for (let guard = 0; cur?.managedBy !== undefined && guard < doc.objects.length; guard++) {
     const rule = findLayer(doc, cur.managedBy)?.rule;
     const t = rule === undefined ? undefined : values.values.get(rule.transform.id);
-    if (t?.kind === 'transform') k *= Math.hypot(t.t.a.re, t.t.a.im);
-    cur = findObject(doc, sourceOf(cur) ?? -1);
+    const src = sourceOf(cur);
+    const at = src === undefined ? undefined : values.values.get(src);
+    if (t?.kind === 'transform') k *= localScale(t.t, at?.kind === 'point' ? at : { x: 0, y: 0 });
+    cur = findObject(doc, src ?? -1);
   }
   return Number.isFinite(k) && k > 0 ? k : 1;
 }

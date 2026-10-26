@@ -71,6 +71,7 @@ function lineError(
   scale: number,
 ): number | string {
   if (xs.length !== 8) return 'not a line';
+  if (v.outside === true) return 'two rays have no variable';
   const p = { x: xs[0] ?? Number.NaN, y: xs[1] ?? Number.NaN };
   const d = { x: xs[2] ?? Number.NaN, y: xs[3] ?? Number.NaN };
   const n = Math.hypot(d.x, d.y);
@@ -94,6 +95,7 @@ function transformError(
   scale: number,
 ): number | string {
   if (xs.length !== 6) return 'not a transform';
+  if (v.t.type !== 'similarity') return 'not a similarity';
   const [bx = 0, by = 0, xx = 0, xy = 0, yx = 0, yy = 0] = xs;
   const { a, b, anti } = v.t;
   const asy = (z: V2): V2 => ({ x: bx + xx * z.x + xy * z.y, y: by + yx * z.x + yy * z.y });

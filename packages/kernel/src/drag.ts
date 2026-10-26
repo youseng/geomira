@@ -7,8 +7,8 @@
  * draggable, since its parameter is not free (SPEC §5). The
  * result is an edit (a redefinition of X, for applyDocEdit), never a document. Stated rule
  * (tested): if a map of the chain depends on X (X defines the mirror, the centre, …), the
- * image is NOT draggable, since moving X would move the map as well. Inversion (Phase 2)
- * inherits the rule unchanged.
+ * image is NOT draggable, since moving X would move the map as well. Inversion (ADR-0032)
+ * inherits the rule unchanged; a cursor at the image of the center has no preimage.
  */
 import { assertNever } from '@geomira/num/assert';
 import { FloatField } from '@geomira/num/float-field';
@@ -21,7 +21,8 @@ import { call, lit, type Expr } from './expr';
 import { dragParameter, type GliderForm, type GliderParameter } from './glider';
 import { dependentClosure } from './graph';
 import { sourceOf } from './derived';
-import { inverseSimilarity, mapPoint, similarityProblem } from './similarity';
+import { applyMap } from './transform/apply-map';
+import { inverseMap, mapProblem } from './transform/mobius';
 import type { Value, Vec } from './value';
 
 export type DragThrough =
@@ -58,9 +59,17 @@ function preimage(
     const t = values.values.get(id);
     const name = findObject(doc, id)?.name ?? '?';
     if (t?.kind !== 'transform') return `the transformation ${name} is undefined`;
-    const bad = similarityProblem(FloatField, t.t, name);
+    const bad = mapProblem(FloatField, t.t, name);
     if (bad !== undefined) return bad.reason;
-    p = mapPoint(FloatField, inverseSimilarity(FloatField, t.t), p);
+    const q = applyMap(
+      FloatField,
+      inverseMap(FloatField, t.t),
+      { kind: 'point', ...p },
+      values.ctx,
+    );
+    if (q.kind === 'undefined' || q.kind === 'inexact') return q.reason;
+    if (q.kind !== 'point') return `the preimage under ${name} is not a point`;
+    p = q;
   }
   return Number.isFinite(p.x) && Number.isFinite(p.y)
     ? p

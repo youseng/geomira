@@ -94,6 +94,11 @@ describe('createRegistry', () => {
       'pole',
       'radical_center',
       'arc',
+      'inversion',
+      'sqrt_bc',
+      'orthocenter_inversion',
+      'inversion_fixing',
+      'inversion_swap',
     ]);
     for (const t of REGISTRY.tools) {
       expect(t.id).toBe(t.name);

@@ -45,13 +45,15 @@ export function typeOfValue(v: Value<number>): AsyType | undefined {
     case 'point':
       return 'pair';
     case 'line':
-      return 'gmline';
+      // Two rays (ADR-0032) are not a gmline: drawn from the display list, like an arc.
+      return v.outside === true ? undefined : 'gmline';
     case 'circle':
       return 'gmcircle';
     case 'number':
       return 'real';
     case 'transform':
-      return 'transform';
+      // A Möbius map is not an Asymptote transform (ADR-0032): no variable, numeric images.
+      return v.t.type === 'similarity' ? 'transform' : undefined;
     case 'polygon':
       return 'path';
     case 'angle_mark':
@@ -94,6 +96,7 @@ function numeric(v: Value<number>): { code: string; helpers: string[] } | undefi
     case 'number':
       return { code: exactNum(v.v), helpers: [] };
     case 'transform': {
+      if (v.t.type !== 'similarity') return undefined;
       // z ↦ a·z + b, or a·z̄ + b: the matrix of a (complex multiplication), conjugated when anti.
       const { a, b, anti } = v.t;
       const [xx, xy, yx, yy] = anti ? [a.re, a.im, a.im, -a.re] : [a.re, -a.im, a.im, a.re];

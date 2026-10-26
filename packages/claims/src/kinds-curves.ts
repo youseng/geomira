@@ -27,11 +27,19 @@ import {
   type OrderItem,
 } from './kind';
 
-/** The range of a line as order items: lo·|d|² ≤ (P − p)·d ≤ hi·|d|². */
+/**
+ * The range of a line as order items: lo·|d|² ≤ (P − p)·d ≤ hi·|d|². The two rays `outside`
+ * (ADR-0032) are one item, (t − lo·|d|²)(t − hi·|d|²) ≥ 0 with t = (P − p)·d: an area once
+ * divided by |d|², so it is decided as an area.
+ */
 function rangeOrder<T>(F: Field<T>, P: Vec<T>, l: Line<T>): OrderItem<T>[] {
   const dd = vDot(F, l.d, l.d);
   const t = vDot(F, vSub(F, P, l.p), l.d);
   const what = `${argLabel(0)} lies outside the range of ${argLabel(1)}`;
+  if (l.outside === true && l.lo !== null && l.hi !== null) {
+    const value = F.mul(F.sub(t, F.mul(l.lo, dd)), F.sub(t, F.mul(l.hi, dd)));
+    return [{ value, norm: F.mul(dd, dd), dim: 'area', strict: false, what }];
+  }
   const out: OrderItem<T>[] = [];
   if (l.lo !== null)
     out.push({ value: F.sub(t, F.mul(l.lo, dd)), norm: dd, dim: 'length', strict: false, what });

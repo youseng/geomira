@@ -53,7 +53,10 @@ describe('valid float maps are closed under inversion', () => {
         valid += 1;
         const inv = direct('inverse', [transformOf(s)]);
         if (inv.kind !== 'transform') throw new Error(`10^${String(e)}: ${JSON.stringify(inv)}`);
-        expect(similarityProblem(FloatField, inv.t, 'x'), `10^${String(e)}`).toBeUndefined();
+        expect(
+          inv.t.type === 'similarity' ? similarityProblem(FloatField, inv.t, 'x') : 'a Möbius map',
+          `10^${String(e)}`,
+        ).toBeUndefined();
         const id = direct('compose', [transformOf(s), inv]);
         if (id.kind !== 'transform') throw new Error(`10^${String(e)}: ${JSON.stringify(id)}`);
         expect(Math.abs(id.t.a.re - 1), `10^${String(e)}`).toBeLessThan(1e-14);

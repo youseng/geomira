@@ -12,13 +12,17 @@ export type Dash = 'solid' | 'dashed' | 'dotted';
 /** The geometry of one drawn object, in world coordinates. */
 export type Shape =
   | { readonly kind: 'point'; readonly at: Vec2 }
-  /** The points p + t·u, t in [lo, hi] (null = unbounded), u a unit vector. */
+  /**
+   * The points p + t·u, t in [lo, hi] (null = unbounded), u a unit vector; with `outside`
+   * (ADR-0032), the two rays t ≤ lo and t ≥ hi.
+   */
   | {
       readonly kind: 'line';
       readonly p: Vec2;
       readonly u: Vec2;
       readonly lo: number | null;
       readonly hi: number | null;
+      readonly outside?: true;
     }
   /** A circle, or the counter-clockwise arc from angle `from` to `to` (radians). */
   | {

@@ -22,6 +22,7 @@ import { sourceOf, syncProblems } from '../../src/derived';
 import { evaluate } from '../../src/evaluate';
 import { assertInvariants } from '../../src/invariants';
 import { applySimilarity } from '../../src/similarity';
+import { applyMap } from '../../src/transform/apply-map';
 import { numbersOf, undef, type Value } from '../../src/value';
 import { REGISTRY } from '../helpers/doc';
 import { lawCount } from '../helpers/laws';
@@ -46,7 +47,7 @@ function expectedImage<T>(
   if (x.kind === 'undefined') return undef(`${names.x} is undefined`);
   if (x.kind === 'inexact') return x;
   if (t.kind !== 'transform') return undefined;
-  return applySimilarity(F, t.t, x);
+  return t.t.type === 'similarity' ? applySimilarity(F, t.t, x) : applyMap(F, t.t, x, { scale: 1 });
 }
 
 function lawsHold(doc: Document): void {

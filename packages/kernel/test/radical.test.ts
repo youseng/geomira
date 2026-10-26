@@ -138,6 +138,7 @@ describe('Signature.radical is not set needlessly', () => {
         ...['angle', 'bisector', 'cos', 'dangle', 'excenter', 'excircle', 'ext_bisector'],
         ...['incenter', 'incircle', 'on', 'radius', 'ratio', 'sin', 'sqrt', 'tan'],
         ...['dist', 'dist'],
+        ...['sqrt_bc'],
         ...Array<string>(4).fill('rotate'),
       ].sort(),
     );

@@ -37,10 +37,10 @@ c, d }` (complex entries): z ↦ (a·ẑ + b)/(c·ẑ + d), ẑ = z̄ when `anti
    With c = 0 exactly the map is the similarity (a/d)·ẑ + b/d and is applied as one; otherwise
    its POLE (the centre) is the point sent to infinity, −d/c (conjugated when anti).
 2. **compose and inverse.** Two similarities compose as before (similarity.ts unchanged). Any
-      other pair is multiplied as matrices: S∘T = M_S·M_T when S is direct, M_S·conj(M_T) when S
-      is anti; anti = anti_S xor anti_T; a similarity is [[a, b], [0, 1]]. No collapse test
-      (ADR-0019 decision 2: determinants multiply). The inverse is the adjugate [[d, −b], [−c, a]]
-      (conjugated when anti).
+   other pair is multiplied as matrices: S∘T = M_S·M_T when S is direct, M_S·conj(M_T) when S
+   is anti; anti = anti_S xor anti_T; a similarity a·ẑ + b is the matrix (a, b, 0, 1). No
+   collapse test (ADR-0019 decision 2: determinants multiply). The inverse is the adjugate
+   (d, −b, −c, a), conjugated when anti.
 3. **`inversion(O, k)`**: w = O + k / conj(z − O), the anti matrix (O, k − |O|², 1, −Ō), with
    ad − bc = −k. k = 0 (exact zero, or within EPS as an area in FloatField) → Undefined
    ("inversion: the power k is 0"). k < 0: the inversion with power |k| followed by the half
@@ -228,7 +228,35 @@ c, d }` (complex entries): z ↦ (a·ẑ + b)/(c·ẑ + d), ẑ = z̄ when `anti
     kinds, the frame rule, scene and export of two rays, and the Playwright flow "derive an
     inverted layer, build in it, drag an image".
 18. **Mutation testing**: the new kernel files under `transform/` join stryker.kernel.json's
-    scope; shards per ADR-0031 decision 20 (listed in scripts/mutation-shards.ts).
+    scope. The frozen shard test keeps eleven kernel shards, so they join existing ones by
+    weight (scripts/mutation-shards.ts, as ADR-0031 decision 20 did): `j-core.ts` and
+    `proj-range.ts` kernel-a; `j-lines.ts` and `j-circles.ts` kernel-b; the tool specs
+    (`tools/map-ops.ts`, `transform/inversion-tools.ts`) kernel-j; `mobius.ts` and
+    `apply-map.ts` kernel-k. compose, inverse and apply moved from `tools/transforms.ts` (at
+    its 400-line limit) to `tools/map-ops.ts`, unchanged for similarities; transforms.ts's line
+    ranges are re-cut between top-level statements (1–132, 133–265, 266–end).
+19. **The layer line names the map.** The brief writes `@layer inv = image(inversion(w),
+main)`; ADR-0009's grammar takes a name there (a rule refers to a transform object), so the
+    text is `f = inversion(w)` and `@layer inv = image(f, main)`, as for every derived layer.
+    The language is unchanged.
+
+## Frozen tests changed under this ADR
+
+`Transform.t` became a union, so two frozen tests that pass a transform value to a
+similarity-only function no longer typecheck. Each change is type-level and equivalent for
+similarities (commit citing this ADR):
+
+- `packages/kernel/test/inverse-range.test.ts`: `similarityProblem(FloatField, inv.t, 'x')`
+  becomes `inv.t.type === 'similarity' ? similarityProblem(…) : 'a Möbius map'` (still
+  expected undefined, so a Möbius result would now fail the test: stronger).
+- `packages/kernel/test/laws/l13-model.test.ts`: `applySimilarity(F, t.t, x)` becomes
+  `t.t.type === 'similarity' ? applySimilarity(F, t.t, x) : applyMap(F, t.t, x, …)` (one
+  import line added); the model's maps are similarities, so the law checks the same images.
+
+Lines only added: `registry.test.ts` (five names), `radical.test.ts` (sqrt_bc),
+`construction-key.test.ts` (three samples), `degenerate.test.ts` and
+`tools.property.test.ts` (one import and one spread each), the kernel's `exports.test.ts`
+(two subpaths).
 
 ## Consequences
 

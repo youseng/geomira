@@ -32,6 +32,7 @@ import { INTERSECT_CURVE_CASES, TANGENT_CASES } from './helpers/degenerate-branc
 import { NEARLY_COINCIDENT_CASES } from './helpers/degenerate-nearly';
 import { TRANSFORM_CASES } from './helpers/degenerate-transforms';
 import { APPLY_DISPLAY_CASES, DISPLAY_CASES } from './helpers/degenerate-display';
+import { MOBIUS_CASES } from './helpers/degenerate-mobius';
 import {
   ARC_INTERSECT_CASES,
   ARC_ON_CASES,
@@ -268,6 +269,7 @@ const CASES: Record<string, Record<string, () => void>> = {
   other: { ...GLIDER_CASES.other, ...ARC_OTHER_CASES },
   tangent_point: { ...TANGENT_CASES.tangent_point, ...ARC_TANGENT_CASES },
   tangent_from: { ...TANGENT_CASES.tangent_from, ...ARC_TANGENT_CASES },
+  ...MOBIUS_CASES,
 };
 
 describe('degenerate cases (ToolSpec.degenerate), each a test', () => {
