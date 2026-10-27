@@ -22,8 +22,25 @@ import { claimKey, type KeyArg } from '@geomira/claims/symmetry';
 import { drain, TICK, type Ticking } from './ticking';
 import { objectKey, termSteps, type Instance, type Terms } from './terms';
 import { UnionFind } from './uf';
-import type { ClosureView } from './closure-view';
+import type { ClosureState, TermArg } from './closure-view';
 import { constructionRule } from './rules';
+import {
+  equalDistances,
+  incidences,
+  merge,
+  parallelsThroughOne,
+  radii,
+  relate,
+  type Sets,
+} from './closure-merge';
+import {
+  fixedIncidences,
+  inversionPairs,
+  mapInstances,
+  mapLengths,
+  mapUnions,
+} from './closure-maps';
+import { midpointRules } from './closure-mid';
 
 /** A fact about the figure's objects (a candidate, or a reported finding). */
 export interface FactData {
@@ -31,9 +48,7 @@ export interface FactData {
   readonly args: readonly ScreenArg[];
 }
 
-type Sets = Map<string, Set<string>>;
-
-export class Closure implements ClosureView {
+export class Closure implements ClosureState {
   readonly points = new UnionFind();
   readonly lines = new UnionFind();
   readonly circles = new UnionFind();
@@ -51,6 +66,9 @@ export class Closure implements ClosureView {
   readonly ratios = new Set<string>();
   /** Canonical keys of every instance (the generic rule). */
   readonly generic = new Set<string>();
+  readonly virtualCenters = new Map<string, string>();
+  readonly mids = new Set<string>();
+  readonly isosceles = new Set<string>();
 
   constructor(
     readonly terms: Terms,
@@ -83,165 +101,92 @@ export class Closure implements ClosureView {
   lineThrough(a: string, b: string): string | undefined {
     const [pa, pb] = [this.points.find(a), this.points.find(b)];
     if (pa === pb) return undefined;
-    for (const [l, s] of this.lineSets) if (s.has(pa) && s.has(pb)) return l;
+    for (const l of this.linesAt(pa)) if (this.lineSets.get(l)?.has(pb) === true) return l;
     return undefined;
   }
+
+  /** The line classes through a point class, indexed once per `lineSets` (merges replace it). */
+  private linesAt(p: string): readonly string[] {
+    if (this.lineIndex?.sets !== this.lineSets) {
+      const at = new Map<string, string[]>();
+      for (const [l, s] of this.lineSets)
+        for (const q of s) {
+          const list = at.get(q);
+          if (list === undefined) at.set(q, [l]);
+          else list.push(l);
+        }
+      this.lineIndex = { sets: this.lineSets, at };
+    }
+    return this.lineIndex.at.get(p) ?? [];
+  }
+
+  private lineIndex: { sets: Sets; at: Map<string, string[]> } | undefined;
+
+  /**
+   * Whether |s| = k·|t| is a recorded ratio of their length classes. The index is built on first
+   * use and rebuilt when ratios were added; it is read once the closure is built (the length
+   * classes no longer change).
+   */
+  hasRatio(s: string, t: string, k: string): boolean {
+    if (this.ratioIndex?.size !== this.ratios.size) {
+      const keys = new Set<string>();
+      for (const r of this.ratios) {
+        const [x, y, kk] = r.split('&');
+        if (x !== undefined && y !== undefined && kk !== undefined)
+          keys.add(`${this.lengths.find(x)}&${this.lengths.find(y)}&${kk}`);
+      }
+      this.ratioIndex = { size: this.ratios.size, keys };
+    }
+    return this.ratioIndex.keys.has(`${this.lengths.find(s)}&${this.lengths.find(t)}&${k}`);
+  }
+
+  private ratioIndex: { size: number; keys: Set<string> } | undefined;
 
   parallelClass(lineClass: string): string {
     return this.parallels.find(lineClass);
   }
 
+  /** Point class → its position in the figure (set when the closure is built). */
+  readonly place = new Map<string, { readonly x: number; readonly y: number }>();
+  /** The band two points must be apart by (the figure's length band). */
+  band = Infinity;
+
+  at(k: string): { readonly x: number; readonly y: number } | undefined {
+    return this.place.get(this.points.find(k));
+  }
+
+  apart(a: string, b: string): boolean {
+    const [pa, pb] = [this.at(a), this.at(b)];
+    return (
+      pa !== undefined &&
+      pb !== undefined &&
+      (Math.abs(pa.x - pb.x) > this.band || Math.abs(pa.y - pb.y) > this.band)
+    );
+  }
+
   /** Whether `kind`(args) follows from the construction (ADR-0035 decision 7). */
   isConstruction(fact: FactData): boolean {
-    const spec = this.kinds.get(fact.kind);
+    return this.holds(fact.kind, termArgs(fact.args));
+  }
+
+  /** Whether `kind` over these terms follows from the closure (keys need not be objects). */
+  holds(kind: string, args: readonly TermArg[]): boolean {
+    const spec = this.kinds.get(kind);
     if (spec === undefined) return false;
-    const keys = fact.args.map((a) => ('id' in a ? objectKey(a.id) : undefined));
-    const generic: KeyArg[] = fact.args.map((a, i) => {
-      const k = keys[i];
-      return 'lit' in a ? { lit: a.lit } : { key: k === undefined ? '' : this.classOf(k) };
-    });
+    const keys = args.map((a) => ('key' in a ? a.key : undefined));
+    const generic: KeyArg[] = args.map((a) =>
+      'lit' in a ? { lit: a.lit } : { key: this.classOf(a.key) },
+    );
     if (this.generic.has(claimKey(spec, generic))) return true;
-    return constructionRule(this, fact.kind, keys, fact.args);
+    const pts = keys.filter((k): k is string => k !== undefined);
+    if (kind === 'concyclic' && inversionPairs(this, pts)) return true;
+    return constructionRule(this, kind, keys, args);
   }
 }
 
-function addTo(sets: Sets, k: string, member: string): void {
-  const s = sets.get(k) ?? new Set<string>();
-  s.add(member);
-  sets.set(k, s);
-}
-
-/** Line and circle sets from the incidence instances (on, collinear, concyclic). */
-function incidences(c: Closure, inst: readonly Instance[]): { lines: Sets; circles: Sets } {
-  const lines: Sets = new Map();
-  const circles: Sets = new Map();
-  inst.forEach((x, i) => {
-    const [p, q] = x.args;
-    if (x.claim === 'on' && p !== undefined && q !== undefined) {
-      if (c.isLine(q)) addTo(lines, q, p);
-      else if (c.isCircle(q)) addTo(circles, q, p);
-    }
-    if (x.claim === 'collinear') for (const a of x.args) addTo(lines, `~col${String(i)}`, a);
-    if (x.claim === 'concyclic') for (const a of x.args) addTo(circles, `~cyc${String(i)}`, a);
-  });
-  return { lines, circles };
-}
-
-/** Whether `need` of the shared points are pairwise apart in the figure (brute force: sets are small). */
-function apartAmong(
-  shared: readonly string[],
-  need: number,
-  apart: (a: string, b: string) => boolean,
-): boolean {
-  if (need === 2) return shared.some((p, i) => shared.slice(i + 1).some((q) => apart(p, q)));
-  return shared.some((p, i) =>
-    shared
-      .slice(i + 1)
-      .some(
-        (q, j) => apart(p, q) && shared.slice(i + j + 2).some((r) => apart(p, r) && apart(q, r)),
-      ),
-  );
-}
-
-/**
- * One merging pass: two classes sharing `need` points that are pairwise APART in the current
- * figure are one (two lines through two distinct points, two circles through three). Points
- * that are only known as different terms may coincide (the medians' intersection is G), so
- * the figure decides distinctness; a merge then holds wherever those points stay apart.
- */
-function merge(
-  uf: UnionFind,
-  raw: Sets,
-  points: UnionFind,
-  need: number,
-  apart: (a: string, b: string) => boolean,
-): { sets: Sets; changed: boolean } {
-  const sets: Sets = new Map();
-  for (const [k, s] of raw) for (const p of s) addTo(sets, uf.find(k), points.find(p));
-  // Only classes that share a point can merge: index the classes through each point, and
-  // collect the shared points of each such pair (canonical pair order: the smaller key first).
-  const through = new Map<string, string[]>();
-  for (const [k, s] of sets)
-    for (const p of s) {
-      const ks = through.get(p);
-      if (ks === undefined) through.set(p, [k]);
-      else ks.push(k);
-    }
-  const shared = new Map<string, { a: string; b: string; pts: string[] }>();
-  for (const [p, ks] of through)
-    for (let i = 0; i < ks.length; i++)
-      for (let j = i + 1; j < ks.length; j++) {
-        const [x, y] = [ks[i] ?? '', ks[j] ?? ''];
-        const [a, b] = x < y ? [x, y] : [y, x];
-        const key = `${a}\u0000${b}`;
-        const e = shared.get(key);
-        if (e === undefined) shared.set(key, { a, b, pts: [p] });
-        else e.pts.push(p);
-      }
-  let changed = false;
-  for (const { a, b, pts } of shared.values())
-    if (pts.length >= need && apartAmong(pts, need, apart) && uf.union(a, b)) changed = true;
-  return { sets, changed };
-}
-
-/** Lines of one parallel class through one point are one line; returns whether any merged. */
-function parallelsThroughOne(c: Closure): boolean {
-  const byClass = new Map<string, string[]>();
-  for (const l of c.lineSets.keys()) {
-    const p = c.parallelClass(l);
-    byClass.set(p, [...(byClass.get(p) ?? []), l]);
-  }
-  let changed = false;
-  for (const ls of byClass.values())
-    for (let i = 0; i < ls.length; i++)
-      for (let j = i + 1; j < ls.length; j++) {
-        const [a, b] = [c.lineSets.get(ls[i] ?? ''), c.lineSets.get(ls[j] ?? '')];
-        if (a !== undefined && b !== undefined && [...a].some((p) => b.has(p)))
-          if (c.lines.union(ls[i] ?? '', ls[j] ?? '')) changed = true;
-      }
-  return changed;
-}
-
-function relate(c: Closure, inst: readonly Instance[]): void {
-  for (const x of inst) {
-    const [a, b, p, q, k] = x.args;
-    if (a === undefined || b === undefined) continue;
-    if (x.claim === 'parallel' && c.isLine(a) && c.isLine(b))
-      c.parallels.union(c.lines.find(a), c.lines.find(b));
-    if (x.claim === 'tangent') c.tangents.add([c.classOf(a), c.classOf(b)].sort().join('&'));
-    if (x.claim === 'length' && p !== undefined && q !== undefined) {
-      if (k === 'q1') c.lengths.union(c.segment(a, b), c.segment(p, q));
-      else if (k !== undefined) c.ratios.add(`${c.segment(a, b)}&${c.segment(p, q)}&${k}`);
-    }
-  }
-  // Perpendicular pairs, then: lines perpendicular to one line are parallel (to a fixpoint).
-  for (let changed = true; changed;) {
-    changed = false;
-    c.perps.clear();
-    for (const x of inst) {
-      const [a, b] = x.args;
-      if (x.claim !== 'perpendicular' || a === undefined || b === undefined) continue;
-      if (!c.isLine(a) || !c.isLine(b)) continue;
-      const [pa, pb] = [c.parallelClass(c.lines.find(a)), c.parallelClass(c.lines.find(b))];
-      addTo(c.perps, pa, pb);
-      addTo(c.perps, pb, pa);
-    }
-    for (const partners of c.perps.values()) {
-      const [first, ...rest] = [...partners];
-      for (const r of rest) if (first !== undefined && c.parallels.union(first, r)) changed = true;
-    }
-  }
-}
-
-/** Radii: every point of a circle with a known centre is at one distance from it. */
-function radii(c: Closure): void {
-  for (const [circle, pts] of c.circleSets) {
-    const o = c.centerOf.get(circle);
-    if (o === undefined) continue;
-    const [first, ...rest] = [...pts];
-    if (first === undefined) continue;
-    for (const p of rest) c.lengths.union(c.segment(o, first), c.segment(o, p));
-  }
+/** A fact's arguments as terms (objects by their keys). */
+export function termArgs(args: readonly ScreenArg[]): TermArg[] {
+  return args.map((a) => ('id' in a ? { key: objectKey(a.id) } : { lit: a.lit }));
 }
 
 export interface ClosureOptions {
@@ -271,7 +216,7 @@ function* fixpoint(
       // One circle has one centre: the centres of merged circles are one point.
       c.centerOf.clear();
       let centred = false;
-      for (const [circle, center] of c.terms.centers) {
+      for (const [circle, center] of [...c.terms.centers, ...c.virtualCenters]) {
         const cls = c.circles.find(circle);
         const known = c.centerOf.get(cls);
         if (known === undefined) c.centerOf.set(cls, c.points.find(center));
@@ -281,7 +226,12 @@ function* fixpoint(
       yield undefined;
     }
     relate(c, inst);
-    outer = parallelsThroughOne(c);
+    mapLengths(c);
+    radii(c);
+    const eq = equalDistances(c, raw.circles, apart);
+    const mapped = mapUnions(c) || fixedIncidences(c, raw);
+    const mid = midpointRules(c, raw.circles);
+    outer = parallelsThroughOne(c) || eq || mapped || mid;
     yield undefined;
   }
 }
@@ -326,7 +276,7 @@ export function* closureSteps(
     claim: f.kind,
     args: f.args.map((a) => ('id' in a ? objectKey(a.id) : `q${formatRational(a.lit)}`)),
   }));
-  const inst = [...terms.instances, ...given];
+  const inst = [...terms.instances, ...given, ...mapInstances(c)];
   for (const [a, b] of terms.same) {
     c.points.union(a, b);
     c.lines.union(a, b);
@@ -341,7 +291,10 @@ export function* closureSteps(
   const index = () => {
     byClass = new Map();
     for (const [k, v] of pos.at) byClass.set(c.points.find(k), v);
+    c.place.clear();
+    for (const [k, v] of byClass) c.place.set(k, v);
   };
+  c.band = pos.band;
   const apart = (a: string, b: string): boolean => {
     const [pa, pb] = [byClass.get(c.points.find(a)), byClass.get(c.points.find(b))];
     return (
@@ -351,7 +304,7 @@ export function* closureSteps(
     );
   };
   yield* fixpoint(c, incidences(c, inst), inst, index, apart);
-  radii(c);
+  index();
   for (const [i, x] of inst.entries()) {
     if (i % TICK === TICK - 1) yield undefined;
     const spec = kinds.get(x.claim);

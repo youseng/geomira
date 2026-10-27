@@ -34,7 +34,8 @@
     "./construction-key": "./src/construction-key.ts",
     "./transform/mobius": "./src/transform/mobius.ts",
     "./transform/apply-map": "./src/transform/apply-map.ts",
-    "./guarantees": "./src/guarantees.ts"
+    "./guarantees": "./src/guarantees.ts",
+    "./map-facts": "./src/map-facts.ts"
   },
   "dependencies": {
     "@geomira/num": "workspace:*"

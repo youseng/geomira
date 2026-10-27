@@ -105,6 +105,56 @@ export interface Signature {
    * reporting them as findings. Every declared guarantee is property-tested there.
    */
   readonly guarantees?: readonly Guarantee[];
+  /**
+   * What the transform this overload builds does (ADR-0039): its type, fixed points and curves,
+   * centre, ratio, turn and known images, as data over the call. Read by the generated docs and
+   * by packages/discovery, which hides facts that hold by the map alone. Property-tested there.
+   */
+  readonly map?: MapFacts;
+  /**
+   * The overload's result is the image of argument `of` under the map `map` (a term over the
+   * call: `apply(T, X)` is { of: 1, map: 0 }; `reflect(X, l)` is { of: 0, map: reflect(#2) }).
+   */
+  readonly imageOf?: ImageOf;
+}
+
+/**
+ * How a map acts (ADR-0039). A similarity keeps every v1 claim kind (directed angles reversed
+ * when anti); an inversion keeps equal points, incidence and tangency, takes clines to clines,
+ * and has a centre; another Möbius map keeps incidence, tangency and clines.
+ */
+export type MapType = 'similarity' | 'anti-similarity' | 'inversion' | 'moebius';
+
+/** A map's facts as data over its call (ADR-0039); terms as in guarantees. */
+export interface MapFacts {
+  readonly type: MapType;
+  /** Applying the map twice is the identity. */
+  readonly involution?: boolean;
+  /** |X*Y*| / |XY| of a similarity: an exact literal, or a number argument (its absolute value). */
+  readonly ratio?: GuaranteeTerm;
+  /** A direct similarity's turn, in degrees: every direction turns by it (mod 180°). */
+  readonly turn?: GuaranteeTerm;
+  /** Points the map fixes. */
+  readonly fixedPoints?: readonly GuaranteeTerm[];
+  /** A curve the map fixes point by point (the mirror line, the inversion circle). */
+  readonly fixedCurve?: GuaranteeTerm;
+  /** Curves the map takes onto themselves (not necessarily point by point). */
+  readonly invariantCurves?: readonly GuaranteeTerm[];
+  /** An inversion's centre: X, X* and the centre are collinear; its own image is Undefined. */
+  readonly center?: GuaranteeTerm;
+  /**
+   * A homothety's signed ratio k about its first fixed point P: X* − P = k·(X − P), so P, X and
+   * X* are collinear and XX* = |k − 1|·PX.
+   */
+  readonly factor?: GuaranteeTerm;
+  /** Known images: [X, the image of X] (points or curves). */
+  readonly sends?: readonly (readonly [GuaranteeTerm, GuaranteeTerm])[];
+}
+
+/** The image an overload's result is: argument `of` under the map `map` (ADR-0039). */
+export interface ImageOf {
+  readonly of: number;
+  readonly map: GuaranteeTerm;
 }
 
 /**

@@ -20,6 +20,7 @@ import {
   formatSignature,
   type ArgSymmetry,
   type GuaranteeTerm,
+  type MapFacts,
   type ExampleArg,
   type ExampleSelector,
   type ToolExample,
@@ -242,6 +243,37 @@ function guaranteeLines(t: ToolSpec): string[] {
   ];
 }
 
+/** A map's facts as the reference shows them (ADR-0039). */
+function mapFactsText(m: MapFacts): string {
+  const parts: string[] = [m.type];
+  if (m.involution === true) parts.push('an involution');
+  if (m.ratio !== undefined) parts.push(`ratio ${termText(m.ratio)}`);
+  if (m.turn !== undefined) parts.push(`turn ${termText(m.turn)}°`);
+  for (const p of m.fixedPoints ?? []) parts.push(`fixes ${termText(p)}`);
+  if (m.fixedCurve !== undefined) parts.push(`fixes every point of ${termText(m.fixedCurve)}`);
+  for (const c of m.invariantCurves ?? []) parts.push(`takes ${termText(c)} onto itself`);
+  if (m.center !== undefined) parts.push(`centre ${termText(m.center)}`);
+  if (m.factor !== undefined) parts.push(`signed ratio ${termText(m.factor)}`);
+  for (const [a, b] of m.sends ?? []) parts.push(`${termText(a)} ↦ ${termText(b)}`);
+  return parts.join('; ');
+}
+
+/** What the tool's maps do and whose images its image overloads are (ADR-0039). */
+function mapLines(t: ToolSpec): string[] {
+  const maps = t.signatures.flatMap((s) =>
+    s.map === undefined ? [] : [`\`${formatSignature(t.name, s)}\`: ${mapFactsText(s.map)}`],
+  );
+  const images = t.signatures.flatMap((s) =>
+    s.imageOf === undefined
+      ? []
+      : [
+          `\`${formatSignature(t.name, s)}\`: the image of ${termText(s.imageOf.of)} under ${termText(s.imageOf.map)}`,
+        ],
+  );
+  if (maps.length === 0 && images.length === 0) return [];
+  return ['- As a map:', ...[...maps, ...images].map((x) => `  - ${x}`)];
+}
+
 function toolSection(registry: Registry, t: ToolSpec): string[] {
   const lines = [`### ${t.name}`, '', t.doc, ''];
   lines.push(
@@ -252,6 +284,7 @@ function toolSection(registry: Registry, t: ToolSpec): string[] {
   lines.push(`- Export: ${exportText(t.export)}`);
   lines.push(...sameConstructionLines(t));
   lines.push(...guaranteeLines(t));
+  lines.push(...mapLines(t));
   lines.push(`- Degenerate cases:${t.degenerate.length === 0 ? ' none' : ''}`);
   for (const d of t.degenerate) lines.push(`  - ${d}`);
   lines.push('- Examples:');

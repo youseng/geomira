@@ -4,6 +4,7 @@
  * them by family).
  */
 import { withGuarantees } from '../guarantees';
+import { withMapFacts } from '../map-facts';
 import type { ToolSpec } from '../tool';
 import { ARC_TOOLS } from './arc';
 import { ARITHMETIC_TOOLS } from './arithmetic';
@@ -51,5 +52,7 @@ export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze(
     ...POLE_TOOLS,
     ...ARC_TOOLS,
     ...INVERSION_TOOLS,
-  ].map(withGuarantees),
+  ]
+    .map(withGuarantees)
+    .map(withMapFacts),
 );
