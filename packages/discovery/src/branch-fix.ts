@@ -14,6 +14,7 @@ import { evalContextFor } from '@geomira/kernel/context';
 import type { Document } from '@geomira/kernel/document';
 import { evaluate } from '@geomira/kernel/evaluate';
 import type { Expr } from '@geomira/kernel/expr';
+import type { EvalContext } from '@geomira/kernel/tool';
 import type { Value } from '@geomira/kernel/value';
 import { runJob } from '@geomira/claims/job';
 import type { TestClaimJob } from '@geomira/claims/job';
@@ -98,11 +99,17 @@ export function assignmentOrder(k: number, cap: number): boolean[][] {
   return out;
 }
 
-function changed(
+/**
+ * Whether a value moved beyond the band between two figures: points and circles by the length
+ * band; a line by the length band for its offset and the dimensionless band for its turn (the
+ * sine of the angle between the directions), so a turn is judged as a turn at any scale.
+ */
+export function valueChanged(
   a: Value<number> | undefined,
   b: Value<number> | undefined,
-  band: number,
+  ctx: EvalContext,
 ): boolean {
+  const band = bandThreshold('length', ctx);
   if (a === undefined || b === undefined) return a !== b;
   if (a.kind !== b.kind) return true;
   if (a.kind === 'point' && b.kind === 'point')
@@ -118,7 +125,7 @@ function changed(
     const turn = Math.abs(a.d.x * b.d.y - a.d.y * b.d.x) / n;
     const off =
       Math.abs((b.p.x - a.p.x) * a.d.y - (b.p.y - a.p.y) * a.d.x) / Math.hypot(a.d.x, a.d.y);
-    return turn > band || off > band;
+    return turn > bandThreshold('dimensionless', ctx) || off > band;
   }
   return false;
 }
@@ -127,13 +134,12 @@ function changed(
 function movesBetween(a: Document, b: Document, env: DiscoveryEnv): number[] {
   const c = evalContextFor(a);
   if (!c.ok) return [];
-  const band = bandThreshold('length', c.ctx);
   const [va, vb] = [
     evaluate(a, env.registry, FloatField, c.ctx).values,
     evaluate(b, env.registry, FloatField, c.ctx).values,
   ];
   return a.objects
-    .filter((o) => o.managedBy === undefined && changed(va.get(o.id), vb.get(o.id), band))
+    .filter((o) => o.managedBy === undefined && valueChanged(va.get(o.id), vb.get(o.id), c.ctx))
     .map((o) => o.id);
 }
 

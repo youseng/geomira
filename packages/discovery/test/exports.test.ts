@@ -18,7 +18,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './hunt': { module: hunt, names: ['DEFAULT_HUNT_BUDGET', 'hunt', 'runHunt'] },
   './branch-fix': {
     module: branchFix,
-    names: ['MAX_ASSIGNMENTS', 'assignmentOrder', 'branchFix', 'runBranchFix'],
+    names: ['MAX_ASSIGNMENTS', 'assignmentOrder', 'branchFix', 'runBranchFix', 'valueChanged'],
   },
   './lemmas': {
     module: lemmas,
