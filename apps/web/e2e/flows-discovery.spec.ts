@@ -49,6 +49,7 @@ test('What is special? finds the Euler line; Add as claim is one undoable edit',
   await euler.hover();
   await euler.getByRole('button', { name: 'Add as claim' }).click();
   await expect(euler.getByRole('button', { name: 'Added' })).toBeDisabled();
+  await expect(await textArea(page)).not.toHaveValue(before);
   const added = await text(page);
   await tab(page, 'Claims');
   const claimLines = added.split('\n').filter((l) => l.startsWith('claim '));
@@ -85,6 +86,8 @@ test('Special positions: View is a draft, Open as new figure opens it', async ({
     .first()
     .getByRole('button', { name: 'Open as new figure' })
     .click();
+  // The text panel shows the opened figure once it has re-rendered: wait for it, then read it.
+  await expect(await textArea(page)).not.toHaveValue(before);
   const opened = await text(page);
   expect(opened).not.toBe(before);
   for (const name of ['O = circumcenter(A, B, C)', 'M = midpoint(B, C)'])
