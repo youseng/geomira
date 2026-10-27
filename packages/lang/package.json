@@ -15,7 +15,8 @@
     "./notation": "./src/notation.ts",
     "./grammar": "./src/grammar.ts",
     "./docs": "./src/docs.ts",
-    "./same-construction": "./src/same-construction.ts"
+    "./same-construction": "./src/same-construction.ts",
+    "./print-claim": "./src/print-claim.ts"
   },
   "dependencies": {
     "@geomira/claims": "workspace:*",

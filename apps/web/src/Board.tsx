@@ -19,6 +19,8 @@ export interface BoardProps {
   readonly viewport: Viewport;
   readonly hover: number | null;
   readonly selection: readonly number[];
+  /** The objects of a hovered discovery fact, ringed (ADR-0035). */
+  readonly highlight: readonly number[];
   /** The active tool's state: the live preview follows it (ADR-0024). */
   readonly toolState: ToolState;
   readonly onSize: (s: Size) => void;
@@ -100,18 +102,19 @@ function usePreview(
  * preview at the cursor; returns the cursor and its setter for the pointer handlers.
  */
 function useFrame(props: BoardProps, display: DisplayList | null) {
-  const { canvasRef, store, hover, selection, toolState } = props;
+  const { canvasRef, store, hover, selection, toolState, highlight } = props;
   const selected = useMemo(() => new Set(selection), [selection]);
+  const ringed = useMemo(() => new Set(highlight), [highlight]);
   const fonts = useLabelFace();
   const [cursor, setCursor] = useState<Vec2 | null>(null);
   const preview = usePreview(store, display, cursor, toolState);
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (display === null || ctx === null || ctx === undefined) return;
-    const ui: UiState = { hover, selection: selected };
+    const ui: UiState = { hover, selection: selected, highlight: ringed };
     drawDisplay(ctx, display, ui, LIGHT_THEME, window.devicePixelRatio);
     if (preview !== null) drawPreview(ctx, preview, LIGHT_THEME, window.devicePixelRatio);
-  }, [canvasRef, display, hover, selected, fonts, preview]);
+  }, [canvasRef, display, hover, selected, ringed, fonts, preview]);
   return { cursor, setCursor };
 }
 

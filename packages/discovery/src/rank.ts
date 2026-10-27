@@ -11,7 +11,8 @@ import type { Registry } from '@geomira/kernel/registry';
 import type { Value } from '@geomira/kernel/value';
 import type { ClaimKinds } from '@geomira/claims/kind-registry';
 import type { Ticking } from './candidates';
-import { buildClosure } from './closure';
+import { closureSteps } from './closure';
+import type { Terms } from './terms';
 import type { FoundFact } from './types';
 
 export interface RankEnv {
@@ -21,6 +22,8 @@ export interface RankEnv {
   readonly values: ReadonlyMap<number, Value<number>>;
   /** Construction order of the objects. */
   readonly order: ReadonlyMap<number, number>;
+  /** The document's terms (collected once, by the find job's closure). */
+  readonly terms?: Terms;
 }
 
 function cmp(a: number, b: number): number {
@@ -46,7 +49,7 @@ export function preliminary(
   );
 }
 
-/** The ranked facts (one closure per fact: a step each). */
+/** The ranked facts (one closure per fact, in bounded steps). */
 export function* rankFacts(facts: readonly FoundFact[], env: RankEnv): Ticking<FoundFact[]> {
   const pre = preliminary(facts, env.kinds, env.order);
   const accepted: FoundFact[] = [];
@@ -55,7 +58,11 @@ export function* rankFacts(facts: readonly FoundFact[], env: RankEnv): Ticking<F
     const same = accepted.filter((a) => a.kind === f.kind);
     let follows: string[] = [];
     if (same.length > 0) {
-      const c = buildClosure(env.doc, env.registry, env.kinds, { extra: same, values: env.values });
+      const c = yield* closureSteps(env.doc, env.registry, env.kinds, {
+        extra: same,
+        values: env.values,
+        ...(env.terms === undefined ? {} : { terms: env.terms }),
+      });
       if (c.isConstruction(f)) follows = same.map((a) => a.key);
       yield undefined;
     }

@@ -20,6 +20,7 @@ import {
 import type { ScreenArg } from '@geomira/claims/screen';
 import { claimKey, transposition } from '@geomira/claims/symmetry';
 import { objectKey } from './terms';
+import { TICK, type Ticking } from './ticking';
 
 /** A candidate fact: a kind, its arguments, its claim key and the objects it names. */
 export interface Candidate {
@@ -170,11 +171,7 @@ export function* plainCandidates(kind: ClaimKindSpec, p: Pools): Generator<Candi
   }
 }
 
-/** Work between two yields of the incremental steps (counting, measuring). */
-export const TICK = 512;
-
-/** A computation that yields between bounded chunks of work (the job's steps stay short). */
-export type Ticking<T> = Generator<undefined, T, unknown>;
+export { TICK, type Ticking } from './ticking';
 
 export interface Count {
   readonly total: number;

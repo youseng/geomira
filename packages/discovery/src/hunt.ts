@@ -21,7 +21,8 @@ import { hypothesesInFigure } from '@geomira/claims/figure-hypotheses';
 import { readFree, writeFree } from '@geomira/claims/free';
 import { screenFigure, type Screen } from '@geomira/claims/screen';
 import { poolsOf, type Candidate, type Pools } from './candidates';
-import { buildClosure, type Closure } from './closure';
+import { closureSteps, type Closure } from './closure';
+import { asSteps } from './ticking';
 import { withFact } from './find';
 import { scanKinds, type Scanned } from './scan';
 import { closureIds, movedSlots, solve, type FreeInput, type Problem } from './solve';
@@ -322,7 +323,22 @@ export function* runHunt(
     screen.values,
     screen.ctx.scale,
   );
-  const closure = buildClosure(job.doc, env.registry, kinds, { values: screen.values });
+  const built = yield* asSteps<Closure, DiscoveryProgress, DiscoveryCommand>(
+    closureSteps(job.doc, env.registry, kinds, { values: screen.values }),
+    () => progress('collecting construction facts', 0, 1),
+  );
+  if ('cmd' in built)
+    return built.cmd === 'cancel'
+      ? { kind: 'cancelled' }
+      : {
+          ...{ kind: 'positions', seed: job.seed, budget, positions: [], targets: 0 },
+          ...{
+            falseCandidates: 0,
+            skipped: { hypotheses: 0, degenerate: 0, notFound: 0, repeated: 0 },
+          },
+          stopped: true,
+        };
+  const closure = built.value;
   const h: Hunt = {
     job,
     env,

@@ -12,6 +12,7 @@ import type { Scene, Undrawable } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
 import { AboutContext, UpdateBanner } from './about';
 import { Board } from './Board';
+import { useDiscoveryCanvas, ViewBanner } from './discovery-view';
 import { CommandBar } from './CommandBar';
 import { ErrorBanner, TextDialog } from './Dialogs';
 import { ExportDialog } from './ExportDialog';
@@ -180,11 +181,13 @@ function useApp() {
   const style = useStyleCard(store);
   const { state } = snap;
   // The canvas previews the style card's draft (ADR-0029): a render override, not an edit.
-  const shown = usePreviewScene(page.scene, state.doc, state.values.values, style.card);
+  const styled = usePreviewScene(page.scene, state.doc, state.values.values, style.card);
+  // A viewed special position or branch fix replaces it, a draft too (ADR-0035, ADR-0036).
+  const found = useDiscoveryCanvas(page.discovery, store, styled, state.doc);
   return {
     ...{ page, canvasRef, commandRef, setSize, panels, dialog, setDialog, header, size },
     ...useUndrawable(),
-    ...{ onTestClaim, openClaims, style, shown },
+    ...{ onTestClaim, openClaims, style, shown: found.scene, highlight: found.highlight },
   };
 }
 
@@ -211,6 +214,7 @@ function StageTop({ app }: { app: ReturnType<typeof useApp> }) {
           });
         }}
       />
+      <ViewBanner discovery={page.discovery} />
       <NoticeLine
         notice={snap.notice}
         onClose={() => {
@@ -232,6 +236,7 @@ function Canvas({ app }: { app: ReturnType<typeof useApp> }) {
       viewport={state.viewport}
       hover={state.hover}
       selection={state.selection}
+      highlight={app.highlight}
       toolState={state.toolState}
       onSize={app.setSize}
       onUndrawable={app.onUndrawable}
@@ -295,6 +300,7 @@ export function App() {
             scene={scene}
             undrawable={app.undrawable}
             runs={page.runs}
+            discovery={page.discovery}
             tab={panels.tab}
             onTab={panels.showTab}
             open={panels.open}

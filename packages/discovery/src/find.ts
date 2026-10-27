@@ -14,7 +14,8 @@ import { screenFigure, type Screen } from '@geomira/claims/screen';
 import type { Verdict } from '@geomira/claims/verdict';
 import { poolsOf, type Candidate, type Pools } from './candidates';
 import { scanKinds } from './scan';
-import { buildClosure, type Closure } from './closure';
+import { closureSteps, type Closure } from './closure';
+import { asSteps } from './ticking';
 import { lemmaTag } from './lemmas';
 import { rankFacts } from './rank';
 import { capLines, rungText } from './text';
@@ -27,6 +28,7 @@ import {
   type DiscoveryProgress,
   type Fact,
   type FindBudget,
+  type FindResult,
   type FindJob,
   type FindOutcome,
   type FoundFact,
@@ -133,7 +135,13 @@ export function* runFind(
   const budget = { ...DEFAULT_FIND_BUDGET, ...job.budget };
   const ids = job.doc.objects.map((o) => o.id);
   const pools = poolsOf(ids, screen.values, screen.ctx.scale);
-  const closure = buildClosure(job.doc, env.registry, kinds, { values: screen.values });
+  const built = yield* asSteps<Closure, DiscoveryProgress, DiscoveryCommand>(
+    closureSteps(job.doc, env.registry, kinds, { values: screen.values }),
+    () => progress('collecting construction facts', 0, 1),
+  );
+  if ('cmd' in built)
+    return built.cmd === 'cancel' ? { kind: 'cancelled' } : stoppedEarly(job, budget);
+  const closure = built.value;
   const s: State = {
     budget,
     kinds,
@@ -154,6 +162,24 @@ export function* runFind(
   s.notSearched.push(...scanned.notSearched);
   const stopped = scanned.cmd === 'stop';
   return yield* confirm(job, env, s, stopped);
+}
+
+/** The result of a job stopped before its screen began: nothing checked, said so. */
+function stoppedEarly(job: FindJob, budget: FindBudget): FindResult {
+  const result = {
+    kind: 'found' as const,
+    seed: job.seed,
+    budget,
+    facts: [],
+    beyondResults: 0,
+    construction: { count: 0, shown: [] },
+    unconfirmed: [],
+    untested: 0,
+    kinds: [],
+    notSearched: [],
+    stopped: true,
+  };
+  return { ...result, caps: capLines(result) };
 }
 
 /**
@@ -231,6 +257,7 @@ function* confirm(
     kinds: s.kinds,
     values: s.screen.values,
     order: s.pools.order,
+    terms: s.closure.terms,
   });
   let r = ranking.next();
   while (r.done !== true) {

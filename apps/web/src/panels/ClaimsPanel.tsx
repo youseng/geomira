@@ -12,12 +12,16 @@ import { MathText } from '../MathText';
 import { claimStatement } from '../Stage';
 import type { EditorStore } from '../store';
 import { runsFor, staleRuns, type ClaimRuns, type TestRuns } from '../test-runs';
+import type { DiscoveryRuns } from '../discovery-runs';
+import { BranchFixes, fixRegime } from './BranchFixes';
+import { DiscoverySection } from './DiscoveryPanel';
 import { RunLine } from './RunLine';
 
 export interface ClaimsPanelProps {
   readonly store: EditorStore;
   readonly state: EditorState;
   readonly runs: TestRuns;
+  readonly discovery: DiscoveryRuns;
   readonly onTestClaim: (text: string) => boolean;
 }
 
@@ -53,8 +57,16 @@ interface ClaimProps {
   readonly state: EditorState;
   readonly store: EditorStore;
   readonly runs: TestRuns;
+  readonly discovery: DiscoveryRuns;
   readonly r: ClaimRuns | undefined;
   readonly figureExplains: boolean;
+}
+
+/** The regime of a fresh verdict a branch fix answers (MIXED, ORIENTATION-DEPENDENT), if any. */
+function branchRegime(r: ClaimRuns | undefined, stale: { local: boolean; global: boolean }) {
+  const of = (run: ClaimRuns['local'], old: boolean) =>
+    run?.status === 'done' && !old ? fixRegime(run.verdict) : null;
+  return of(r?.global, stale.global) ?? of(r?.local, stale.local);
 }
 
 function Actions({ row, state, runs, running }: ClaimProps & { running: boolean }) {
@@ -99,6 +111,15 @@ function staleText(stale: { local: boolean; global: boolean }, r: ClaimRuns): st
   return `The ${stale.local ? 'local' : 'global'} test result is for an earlier version of the figure.`;
 }
 
+function Fixes(props: ClaimProps & { each: { local: boolean; global: boolean } }) {
+  const regime = branchRegime(props.r, props.each);
+  if (regime === null) return null;
+  const { store, state, discovery, row } = props;
+  return (
+    <BranchFixes store={store} state={state} discovery={discovery} claim={row.id} regime={regime} />
+  );
+}
+
 function Claim(props: ClaimProps) {
   const { row, state, store, runs, r, figureExplains } = props;
   const running = r?.local?.status === 'running' || r?.global?.status === 'running';
@@ -138,6 +159,7 @@ function Claim(props: ClaimProps) {
           </div>
         )}
       </div>
+      <Fixes {...props} each={each} />
     </li>
   );
 }
@@ -149,7 +171,7 @@ function Claim(props: ClaimProps) {
  * Test and Test globally, and the verdict lines (SPEC §10.5 wording) with their monospace
  * detail; results for an earlier figure are greyed and offer Re-test.
  */
-export function ClaimsPanel({ store, state, runs, onTestClaim }: ClaimsPanelProps) {
+export function ClaimsPanel({ store, state, runs, discovery, onTestClaim }: ClaimsPanelProps) {
   const deferred = useDeferredValue(state);
   const claims = useMemo(() => claimRows(deferred, store.env), [deferred, store]);
   const hyps = useMemo(() => hypothesisRows(deferred, store.env), [deferred, store]);
@@ -185,6 +207,7 @@ export function ClaimsPanel({ store, state, runs, onTestClaim }: ClaimsPanelProp
                 state={state}
                 store={store}
                 runs={runs}
+                discovery={discovery}
                 r={runsFor(snapshot, state.doc, c.id)}
                 figureExplains={explains}
               />
@@ -192,6 +215,7 @@ export function ClaimsPanel({ store, state, runs, onTestClaim }: ClaimsPanelProp
           </ul>
         </>
       )}
+      <DiscoverySection store={store} state={state} discovery={discovery} />
     </div>
   );
 }

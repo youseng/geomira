@@ -16,6 +16,7 @@ import { guaranteesFor } from '@geomira/kernel/guarantees';
 import type { Registry } from '@geomira/kernel/registry';
 import type { GuaranteeTerm } from '@geomira/kernel/tool';
 import type { ValueKind } from '@geomira/kernel/value';
+import { drain, type Ticking } from './ticking';
 
 /** A recorded fact over term keys (a claim kind's name and its arguments' keys). */
 export interface Instance {
@@ -122,8 +123,17 @@ function instantiate(t: GuaranteeTerm, c: CallExpr, self: Expr): Expr | undefine
 
 /** The construction facts of every object of `doc` (managed images included). */
 export function collectTerms(doc: Document, registry: Registry): Terms {
+  return drain(termSteps(doc, registry));
+}
+
+/** Objects whose terms are collected between two yields of termSteps. */
+const TERM_BATCH = 8;
+
+/** collectTerms in bounded steps (TERM_BATCH objects each). */
+export function* termSteps(doc: Document, registry: Registry): Ticking<Terms> {
   const b = new Builder(registry, objectKinds(doc, registry));
-  for (const o of doc.objects) {
+  for (const [i, o] of doc.objects.entries()) {
+    if (i % TERM_BATCH === TERM_BATCH - 1) yield undefined;
     const own = objectKey(o.id);
     b.terms.set(own, { key: own, expr: ref(o.id), kinds: b.kinds.get(o.id) });
     // The definition's guarantees are recorded once, over the object's own key.

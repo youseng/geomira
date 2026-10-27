@@ -19,7 +19,8 @@ import type { Registry } from '@geomira/kernel/registry';
 import type { ClaimKinds } from '@geomira/claims/kind-registry';
 import type { ScreenArg } from '@geomira/claims/screen';
 import { claimKey, type KeyArg } from '@geomira/claims/symmetry';
-import { collectTerms, objectKey, type Instance, type Terms } from './terms';
+import { drain, TICK, type Ticking } from './ticking';
+import { objectKey, termSteps, type Instance, type Terms } from './terms';
 import { UnionFind } from './uf';
 import type { ClosureView } from './closure-view';
 import { constructionRule } from './rules';
@@ -157,20 +158,29 @@ function merge(
 ): { sets: Sets; changed: boolean } {
   const sets: Sets = new Map();
   for (const [k, s] of raw) for (const p of s) addTo(sets, uf.find(k), points.find(p));
-  let changed = false;
-  const keys = [...sets.keys()];
-  for (let i = 0; i < keys.length; i++)
-    for (let j = i + 1; j < keys.length; j++) {
-      const [a, b] = [sets.get(keys[i] ?? ''), sets.get(keys[j] ?? '')];
-      if (a === undefined || b === undefined) continue;
-      const shared = [...a].filter((p) => b.has(p));
-      if (
-        shared.length >= need &&
-        apartAmong(shared, need, apart) &&
-        uf.union(keys[i] ?? '', keys[j] ?? '')
-      )
-        changed = true;
+  // Only classes that share a point can merge: index the classes through each point, and
+  // collect the shared points of each such pair (canonical pair order: the smaller key first).
+  const through = new Map<string, string[]>();
+  for (const [k, s] of sets)
+    for (const p of s) {
+      const ks = through.get(p);
+      if (ks === undefined) through.set(p, [k]);
+      else ks.push(k);
     }
+  const shared = new Map<string, { a: string; b: string; pts: string[] }>();
+  for (const [p, ks] of through)
+    for (let i = 0; i < ks.length; i++)
+      for (let j = i + 1; j < ks.length; j++) {
+        const [x, y] = [ks[i] ?? '', ks[j] ?? ''];
+        const [a, b] = x < y ? [x, y] : [y, x];
+        const key = `${a}\u0000${b}`;
+        const e = shared.get(key);
+        if (e === undefined) shared.set(key, { a, b, pts: [p] });
+        else e.pts.push(p);
+      }
+  let changed = false;
+  for (const { a, b, pts } of shared.values())
+    if (pts.length >= need && apartAmong(pts, need, apart) && uf.union(a, b)) changed = true;
   return { sets, changed };
 }
 
@@ -239,16 +249,18 @@ export interface ClosureOptions {
   readonly extra?: readonly FactData[];
   /** The figure's float values (default: evaluated here); they decide which points are apart. */
   readonly values?: ReadonlyMap<number, Value<number>>;
+  /** The document's terms when already collected (the ranking re-runs the closure). */
+  readonly terms?: Terms;
 }
 
 /** Merges lines and circles, ties centres, relates lines, to a fixpoint (see buildClosure). */
-function fixpoint(
+function* fixpoint(
   c: Closure,
   raw: { lines: Sets; circles: Sets },
   inst: readonly Instance[],
   index: () => void,
   apart: (a: string, b: string) => boolean,
-): void {
+): Ticking<void> {
   for (let outer = true; outer;) {
     for (let changed = true; changed;) {
       index();
@@ -266,9 +278,11 @@ function fixpoint(
         else if (c.points.union(known, center)) centred = true;
       }
       changed = l.changed || k.changed || centred;
+      yield undefined;
     }
     relate(c, inst);
     outer = parallelsThroughOne(c);
+    yield undefined;
   }
 }
 
@@ -293,7 +307,20 @@ export function buildClosure(
   kinds: ClaimKinds,
   options: ClosureOptions = {},
 ): Closure {
-  const terms = collectTerms(doc, registry);
+  return drain(closureSteps(doc, registry, kinds, options));
+}
+
+/**
+ * buildClosure in bounded steps (a job's step stays short on a large figure): the terms by
+ * batches of objects, then each merging pass of the fixpoint, then the claim keys by TICK.
+ */
+export function* closureSteps(
+  doc: Document,
+  registry: Registry,
+  kinds: ClaimKinds,
+  options: ClosureOptions = {},
+): Ticking<Closure> {
+  const terms = options.terms ?? (yield* termSteps(doc, registry));
   const c = new Closure(terms, kinds);
   const given: Instance[] = (options.extra ?? []).map((f) => ({
     claim: f.kind,
@@ -323,9 +350,10 @@ export function buildClosure(
       (Math.abs(pa.x - pb.x) > pos.band || Math.abs(pa.y - pb.y) > pos.band)
     );
   };
-  fixpoint(c, incidences(c, inst), inst, index, apart);
+  yield* fixpoint(c, incidences(c, inst), inst, index, apart);
   radii(c);
-  for (const x of inst) {
+  for (const [i, x] of inst.entries()) {
+    if (i % TICK === TICK - 1) yield undefined;
     const spec = kinds.get(x.claim);
     if (spec !== undefined)
       c.generic.add(

@@ -12,6 +12,7 @@ import * as parse from '../src/parse';
 import * as sameConstruction from '../src/same-construction';
 import * as parseInto from '../src/parse-into';
 import * as print from '../src/print';
+import * as printClaim from '../src/print-claim';
 
 /** The public modules of @geomira/lang (ADR-0002, ADR-0009) and the runtime names each exports. */
 const SURFACE: Record<string, { module: object; names: string[] }> = {
@@ -37,6 +38,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     module: sameConstruction,
     names: ['alreadyMessage', 'sameConstructionMessage'],
   },
+  './print-claim': { module: printClaim, names: ['printClaim'] },
 };
 
 describe('@geomira/lang subpath surface', () => {

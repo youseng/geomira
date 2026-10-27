@@ -344,3 +344,12 @@
 .command-error p {
   margin: 0;
 }
+
+/* The banner while a special position or a branch fix is viewed as a draft (ADR-0035). */
+.view-banner {
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+}

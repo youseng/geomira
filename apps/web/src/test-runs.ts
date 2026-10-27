@@ -120,6 +120,8 @@ export class TestRuns {
   private readonly listeners = new Set<() => void>();
   /** The current job of each claim and regime ("claim:regime" → job id). */
   private current = new Map<string, number>();
+  /** Called by `clear()` (the discovery jobs of the old figure are forgotten too). */
+  private readonly clearListeners = new Set<() => void>();
 
   constructor(
     private readonly host: JobHost,
@@ -212,5 +214,12 @@ export class TestRuns {
     this.snapshot = new Map();
     this.current = new Map();
     for (const l of this.listeners) l();
+    for (const l of this.clearListeners) l();
+  }
+
+  /** Calls `f` on every `clear()`; returns its removal. */
+  onClear(f: () => void): () => void {
+    this.clearListeners.add(f);
+    return () => this.clearListeners.delete(f);
   }
 }
