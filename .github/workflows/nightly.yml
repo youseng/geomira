@@ -5,7 +5,7 @@ name: nightly
 # kernel geometry since Run 2, claims since Run 5).
 # Mutation scores are gated from v1.1 (Run 13): the `mutation-gate` job sums every shard's
 # in-scope mutants per package (scripts/mutation-summary.ts --gate) and fails the workflow when
-# num is below 80%, the kernel (all its shards) or claims below 75%, or a shard has no report.
+# num is below 80%, the kernel (all its shards), claims or discovery below 75%, or a shard has no report.
 # The schedule, a dispatch and every
 # push to main run the test suite and mutation testing (ADR-0022), so each merged run gets
 # its own scores; a push to another branch runs the test job only, and only when it changes
