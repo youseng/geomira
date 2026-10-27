@@ -70,6 +70,14 @@ export interface DiscoverySnapshot {
 
 const EMPTY: DiscoverySnapshot = { fixes: new Map(), highlight: [], view: null };
 
+/** What the canvas draws of discovery: a snapshot that changes only with the view or the rings. */
+export interface CanvasSnapshot {
+  readonly highlight: readonly number[];
+  readonly view: DraftView | null;
+}
+
+const EMPTY_CANVAS: CanvasSnapshot = { highlight: EMPTY.highlight, view: null };
+
 /** Same objects with the same definitions: a result's object ids still mean the same. */
 export function sameFigure(a: Document, b: Document): boolean {
   if (a === b || a.objects === b.objects) return true;
@@ -144,8 +152,19 @@ export class DiscoveryRuns {
 
   readonly getSnapshot = (): DiscoverySnapshot => this.snapshot;
 
+  /**
+   * The canvas's part (the view and the rings): a job's progress does not change it, so the
+   * page and its canvas do not re-render with every progress report.
+   */
+  readonly getCanvas = (): CanvasSnapshot => this.canvas;
+
+  private canvas: CanvasSnapshot = EMPTY_CANVAS;
+
   private set(patch: Partial<DiscoverySnapshot>): void {
     this.snapshot = { ...this.snapshot, ...patch };
+    const { highlight, view } = this.snapshot;
+    if (highlight !== this.canvas.highlight || view !== this.canvas.view)
+      this.canvas = { highlight, view };
     for (const l of this.listeners) l();
   }
 
@@ -271,6 +290,7 @@ export class DiscoveryRuns {
   clear(): void {
     for (const slot of [...this.current.keys()]) this.cancel(slot);
     this.snapshot = EMPTY;
+    this.canvas = EMPTY_CANVAS;
     for (const l of this.listeners) l();
   }
 }

@@ -11,7 +11,7 @@ import { claimKindRegistry } from '@geomira/claims/kind-registry';
 import { c, Figure, n, orient, other } from '../../claims/test/helpers/build';
 import { baseFigure } from '../../claims/test/helpers/corpus';
 import { buildClosure, type FactData } from '../src/closure';
-import { lemmaTag, MIQUEL, NINE_POINT, RADICAL, SIMSON } from '../src/lemmas';
+import { lemmaTag, lemmaTagger, MIQUEL, NINE_POINT, RADICAL, SIMSON } from '../src/lemmas';
 import { REGISTRY } from './helpers';
 
 const KINDS = claimKindRegistry();
@@ -105,5 +105,27 @@ describe('lemma tags: forms and near misses', () => {
       .def('M', 'other', 'k1', 'k2', 'F');
     expect(tag(f, 'on', 'M', 'k3')).toBe(MIQUEL);
     expect(tag(f, 'on', 'A', 'k1')).toBeUndefined();
+  });
+
+  it('one tagger per closure answers as lemmaTag does, fact after fact', () => {
+    const f = baseFigure()
+      .def('N', 'ninepoint_center', 'A', 'B', 'C')
+      .def('K', 'midpoint', 'A', 'H')
+      .def('D_c', 'foot', 'C', 'A', 'B');
+    const closure = buildClosure(f.doc, REGISTRY, KINDS);
+    const tagger = lemmaTagger(closure);
+    const facts: FactData[] = [
+      ['collinear', 'O', 'G_c', 'H'],
+      ['concyclic', 'M_a', 'M_b', 'K', 'D_c'],
+      ['collinear', 'A', 'B', 'M_c'],
+      ['collinear', 'H', 'N', 'O'],
+    ].map(([kind = '', ...names]) => ({ kind, args: names.map((x) => ({ id: f.id(x) })) }));
+    for (const fact of facts) expect(tagger(fact)).toBe(lemmaTag(closure, fact));
+    expect(facts.map((x) => tagger(x)?.name)).toEqual([
+      'Euler line',
+      'Nine-point circle',
+      undefined,
+      'Euler line',
+    ]);
   });
 });

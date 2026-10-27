@@ -16,7 +16,7 @@ import { poolsOf, type Candidate, type Pools } from './candidates';
 import { scanKinds } from './scan';
 import { closureSteps, type Closure } from './closure';
 import { asSteps } from './ticking';
-import { lemmaTag } from './lemmas';
+import { lemmaTagger } from './lemmas';
 import { rankFacts } from './rank';
 import { capLines, rungText } from './text';
 import {
@@ -254,6 +254,8 @@ function* testAll(
   const found: FoundFact[] = [];
   const unconfirmed: Unconfirmed[] = [];
   let tested = 0;
+  // The lemma view of the closure, built once, at the first confirmed fact.
+  let tagger: ReturnType<typeof lemmaTagger> | undefined;
   for (const [i, c] of s.best.entries()) {
     if (i >= s.budget.tests) break;
     const t = yield* testFact(job, env, s, c, i);
@@ -263,7 +265,8 @@ function* testAll(
     else if (t.verdict.kind !== 'holds')
       unconfirmed.push({ fact: asFact(c), verdict: t.verdict.kind });
     else {
-      const tag = lemmaTag(s.closure, { kind: c.kind.name, args: c.args });
+      tagger ??= lemmaTagger(s.closure);
+      const tag = tagger({ kind: c.kind.name, args: c.args });
       const r = rungText(t.verdict);
       found.push({
         ...asFact(c),

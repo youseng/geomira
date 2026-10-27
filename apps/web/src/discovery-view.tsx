@@ -22,11 +22,8 @@ export function useDiscoveryCanvas(
   scene: Scene,
   doc: Document,
 ) {
-  const snap = useSyncExternalStore(
-    discovery.subscribe,
-    discovery.getSnapshot,
-    discovery.getSnapshot,
-  );
+  // The canvas part only: a job's progress reports do not re-render the page.
+  const snap = useSyncExternalStore(discovery.subscribe, discovery.getCanvas, discovery.getCanvas);
   const view = snap.view;
   useEffect(() => {
     // Any edit of the figure closes the view (it was made from the figure before the edit).
@@ -43,11 +40,7 @@ export function useDiscoveryCanvas(
 
 /** The banner over the canvas while a draft is viewed. */
 export function ViewBanner({ discovery }: { discovery: DiscoveryRuns }) {
-  const snap = useSyncExternalStore(
-    discovery.subscribe,
-    discovery.getSnapshot,
-    discovery.getSnapshot,
-  );
+  const snap = useSyncExternalStore(discovery.subscribe, discovery.getCanvas, discovery.getCanvas);
   if (snap.view === null) return null;
   return (
     <div className="view-banner" role="status">

@@ -37,33 +37,30 @@ export function* asSteps<T, P, C>(
 const MERGE_CHUNK = 4096;
 
 /**
- * `xs` sorted by `less` (stable), in bounded steps: a bottom-up merge sort that yields every
- * MERGE_CHUNK elements merged, so sorting the hundreds of thousands of measured groups of a
- * large figure never blocks a step.
+ * The indices 0 … n−1 of `xs` in increasing order of xs (stable), in bounded steps: a bottom-up
+ * merge sort over two index buffers that yields every MERGE_CHUNK elements merged, so sorting
+ * the hundreds of thousands of measured groups of a large figure never blocks a step (and
+ * allocates two typed arrays, not an object per element).
  */
-export function* sortSteps<T extends object>(
-  xs: readonly T[],
-  less: (a: T, b: T) => boolean,
-): Ticking<T[]> {
-  let src = [...xs];
-  let dst = new Array<T>(src.length);
+export function* sortIndexSteps(xs: readonly number[]): Ticking<Int32Array> {
+  const n = xs.length;
+  let src = new Int32Array(n);
+  let dst = new Int32Array(n);
+  for (let i = 0; i < n; i++) src[i] = i;
   let done = 0;
-  for (let width = 1; width < src.length; width *= 2) {
-    for (let lo = 0; lo < src.length; lo += 2 * width) {
-      const mid = Math.min(lo + width, src.length);
-      const hi = Math.min(lo + 2 * width, src.length);
+  for (let width = 1; width < n; width *= 2) {
+    for (let lo = 0; lo < n; lo += 2 * width) {
+      const mid = Math.min(lo + width, n);
+      const hi = Math.min(lo + 2 * width, n);
       let [i, j, k] = [lo, mid, lo];
       while (i < mid || j < hi) {
-        const a = i < mid ? src[i] : undefined;
-        const b = j < hi ? src[j] : undefined;
+        const a = src[i] ?? 0;
+        const b = src[j] ?? 0;
         // Ties take the left run first (stable).
-        if (b !== undefined && (a === undefined || less(b, a))) {
-          dst[k++] = b;
-          j++;
-        } else if (a !== undefined) {
-          dst[k++] = a;
-          i++;
-        } else break;
+        const takeB = j < hi && (i >= mid || (xs[b] ?? 0) < (xs[a] ?? 0));
+        dst[k++] = takeB ? b : a;
+        if (takeB) j++;
+        else i++;
         if (++done % MERGE_CHUNK === 0) yield undefined;
       }
     }

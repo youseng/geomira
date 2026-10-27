@@ -50,14 +50,16 @@ export const MIQUEL: LemmaTag = {
 class View {
   private readonly members = new Map<string, CallExpr[]>();
   constructor(readonly c: Closure) {
+    const add = (cls: string, e: CallExpr) => {
+      const list = this.members.get(cls);
+      if (list === undefined) this.members.set(cls, [e]);
+      else list.push(e);
+    };
     for (const [key, t] of c.terms.terms)
       if (t.expr.kind === 'call') {
-        const p = c.points.find(key);
-        this.members.set(p, [...(this.members.get(p) ?? []), t.expr]);
-        const l = `L${c.lines.find(key)}`;
-        this.members.set(l, [...(this.members.get(l) ?? []), t.expr]);
-        const k = `C${c.circles.find(key)}`;
-        this.members.set(k, [...(this.members.get(k) ?? []), t.expr]);
+        add(c.points.find(key), t.expr);
+        add(`L${c.lines.find(key)}`, t.expr);
+        add(`C${c.circles.find(key)}`, t.expr);
       }
   }
 
@@ -273,7 +275,16 @@ function miquel(c: Closure, pts: readonly string[]): boolean {
 
 /** The tag of a reported fact, or undefined. */
 export function lemmaTag(c: Closure, fact: FactData): LemmaTag | undefined {
+  return lemmaTagger(c)(fact);
+}
+
+/** lemmaTag over one closure, its view built once (the find job tags every confirmed fact). */
+export function lemmaTagger(c: Closure): (fact: FactData) => LemmaTag | undefined {
   const v = new View(c);
+  return (fact) => tagOf(c, v, fact);
+}
+
+function tagOf(c: Closure, v: View, fact: FactData): LemmaTag | undefined {
   const ids = fact.args.flatMap((a) => ('id' in a ? [a.id] : []));
   const pts = ids.map((id) => pointClass(c, id));
   switch (fact.kind) {

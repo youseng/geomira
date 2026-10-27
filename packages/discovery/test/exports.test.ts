@@ -22,7 +22,16 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   },
   './lemmas': {
     module: lemmas,
-    names: ['EULER', 'LEMMA_TOOLS', 'MIQUEL', 'NINE_POINT', 'RADICAL', 'SIMSON', 'lemmaTag'],
+    names: [
+      'EULER',
+      'LEMMA_TOOLS',
+      'MIQUEL',
+      'NINE_POINT',
+      'RADICAL',
+      'SIMSON',
+      'lemmaTag',
+      'lemmaTagger',
+    ],
   },
   './text': { module: text, names: ['capLines', 'grouped', 'rungText'] },
 };

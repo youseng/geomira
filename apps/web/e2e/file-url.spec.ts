@@ -186,3 +186,29 @@ test('views from the file: save and switch; the share link and a reload keep the
   expect(otherErrors).toEqual([]);
   expect(errors).toEqual([]);
 });
+
+test('What is special? from the file: the Euler line, and Add as claim', async ({ page }) => {
+  // Run 17 (ADR-0035): the find job runs in the single file's inlined worker, or on the page.
+  test.setTimeout(240_000);
+  const { errors } = await openSingle(page);
+  for (const line of [
+    'A = (1, 5)',
+    'B = (-3, 0)',
+    'C = (4, 1)',
+    'O = circumcenter(A, B, C)',
+    'H = orthocenter(A, B, C)',
+    'G = centroid(A, B, C)',
+  ])
+    await command(page, line);
+  await tab(page, 'Claims');
+  await page.getByRole('button', { name: 'What is special?' }).click();
+  const euler = page
+    .getByRole('list', { name: 'Facts' })
+    .locator('.fact')
+    .filter({ hasText: 'Euler line' })
+    .first();
+  await expect(euler).toBeVisible({ timeout: 180_000 });
+  await euler.getByRole('button', { name: 'Add as claim' }).click();
+  await expect(await textArea(page)).toHaveValue(/^claim collinear\([OHG], [OHG], [OHG]\)$/mu);
+  expect(errors).toEqual([]);
+});

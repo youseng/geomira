@@ -20,7 +20,7 @@ import {
 import type { ScreenArg } from '@geomira/claims/screen';
 import { claimKey, transposition } from '@geomira/claims/symmetry';
 import { objectKey } from './terms';
-import { sortSteps, TICK, type Ticking } from './ticking';
+import { sortIndexSteps, TICK, type Ticking } from './ticking';
 
 /** A candidate fact: a kind, its arguments, its claim key and the objects it names. */
 export interface Candidate {
@@ -196,26 +196,36 @@ export function* countPlain(kind: ClaimKindSpec, p: Pools, limit: number): Ticki
   return { total, more: false, exact };
 }
 
-/** The measured group tuples (distinct points, canonical under the group's transpositions). */
-function* measuredGroups(
-  size: number,
-  m: MeasureHint,
-  p: Pools,
-  limit: number,
-): Ticking<{ list: { ids: number[]; x: number }[]; cut: boolean }> {
+/**
+ * The measured group tuples (distinct points, canonical under the group's transpositions), as
+ * flat arrays: group g's measure is xs[g] and its points ids[g·size .. g·size + size). A large
+ * figure has hundreds of thousands of groups; flat arrays keep them out of the collector's way.
+ */
+interface Groups {
+  readonly size: number;
+  readonly xs: number[];
+  readonly ids: number[];
+  readonly cut: boolean;
+}
+
+function* measuredGroups(size: number, m: MeasureHint, p: Pools, limit: number): Ticking<Groups> {
   const pairs = (m.groupSymmetry ?? []).flatMap((g) => {
     const t = transposition(g);
     return t === undefined ? [] : [t];
   });
-  const out: { ids: number[]; x: number }[] = [];
+  const xs: number[] = [];
+  const ids: number[] = [];
   let k = 0;
-  for (const ids of tuples(Array<ClaimParam>(size).fill('point'), p, pairs)) {
-    const x = measureOf(m, ids, p);
-    if (x !== undefined) out.push({ ids, x });
+  for (const tuple of tuples(Array<ClaimParam>(size).fill('point'), p, pairs)) {
+    const x = measureOf(m, tuple, p);
+    if (x !== undefined) {
+      xs.push(x);
+      for (const id of tuple) ids.push(id);
+    }
     if (++k % TICK === 0) yield undefined;
-    if (k >= limit) return { list: out, cut: true };
+    if (k >= limit) return { size, xs, ids, cut: true };
   }
-  return { list: out, cut: false };
+  return { size, xs, ids, cut: false };
 }
 
 function measureOf(m: MeasureHint, ids: readonly number[], p: Pools): number | undefined {
@@ -231,19 +241,31 @@ function measureOf(m: MeasureHint, ids: readonly number[], p: Pools): number | u
   return m.trivialAt.some((t) => Math.abs(x - t) <= WINDOW * unit) ? undefined : x;
 }
 
-/** The sorted measures' indices within [lo, hi]. */
-function within(sorted: readonly { m: number; i: number }[], lo: number, hi: number): number[] {
+/** The first position in `order` whose measure is ≥ lo (binary search). */
+function lowerBound(xs: readonly number[], order: Int32Array, lo: number): number {
   let a = 0;
-  let b = sorted.length;
+  let b = order.length;
   while (a < b) {
     const mid = (a + b) >> 1;
-    if ((sorted[mid]?.m ?? Infinity) < lo) a = mid + 1;
+    if ((xs[order[mid] ?? -1] ?? Infinity) < lo) a = mid + 1;
     else b = mid;
   }
-  const out: number[] = [];
-  for (let k = a; k < sorted.length && (sorted[k]?.m ?? Infinity) <= hi; k++)
-    out.push(sorted[k]?.i ?? -1);
-  return out;
+  return a;
+}
+
+/** Whether one group's points are all among the other's (the same points: no fact). */
+function nested(gr: Groups, g: number, h: number): boolean {
+  const n = gr.size;
+  const inside = (x: number, y: number) => {
+    for (let i = 0; i < n; i++) {
+      const id = gr.ids[x * n + i];
+      let found = false;
+      for (let j = 0; j < n && !found; j++) found = gr.ids[y * n + j] === id;
+      if (!found) return false;
+    }
+    return true;
+  };
+  return inside(g, h) || inside(h, g);
 }
 
 /** Intervals of the window around t (wrapped into [0, period) when periodic). */
@@ -280,38 +302,31 @@ export function* measureCandidates(
 ): Ticking<Paired> {
   const shape = shapeOf(kind);
   const [g0, g1] = m.groups;
-  const measured = yield* measuredGroups(g0.length, m, p, countLimit);
-  const groups = measured.list;
-  const sorted = yield* sortSteps(
-    groups.map((g, i) => ({ m: g.x, i })),
-    (a, b) => a.m < b.m,
-  );
+  const gr = yield* measuredGroups(g0.length, m, p, countLimit);
+  const order = yield* sortIndexSteps(gr.xs);
   const out = new Map<string, Candidate>();
   let total = 0;
   let k = 0;
   for (const lits of literalSets(kind, shape))
-    for (const h of groups) {
+    for (let h = 0; h < gr.xs.length; h++) {
       if (++k % TICK === 0) yield undefined;
-      const t = m.target(h.x, lits);
+      const t = m.target(gr.xs[h] ?? NaN, lits);
       if (!Number.isFinite(t)) continue;
       const w = WINDOW * (m.unit === 'length' ? Math.abs(t) : 1);
       for (const [lo, hi] of windows(t, w, m.period))
-        for (const gi of within(sorted, lo, hi)) {
-          const g = groups[gi];
-          if (
-            g === undefined ||
-            new Set([...g.ids, ...h.ids]).size === Math.max(g.ids.length, h.ids.length)
-          )
-            continue;
+        for (let q = lowerBound(gr.xs, order, lo); q < order.length; q++) {
+          const g = order[q] ?? -1;
+          if ((gr.xs[g] ?? Infinity) > hi) break;
+          if (nested(gr, g, h)) continue;
           if (++total >= countLimit) return { list: [...out.values()], total, more: true };
           if (total % TICK === 0) yield undefined;
           if (out.size >= limit) continue;
           const ids = Array<number>(shape.length).fill(-1);
-          g0.forEach((pos, j) => (ids[pos] = g.ids[j] ?? -1));
-          g1.forEach((pos, j) => (ids[pos] = h.ids[j] ?? -1));
+          g0.forEach((pos, j) => (ids[pos] = gr.ids[g * gr.size + j] ?? -1));
+          g1.forEach((pos, j) => (ids[pos] = gr.ids[h * gr.size + j] ?? -1));
           const c = makeCandidate(kind, withLits(shape, ids, lits));
           if (!out.has(c.key)) out.set(c.key, c);
         }
     }
-  return { list: [...out.values()], total, more: measured.cut };
+  return { list: [...out.values()], total, more: gr.cut };
 }

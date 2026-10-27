@@ -178,3 +178,25 @@ describe('DiscoveryRuns', () => {
     expect(sameFigure(DOC, moved)).toBe(false);
   });
 });
+
+describe('the canvas snapshot', () => {
+  it('changes with the view and the rings, never with a job’s progress', () => {
+    const { host, runs } = setup();
+    const before = runs.getCanvas();
+    runs.find(DOC);
+    host
+      .last()
+      .cb.progress({ kind: 'progress', job: 'find', phase: 'screening on', done: 1, total: 2 });
+    expect(runs.getCanvas()).toBe(before);
+    runs.highlight([1]);
+    const ringed = runs.getCanvas();
+    expect(ringed).not.toBe(before);
+    expect(ringed.highlight).toEqual([1]);
+    host
+      .last()
+      .cb.progress({ kind: 'progress', job: 'find', phase: 'screening on', done: 2, total: 2 });
+    expect(runs.getCanvas()).toBe(ringed);
+    runs.clear();
+    expect(runs.getCanvas()).toEqual({ highlight: [], view: null });
+  });
+});

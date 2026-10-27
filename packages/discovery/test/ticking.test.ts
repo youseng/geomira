@@ -4,22 +4,21 @@
  */
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { asSteps, drain, sortSteps } from '../src/ticking';
+import { asSteps, drain, sortIndexSteps } from '../src/ticking';
 
-describe('sortSteps', () => {
-  it('equals a stable sort (property)', () => {
+describe('sortIndexSteps', () => {
+  it('equals a stable sort of the indices (property)', () => {
     fc.assert(
       fc.property(fc.array(fc.integer({ min: -20, max: 20 }), { maxLength: 300 }), (xs) => {
-        const items = xs.map((m, i) => ({ m, i }));
-        const want = [...items].sort((a, b) => a.m - b.m);
-        expect(drain(sortSteps(items, (a, b) => a.m < b.m))).toEqual(want);
+        const want = xs.map((_, i) => i).sort((a, b) => (xs[a] ?? 0) - (xs[b] ?? 0));
+        expect([...drain(sortIndexSteps(xs))]).toEqual(want);
       }),
     );
   });
 
-  it('yields on a large input and keeps every element', () => {
-    const items = Array.from({ length: 20_000 }, (_, i) => ({ m: (i * 7919) % 1000, i }));
-    const g = sortSteps(items, (a, b) => a.m < b.m);
+  it('yields on a large input and keeps every index', () => {
+    const xs = Array.from({ length: 20_000 }, (_, i) => (i * 7919) % 1000);
+    const g = sortIndexSteps(xs);
     let steps = 0;
     let r = g.next();
     while (r.done !== true) {
@@ -27,8 +26,9 @@ describe('sortSteps', () => {
       r = g.next();
     }
     expect(steps).toBeGreaterThan(10);
-    expect(r.value).toHaveLength(20_000);
-    expect(r.value.every((x, k) => k === 0 || (r.value[k - 1]?.m ?? 0) <= x.m)).toBe(true);
+    expect(new Set(r.value).size).toBe(20_000);
+    const sorted = [...r.value].map((i) => xs[i] ?? 0);
+    expect(sorted.every((x, k) => k === 0 || (sorted[k - 1] ?? 0) <= x)).toBe(true);
   });
 });
 
