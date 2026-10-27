@@ -205,7 +205,7 @@ what "trivial" means, or how positions are searched.
     `scripts/mutation-gate.test.ts` (two lines that count the gated packages: `3 + SHARDS.length`
     and the three-entry `[false, false, false]` become four; one line added for the new shard's
     file), `scripts/mutation-shards.test.ts` (one line added: the discovery shard runs its whole
-    config). Lines are only added to the exports tests of kernel and claims.
+    config; ADR-0038 makes it list the four discovery shards and changes one frozen line). Lines are only added to the exports tests of kernel and claims.
 
 ## Consequences
 
@@ -214,7 +214,7 @@ what "trivial" means, or how positions are searched.
   smaller, without finder changes (tested with a test-only kind).
 - A tool added later without guarantees makes its definitional facts show as findings (noise,
   never a hidden fact); declaring them is part of the tool checklist from now on.
-- The nightly mutation gate covers discovery at ≥ 75 % (its own shard and threshold).
+- The nightly mutation gate covers discovery at ≥ 75 % (its own shards, four since ADR-0038, and threshold).
 
 ## Alternatives considered
 

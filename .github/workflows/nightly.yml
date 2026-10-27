@@ -11,8 +11,8 @@ name: nightly
 # its own scores; a push to another branch runs the test job only, and only when it changes
 # this workflow or the mutation and test configuration (scripts/nightly-scope.sh decides).
 #
-# Mutation is sharded (scripts/mutation-shards.ts): the kernel in eleven shards, num and
-# claims whole. Every shard has its own incremental file and cache key, saves them under
+# Mutation is sharded (scripts/mutation-shards.ts): the kernel in eleven shards, discovery in
+# four (ADR-0038), num and claims whole. Every shard has its own incremental file and cache key, saves them under
 # `if: always()`, and gives Stryker its own time limit below the job's, so a finished shard
 # keeps its progress even if another shard runs out of time. A dispatch with `full` ignores
 # the caches, to measure full runs.

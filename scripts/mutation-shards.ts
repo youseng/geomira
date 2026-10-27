@@ -2,8 +2,8 @@
  * The nightly mutation matrix (nightly.yml, SPEC §17 L15). Each shard is one job with its own
  * incremental file and cache key, so a shard that finishes saves its progress even when
  * another times out. The kernel is split into eleven shards by file group (its full run takes
- * about four hours on a GitHub runner); num, claims and discovery finish within an hour and
- * run whole.
+ * about four hours on a GitHub runner); num and claims finish within an hour and run whole;
+ * discovery is split into four shards (DISCOVERY_GROUPS).
  * The last kernel shard is "every other tool file" (negated globs), so a new file under
  * tools/ is always mutated by some shard. scripts/mutation-shards.test.ts checks that the
  * kernel shards partition the files of stryker.kernel.json's `mutate`.
@@ -81,17 +81,31 @@ export const V11_B: readonly string[] = [`${K}/tools/arc.ts`, `${K}/tools/arc-ra
  * gains map-ops.ts (compose, inverse and apply, moved out of transforms.ts). The frozen shard
  * test keeps eleven kernel shards, so the files join existing ones by weight: the unit
  * inversion's small helpers kernel-a, its per-kind maps kernel-b, the tool specs (mostly static
- * literals) the light kernel-j, the map core kernel-k (lighter since compose, inverse and apply
+ * literals) the light kernel-j (Run 17 spread inversion-tools.ts over kernel-i and kernel-k:
+ * MOBIUS_I), the map core kernel-k (lighter since compose, inverse and apply
  * left transforms.ts).
  */
 const T = `${K}/transform`;
 export const MOBIUS_A: readonly string[] = [`${T}/j-core.ts`, `${T}/proj-range.ts`];
 export const MOBIUS_B: readonly string[] = [`${T}/j-lines.ts`, `${T}/j-circles.ts`];
-export const MOBIUS_J: readonly string[] = [`${K}/tools/map-ops.ts`, `${T}/inversion-tools.ts`];
-export const MOBIUS_K: readonly string[] = [`${T}/mobius.ts`, `${T}/apply-map.ts`];
+export const MOBIUS_J: readonly string[] = [`${K}/tools/map-ops.ts`];
+export const MOBIUS_K: readonly string[] = [
+  `${T}/mobius.ts`,
+  `${T}/apply-map.ts`,
+  `${T}/inversion-tools.ts:178-${String(OPEN_END)}`,
+];
 
+/**
+ * Run 17: map-ops.ts and inversion-tools.ts in one shard (kernel-j, 814 mutants) ran past
+ * Stryker's 100-minute limit on main (78 % done after Run 14's merge) and has never saved an
+ * incremental file there. inversion-tools.ts is cut between its functions (lines 1–177) and
+ * its tool specs (178 on): the functions join kernel-i (lines.ts), the specs kernel-k.
+ */
+export const MOBIUS_I: readonly string[] = [`${T}/inversion-tools.ts:1-177`];
+
+/** The entries whose file exists at this commit (a `file:a-b` entry by its file). */
 function present(files: readonly string[]): string[] {
-  return files.filter((f) => existsSync(join(import.meta.dirname, '..', f)));
+  return files.filter((f) => existsSync(join(import.meta.dirname, '..', fileOf(f))));
 }
 
 /**
@@ -130,7 +144,7 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     files: [`${K}/tools/measures.ts`, `${K}/tools/functions.ts`, `${K}/tools/display.ts`],
     parent: 'kernel-4',
   },
-  { files: [`${K}/tools/lines.ts`], parent: 'kernel-h' },
+  { files: [`${K}/tools/lines.ts`, ...present(MOBIUS_I)], parent: 'kernel-h' },
   { files: [`${K}/tools/transforms.ts:133-265`, ...present(MOBIUS_J)], parent: 'kernel-b' },
   {
     files: [`${K}/tools/transforms.ts:266-${String(OPEN_END)}`, ...present(MOBIUS_K)],
@@ -144,6 +158,32 @@ const toolsInGroups = [
       .map(fileOf)
       .filter((f) => f.startsWith(`${K}/tools/`)),
   ),
+];
+
+const D = 'packages/discovery/src';
+
+/**
+ * Run 17 (ADR-0035): packages/discovery as one shard (3,589 mutants) was 63 % done after 70
+ * minutes on a GitHub runner, on course to pass Stryker's 100-minute limit; it is split by file
+ * group (about 850 source lines each). The last shard, `discovery`, is "every other file"
+ * (negated globs, as kernel-h), so a new file is always mutated by some shard.
+ */
+export const DISCOVERY_GROUPS: readonly {
+  readonly id: string;
+  readonly files: readonly string[];
+}[] = [
+  {
+    id: 'discovery-a',
+    files: ['closure', 'closure-view', 'terms', 'rules', 'uf', 'rank'].map((f) => `${D}/${f}.ts`),
+  },
+  {
+    id: 'discovery-b',
+    files: ['candidates', 'scan', 'ticking', 'solve', 'job'].map((f) => `${D}/${f}.ts`),
+  },
+  {
+    id: 'discovery-c',
+    files: ['lemmas', 'hunt', 'position', 'text'].map((f) => `${D}/${f}.ts`),
+  },
 ];
 
 const LETTERS = 'abcdefghijk';
@@ -164,8 +204,23 @@ export const SHARDS: readonly Shard[] = [
     parent: 'kernel-4',
   },
   { id: 'claims', pkg: 'claims', mutate: [], parent: '' },
-  // Run 17 (ADR-0035): the finder's package, whole, gated at 75 % like claims.
-  { id: 'discovery', pkg: 'discovery', mutate: [], parent: '' },
+  // Run 17 (ADR-0035): the finder's package, gated at 75 % like claims, in four shards.
+  ...DISCOVERY_GROUPS.map((g) => ({
+    id: g.id,
+    pkg: 'discovery' as const,
+    mutate: present(g.files),
+    parent: '',
+  })),
+  {
+    id: 'discovery',
+    pkg: 'discovery',
+    mutate: [
+      `${D}/**/*.ts`,
+      `!${D}/index.ts`,
+      ...DISCOVERY_GROUPS.flatMap((g) => present(g.files)).map((f) => `!${f}`),
+    ],
+    parent: '',
+  },
 ];
 
 /** The GitHub Actions matrix: one entry per shard, `mutate` joined for Stryker's `--mutate`. */
