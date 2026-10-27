@@ -1,31 +1,18 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "packageManager": "pnpm",
-  "plugins": [
-    "@stryker-mutator/vitest-runner",
-    "@stryker-mutator/typescript-checker"
-  ],
+  "plugins": ["@stryker-mutator/vitest-runner", "@stryker-mutator/typescript-checker"],
   "testRunner": "vitest",
   "vitest": {
     "configFile": "vitest.discovery.config.ts"
   },
-  "checkers": [
-    "typescript"
-  ],
+  "checkers": ["typescript"],
   "tsconfigFile": "packages/discovery/tsconfig.json",
-  "mutate": [
-    "packages/discovery/src/**/*.ts",
-    "!packages/discovery/src/index.ts"
-  ],
+  "mutate": ["packages/discovery/src/**/*.ts", "!packages/discovery/src/index.ts"],
   "coverageAnalysis": "perTest",
   "incremental": true,
   "incrementalFile": "reports/mutation/discovery/stryker-incremental.json",
-  "reporters": [
-    "clear-text",
-    "progress",
-    "html",
-    "json"
-  ],
+  "reporters": ["clear-text", "progress", "html", "json"],
   "htmlReporter": {
     "fileName": "reports/mutation/discovery/index.html"
   },
