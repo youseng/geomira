@@ -178,8 +178,11 @@ const D = 'packages/discovery/src';
 /**
  * Run 17 (ADR-0035): packages/discovery as one shard (3,589 mutants) was 63 % done after 70
  * minutes on a GitHub runner, on course to pass Stryker's 100-minute limit; it is split by file
- * group (about 850 source lines each). The last shard, `discovery`, is "every other file"
- * (negated globs, as kernel-h), so a new file is always mutated by some shard.
+ * group. The first grouping (about 850 source lines each) took 80, 55, 18 and 17 minutes;
+ * most of discovery-a's mutants were timeouts (391 of 542: closure.ts 180, rules.ts 94, rank.ts
+ * 78), so rules.ts moved to discovery-c and rank.ts to the last shard. That shard, `discovery`,
+ * is "every other file" (negated globs, as kernel-h), so a new file is always mutated by some
+ * shard.
  */
 export const DISCOVERY_GROUPS: readonly {
   readonly id: string;
@@ -187,7 +190,7 @@ export const DISCOVERY_GROUPS: readonly {
 }[] = [
   {
     id: 'discovery-a',
-    files: ['closure', 'closure-view', 'terms', 'rules', 'uf', 'rank'].map((f) => `${D}/${f}.ts`),
+    files: ['closure', 'closure-view', 'terms', 'uf'].map((f) => `${D}/${f}.ts`),
   },
   {
     id: 'discovery-b',
@@ -195,7 +198,7 @@ export const DISCOVERY_GROUPS: readonly {
   },
   {
     id: 'discovery-c',
-    files: ['lemmas', 'hunt', 'position', 'text'].map((f) => `${D}/${f}.ts`),
+    files: ['lemmas', 'hunt', 'position', 'text', 'rules'].map((f) => `${D}/${f}.ts`),
   },
 ];
 

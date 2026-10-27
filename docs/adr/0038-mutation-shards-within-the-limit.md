@@ -24,10 +24,13 @@ out of time saves nothing and starts over the next night: it never passes the ga
 ## Decision
 
 1. **discovery in four shards** (`DISCOVERY_GROUPS` in scripts/mutation-shards.ts): discovery-a
-   (closure, closure-view, terms, rules, uf, rank), discovery-b (candidates, scan, ticking, solve,
-   job), discovery-c (lemmas, hunt, position, text), and `discovery`, the rest by negated globs
-   (find, branch-fix, branch-sites, types and any new file), as kernel-h is for tools/. Each group
-   has about 850 source lines. The gate still sums the package over its shards at 75 %.
+   (closure, closure-view, terms, uf), discovery-b (candidates, scan, ticking, solve, job),
+   discovery-c (lemmas, hunt, position, text, rules), and `discovery`, the rest by negated globs
+   (find, branch-fix, branch-sites, rank, types and any new file), as kernel-h is for tools/.
+   The first grouping, by source lines (about 850 each, rules and rank in discovery-a), took 80,
+   55, 18 and 17 minutes on e33cf50 (run 40479162163). 391 of discovery-a's 542 mutants were
+   timeouts (closure.ts 180, rules.ts 94, rank.ts 78), so rules.ts and rank.ts moved to the two
+   short shards. The gate still sums the package over its shards at 75 %.
    `scripts/mutation-discovery.test.ts` checks that the shards partition stryker.discovery.json's
    files and that a new file falls to the last shard.
 2. **kernel-j's Run 14 files spread over light shards**, each cut between top-level statements
@@ -51,8 +54,12 @@ out of time saves nothing and starts over the next night: it never passes the ga
 
 ## Consequences
 
-- With the split, each shard's full run is about a quarter (kernel-j, discovery) of
-  what it was, well inside the limit even on a slower runner. The first night after a change to
+- With the first steps of this split (inversion-tools.ts moved, discovery by source lines), every
+  shard finished on e33cf50 and the gate passed (num 93.47 %, kernel 97.95 %, claims 85.70 %,
+  discovery 85.30 %), but kernel-j took 91 minutes and discovery-a 81: too close to the limit
+  for main, whose first nightly after the merge cannot read the branch's caches and runs them
+  in full. Decisions 1 and 2 as written spread those two further, so each shard's full run is
+  well inside the limit even on a slower runner. The first night after a change to
   these files still runs them in full; later nights reuse each shard's own incremental file.
 - Moving a file to another shard makes it run in full once (the new shard's cache does not have
   it). After that, a shard re-tests only what changed.
