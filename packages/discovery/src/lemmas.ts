@@ -137,12 +137,15 @@ function ninePoints(v: View, p: string): { tri: string; side: boolean }[] {
 }
 
 function onNinePointCircle(v: View, pts: readonly string[], circle?: string): boolean {
-  const tris = new Set<string>();
+  // A drawn ninepoint_circle names its triangle; otherwise a point that is not a side midpoint
+  // must (side midpoints alone fit the side-midpoint circles of several triangles).
+  const drawn = new Set<string>();
   if (circle !== undefined)
     for (const x of v.calls(circle, 'ninepoint_circle')) {
       const t = v.tri(x.args);
-      if (t !== undefined) tris.add(t);
+      if (t !== undefined) drawn.add(t);
     }
+  const tris = new Set(drawn);
   const lists = pts.map((p) => ninePoints(v, p));
   for (const l of lists) for (const x of l) if (!x.side) tris.add(x.tri);
   for (const tri of tris) {
@@ -155,7 +158,7 @@ function onNinePointCircle(v: View, pts: readonly string[], circle?: string): bo
       x.tri === tri || (x.side && sides.has(x.tri));
     if (
       lists.every((l) => l.some(fits)) &&
-      lists.some((l) => l.some((x) => !x.side && x.tri === tri))
+      (drawn.has(tri) || lists.some((l) => l.some((x) => !x.side && x.tri === tri)))
     )
       return true;
   }
