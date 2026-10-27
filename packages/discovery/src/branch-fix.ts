@@ -19,7 +19,7 @@ import type { Value } from '@geomira/kernel/value';
 import { runJob } from '@geomira/claims/job';
 import type { TestClaimJob } from '@geomira/claims/job';
 import type { Verdict } from '@geomira/claims/verdict';
-import { assign, sameDefinitions, sitesOf, type Site } from './branch-sites';
+import { assign, repeatsIn, sameDefinitions, sitesOf, type Site } from './branch-sites';
 import { grouped, rungText } from './text';
 import type {
   Cancelled,
@@ -56,6 +56,12 @@ export interface Fix {
   readonly edits: readonly { readonly id: number; readonly def: Expr }[];
   readonly verdict: Verdict;
   readonly rungs: string;
+  /**
+   * Rewritten objects that would be the same construction as another object (the only
+   * selectors that pick the candidate repeat its definition): the editor refuses such an edit,
+   * so this fix is shown, explained, and not applied.
+   */
+  readonly repeats: readonly { readonly object: number; readonly of: number }[];
 }
 
 export interface BranchFixResult {
@@ -197,6 +203,7 @@ function fixOf(
     edits,
     verdict,
     rungs: rungText(verdict).text,
+    repeats: repeatsIn(job.doc, doc, env.registry),
   };
 }
 

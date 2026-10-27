@@ -9,6 +9,7 @@ import { FloatField } from '@geomira/num/float-field';
 import { bandThreshold } from '@geomira/num/tolerance';
 import { evalContextFor } from '@geomira/kernel/context';
 import { MAIN_LAYER_ID, type DocObject, type Document } from '@geomira/kernel/document';
+import { sameConstruction } from '@geomira/kernel/construction-key';
 import { evaluate, type Evaluation } from '@geomira/kernel/evaluate';
 import { exprEquals, refsOf, type CallExpr, type Expr, type Selector } from '@geomira/kernel/expr';
 import type { Registry } from '@geomira/kernel/registry';
@@ -121,26 +122,27 @@ export function sitesOf(doc: Document, registry: Registry, claimArgs: readonly E
   return out;
 }
 
-/** Low-level selectors that the kernel confirms pick `target` (no chooser, or nested arguments). */
+/** Every low-level selector that the kernel confirms picks `target`, along before orient. */
 function lowLevel(
   registry: Registry,
   call: CallExpr,
   s: Shape,
   target: Vec<number>,
   ctx: EvalContext,
-): Selector[] | undefined {
+): Selector[][] {
   const spec = registry.get(call.tool);
-  if (spec === undefined) return undefined;
+  if (spec === undefined) return [];
   const band = bandThreshold('length', ctx);
+  const out: Selector[][] = [];
   for (const kind of ['along', 'orient'] as const)
     for (const sign of [1, -1] as const) {
       const sel: Selector = { kind, sign };
       const v = spec.compute(FloatField, s.args, ctx, [
         { selector: sel, args: [], text: `${kind}(${sign > 0 ? '+' : '-'})` },
       ]);
-      if (gap(target, v) <= band) return [sel];
+      if (gap(target, v) <= band) out.push([sel]);
     }
-  return undefined;
+  return out;
 }
 
 /**
@@ -159,8 +161,12 @@ function keeps(call: CallExpr, s: Shape, target: Vec<number>, ctx: EvalContext):
   );
 }
 
-/** The selectors that make site `site`'s call pick `target` in `doc`. */
-function selectorsFor(
+/**
+ * The selector lists that may make site `site`'s call pick `target` in `doc`, in preference
+ * order: the host's GUI choice first (when the call's arguments are objects), then every
+ * low-level selector the kernel confirms. writeSite checks each before it is written.
+ */
+function selectorOptions(
   doc: Document,
   registry: Registry,
   ctx: EvalContext,
@@ -169,7 +175,8 @@ function selectorsFor(
   s: Shape,
   target: Vec<number>,
   choose: Chooser | undefined,
-): Selector[] | undefined {
+): Selector[][] {
+  const out: Selector[][] = [];
   const ids = call.args.map((a) => (a.kind === 'ref' ? a.id : -1));
   if (choose !== undefined && ids.every((id) => id >= 0)) {
     // A selector may name only objects defined before the call's object (invariant I2): the
@@ -178,9 +185,68 @@ function selectorsFor(
     const before: Document = { ...doc, objects: doc.objects.slice(0, Math.max(0, at)) };
     const values: Evaluation<number> = evaluate(before, registry, FloatField, ctx);
     const r = choose(before, values, registry, call.tool, ids, target);
-    if (r.ok) return [...r.selectors];
+    if (r.ok) out.push([...r.selectors]);
   }
-  return lowLevel(registry, call, s, target, ctx);
+  return [...out, ...lowLevel(registry, call, s, target, ctx)];
+}
+
+interface SiteWrite {
+  readonly doc: Document;
+  readonly registry: Registry;
+  readonly ctx: EvalContext;
+  readonly object: DocObject;
+  readonly site: Site;
+  readonly call: CallExpr;
+  readonly target: Vec<number>;
+}
+
+/**
+ * The document with the site's call rewritten by the first option the kernel confirms picks
+ * the target (ADR-0036 decision 3: every written selector is verified), in this preference:
+ * (1) an option that does not make the definition the same construction as another object (the
+ * editor refuses such an edit); (2) the call's own selectors, when they still pick the target,
+ * nothing better exists and they are not a ranker (near / far_from: what made the claim MIXED);
+ * (3) an option that repeats another object (the assignment still makes the claim hold; the fix
+ * reports the repeat, ADR-0036 decision 7).
+ * Undefined when no option picks the target.
+ */
+function writeSite(w: SiteWrite, options: readonly Selector[][]): Document | undefined {
+  const band = bandThreshold('length', w.ctx);
+  const picks = (d: Document, call: CallExpr) =>
+    gap(w.target, shapeOf(d, w.registry, w.ctx, call)?.value) <= band;
+  let repeating: Document | undefined;
+  for (const selectors of options) {
+    const next: CallExpr = { ...w.call, selectors };
+    if (exprEquals(next, w.call)) continue;
+    const def = replaceAt(w.object.def, w.site.path, () => next);
+    const d = {
+      ...w.doc,
+      objects: w.doc.objects.map((x) => (x.id === w.object.id ? { ...x, def } : x)),
+    };
+    if (!picks(d, next)) continue;
+    if (sameConstruction(d, def, w.registry, { except: w.object.id }) === undefined) return d;
+    repeating ??= d;
+  }
+  // A ranker (near, far_from) is what made the claim MIXED: never kept as the fix.
+  const ranked = w.call.selectors.some(
+    (x) => selectorClass(x.kind) === 'ranker' && x.kind !== 'other',
+  );
+  if (repeating === undefined || !ranked) return picks(w.doc, w.call) ? w.doc : repeating;
+  return repeating;
+}
+
+/** The rewritten objects of `doc` that are the same construction as another object. */
+export function repeatsIn(
+  before: Document,
+  doc: Document,
+  registry: Registry,
+): { readonly object: number; readonly of: number }[] {
+  return doc.objects.flatMap((o) => {
+    const old = before.objects.find((x) => x.id === o.id);
+    if (old === undefined || exprEquals(old.def, o.def)) return [];
+    const same = sameConstruction(doc, o.def, registry, { except: o.id });
+    return same === undefined ? [] : [{ object: o.id, of: same.id }];
+  });
 }
 
 /**
@@ -208,12 +274,13 @@ export function assign(
     const target = s.cands[index];
     if (target === undefined) return undefined;
     if (flips[i] !== true && keeps(call, s, target, c.ctx)) continue;
-    const selectors = selectorsFor(d, registry, c.ctx, site, call, s, target, choose);
-    if (selectors === undefined) return undefined;
-    const next: CallExpr = { ...call, selectors };
-    if (exprEquals(next, call)) continue;
-    const def = replaceAt(o.def, site.path, () => next);
-    d = { ...d, objects: d.objects.map((x) => (x.id === o.id ? { ...x, def } : x)) };
+    const options = selectorOptions(d, registry, c.ctx, site, call, s, target, choose);
+    const written = writeSite(
+      { doc: d, registry, ctx: c.ctx, object: o, site, call, target },
+      options,
+    );
+    if (written === undefined) return undefined;
+    d = written;
   }
   return d;
 }

@@ -44,6 +44,14 @@ ADR-0029), not a document edit; applying one is ONE edit; reflection-equivariant
    itself and wrote `same_side(X, ab)` in X's own definition). A site that keeps its candidate
    keeps its selectors when they are firm: filters, other(P) and low-level selectors that do not
    depend on the orientation; near / far_from and orientation-dependent ones are rewritten.
+   The chooser's selectors are verified like the low-level ones. A written definition must not
+   be the same construction as another object (the editor refuses such an edit; found on CI,
+   where the GUI choice wrote X = intersect(l, k, along(+)), R's own definition): the options
+   are tried in order (the GUI choice's, then every confirmed low-level selector) and the first
+   that repeats nothing is written; failing that, a site's own orientation-dependent selectors
+   are kept when they still pick the candidate (a ranker, near / far_from, never: it is what made
+   the claim MIXED); failing that, the repeating option is written and the fix reports it
+   (decision 7).
 4. **Testing**: each assignment's document is tested with the regime of the verdict it fixes
    (MIXED: local; ORIENTATION-DEPENDENT: global, so the global sampler's mirroring decides), n
    and seed from the job. Listed iff it HOLDS (local: HOLDS IN THIS CONFIGURATION; global: HOLDS
@@ -57,6 +65,10 @@ ADR-0029), not a document edit; applying one is ONE edit; reflection-equivariant
    the text).
 6. **Job** `branchFix` (`@geomira/discovery/job`): the same protocol as ADR-0035 decision 15
    (progress per sample, cancel, the result carries the seed and the cap).
+7. **Repeats**: a fix whose definition would be the same construction as another object is
+   listed (it makes the claim hold) with "X would be the same construction as R: use R instead
+   of X", and is not applied (its Apply is disabled). It is the honest answer for circle ∩ circle
+   or line ∩ circle sites whose only selectors are the other point's definition.
 
 ## Consequences
 

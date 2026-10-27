@@ -30,6 +30,19 @@ export function movesText(doc: Document, fix: Pick<Fix, 'moves'>): string {
   return `${list} ${n.length === 1 ? 'moves' : 'move'}`;
 }
 
+/**
+ * Why a fix is not applied (ADR-0036 decision 7): "X would be the same construction as R:
+ * use R instead of X" (the editor allows no two objects with one construction).
+ */
+export function repeatsText(doc: Document, fix: Pick<Fix, 'repeats'>): string {
+  return fix.repeats
+    .map((r) => {
+      const [x, of] = names(doc, [r.object, r.of]);
+      return `${x ?? '?'} would be the same construction as ${of ?? '?'}: use ${of ?? '?'} instead of ${x ?? '?'}.`;
+    })
+    .join(' ');
+}
+
 /** The rewritten definitions, as their lines in the fix's text. */
 function rewritten(fix: Fix): string[] {
   const lines = print(fix.doc).split('\n');
@@ -53,6 +66,7 @@ function FixCard(props: FixProps & { fix: Fix; index: number; doc: Document; fre
   return (
     <li className="card branch-fix" data-fix={index}>
       <p className="fix-moves">{movesText(doc, fix)}</p>
+      {fix.repeats.length > 0 && <p className="stale-note">{repeatsText(doc, fix)}</p>}
       <ul className="fix-defs" aria-label="Rewritten definitions">
         {lines.map((l) => (
           <li key={l}>
@@ -78,7 +92,7 @@ function FixCard(props: FixProps & { fix: Fix; index: number; doc: Document; fre
         </button>
         <button
           type="button"
-          disabled={!fresh}
+          disabled={!fresh || fix.repeats.length > 0}
           onClick={() => {
             discovery.setView(null);
             store.apply(branchFixEdit(fix));

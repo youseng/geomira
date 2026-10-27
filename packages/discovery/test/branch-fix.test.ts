@@ -7,16 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import { testClaim } from '@geomira/claims/job';
 import { ref } from '@geomira/kernel/expr';
-import {
-  along,
-  c,
-  Figure,
-  n,
-  near,
-  oppositeSide,
-  orient,
-  sameSide,
-} from '../../claims/test/helpers/build';
+import { along, c, Figure, n, near, orient, sameSide } from '../../claims/test/helpers/build';
 import {
   assignmentOrder,
   branchFix,
@@ -102,12 +93,16 @@ describe('branch fixes (ADR-0036)', () => {
     expect(first?.moves).toEqual([]);
     expect(first?.verdict.kind).toBe('holds');
     expect(first?.edits.map((e) => e.id)).toEqual([f.id('X')]);
+    // Line ∩ circle has only along(±): the firm selector is R's own definition, so the fix says
+    // it repeats R (the editor would refuse it; the UI explains and does not apply it).
+    expect(first?.repeats).toEqual([{ object: f.id('X'), of: f.id('R') }]);
     for (const x of r.fixes) expect(x.verdict.kind).toBe('holds');
   });
 
   it('ORIENTATION-DEPENDENT: the chooser writes a reflection-equivariant selector, nothing moves', () => {
     // Radius 7, so the global sampler's figures keep the circles meeting. X is the upper point
-    // by orient(+); Z the upper one by a reflection-equivariant selector.
+    // by orient(+); Z the upper one as the mirror image of the lower one (no selector of its own,
+    // so the fix's selector repeats nothing).
     const f = new Figure()
       .point('A', 0, 0)
       .point('B', 8, 0)
@@ -116,7 +111,8 @@ describe('branch fixes (ADR-0036)', () => {
       .def('c2', 'circle', 'B', n(7))
       .def('ab', 'line', 'A', 'B')
       .def('X', 'intersect', 'c1', 'c2', orient(1))
-      .def('Z', 'intersect', 'c1', 'c2', oppositeSide('Q', 'ab'));
+      .def('W', 'intersect', 'c1', 'c2', sameSide('Q', 'ab'))
+      .def('Z', 'reflect', 'W', 'ab');
     const id = f.claim('equal', 'X', 'Z');
     expect(verdict(f, id, 'global')).toBe('orientation-dependent');
     // A stand-in for the editor's chooser: same_side(Q, ab) when it singles out the target.
@@ -137,6 +133,7 @@ describe('branch fixes (ADR-0036)', () => {
     expect(x?.def.kind === 'call' ? x.def.selectors.map((s0) => s0.kind) : []).toEqual([
       'opposite_side',
     ]);
+    expect(first?.repeats).toEqual([]);
     expect(r.regime).toBe('global');
   });
 
@@ -151,6 +148,10 @@ describe('branch fixes (ADR-0036)', () => {
     expect(r.fixes.map((x) => x.flipped)).toEqual([[f.id('U')], [f.id('X')]]);
     expect(r.fixes[0]?.moves).toEqual([f.id('U')]);
     expect(r.fixes[1]?.moves).toEqual([f.id('X'), f.id('K')]);
+    // Circle ∩ circle has only orient(±): a flip writes the other point's definition. The fix
+    // makes the claim hold, and says that it repeats it (the editor would refuse the edit).
+    expect(r.fixes[0]?.repeats).toEqual([{ object: f.id('U'), of: f.id('X') }]);
+    expect(r.fixes[1]?.repeats).toEqual([{ object: f.id('X'), of: f.id('U') }]);
     expect(r.note).toBeUndefined();
   });
 

@@ -9,8 +9,18 @@ import { describe, expect, it } from 'vitest';
 import { evalContextFor } from '@geomira/kernel/context';
 import { evaluate } from '@geomira/kernel/evaluate';
 import { FloatField } from '@geomira/num/float-field';
-import { c, Figure, n, orient, other, sameSide } from '../../claims/test/helpers/build';
-import { assign, nearestTo, sitesOf } from '../src/branch-sites';
+import { sameConstruction } from '@geomira/kernel/construction-key';
+import {
+  along,
+  c,
+  Figure,
+  n,
+  near,
+  orient,
+  other,
+  sameSide,
+} from '../../claims/test/helpers/build';
+import { assign, nearestTo, repeatsIn, sitesOf } from '../src/branch-sites';
 import type { Chooser } from '../src/types';
 import { REGISTRY } from './helpers';
 
@@ -127,5 +137,51 @@ describe('branch sites', () => {
       .def('Y', 'intersect', 'c3', 'c4', orient(1));
     const id = f.claim('equal', 'X', 'Y');
     expect(sitesOf(f.doc, REGISTRY, claimArgs(f, id))).toEqual([]);
+  });
+
+  it('a repeat of another object is written only when nothing else picks the candidate, and reported', () => {
+    // CI's case: line ∩ circle has only along(±); keeping X writes along(+), R's definition.
+    const f = new Figure()
+      .point('O', 0, 0)
+      .point('L1', -7, '1/10')
+      .point('L2', 7, '1/10')
+      .point('P', '1/50', 4)
+      .def('k', 'circle', 'O', n(5))
+      .def('l', 'line', 'L1', 'L2')
+      .def('X', 'intersect', 'l', 'k', near('P'))
+      .def('R', 'intersect', 'l', 'k', along(1));
+    const id = f.claim('equal', 'X', 'R');
+    const xSite = sitesOf(f.doc, REGISTRY, claimArgs(f, id)).filter((s) => s.object === f.id('X'));
+    const alongPlus: Chooser = () => ({ ok: true, selectors: [{ kind: 'along', sign: 1 }] });
+    for (const choose of [alongPlus, undefined]) {
+      const d = assign(f.doc, REGISTRY, xSite, [false], choose);
+      if (d === undefined) throw new Error('no assignment');
+      expect(valueOf(d, 'X')).toEqual(valueOf(f.doc, 'X'));
+      expect(repeatsIn(f.doc, d, REGISTRY)).toEqual([{ object: f.id('X'), of: f.id('R') }]);
+    }
+  });
+
+  it('a selector that would repeat another object gives way to one that does not', () => {
+    // The chooser's same_side(Q, ab) would be W's definition; orient(+) picks the same point.
+    const f = circles()
+      .point('Q', 4, 10)
+      .point('P', '41/10', 2)
+      .def('W', 'intersect', 'c1', 'c2', sameSide('Q', 'ab'))
+      .def('X', 'intersect', 'c1', 'c2', near('P'));
+    const id = f.claim('equal', 'X', 'W');
+    const xSite = sitesOf(f.doc, REGISTRY, claimArgs(f, id)).filter((s) => s.object === f.id('X'));
+    const q = f.id('Q');
+    const ab = f.id('ab');
+    const repeatW: Chooser = () => ({
+      ok: true,
+      selectors: [{ kind: 'same_side', q: { kind: 'ref', id: q }, l: { kind: 'ref', id: ab } }],
+    });
+    const d = assign(f.doc, REGISTRY, xSite, [false], repeatW);
+    if (d === undefined) throw new Error('no assignment');
+    const x = d.objects.find((o) => o.id === f.id('X'));
+    if (x === undefined) throw new Error('X');
+    expect(sameConstruction(d, x.def, REGISTRY, { except: x.id })).toBeUndefined();
+    expect(repeatsIn(f.doc, d, REGISTRY)).toEqual([]);
+    expect(valueOf(d, 'X')).toEqual(valueOf(f.doc, 'X'));
   });
 });
