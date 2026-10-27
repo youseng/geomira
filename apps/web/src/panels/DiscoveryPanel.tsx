@@ -1,4 +1,4 @@
-import { useMemo, useSyncExternalStore } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import type { HuntResult, Position } from '@geomira/discovery/hunt';
 import { grouped } from '@geomira/discovery/text';
 import { claimArgsOf, type Fact, type FindResult, type FoundFact } from '@geomira/discovery/types';
@@ -167,19 +167,7 @@ function FindResultView(
           ))}
         </ul>
       )}
-      <details className="construction-facts">
-        <summary>{grouped(r.construction.count)} construction facts hidden</summary>
-        <ul>
-          {r.construction.shown.map((f) => (
-            <li key={f.key}>
-              <MathText text={factText(run.doc, f)} />
-            </li>
-          ))}
-        </ul>
-        {r.construction.count > r.construction.shown.length && (
-          <p className="muted">The first {grouped(r.construction.shown.length)} are shown.</p>
-        )}
-      </details>
+      <ConstructionFacts doc={run.doc} construction={r.construction} />
       {r.unconfirmed.length > 0 && (
         <p className="muted">
           {grouped(r.unconfirmed.length)} screened facts were not confirmed by the local test and
@@ -193,6 +181,42 @@ function FindResultView(
       </ul>
       <p className="seed muted">seed {String(r.seed)}</p>
     </>
+  );
+}
+
+/**
+ * The hidden construction facts: the count, and the list only once opened (up to 200 math
+ * lines would otherwise be rendered with every result, in one task of the page).
+ */
+function ConstructionFacts({
+  doc,
+  construction,
+}: {
+  doc: Document;
+  construction: FindResult['construction'];
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <details
+      className="construction-facts"
+      onToggle={(e) => {
+        setOpen(e.currentTarget.open);
+      }}
+    >
+      <summary>{grouped(construction.count)} construction facts hidden</summary>
+      {open && (
+        <ul>
+          {construction.shown.map((f) => (
+            <li key={f.key}>
+              <MathText text={factText(doc, f)} />
+            </li>
+          ))}
+        </ul>
+      )}
+      {open && construction.count > construction.shown.length && (
+        <p className="muted">The first {grouped(construction.shown.length)} are shown.</p>
+      )}
+    </details>
   );
 }
 
