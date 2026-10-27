@@ -95,7 +95,7 @@ function constraints(kind: ClaimKindSpec, arity: number, lits: readonly Rational
   return { pairs, exact: pairs.length === gens.length };
 }
 
-function makeCandidate(kind: ClaimKindSpec, args: ScreenArg[]): Candidate {
+export function makeCandidate(kind: ClaimKindSpec, args: ScreenArg[]): Candidate {
   const objects = [...new Set(args.flatMap((a) => ('id' in a ? [a.id] : [])))];
   const key = claimKey(
     kind,

@@ -860,6 +860,15 @@ reflect(l): the reflection in the carrier line of l (an anti-similarity); reflec
 - By construction:
   - `reflect(point, linear)`: perpendicular(line(#1, result), #2); on(midpoint(#1, result), #2)
   - `reflect(point, point)`: collinear(#1, #2, result); length(#1, #2, #2, result, 1)
+- As a map:
+  - `reflect(linear)`: anti-similarity; an involution; ratio 1; fixes every point of #1; takes #1 onto itself
+  - `reflect(point)`: similarity; an involution; ratio 1; turn 0°; fixes #1; signed ratio -1
+  - `reflect(point, linear)`: the image of #1 under reflect(#2)
+  - `reflect(curve, linear)`: the image of #1 under reflect(#2)
+  - `reflect(polygon, linear)`: the image of #1 under reflect(#2)
+  - `reflect(point, point)`: the image of #1 under reflect(#2)
+  - `reflect(curve, point)`: the image of #1 under reflect(#2)
+  - `reflect(polygon, point)`: the image of #1 under reflect(#2)
 - Degenerate cases:
   - a line with no direction → Undefined
   - an Undefined mirror → Undefined
@@ -881,6 +890,11 @@ rotate(O, θ): the rotation by θ degrees counter-clockwise about O. rotate(X, O
 - Symmetry: none
 - By construction:
   - `rotate(point, point, number)`: length(#2, #1, #2, result, 1)
+- As a map:
+  - `rotate(point, number)`: similarity; ratio 1; turn #2°; fixes #1
+  - `rotate(point, point, number)`: the image of #1 under rotate(#2, #3)
+  - `rotate(curve, point, number)`: the image of #1 under rotate(#2, #3)
+  - `rotate(polygon, point, number)`: the image of #1 under rotate(#2, #3)
 - Degenerate cases:
   - θ a multiple of 360° → the identity
   - θ not a multiple of 90° → Inexact over Q and mod p
@@ -901,6 +915,11 @@ homothety(O, k): the homothety with center O and ratio k (negative k allowed). h
 - Symmetry: none
 - By construction:
   - `homothety(point, point, number)`: collinear(#2, #1, result)
+- As a map:
+  - `homothety(point, number)`: similarity; ratio #2; turn 0°; fixes #1; signed ratio #2
+  - `homothety(point, point, number)`: the image of #1 under homothety(#2, #3)
+  - `homothety(curve, point, number)`: the image of #1 under homothety(#2, #3)
+  - `homothety(polygon, point, number)`: the image of #1 under homothety(#2, #3)
 - Degenerate cases:
   - k = 0 → Undefined
   - k = 1 → the identity; k = −1 → the half turn about O
@@ -920,6 +939,11 @@ translate(A, B): the translation taking A to B. translate(X, A, B) is the image 
 - Symmetry: none
 - By construction:
   - `translate(point, point, point)`: length(#1, result, #2, #3, 1); parallel(line(#1, result), line(#2, #3))
+- As a map:
+  - `translate(point, point)`: similarity; ratio 1; turn 0°; #1 ↦ #2
+  - `translate(point, point, point)`: the image of #1 under translate(#2, #3)
+  - `translate(curve, point, point)`: the image of #1 under translate(#2, #3)
+  - `translate(polygon, point, point)`: the image of #1 under translate(#2, #3)
 - Degenerate cases:
   - A = B → the identity
 - Examples:
@@ -936,6 +960,11 @@ spiral(A, B, C, D): the direct similarity taking A to C and B to D (a spiral sim
 - Export: constructive (spiral)
 - Symmetry: none
 - By construction: nothing
+- As a map:
+  - `spiral(point, point, point, point)`: similarity; #1 ↦ #3; #2 ↦ #4
+  - `spiral(point, point, point, point, point)`: the image of #1 under spiral(#2, #3, #4, #5)
+  - `spiral(curve, point, point, point, point)`: the image of #1 under spiral(#2, #3, #4, #5)
+  - `spiral(polygon, point, point, point, point)`: the image of #1 under spiral(#2, #3, #4, #5)
 - Degenerate cases:
   - A = B or C = D → Undefined (coincident points)
   - B − A = D − C → a translation
@@ -992,6 +1021,11 @@ apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mar
 - Export: constructive (apply)
 - Symmetry: none
 - By construction: nothing
+- As a map:
+  - `apply(transform, point)`: the image of #2 under #1
+  - `apply(transform, curve)`: the image of #2 under #1
+  - `apply(transform, polygon)`: the image of #2 under #1
+  - `apply(transform, annotation)`: the image of #2 under #1
 - Degenerate cases:
   - X a number or a transform → Undefined (not imaged)
   - an Undefined T or X → Undefined
@@ -1025,6 +1059,9 @@ inversion(c): the inversion in the circle c; inversion(O, k): the inversion with
 - Export: numeric
 - Symmetry: none
 - By construction: nothing
+- As a map:
+  - `inversion(round)`: inversion; an involution; fixes every point of #1; takes #1 onto itself; centre center(#1)
+  - `inversion(point, number)`: inversion; an involution; centre #1
 - Degenerate cases:
   - k = 0 → Undefined
   - k < 0 → the inversion with power |k| followed by the half turn about O
@@ -1044,6 +1081,8 @@ sqrt_bc(A, B, C): the √(bc) inversion of triangle ABC at A, compose(reflect(bi
 - Symmetry:
   - `sqrt_bc(point, point, point)`: arguments 2, 3 in any order (the same value)
 - By construction: nothing
+- As a map:
+  - `sqrt_bc(point, point, point)`: moebius; an involution; #2 ↦ #3; #3 ↦ #2; circumcircle(#1, #2, #3) ↦ line(#2, #3); line(#2, #3) ↦ circumcircle(#1, #2, #3)
 - Degenerate cases:
   - A = B or A = C → Undefined
   - collinear A, B, C → still defined (it swaps B and C)
@@ -1061,6 +1100,8 @@ orthocenter_inversion(A, B, C): the inversion at the orthocenter H with power HA
 - Symmetry:
   - `orthocenter_inversion(point, point, point)`: arguments 1, 2, 3 in any order (the same value)
 - By construction: nothing
+- As a map:
+  - `orthocenter_inversion(point, point, point)`: inversion; an involution; centre orthocenter(#1, #2, #3); #1 ↦ foot(#1, #2, #3); foot(#1, #2, #3) ↦ #1; #2 ↦ foot(#2, #3, #1); foot(#2, #3, #1) ↦ #2; #3 ↦ foot(#3, #1, #2); foot(#3, #1, #2) ↦ #3; circumcircle(#1, #2, #3) ↦ ninepoint_circle(#1, #2, #3); ninepoint_circle(#1, #2, #3) ↦ circumcircle(#1, #2, #3)
 - Degenerate cases:
   - coincident or collinear vertices → Undefined
   - a right angle (H on the circumcircle) → Undefined (power 0)
@@ -1077,6 +1118,8 @@ inversion_fixing(O, c): the inversion centered at O that maps c to itself, inver
 - Export: numeric
 - Symmetry: none
 - By construction: nothing
+- As a map:
+  - `inversion_fixing(point, round)`: inversion; an involution; takes #2 onto itself; centre #1
 - Degenerate cases:
   - O on c → Undefined (power 0)
   - O inside c → a negative power (still fixes c)
@@ -1094,6 +1137,8 @@ inversion_swap(O, A, B): the inversion centered at O that swaps A and B, for O o
 - Symmetry:
   - `inversion_swap(point, point, point)`: arguments 2, 3 in any order (the same value)
 - By construction: nothing
+- As a map:
+  - `inversion_swap(point, point, point)`: inversion; an involution; centre #1; #2 ↦ #3; #3 ↦ #2
 - Degenerate cases:
   - O off line AB → Undefined (no inversion centered at O swaps them)
   - A = B → Undefined
@@ -1112,6 +1157,8 @@ feet_inversion(A, B, C): the inversion at A with power AB·AC·cos A (the dot pr
 - Symmetry:
   - `feet_inversion(point, point, point)`: arguments 2, 3 in any order (the same value)
 - By construction: nothing
+- As a map:
+  - `feet_inversion(point, point, point)`: inversion; an involution; centre #1; #2 ↦ foot(#3, #1, #2); foot(#3, #1, #2) ↦ #2; #3 ↦ foot(#2, #1, #3); foot(#2, #1, #3) ↦ #3
 - Degenerate cases:
   - AB⃗·AC⃗ = 0 (a right angle at A, or A = B or A = C) → Undefined
   - B = C → Undefined
@@ -1131,6 +1178,8 @@ sqrt_bc2(A, B, C): the √(bc/2) inversion of triangle ABC at A, compose(reflect
 - Symmetry:
   - `sqrt_bc2(point, point, point)`: arguments 2, 3 in any order (the same value)
 - By construction: nothing
+- As a map:
+  - `sqrt_bc2(point, point, point)`: moebius; an involution; #2 ↦ midpoint(#1, #3); midpoint(#1, #3) ↦ #2; #3 ↦ midpoint(#1, #2); midpoint(#1, #2) ↦ #3
 - Degenerate cases:
   - A = B or A = C → Undefined
   - collinear A, B, C → still defined (B goes to the midpoint of AC)

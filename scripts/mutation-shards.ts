@@ -3,7 +3,7 @@
  * incremental file and cache key, so a shard that finishes saves its progress even when
  * another times out. The kernel is split into eleven shards by file group (its full run takes
  * about four hours on a GitHub runner); num and claims finish within an hour and run whole;
- * discovery is split into four shards (DISCOVERY_GROUPS).
+ * discovery is split into six shards (DISCOVERY_GROUPS; ADR-0038, ADR-0039).
  * The last kernel shard is "every other tool file" (negated globs), so a new file under
  * tools/ is always mutated by some shard. scripts/mutation-shards.test.ts checks that the
  * kernel shards partition the files of stryker.kernel.json's `mutate`.
@@ -194,11 +194,32 @@ export const DISCOVERY_GROUPS: readonly {
   },
   {
     id: 'discovery-b',
-    files: ['candidates', 'scan', 'ticking', 'solve', 'job'].map((f) => `${D}/${f}.ts`),
+    files: ['candidates', 'scan', 'ticking', 'solve', 'job', 'lattice', 'consequences'].map(
+      (f) => `${D}/${f}.ts`,
+    ),
   },
   {
     id: 'discovery-c',
-    files: ['lemmas', 'hunt', 'position', 'text', 'rules'].map((f) => `${D}/${f}.ts`),
+    files: [
+      'lemmas',
+      'hunt',
+      'position',
+      'text',
+      'rules',
+      'angles',
+      'angle-rules',
+      'angle-maps',
+      'angle-lattice',
+    ].map((f) => `${D}/${f}.ts`),
+  },
+  // ADR-0039: the closure's rules (moved out of closure.ts), and the knowledge with the groups.
+  {
+    id: 'discovery-d',
+    files: ['closure-merge', 'closure-maps', 'closure-mid'].map((f) => `${D}/${f}.ts`),
+  },
+  {
+    id: 'discovery-e',
+    files: ['derive', 'group', 'confirm', 'find-units'].map((f) => `${D}/${f}.ts`),
   },
 ];
 
@@ -220,7 +241,7 @@ export const SHARDS: readonly Shard[] = [
     parent: 'kernel-4',
   },
   { id: 'claims', pkg: 'claims', mutate: [], parent: '' },
-  // Run 17 (ADR-0035): the finder's package, gated at 75 % like claims, in four shards.
+  // Run 17 (ADR-0035): the finder's package, gated at 75 % like claims, in six shards (ADR-0039).
   ...DISCOVERY_GROUPS.map((g) => ({
     id: g.id,
     pkg: 'discovery' as const,

@@ -5,6 +5,7 @@ import pkg from '../package.json' with { type: 'json' };
 import * as context from '../src/context';
 import * as constructionKey from '../src/construction-key';
 import * as guarantees from '../src/guarantees';
+import * as mapFacts from '../src/map-facts';
 import * as figureSize from '../src/figure-size';
 import * as limits from '../src/limits';
 import * as derived from '../src/derived';
@@ -247,6 +248,10 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     ],
   },
   './transform/apply-map': { module: applyMap, names: ['applyMap', 'localScale'] },
+  './map-facts': {
+    module: mapFacts,
+    names: ['MAP_TABLE', 'imageOfFor', 'mapFactsFor', 'withMapFacts'],
+  },
 };
 
 describe('@geomira/kernel subpath surface', () => {

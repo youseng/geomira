@@ -139,7 +139,8 @@ existing layers; I8 version current.
   candidates?<T>(F, args, ctx) → Value<T>[]                   // branchable tools
   degenerate: string[] (each a test), export mapping or 'numeric', doc, examples }
 Signatures also carry data read elsewhere: `symmetry` (ADR-0029), `guarantees` (the facts a
-result has by construction, as claim templates: ADR-0035), `radical`, `absolute`, `preserves`.
+result has by construction, as claim templates: ADR-0035), `map` and `imageOf` (what a map
+does, and which overloads are images: ADR-0039), `radical`, `absolute`, `preserves`.
 Nothing outside the registry enumerates tools.
 
 ### 6.2 v1 tool set

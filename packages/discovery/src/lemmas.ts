@@ -70,6 +70,29 @@ class View {
     return k === undefined ? undefined : this.c.points.find(k);
   }
 
+  /**
+   * The classes of the figure's circles (not the closure's circles of equal distances or on a
+   * diameter) through a point class, indexed on first use.
+   */
+  circlesAt(p: string): readonly string[] {
+    if (this.circlesOf === undefined) {
+      const m = new Map<string, string[]>();
+      const drawn = new Set<string>();
+      for (const k of this.c.terms.terms.keys())
+        if (this.c.isCircle(k)) drawn.add(this.c.circles.find(k));
+      for (const [k, set] of this.c.circleSets)
+        for (const q of drawn.has(k) ? set : []) {
+          const list = m.get(q);
+          if (list === undefined) m.set(q, [k]);
+          else list.push(k);
+        }
+      this.circlesOf = m;
+    }
+    return this.circlesOf.get(p) ?? [];
+  }
+
+  private circlesOf: Map<string, string[]> | undefined;
+
   calls(cls: string, tool: string): CallExpr[] {
     return (this.members.get(cls) ?? []).filter((x) => x.tool === tool);
   }
@@ -202,17 +225,17 @@ function axisPairs(v: View, line: string): string[][] {
     const ks = x.args.map((a) => (a.kind === 'ref' ? c.circles.find(objectKey(a.id)) : undefined));
     return ks.every((k): k is string => k !== undefined) ? [ks.sort()] : [];
   });
-  const set = c.lineSets.get(line);
-  if (set !== undefined) {
-    const circles = [...c.circleSets.entries()];
-    for (let i = 0; i < circles.length; i++)
-      for (let j = i + 1; j < circles.length; j++) {
-        const [ci, cj] = [circles[i], circles[j]];
-        if (ci === undefined || cj === undefined) continue;
-        const common = [...set].filter((p) => ci[1].has(p) && cj[1].has(p));
-        if (common.length >= 2) out.push([ci[0], cj[0]].sort());
+  // Circle pairs through two points of the line: counted over the circles through each point.
+  const shared = new Map<string, number>();
+  for (const p of c.lineSets.get(line) ?? []) {
+    const through = v.circlesAt(p);
+    for (let i = 0; i < through.length; i++)
+      for (let j = i + 1; j < through.length; j++) {
+        const k = [through[i] ?? '', through[j] ?? ''].sort().join('&');
+        shared.set(k, (shared.get(k) ?? 0) + 1);
       }
   }
+  for (const [k, n] of shared) if (n >= 2) out.push(k.split('&'));
   return out;
 }
 

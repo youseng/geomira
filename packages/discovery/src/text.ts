@@ -37,6 +37,11 @@ function total(k: KindReport): string {
   return k.exact ? grouped(k.total) : `at most ${grouped(k.total)}`;
 }
 
+/** The local tests run: each claim tested (a group's links count), else the facts reported. */
+function tested(r: Omit<FindResult, 'caps'>): number {
+  return r.testsRun ?? r.unconfirmed.length + r.facts.length + r.beyondResults;
+}
+
 /** One sentence per cap the find job hit. */
 export function capLines(r: Omit<FindResult, 'caps'>): string[] {
   const out: string[] = [];
@@ -48,7 +53,7 @@ export function capLines(r: Omit<FindResult, 'caps'>): string[] {
   for (const n of r.notSearched) out.push(`${n.kind} not searched: ${n.reason}`);
   if (r.untested > 0)
     out.push(
-      `tested ${grouped(r.unconfirmed.length + r.facts.length + r.beyondResults)} of ${grouped(r.unconfirmed.length + r.facts.length + r.beyondResults + r.untested)} facts: ${r.stopped ? 'time budget' : 'test budget'}`,
+      `tested ${grouped(tested(r))} of ${grouped(tested(r) + r.untested)} facts: ${r.stopped ? 'time budget' : 'test budget'}`,
     );
   if (r.beyondResults > 0)
     out.push(

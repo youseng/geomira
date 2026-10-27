@@ -4,7 +4,8 @@ Status: accepted (Run 17). Moves "the finder" and "special-position hunting" out
 Phase 2 list (SPEC §1, §2, §6.1, §10.1 and §16 are updated in the same commit). Adds a package
 (`packages/discovery`), one optional ToolSpec field (`Signature.guarantees`, decision 6) and
 optional claim-kind data (decisions 3–4). Changes frozen test lines (decision 17). Branch-fix
-diagnosis is [ADR-0036](0036-branch-fix-diagnosis.md).
+diagnosis is [ADR-0036](0036-branch-fix-diagnosis.md). Decisions 6, 7, 11 and 12 are amended by
+[ADR-0039](0039-no-trivial-facts-in-what-is-special.md) (map facts, the knowledge, groups, ranking).
 
 ## Context
 

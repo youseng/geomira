@@ -6,8 +6,7 @@
  */
 import type { Rational } from '@geomira/num/rational';
 import { formatRational } from '@geomira/num/rational';
-import type { ScreenArg } from '@geomira/claims/screen';
-import type { ClosureView as Closure } from './closure-view';
+import type { ClosureView as Closure, TermArg } from './closure-view';
 
 type Keys = readonly (string | undefined)[];
 
@@ -98,7 +97,7 @@ function sameUndirected(c: Closure, p: readonly string[]): boolean {
   return (same(a, d) && same(cc, f)) || (same(a, f) && same(cc, d));
 }
 
-function litOf(args: readonly ScreenArg[], i: number): Rational | undefined {
+function litOf(args: readonly TermArg[], i: number): Rational | undefined {
   const a = args[i];
   return a !== undefined && 'lit' in a ? a.lit : undefined;
 }
@@ -109,19 +108,7 @@ function lengthFact(c: Closure, k: readonly string[], lit: Rational | undefined)
     return false;
   const [s, t] = [c.segment(a, b), c.segment(p, q)];
   if (lit.num === 1n && lit.den === 1n) return c.lengths.same(s, t);
-  const want = `q${formatRational(lit)}`;
-  for (const r of c.ratios) {
-    const [x, y, kk] = r.split('&');
-    if (
-      kk === want &&
-      x !== undefined &&
-      y !== undefined &&
-      c.lengths.same(x, s) &&
-      c.lengths.same(y, t)
-    )
-      return true;
-  }
-  return false;
+  return c.hasRatio(s, t, `q${formatRational(lit)}`);
 }
 
 /** Whether a fact of a v1 kind follows from the closure (false for kinds without a rule). */
@@ -129,7 +116,7 @@ export function constructionRule(
   c: Closure,
   kind: string,
   keys: Keys,
-  args: readonly ScreenArg[],
+  args: readonly TermArg[],
 ): boolean {
   const k = defined(keys.filter((_, i) => !('lit' in (args[i] ?? { lit: 0 }))));
   if (k === undefined) return false;

@@ -1,6 +1,6 @@
 /**
  * The editor's side of discovery (ADR-0035, ADR-0036): turning a job's result into ONE edit.
- * "Add as claim" is one `addClaim` (in the text, undoable); applying a branch fix is one batch of
+ * "Add as claim" is one `addClaim` (in the text, undoable), a class's links one batch; applying a branch fix is one batch of
  * `redefine` edits (one history entry); the GUI selector choice (choice.ts, SPEC §7) is what the
  * branch-fix job writes selectors with, handed to it as its `choose` (the worker passes it:
  * packages/discovery cannot import the editor, SPEC §2).
@@ -10,9 +10,19 @@ import { claimArgsOf, type Chooser, type Fact } from '@geomira/discovery/types';
 import { chooseSelectors } from './choice';
 import type { Edit } from './edit';
 
-/** The edit that adds a reported fact as a claim. */
-export function factEdit(fact: Pick<Fact, 'kind' | 'args'>): Edit {
-  return { kind: 'addClaim', claim: { kind: fact.kind, args: claimArgsOf(fact) } };
+type FactData = Pick<Fact, 'kind' | 'args'>;
+
+/**
+ * The edit that adds a reported fact as a claim; a class (AB = CD = EF, ADR-0039) adds the
+ * claims of its links, as one batch (one history entry).
+ */
+export function factEdit(fact: FactData & { readonly chain?: readonly FactData[] }): Edit {
+  const add = (f: FactData): Extract<Edit, { kind: 'addClaim' }> => ({
+    kind: 'addClaim',
+    claim: { kind: f.kind, args: claimArgsOf(f) },
+  });
+  if (fact.chain === undefined) return add(fact);
+  return { kind: 'batch', label: 'add claims', edits: fact.chain.map(add) };
 }
 
 /** The edit that applies a branch fix: its redefinitions, as one batch. */

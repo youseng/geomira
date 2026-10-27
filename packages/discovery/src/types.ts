@@ -74,6 +74,25 @@ export interface LemmaTag {
   readonly hint: string;
 }
 
+/**
+ * How a hidden fact follows (ADR-0039): by the closure (incidence, lengths, the maps' facts),
+ * by angle chasing, by transport through a map, or as a part of a group shown whole.
+ */
+export type DeriveRule = 'incidence' | 'angles' | 'transport' | 'part';
+
+/** A fact hidden because it follows; `parents` are the keys of the shown facts it follows from. */
+export interface HiddenFact extends Fact {
+  readonly rule: DeriveRule;
+  /** Shown facts (keys) it follows from with the construction; empty: the construction alone. */
+  readonly parents: readonly string[];
+}
+
+/** Hidden facts listed under a shown fact: their count, and the first of them (consequences.ts). */
+export interface Consequences {
+  readonly count: number;
+  readonly shown: readonly HiddenFact[];
+}
+
 export interface FoundFact extends Fact {
   /** The local test's verdict (HOLDS IN THIS CONFIGURATION). */
   readonly verdict: Verdict;
@@ -82,8 +101,12 @@ export interface FoundFact extends Fact {
   /** Every valid sample was decided by an exact rung. */
   readonly exact: boolean;
   readonly tag?: LemmaTag;
-  /** Keys of higher-ranked reported facts of the same kind it follows from. */
-  readonly follows?: readonly string[];
+  /** A class (AB = CD = EF): its links from the first member, the claims it stands for. */
+  readonly chain?: readonly Fact[];
+  /** How many screened facts it stands for (a group: its members; 1 for a single fact). */
+  readonly standsFor?: number;
+  /** The hidden facts that follow from it (with the facts above it and the construction). */
+  readonly consequences?: Consequences;
 }
 
 export interface FindBudget {
@@ -147,6 +170,10 @@ export interface FindResult {
   readonly unconfirmed: readonly Unconfirmed[];
   /** Surviving facts not tested (the test budget or the time). */
   readonly untested: number;
+  /** Local tests run (ADR-0039: each claim a group is tested as counts; absent: one per fact). */
+  readonly testsRun?: number;
+  /** Every hidden consequence of the facts shown (listed under them; absent: none). */
+  readonly consequenceCount?: number;
   readonly kinds: readonly KindReport[];
   readonly notSearched: readonly { readonly kind: string; readonly reason: string }[];
   /** The host's time budget stopped the job (`stop`). */

@@ -28,13 +28,18 @@ describe('the discovery mutation gate', () => {
       'discovery-a',
       'discovery-b',
       'discovery-c',
+      'discovery-d',
+      'discovery-e',
       'discovery',
     ]);
-    expect(shards.map((s) => s.parent)).toEqual(['', '', '', '']);
+    expect(shards.map((s) => s.parent)).toEqual(['', '', '', '', '', '']);
     expect(shards[0]?.mutate).toContain(`${D}/closure.ts`);
     expect(shards[1]?.mutate).toContain(`${D}/candidates.ts`);
     expect(shards[2]?.mutate).toContain(`${D}/lemmas.ts`);
-    expect(shards[3]?.mutate.slice(0, 2)).toEqual([`${D}/**/*.ts`, `!${D}/index.ts`]);
+    expect(shards[shards.length - 1]?.mutate.slice(0, 2)).toEqual([
+      `${D}/**/*.ts`,
+      `!${D}/index.ts`,
+    ]);
     expect(threshold('discovery')).toBe(75);
   });
 

@@ -1,5 +1,154 @@
 # STATUS
 
+## Maintainer request: trivial facts in What is special?: ACCEPTED (2026-10-27)
+
+Not a kit run (no tag). Decisions: [ADR-0039](adr/0039-no-trivial-facts-in-what-is-special.md)
+(amends ADR-0035 decisions 6, 7, 11, 12 and SPEC §6.1). PR: https://github.com/youseng/geomira/pull/25
+(branch ccr-74881050-rsktgq) against main. Base: main = 385ada7 (Run 17 merged, ACCEPTED below);
+the add-only guard compares with `run-17`. The maintainer chose (question during the work) that
+collinear(A, I, I_a, M) in the incenter figure is a construction fact (I and I_a are declared on
+bisector(B, A, C), M on line AI): it is shown once, as the maximal set, under the construction
+facts.
+
+### Done (each item → the test file that proves it)
+
+- Case 1 (images under a map): the inversion and reflection figures report nothing; equal(A, A*),
+  collinear(O, B, B*), concyclic(B, B*, C, C*), C*D* = CD, … are construction facts →
+  `packages/discovery/test/trivial-facts.test.ts` (case 1).
+- Case 2 (consequences): the incenter–excenter figure reports only the class
+  MB = MC = MI = MI_a (three links); collinear(A, I, I_a, M) is one construction fact; the
+  inscribed angles (∡AMC = ∡ABC, ∡ACM = ∡ABM) and the base angles (∡IBM = ∡AIB, ∡ICM = ∡AIC)
+  are hidden: angle chasing over the bisectors and the circumcircle derives them from the
+  construction alone, so they are listed under the construction facts; what follows from the
+  class (II_a = 2·IM) is listed under it, with its parents → trivial-facts.test.ts (case 2).
+- Case 3 (one fact per configuration): the nine-point figure reports ONE concyclic fact of the
+  nine points, then the class M_aK_a = M_bK_b = M_cK_c (its three diameters); no subset, no
+  pairwise equal lengths → trivial-facts.test.ts (case 3, full list).
+- More maps (the request's "try some examples"): rotation by 90°, homothety with ratio 2, a
+  spiral similarity and the inversion of a line and a circle report nothing; the
+  incenter–excenter figure inverted in circle(M, B) reports I = I* and I_a = I_a* (I and I_a lie
+  on the circle: the lemma) → trivial-facts.test.ts ("more maps").
+- Map facts as registry data (`Signature.map`, `Signature.imageOf`; kernel/map-facts.ts;
+  docs/tools.md "As a map") → `packages/kernel/test/map-facts.test.ts`, kernel exports test.
+- The knowledge (closure rules, angle lattice, transport) → `knowledge-rules.test.ts` (each rule
+  with a false neighbour it must not derive), `lattice.test.ts`.
+- Groups and classes → `group.test.ts`; the listing → `consequences.test.ts`; Add as claim for a
+  class (one batch, one undo) and an n-ary claim → `packages/editor/test/discovery-groups.test.ts`;
+  the class text → `apps/web/test/discovery-facts.test.ts`.
+- Soundness property tests → `packages/discovery/test/derivations.test.ts`: on ten figures every
+  hidden fact holds (evaluated; the local test on a sample), every consequence's parents are the
+  shown facts up to it, and no candidate the screen calls false, no false mutant of a hidden fact
+  and no claim of the false corpus is ever derived.
+- The existing find tests (Euler line first, exact over Q, caps, determinism, commands at every
+  step, corpora, lemma tags) pass; four frozen lines changed (below).
+
+Manual examples (seed 1, default budget; Run 17's count in brackets, measured on `run-17`):
+
+| Figure                                                                    | Reported now                                               | Run 17            |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------- |
+| inversion in w                                                            | nothing                                                    | 57                |
+| reflection in AB                                                          | nothing                                                    | 50                |
+| incenter–excenter                                                         | MB = MC = MI = MI_a                                        | 60                |
+| nine-point                                                                | the nine-point circle; M_aK_a = M_bK_b = M_cK_c            | 60                |
+| rotation by 90° / homothety 2 / spiral / inversion of a line and a circle | nothing                                                    | 25 / 53 / 22 / 29 |
+| incenter–excenter inverted in circle(M, B)                                | I = I*, I_a = I_a*                                         | 60                |
+| triangle centres (find.test.ts)                                           | 8 (Euler line, 2:1 ratios, AH = 2·OM_a, …)                 | 31                |
+| 150 objects (ADR-0037's figure)                                           | 10 (P_8 = P_121 first: the coincidence explains its class) | 50                |
+
+### Not done
+
+- The rules are incomplete by nature: a trivial fact no rule reaches is still reported (e.g. on
+  the synthetic 150-object figure, an undirected-angle class at P_21 whose links follow from a
+  collinearity only on the same side). Each new rule must be a theorem with a property test.
+
+### Known bugs
+
+- None found. (During the work: a class rebuilt after a failed check could carry the first
+  class's key, so the listing took the failed member as its part; reproduced by
+  derivations.test.ts on the nine-point figure, fixed in confirm.ts/find.ts with `unitOf`.)
+
+### Uncertain
+
+- None on mathematics. Rules used, all standard: midline theorem, Thales, isosceles base angles,
+  inscribed angles, bisectors mod 180° (internal and external alike), similar triangles P X X*
+  about the centre of a direct similarity, ∡OXY = ∡X*Y*O under an inversion.
+
+### Changed frozen tests
+
+| file                                   | change                                                                                                                                                   |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/discovery/test/find.test.ts` | 4 lines (ADR-0039 decision 10): `toBeGreaterThan(10)` → `toBeGreaterThanOrEqual(8)`; the small-budget check `results: 2` → `1` with its two expectations |
+| `packages/kernel/test/exports.test.ts` | lines added only (`./map-facts`)                                                                                                                         |
+| `scripts/mutation-discovery.test.ts`   | 3 lines (ADR-0039 decision 11): six discovery shards (ids and parents lists), the catch-all checked as the last shard                                    |
+
+### Acceptance command output
+
+#### Local (`pnpm verify` on af4ec62, the final commit)
+
+```
+✔ no dependency violations found (773 modules, 4373 dependencies cruised)
+ok   tolerance: 1084 files scanned, 0 violation(s)
+ok   file-length: 1084 files scanned, 0 violation(s)
+ok   test-count: 3693 tests, floor 3609, 0 violation(s)
+ok   disabled-tests: 1084 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-17, 0 violation(s)
+ok   forbidden-words: 1084 files scanned, 0 violation(s)
+ Test Files  1 failed | 411 passed (412)
+      Tests  1 failed | 3692 passed (3693)
+```
+
+The one local failure is `Test timed out in 5000ms` in a frozen claims test this request does
+not touch (`packages/claims/test/sampler-local-10sigma.test.ts`, "four points on a circle", 5.6 s
+under the container's load); alone it passes (`pnpm exec vitest run <file>`: 10 passed), as Run
+17 recorded for the same file. CI's verify on the same commit passed every test (below).
+
+#### CI on GitHub (af4ec62)
+
+- ci (push) https://github.com/youseng/geomira/actions/runs/40554408018: success. Verify:
+  `Test Files 412 passed (412)`, `Tests 3693 passed (3693)`, `All files | 96.85 | 90.78 | 99.16 | 98.44`;
+  end-to-end 125 passed, with ADR-0037's gate (≤ 150 ms, under 1 % over 16 ms):
+
+  ```
+  main thread during find on 150 objects without workers: {"objects":150,"tasks":2981,"seconds":11.9,"longest":[41.8,22.2,20.4,16.5,16],"over16":5,"longTasks":[]}
+  ```
+
+  (On 241eebe this gate failed, 65 of 3,545 tasks over 16 ms, from the knowledge rebuilds in long
+  steps; c47299a split them, see its commit.)
+
+- ci (pull request) https://github.com/youseng/geomira/actions/runs/40554415076: success.
+- deploy https://github.com/youseng/geomira/actions/runs/40554408005: success.
+- tex https://github.com/youseng/geomira/actions/runs/40554415184: success.
+- nightly https://github.com/youseng/geomira/actions/runs/40554417064 (dispatch): success, the
+  gate (six discovery shards, ADR-0039 decision 11):
+
+```
+num mutation gate: 93.47% (730 detected, 51 undetected; threshold 80%): pass
+kernel mutation gate: 97.95% (2391 detected, 50 undetected; threshold 75%): pass
+claims mutation gate: 85.70% (2248 detected, 375 undetected; threshold 75%): pass
+discovery mutation gate: 82.65% (2743 detected, 576 undetected; threshold 75%): pass
+discovery-a mutation score: 89.69% (200 detected, 23 undetected; 387 mutants outside the shard not counted; target 75%, gated from v1.1)
+discovery-b mutation score: 94.16% (500 detected, 31 undetected; target 75%, gated from v1.1)
+discovery-c mutation score: 77.43% (782 detected, 228 undetected; target 75%, gated from v1.1)
+discovery-d mutation score: 81.27% (447 detected, 103 undetected; target 75%, gated from v1.1)
+discovery-e mutation score: 81.96% (359 detected, 79 undetected; target 75%, gated from v1.1)
+discovery mutation score: 80.25% (455 detected, 112 undetected; 853 mutants outside the shard not counted; target 75%, gated from v1.1)
+```
+
+Shard times: discovery-a 1 min (its cache), discovery-b 12, discovery-c 35, discovery-d 78 (a cold
+run: a new shard), discovery-e 69, discovery 56; num, kernel and claims unchanged (every shard
+under 3 minutes). Earlier dispatches on this branch were cancelled by pushes (72fd001, 241eebe:
+"no report"), and the one on c47299a ran out of time in its last shard (four shards), which this
+layout fixes.
+
+### Requests
+
+- No new runtime dependencies. The test-count floor is raised to 3693 (docs/test-count.txt).
+- Follow-up (nightly): discovery-d took 78 minutes cold (closure-merge, closure-maps,
+  closure-mid: their mutants often loop until the timeout). Main's first nightly after the merge
+  runs it cold again; if it nears 100 minutes, split closure-merge from the other two.
+
+---
+
 ## Run 17: discovery (the finder, special positions, branch fixes): ACCEPTED (2026-10-27)
 
 SPEC §1 (the finder, special-position hunting and branch-fix diagnosis leave Phase 2 for Run 17),

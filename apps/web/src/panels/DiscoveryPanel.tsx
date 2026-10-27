@@ -1,42 +1,13 @@
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import type { HuntResult, Position } from '@geomira/discovery/hunt';
 import { grouped } from '@geomira/discovery/text';
-import { claimArgsOf, type Fact, type FindResult, type FoundFact } from '@geomira/discovery/types';
-import { factEdit } from '@geomira/editor/discovery';
-import type { EditorState } from '@geomira/editor/state';
+import type { FindResult } from '@geomira/discovery/types';
 import type { Document } from '@geomira/kernel/document';
-import { exprEquals } from '@geomira/kernel/expr';
 import { print } from '@geomira/lang/print';
-import { printClaim } from '@geomira/lang/print-claim';
 import { assertNever } from '@geomira/num/assert';
-import { sameFigure, type DiscoveryRuns, type JobRun } from '../discovery-runs';
+import { sameFigure, type JobRun } from '../discovery-runs';
 import { MathText } from '../MathText';
-import type { EditorStore } from '../store';
-
-export interface DiscoveryProps {
-  readonly store: EditorStore;
-  readonly state: EditorState;
-  readonly discovery: DiscoveryRuns;
-}
-
-/** The fact as the claim line would read. */
-export function factText(doc: Document, f: Pick<Fact, 'kind' | 'args'>): string {
-  return printClaim(doc, f.kind, claimArgsOf(f));
-}
-
-/** Whether `doc` already has the fact as a claim. */
-function hasClaim(doc: Document, f: Fact): boolean {
-  const args = claimArgsOf(f);
-  return doc.claims.some(
-    (c) =>
-      c.kind === f.kind &&
-      c.args.length === args.length &&
-      c.args.every((a, i) => {
-        const b = args[i];
-        return b !== undefined && exprEquals(a, b);
-      }),
-  );
-}
+import { FactCard, factText, type DiscoveryProps } from './DiscoveryFacts';
 
 /** The progress line of a running job, or its end when cancelled or failed. */
 function RunState<R>({ run, label }: { run: JobRun<R>; label: string }) {
@@ -60,49 +31,6 @@ function RunState<R>({ run, label }: { run: JobRun<R>; label: string }) {
     default:
       return assertNever(run, 'run');
   }
-}
-
-function FactCard(props: DiscoveryProps & { fact: FoundFact; fresh: boolean }) {
-  const { store, state, discovery, fact, fresh } = props;
-  const added = hasClaim(state.doc, fact);
-  const ring = () => {
-    discovery.highlight(fact.objects);
-  };
-  const unring = () => {
-    discovery.highlight([]);
-  };
-  return (
-    <li
-      className="card fact"
-      data-fact={fact.key}
-      onMouseEnter={ring}
-      onMouseLeave={unring}
-      onFocus={ring}
-      onBlur={unring}
-    >
-      <div className="card-head">
-        <MathText text={factText(state.doc, fact)} />
-      </div>
-      <p className="verdict-line tone-ok">holds in this configuration ({fact.rungs})</p>
-      {fact.tag !== undefined && (
-        <p className="lemma" title={fact.tag.hint}>
-          {fact.tag.name}: {fact.tag.hint}
-        </p>
-      )}
-      {fact.follows !== undefined && fact.follows.length > 0 && (
-        <p className="muted">Follows from a fact above.</p>
-      )}
-      <button
-        type="button"
-        disabled={!fresh || added}
-        onClick={() => {
-          store.apply(factEdit(fact));
-        }}
-      >
-        {added ? 'Added' : 'Add as claim'}
-      </button>
-    </li>
-  );
 }
 
 function StaleNote({ onRerun, label }: { onRerun: () => void; label: string }) {
