@@ -131,4 +131,25 @@ describe('candidates (ADR-0035)', () => {
     const cut = run(measureCandidates(kind('length'), lengthMeasure(), p, 3, 5));
     expect(cut).toMatchObject({ total: 5, more: true });
   });
+
+  it('a later kind with a circle parameter draws from the circles only', () => {
+    // A test-only kind: `on` restricted to circles, without hints (plain enumeration).
+    const base = kind('on');
+    const onCircle: ClaimKindSpec = {
+      ...base,
+      name: 'on_circle_test',
+      params: ['point', 'circle'],
+      finder: {},
+    };
+    const circle = (x: number): Value<number> => ({
+      kind: 'circle',
+      c: { x, y: 0 },
+      r2: 1,
+      arc: null,
+    });
+    const p = pools([P(0, 0), P(1, 1), L(0, 0, 1, 0), circle(5), circle(9)]);
+    const cs = [...plainCandidates(onCircle, p)];
+    expect(cs).toHaveLength(4);
+    for (const c of cs) expect([4, 5]).toContain(c.objects[1]);
+  });
 });
