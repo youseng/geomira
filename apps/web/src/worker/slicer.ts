@@ -14,10 +14,13 @@
  */
 import type { JobProgress, JobResult } from '@geomira/claims/job';
 
-/** Where a job's reports go (the worker host's callbacks, re-exported by host.ts). */
-export interface JobCallbacks {
-  readonly progress: (p: JobProgress) => void;
-  readonly result: (r: JobResult) => void;
+/**
+ * Where a job's reports go (the worker host's callbacks, re-exported by host.ts): a claim
+ * test's by default, a discovery job's (ADR-0035) with its own progress and outcome.
+ */
+export interface JobCallbacks<P = JobProgress, R = JobResult> {
+  readonly progress: (p: P) => void;
+  readonly result: (r: R) => void;
   readonly error: (message: string) => void;
 }
 
@@ -34,27 +37,40 @@ export interface SliceOptions {
   readonly progressMs: number;
   /** True once the job should stop (read between two steps). */
   readonly cancelled?: () => boolean;
+  /**
+   * True once the host's time budget is over (a discovery job, ADR-0035 decision 10): the
+   * generator is sent `stop` and finishes with what it has confirmed.
+   */
+  readonly stopped?: () => boolean;
 }
 
 /** How many recent steps predict the next one. */
 export const RECENT_STEPS = 16;
 
-export type JobGenerator = Generator<JobProgress, JobResult, 'cancel' | undefined>;
+/** What the loop sends a generator between two steps. */
+export type SliceCommand = 'cancel' | 'stop' | undefined;
 
-/** Starts the slice loop; the first slice runs now unless `deferStart`. */
-export function runSliced(
-  it: JobGenerator,
+export type JobGenerator<P = JobProgress, R = JobResult> = Generator<P, R, SliceCommand>;
+
+/**
+ * Starts the slice loop; the first slice runs now unless `deferStart`. A claim test's generator
+ * (its commands: `cancel`) is never sent `stop`: only a job given `stopped` is.
+ */
+export function runSliced<P, R>(
+  it: JobGenerator<P, R>,
   options: SliceOptions,
   clock: SliceClock,
-  sink: JobCallbacks,
+  sink: JobCallbacks<P, R>,
   start: { readonly deferStart?: boolean } = {},
 ): void {
   const cancelled = options.cancelled ?? (() => false);
+  const stopped = options.stopped ?? (() => false);
   let lastPost: number | null = null;
   let first = true;
   const recent: number[] = [];
   const predicted = () => Math.max(0, ...recent);
-  const step = (cmd?: 'cancel'): IteratorResult<JobProgress, JobResult> => {
+  let stopSent = false;
+  const step = (cmd?: SliceCommand): IteratorResult<P, R> => {
     const t0 = clock.now();
     const r = it.next(cmd);
     if (!first) recent.push(clock.now() - t0);
@@ -73,6 +89,10 @@ export function runSliced(
       )
         r = step();
       if (r.done !== true && cancelled()) r = step('cancel');
+      else if (r.done !== true && !stopSent && stopped()) {
+        stopSent = true;
+        r = step('stop');
+      }
       if (r.done === true) {
         sink.result(r.value);
         return;

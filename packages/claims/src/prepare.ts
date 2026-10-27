@@ -21,6 +21,7 @@ import { findFree, type FreeInput } from './free';
 import { assumptionProblem, comparisonDim, type MeasureDim } from './hypotheses';
 import { argProblem } from './check';
 import type { ClaimKindSpec } from './kind';
+import type { ClaimKinds } from './kind-registry';
 import { claimKind } from './kinds';
 import { addProbes, closureOf } from './probes';
 
@@ -154,10 +155,10 @@ interface Checked {
   readonly ctx: EvalContext;
 }
 
-function check(doc: Document, claimId: number): Checked | string {
+function check(doc: Document, claimId: number, kinds?: ClaimKinds): Checked | string {
   const claim = doc.claims.find((c) => c.id === claimId);
   if (claim === undefined) return `there is no claim #${String(claimId)}`;
-  const kind = claimKind(claim.kind);
+  const kind = kinds === undefined ? claimKind(claim.kind) : kinds.get(claim.kind);
   if (kind === undefined) return `unknown claim "${claim.kind}"`;
   const bad = argProblem(kind, claim.args);
   if (bad !== undefined) return bad;
@@ -220,9 +221,17 @@ export function hypothesesOf(doc: Document, hypProbes: readonly number[]): Prepa
   });
 }
 
-/** Prepares claim `claimId` of `doc` (see the module comment), or the reason it cannot be tested. */
-export function prepare(doc: Document, claimId: number, registry: Registry): PrepareResult {
-  const c = check(doc, claimId);
+/**
+ * Prepares claim `claimId` of `doc` (see the module comment), or the reason it cannot be
+ * tested. `kinds`: the claim kinds (default: v1's, kinds.ts; ADR-0035).
+ */
+export function prepare(
+  doc: Document,
+  claimId: number,
+  registry: Registry,
+  kinds?: ClaimKinds,
+): PrepareResult {
+  const c = check(doc, claimId, kinds);
   if (typeof c === 'string') return { ok: false, reason: c };
   const p = probe(doc, c, registry);
   const base = evaluate(p.doc, registry, FloatField, c.ctx).values;

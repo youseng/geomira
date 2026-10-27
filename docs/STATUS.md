@@ -1,5 +1,299 @@
 # STATUS
 
+## Run 17: discovery (the finder, special positions, branch fixes): ACCEPTED (2026-10-27)
+
+SPEC §1 (the finder, special-position hunting and branch-fix diagnosis leave Phase 2 for Run 17),
+§2 (packages/discovery → kernel, claims, num; editor → discovery), §6.1 (Signature data includes
+`guarantees`), §10.1 (claim kinds carry symmetries and finder hints; the claim-kind registry),
+§16 ('find', 'hunt', 'branchFix'). Decisions: [ADR-0035](adr/0035-finder-and-special-positions.md)
+(the finder: candidates, triviality filter, ranking, caps; special positions; lemma tags),
+[ADR-0036](adr/0036-branch-fix-diagnosis.md) (branch-fix diagnosis),
+[ADR-0037](adr/0037-find-on-150-objects-budget.md) (the maintainer's decision on the page's budget
+for find on 150 objects), [ADR-0038](adr/0038-mutation-shards-within-the-limit.md) (every nightly
+mutation shard within Stryker's time limit). PR: https://github.com/youseng/geomira/pull/24 (branch ccr-74881050-rsktgq) against main.
+
+Base check: main = 0668422 (PR #23 = Run 14, ACCEPTED below); `git fetch --tags` brought `run-14`,
+so the add-only guard compares with it ("add-only: frozen tests compared with run-14").
+
+Run order (the maintainer's decisions, not a red base): Run 11 (beta triage) and Run 9b's
+examples part stay skipped; Run 15 (the prover) is skipped; Run 17 runs before Run 16. Nothing of
+Run 16 (conics, ideal points, cross-ratio, harmonic claims) or Run 18 is in this run, and nothing
+refers to a prover, a 'prove' job, PolyFraction or a PROVED verdict. No contest problem was added.
+
+Lockfile incident (this run): cbc6b14 and bee7c94 regenerated pnpm-lock.yaml with
+`pnpm install --offline`, which resolves from the local store only and dropped every
+platform-specific optional package (about 530 lines, e.g. @rollup/rollup-linux-x64-gnu), so CI's
+vitest and the deploy build could not start (red on 94e4fd7 and 8fc01e6). 7d7999d restores main's
+lockfile and re-resolves it with `pnpm install --lockfile-only` (18 lines added, only
+packages/discovery). The container's pnpm configuration was checked: no `supportedArchitectures`,
+no `optional=false`, no `--no-optional`; the cause was the `--offline` flag alone. Never use
+`--offline` in this repository.
+
+## Done (each item → the test file that proves it)
+
+1. **ADRs and SPEC** (brief: ADRs): ADR-0035 (finder), ADR-0036 (branch-fix diagnosis); SPEC §1,
+   §2, §6.1, §10.1, §16 updated in the same commit (1618d31), citing them. ADR-0037 (the
+   maintainer's decision on the 150-object budget) amends ADR-0035 decision 15; SPEC §1 cites it.
+2. **packages/discovery**, pure (no DOM, no framework, no module-level mutable state), → num,
+   kernel, claims only; only apps/web's worker (and the page's runner) and the editor's apply step
+   import it; dependency-cruiser and the exports tests updated → `scripts/depcruise.test.ts`,
+   `packages/discovery/test/exports.test.ts`, `packages/discovery/test/index.test.ts`. Seeded RNG
+   only; every result carries its seed → `packages/discovery/test/find.test.ts`,
+   `hunt.test.ts`, `branch-fix.test.ts` (seed and determinism).
+3. **Construction facts as registry data** (triviality from tools' guarantees, never names):
+   `Signature.guarantees`, a guarantee table for every tool with definitional facts, the tool
+   reference prints them → `packages/kernel/test/guarantees.test.ts` (no stale entry, every
+   overload), `packages/discovery/test/guarantees-hold.test.ts` (each declared overload has a figure,
+   and every guarantee holds there in the local test), `packages/kernel/test/docs.test.ts` (docs/tools.md).
+4. **Generic over claim kinds**: the kinds are a registry value (`claimKindRegistry`) with
+   symmetries and finder hints; the finder reads only the registry →
+   `packages/claims/test/kind-registry.test.ts`, `claim-symmetry.test.ts` (truth and values kept under each symmetry),
+   `kind-hints.test.ts`; a TEST-ONLY kind joins without finder changes →
+   `packages/discovery/test/test-kind.test.ts` (an isosceles kind: searched, deduplicated by its
+   symmetry, reported), `candidates.test.ts` (later kinds with a circle parameter, a rotation
+   symmetry, a literal without hints).
+5. **Candidates** (tuples per kind, deduplicated by argument symmetries in the style of ADR-0029;
+   measure pairing for lengths and angles; undirected forms included and numeric only) →
+   `packages/discovery/test/candidates.test.ts`, `ticking.test.ts` (the sliced index sort against
+   a stable sort, a property).
+6. **Cheap float screen, then the LOCAL test on survivors; only HOLDS IN THIS CONFIGURATION is
+   reported, with the rungs used ("exact over Q, 200/200")** →
+   `packages/claims/test/screen.test.ts`, `packages/discovery/test/find.test.ts` (the Euler line exact over Q; a
+   coincidence of the figure rejected by the local test), `corpora.test.ts` (the degenerate corpus
+   never yields a reported fact; no false claim is reported), `text.test.ts` (rung texts).
+7. **Triviality filter** (the closure of construction facts; count shown, expandable) →
+   `packages/discovery/test/closure.test.ts`, `rules.test.ts` (kind by kind, with near misses);
+   "N construction facts hidden" → `apps/web/e2e/flows-discovery.spec.ts`.
+8. **Ranking** (ADR-0035 decision 12) → `packages/discovery/test/find.test.ts`, `rank.test.ts`.
+9. **Caps, every one visible** ("checked a of b candidates: budget", the test and result budgets,
+   the time budget) → `packages/discovery/test/text.test.ts`, `find.test.ts`,
+   `commands.test.ts` (stop at every step of every job says "stopped at the time budget").
+10. **Special-position hunting** (free inputs of every kind; positions contradicting an `assume`
+    line skipped; degenerate positions undefined; each a complete document; the current document
+    never changed) → `packages/discovery/test/hunt.test.ts`, `hunt-inputs.test.ts` (line, angle and
+    stereographic gliders, params, literal radii), `solve.test.ts`, `corpora.test.ts` (a true
+    theorem never fails at a special position).
+11. **Branch-fix diagnosis** (every assignment that makes the claim hold, cap 64 visible; order:
+    nothing moves first, then one flip, later steps first; "what moves"; preview as a draft;
+    one edit; reflection-equivariant selectors from the GUI choice) →
+    `packages/discovery/test/branch-fix.test.ts`, `branch-sites.test.ts`, `branch-fix-moves.test.ts`,
+    `packages/editor/test/discovery.test.ts` (Apply is one undoable edit),
+    `apps/web/e2e/flows-discovery.spec.ts` (Preview leaves the text unchanged; Apply; one undo).
+    Every written selector is verified (the GUI choice's too), and a definition that would be the
+    same construction as another object is written only when nothing else picks the candidate:
+    such a fix is still listed (it makes the claim hold) with "X would be the same construction as
+    R: use R instead of X", and its Apply is disabled. The edit itself would be accepted, but it
+    would leave two objects with one construction, which the language warns about and says to
+    resolve by deleting one (ADR-0036 decisions 3 and 7) →
+    `packages/discovery/test/branch-sites.test.ts`, `branch-fix.test.ts` (the
+    circle ∩ circle flips report their repeats), `apps/web/test/branch-fix-text.test.ts`.
+12. **Lemma tags** (Euler line, nine-point circle, Simson line, radical centre, Miquel point; a
+    one-line hint each; no contest problem, no attribution) →
+    `packages/discovery/test/lemmas.test.ts`, `lemmas-variants.test.ts` (forms and near misses).
+13. **UI**: "What is special?" in the Claims panel; each fact with "Add as claim" (one undoable
+    edit, shown in the text) and its objects ringed on the canvas on hover; "Special positions"
+    with View (a draft scene) and Open as new figure; branch fixes under MIXED and
+    ORIENTATION-DEPENDENT verdicts → `apps/web/e2e/flows-discovery.spec.ts`,
+    `apps/web/test/render-highlight.test.ts` (the rings), `apps/web/test/discovery-runs.test.ts`
+    (jobs, seeds, time budgets, stale results, the canvas snapshot).
+14. **Worker jobs 'find', 'hunt', 'branchFix'** with progress, cancel and budgets, in the worker
+    and in the time-sliced fallback (ADR-0030) → `apps/web/test/host-discovery.test.ts`,
+    `packages/discovery/test/job.test.ts`, `commands.test.ts`; from the single file over file://
+    → the find flow appended to `apps/web/e2e/file-url.spec.ts` (Chromium, Firefox, WebKit in CI).
+15. **A 150-object figure on the page** (ADR-0037) → `apps/web/e2e/fallback-discovery.spec.ts`
+    in its own Playwright project `measure-discovery`, which runs after `measure-fallback`
+    (`apps/web/playwright.config.ts`): in one project the two measurements ran in parallel
+    and the claim-test measurement (`fallback-long-task.spec.ts`, ≤ 16 ms) saw a 20 ms task;
+    alone it measures 8–10 ms. The gate: the job completes on the page, no task over 150 ms,
+    under 1 % of tasks over 16 ms; the numbers are logged. ADR-0030's strict 16 ms is waived for this job in
+    Run 17 (Known bugs).
+16. **Mutation**: `stryker.discovery.json`, four discovery shards (ADR-0038: one shard of 3,589
+    mutants was on course for two hours, past Stryker's 100-minute limit), gated in the nightly
+    at ≥ 75 % with num ≥ 80 %, kernel and claims ≥ 75 % → `scripts/mutation-gate.test.ts`,
+    `scripts/mutation-shards.test.ts`, `scripts/mutation-discovery.test.ts` (the shards partition
+    the config's files); scores below.
+    **Base fix** (ADR-0038): main's nightly gate has been red since Run 14's merge
+    (https://github.com/youseng/geomira/actions/runs/40413679232): kernel-j (map-ops.ts and
+    inversion-tools.ts, 814 mutants) ran out of Stryker's 100 minutes at 78 % and never saved its
+    incremental file. Its Run 14 files are now cut between their functions and their tool specs
+    and spread over light shards (inversion-tools.ts to kernel-i and kernel-k, map-ops.ts to
+    kernel-e and kernel-g); kernel-j keeps transforms.ts:133-265. There are still eleven kernel
+    shards with the same parents. The discovery groups were rebalanced by measured time: on
+    e33cf50 discovery-a took 81 minutes, 391 of its 542 mutants timeouts, so rules.ts and rank.ts
+    moved to the two shards that took 17–18 minutes.
+17. **Bugs found and fixed in this run, each with its test first**: the hunt's degeneracy check
+    read the screen's probe values (every glider position was skipped) → `hunt-inputs.test.ts`;
+    the triviality rule hid ∠ABC = ∠DEF for arms on the same lines (supplementary with one arm
+    reversed) → `rules.test.ts`, `closure.test.ts`; a stop during ranking was ignored →
+    `commands.test.ts`; a side midpoint on a drawn nine-point circle was not tagged →
+    `lemmas-variants.test.ts`; a branch fix wrote one object's definition into another (two
+    objects with one construction) where an equivalent selector existed, and never verified the
+    GUI choice's selectors → `branch-sites.test.ts`; "what moves" judged a line's turn by the length band →
+    `branch-fix-moves.test.ts`; steps of 50–140 ms on 150 objects → `ticking.test.ts` and the
+    150-object measurement.
+
+## Not done
+
+- ADR-0030's ≤ 16 ms for every main-thread task during find on a 150-object figure without
+  workers: waived by the maintainer for Run 17 (ADR-0037); see Known bugs.
+
+CI on 4424eee was red (the e2e branch-fix flow): the test read the text panel before it showed
+the applied edit (a read race; the trace's snapshot right after shows the edit applied, with
+the language's warning that X and R were one construction). Fixed in the test (it waits for the
+text), in the figure (R is built so the fix repeats nothing), and in the job (decision 7 above).
+CI on a933455 was red for the same kind of race in the special-positions flow (the text read
+right after "Open as new figure"); e33cf50 makes that flow and the Add-as-claim step wait for
+the text panel before reading it.
+
+## Known bugs
+
+- **Find on 150 objects without workers: sporadic pauses of 27–72 ms** (ADR-0037). Reproduction:
+  `pnpm --filter @geomira/web exec playwright test --project=measure-fallback fallback-discovery`
+  (after `pnpm build`); the run logs `longest` and `over16`. Over six local runs the longest task
+  was 27, 30, 39, 57, 66 and 72 ms, with a long task (≥ 50 ms) in three; about 13–35 of
+  5,100–5,900 tasks are over 16 ms. They look like collector pauses from allocation churn (an
+  inference from traces). Follow-up (ADR-0037 decision 4): a heap-allocation profile, less
+  allocation in the screen, the candidate keys and the tuple copies, then the claim tester's
+  steps and the slice loop's prediction.
+- The measure pairing's wrap-around windows (`windows` in candidates.ts, for measures within the
+  window of 0 or π) cannot be reached while flat measures within the same window are dropped as
+  trivial; harmless, left as written.
+
+## Uncertain
+
+- None on mathematics. The five lemma tags are standard named results (Euler line; nine-point
+  circle; Simson line; radical centre of three circles with non-collinear centres; Miquel point
+  for points on the side lines); their hints say only that. A tag never decides whether a fact is
+  reported.
+
+## Changed frozen tests
+
+Under ADR-0035 decision 17 and ADR-0038 decision 3 (commit messages cite them); `pnpm rules`
+reports 0 violations against run-14:
+
+| file                                          | change                                                                                                                                    |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/depcruise.test.ts`                   | the package list and editor's line gain `discovery` (2 lines changed), discovery's line and its sample file added                         |
+| `scripts/mutation-gate.test.ts`               | `3 + SHARDS.length` → `4 + …`; the three-entry pass list → four (2 lines changed)                                                         |
+| `scripts/mutation-shards.test.ts`             | lines added for the discovery shards; one line changed (ADR-0038): "every file a shard names exists" also looks in packages/discovery/src |
+| exports tests of kernel, claims, editor, lang | lines added only (new subpaths and names)                                                                                                 |
+| `apps/web/e2e/file-url.spec.ts`               | one test appended (the find flow from file://)                                                                                            |
+
+## Acceptance command output
+
+### Local (`pnpm verify` on 8ec3cfd, the final code commit)
+
+```
+✔ no dependency violations found (749 modules, 4231 dependencies cruised)
+ok   tolerance: 1058 files scanned, 0 violation(s)
+ok   file-length: 1058 files scanned, 0 violation(s)
+ok   test-count: 3609 tests, floor 3305, 0 violation(s)
+ok   disabled-tests: 1058 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-14, 0 violation(s)
+ok   forbidden-words: 1058 files scanned, 0 violation(s)
+ Test Files  2 failed | 401 passed (403)
+      Tests  2 failed | 3607 passed (3609)
+```
+
+The two local failures were `Test timed out in 5000ms` in frozen tests that this run does not
+change (`apps/web/test/laws/scene-laws.test.ts`, `packages/lang/test/display-notation.test.ts`),
+with the container's load average at 3.5; both pass alone
+(`pnpm exec vitest run <both files>`: 7 passed), and earlier local runs timed out in other frozen
+tests the same way (`sampler-local-10sigma`), each passing alone. CI's verify on the same commit
+passed every test (below), which is the source of truth.
+
+### CI on GitHub (code head 8ec3cfd; the commit marking the run ACCEPTED changes only docs)
+
+- ci (push) https://github.com/youseng/geomira/actions/runs/40493072277: success. Verify:
+
+  ```
+  ok   test-count: 3609 tests, floor 3305, 0 violation(s)
+  ok   add-only: frozen tests compared with run-14, 0 violation(s)
+   Test Files  403 passed (403)
+        Tests  3609 passed (3609)
+  All files          |   96.93 |    90.99 |   99.23 |   98.38 |
+  ```
+
+  End-to-end: 125 passed (Chromium, Firefox, WebKit, mobile, pages), including
+  `flows-discovery.spec.ts` (3), the file:// find flow in `file-url.spec.ts`, and the
+  measurement (ADR-0037's gate: ≤ 150 ms, under 1 % over 16 ms):
+
+  ```
+  main thread during find on 150 objects without workers: {"objects":150,"tasks":3792,"seconds":14.9,"longest":[17.9,17.6,16.1,15.9,15.9],"over16":3,"longTasks":[]}
+  ```
+
+- ci (pull request) https://github.com/youseng/geomira/actions/runs/40493077573: its verify step (3609 tests, the
+  rules) and both builds passed on both attempts, but "Install Playwright browsers" (`playwright
+install --with-deps`, apt from azure.archive.ubuntu.com at about 50 kB/s) ran into the job's
+  40-minute limit both times, before any end-to-end test; the push run above, on the same commit
+  and workflow, installed the browsers in 51 s and passed every end-to-end test. Not a failure of
+  this run's code; the next commit's pull-request run is the check.
+- deploy https://github.com/youseng/geomira/actions/runs/40493072020: success.
+- tex https://github.com/youseng/geomira/actions/runs/40493077923: success.
+- nightly https://github.com/youseng/geomira/actions/runs/40493078895 (dispatch): success (the
+  test suite with NIGHTLY=1, every mutation shard, the gate):
+
+```
+num mutation gate: 93.47% (730 detected, 51 undetected; threshold 80%): pass
+kernel mutation gate: 97.95% (2391 detected, 50 undetected; threshold 75%): pass
+claims mutation gate: 85.70% (2248 detected, 375 undetected; threshold 75%): pass
+discovery mutation gate: 85.25% (1682 detected, 291 undetected; threshold 75%): pass
+num mutation score: 93.47% (730 detected, 51 undetected; target 80%, gated from v1.1)
+kernel-a mutation score: 96.40% (241 detected, 9 undetected; target 75%, gated from v1.1)
+kernel-b mutation score: 96.10% (148 detected, 6 undetected; target 75%, gated from v1.1)
+kernel-c mutation score: 94.51% (241 detected, 14 undetected; target 75%, gated from v1.1)
+kernel-d mutation score: 99.00% (198 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-e mutation score: 98.99% (197 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-f mutation score: 99.59% (241 detected, 1 undetected; target 75%, gated from v1.1)
+kernel-g mutation score: 99.34% (301 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-i mutation score: 98.24% (167 detected, 3 undetected; target 75%, gated from v1.1)
+kernel-j mutation score: 100.00% (117 detected, 0 undetected; 213 mutants outside the shard not counted; target 75%, gated from v1.1)
+kernel-k mutation score: 97.14% (204 detected, 6 undetected; 143 mutants outside the shard not counted; target 75%, gated from v1.1)
+kernel-h mutation score: 98.53% (336 detected, 5 undetected; target 75%, gated from v1.1)
+claims mutation score: 85.70% (2248 detected, 375 undetected; target 75%, gated from v1.1)
+discovery-a mutation score: 90.94% (271 detected, 27 undetected; 453 mutants outside the shard not counted; target 75%, gated from v1.1)
+discovery-b mutation score: 93.26% (415 detected, 30 undetected; target 75%, gated from v1.1)
+discovery-c mutation score: 81.75% (587 detected, 131 undetected; target 75%, gated from v1.1)
+discovery mutation score: 79.88% (409 detected, 103 undetected; 910 mutants outside the shard not counted; target 75%, gated from v1.1)
+```
+
+Shard times (ADR-0038). Against main before this run, the scores are unchanged for num (93.47 %)
+and claims (85.70 %); main's own gate has been red since Run 14's merge (kernel-j out of time,
+https://github.com/youseng/geomira/actions/runs/40413679232), which this run fixes.
+
+- Cold runs on e33cf50 (https://github.com/youseng/geomira/actions/runs/40479162163, gate
+  passed, the first layout): kernel-j 91 min, discovery-a 81, discovery-b 55, discovery-c 18,
+  discovery 17, kernel-k 16; every other shard under 3 minutes.
+- On 8ec3cfd, which reuses those results and runs only the moved files: discovery 23.6 min
+  (rank.ts new there), kernel-g 17.9 (map-ops.ts specs), discovery-c 8.1 (rules.ts), kernel-e
+  4.1 (map-ops.ts functions); the others under 3 minutes. Estimated cold times of the final
+  layout: kernel-j about 69 min (91 less map-ops.ts' 22), discovery-a about 52 (81 less
+  rules.ts' 8 and rank.ts' 21), the last discovery shard about 38, every other shard under 30. These are estimates from the two
+  runs, not a measured cold run (see Requests).
+- The counted totals are the same before and after the move (kernel 2,441 mutants, discovery
+  1,973), so no mutant dropped out of the gate.
+
+Earlier nightlies on this branch: 40465577525 (4424eee) failed the gate because a push cancelled
+its discovery and kernel-j shards (both were also on course to run out of time); dispatches
+cancelled by a later push reported "no report", not a failure of the code.
+
+## Requests
+
+- Tag this run's merge as `run-17`, so the add-only guard freezes the new tests.
+- The test-count floor is raised to 3609 (docs/test-count.txt).
+- ADR-0037's follow-up (every task within 16 ms on 150 objects) needs a run of its own.
+- Follow-up (nightly, ADR-0038): main's first nightly after a merge runs every mutation shard in
+  full, because a branch's incremental caches are not visible to main. Shard sizes must
+  therefore fit a cold run within Stryker's 100 minutes with margin, not only the branch's
+  incremental runs. On e33cf50 the cold runs were kernel-j 91 min and discovery-a 81 min; both
+  were spread further before acceptance, to an estimated 69 and 52 minutes (Acceptance command
+  output). The first post-merge nightly on main is the first measured cold run of the final
+  layout: check every shard's "Stryker took N min" line, and split any shard over about 70
+  minutes. kernel-j is the one to watch: its range (transforms.ts:133-265) is fixed by the frozen
+  `scripts/mutation-summary.test.ts`, so splitting it needs an ADR that changes that test.
+
+---
+
 ## Run 14: inversion via Möbius transformations: ACCEPTED (2026-10-26)
 
 SPEC §1 (inversion leaves "Phase 2, documented only"), §4 (`outside`), §6.2, §8.1, §18 E3/E5.

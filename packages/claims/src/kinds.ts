@@ -7,13 +7,11 @@ import { CURVE_KINDS } from './kinds-curves';
 import { INCIDENCE_KINDS } from './kinds-incidence';
 import { METRIC_KINDS } from './kinds-metric';
 import type { ClaimKindSpec } from './kind';
+import { withHints } from './kind-hints';
 
-export const CLAIM_KINDS: readonly ClaimKindSpec[] = Object.freeze([
-  ...INCIDENCE_KINDS,
-  ...CURVE_KINDS,
-  ...METRIC_KINDS,
-  ...ANGLE_KINDS,
-]);
+export const CLAIM_KINDS: readonly ClaimKindSpec[] = Object.freeze(
+  [...INCIDENCE_KINDS, ...CURVE_KINDS, ...METRIC_KINDS, ...ANGLE_KINDS].map(withHints),
+);
 
 /**
  * SPEC §10.1: collinear, concyclic, concurrent, parallel, perpendicular, on, tangent, equal

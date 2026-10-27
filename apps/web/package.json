@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@geomira/claims": "workspace:*",
+    "@geomira/discovery": "workspace:*",
     "@geomira/editor": "workspace:*",
     "@geomira/export": "workspace:*",
     "@geomira/kernel": "workspace:*",

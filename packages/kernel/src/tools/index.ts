@@ -3,6 +3,7 @@
  * of Run 14 (ADR-0032), in registry order (read only by registry.ts; the generated docs group
  * them by family).
  */
+import { withGuarantees } from '../guarantees';
 import type { ToolSpec } from '../tool';
 import { ARC_TOOLS } from './arc';
 import { ARITHMETIC_TOOLS } from './arithmetic';
@@ -26,27 +27,29 @@ import { TRANSFORM_TOOLS } from './transforms';
 import { TRIANGLE_TOOLS } from './triangle';
 import { INVERSION_TOOLS } from '../transform/inversion-tools';
 
-export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze([
-  ...POINT_TOOLS,
-  ...INTERSECT_TOOLS,
-  ...TRIANGLE_TOOLS,
-  ...LINE_TOOLS,
-  ...MEASURE_TOOLS,
-  ...DISPLAY_TOOLS,
-  ...ARITHMETIC_TOOLS,
-  ...CIRCLE_TOOLS,
-  ...GLIDER_TOOLS,
-  ...OTHER_TOOLS,
-  ...TANGENT_TOOLS,
-  ...INCIRCLE_TOOLS,
-  ...FUNCTION_TOOLS,
-  NINEPOINT_CENTER_TOOL,
-  ...CIRCLE_MEASURE_TOOLS,
-  ...TANGENT_FROM_TOOLS,
-  ...TRANSFORM_TOOLS,
-  ...MARK_TOOLS,
-  ...CONJUGATE_TOOLS,
-  ...POLE_TOOLS,
-  ...ARC_TOOLS,
-  ...INVERSION_TOOLS,
-]);
+export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze(
+  [
+    ...POINT_TOOLS,
+    ...INTERSECT_TOOLS,
+    ...TRIANGLE_TOOLS,
+    ...LINE_TOOLS,
+    ...MEASURE_TOOLS,
+    ...DISPLAY_TOOLS,
+    ...ARITHMETIC_TOOLS,
+    ...CIRCLE_TOOLS,
+    ...GLIDER_TOOLS,
+    ...OTHER_TOOLS,
+    ...TANGENT_TOOLS,
+    ...INCIRCLE_TOOLS,
+    ...FUNCTION_TOOLS,
+    NINEPOINT_CENTER_TOOL,
+    ...CIRCLE_MEASURE_TOOLS,
+    ...TANGENT_FROM_TOOLS,
+    ...TRANSFORM_TOOLS,
+    ...MARK_TOOLS,
+    ...CONJUGATE_TOOLS,
+    ...POLE_TOOLS,
+    ...ARC_TOOLS,
+    ...INVERSION_TOOLS,
+  ].map(withGuarantees),
+);

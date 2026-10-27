@@ -30,6 +30,7 @@ import { useSettled } from './settled';
 import { shareUrl } from './share-url';
 import { EditorStore, useSnapshot, type Snapshot } from './store';
 import { TestRuns } from './test-runs';
+import { DiscoveryRuns } from './discovery-runs';
 import { TestHost } from './worker/host';
 
 const BENCH_FRAMES = 120;
@@ -73,6 +74,17 @@ export function usePage() {
   );
   const host = useMemo(() => new TestHost(), []);
   const runs = useMemo(() => new TestRuns(host, onInternal), [host, onInternal]);
+  const discovery = useMemo(
+    () => new DiscoveryRuns(host, browserTimer, onInternal),
+    [host, onInternal],
+  );
+  useEffect(
+    () =>
+      runs.onClear(() => {
+        discovery.clear();
+      }),
+    [runs, discovery],
+  );
   const pwa = useMemo(browserPwa, []);
   useEffect(() => startPwa(pwa, window, document), [pwa]);
   useEffect(() => {
@@ -93,7 +105,18 @@ export function usePage() {
   sceneRef.current = scene;
   const sceneOf = useCallback(() => sceneRef.current, []);
   const about = useMemo(() => ({ pwa, host }), [pwa, host]);
-  return { internal, setInternal, onInternal, store, runs, snap, scene, sceneOf, about };
+  return {
+    ...{ internal, setInternal, onInternal, store, runs, discovery },
+    ...{ snap, scene, sceneOf, about },
+  };
+}
+
+/** The browser's timer for the discovery jobs' time budgets. */
+function browserTimer(f: () => void, ms: number): () => void {
+  const id = setTimeout(f, ms);
+  return () => {
+    clearTimeout(id);
+  };
 }
 
 /** Fits the current figure into the canvas. */

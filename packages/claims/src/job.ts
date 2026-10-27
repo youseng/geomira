@@ -22,6 +22,7 @@ import { isOrientationDependent } from '@geomira/kernel/selector';
 import type { Value } from '@geomira/kernel/value';
 import { EXACT_BUDGET_BITS, HARD_ACCEPTANCE, RETRY_FACTOR } from './constants';
 import { CURRENT_FIGURE_SEED } from './current';
+import type { ClaimKinds } from './kind-registry';
 import { valueOf } from './eval-claim';
 import { flipSelector } from './expr-path';
 import { prepare, type Prepared, type SiteProbe } from './prepare';
@@ -54,6 +55,8 @@ export interface JobEnv {
   readonly registry: Registry;
   readonly entropy?: EntropySource;
   readonly budgetBits?: number;
+  /** The claim kinds (default: v1's; ADR-0035). */
+  readonly kinds?: ClaimKinds;
 }
 
 export interface JobProgress {
@@ -217,7 +220,7 @@ export function* runJob(
   job: TestClaimJob,
   env: JobEnv,
 ): Generator<JobProgress, JobResult, JobCommand> {
-  const p = prepare(job.doc, job.claim, env.registry);
+  const p = prepare(job.doc, job.claim, env.registry, env.kinds);
   if (!p.ok) return { kind: 'invalid', reason: p.reason };
   if (!(Number.isSafeInteger(job.n) && job.n > 0))
     return { kind: 'invalid', reason: 'n must be a positive integer' };

@@ -33,7 +33,8 @@
     "./incidence": "./src/incidence.ts",
     "./construction-key": "./src/construction-key.ts",
     "./transform/mobius": "./src/transform/mobius.ts",
-    "./transform/apply-map": "./src/transform/apply-map.ts"
+    "./transform/apply-map": "./src/transform/apply-map.ts",
+    "./guarantees": "./src/guarantees.ts"
   },
   "dependencies": {
     "@geomira/num": "workspace:*"

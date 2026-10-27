@@ -72,6 +72,8 @@ export const LIGHT_THEME: Theme = {
 export interface UiState {
   readonly hover: number | null;
   readonly selection: ReadonlySet<number>;
+  /** The objects of a hovered discovery fact (ADR-0035): ringed like the hovered object. */
+  readonly highlight?: ReadonlySet<number>;
 }
 
 export const NO_UI: UiState = { hover: null, selection: new Set() };
@@ -112,7 +114,8 @@ function colour(ctx: Canvas2D, key: 'strokeStyle' | 'fillStyle', c: string | nul
 
 function halo(ctx: Canvas2D, item: DisplayItem, ui: UiState, theme: Theme): void {
   const selected = ui.selection.has(item.id);
-  if (!selected && ui.hover !== item.id) return;
+  const hovered = ui.hover === item.id || ui.highlight?.has(item.id) === true;
+  if (!selected && !hovered) return;
   ctx.globalAlpha = 0.35;
   ctx.strokeStyle = selected ? theme.selection : theme.hover;
   ctx.fillStyle = ctx.strokeStyle;

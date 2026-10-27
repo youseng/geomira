@@ -18,12 +18,10 @@ import { assertNever } from '@geomira/num/assert';
 import { isInexact, type Field } from '@geomira/num/field';
 import { FloatField } from '@geomira/num/float-field';
 import { ModPField, P } from '@geomira/num/modp';
-import { fromNumber, rational, toNumber } from '@geomira/num/rational';
+import { rational } from '@geomira/num/rational';
 import { uniformBigInt, type EntropySource, type Rng } from '@geomira/num/rng';
-import { FLOOR_DELTA, FLOOR_SAMPLES } from '@geomira/num/tolerance';
+import { FLOOR_SAMPLES } from '@geomira/num/tolerance';
 import { evalContextFor } from '@geomira/kernel/context';
-import { figureDiameter } from '@geomira/kernel/figure-size';
-import { applySimilarity, similarity } from '@geomira/kernel/similarity';
 import type { Document } from '@geomira/kernel/document';
 import { evaluate } from '@geomira/kernel/evaluate';
 import type { EvalContext } from '@geomira/kernel/tool';
@@ -34,7 +32,8 @@ import { readFree, writeFree, type Assignment, type FreeInput } from './free';
 import { checkAssumption } from './hypotheses';
 import { fitsParam, formatClaimMessage, paramAt } from './kind';
 import { freeKey, type Prepared } from './prepare';
-import { truncate, withoutProbes } from './probes';
+import { judgingFactor, perturbFree, scaledArgs } from './perturb';
+import { truncate } from './probes';
 
 export type RungName = 'exact over Q' | 'exact mod p' | 'numeric';
 
@@ -188,59 +187,6 @@ function modpRung(prep: Prepared, doc: Document, src: EntropySource): SampleOutc
   return isInexact(d) ? undefined : fromDecision(d, 'exact mod p', prep);
 }
 
-/**
- * The free inputs moved by FLOOR_DELTA in their natural units (lengths: scale; a line
- * glider's t: scale/|d|; an angle: radians; (u : v): |(u, v)|, as the parameter is
- * homogeneous, so the step is relative to it; a param: its range). Degenerate: (0 : 0) →
- * a step of 0 (the glider is undefined either way).
- */
-function perturbed(prep: Prepared, doc: Document, rng: Rng, scale: number): Document {
-  const jitter = (x: { num: bigint; den: bigint }, unit: number) =>
-    fromNumber(toNumber(x) + FLOOR_DELTA * unit * rng.gaussian());
-  const out: Assignment[] = [];
-  for (const input of prep.free) {
-    const v = readFree(doc, input);
-    if (v === undefined || input.kind === 'radius') continue;
-    const glider = prep.gliderObjects.get(freeKey(input.id, input.path));
-    const unit =
-      input.kind === 'point'
-        ? scale
-        : input.kind === 'line-glider' && glider?.kind === 'line'
-          ? scale / Math.hypot(glider.d.x, glider.d.y)
-          : input.kind === 'angle-glider'
-            ? 180 / Math.PI
-            : input.kind === 'stereo'
-              ? Math.hypot(...v.map(toNumber))
-              : 1;
-    if (input.kind === 'param') {
-      const [lo, hi, x] = v;
-      if (lo !== undefined && hi !== undefined && x !== undefined)
-        out.push({ input, values: [lo, hi, jitter(x, toNumber(hi) - toNumber(lo))] });
-      continue;
-    }
-    out.push({ input, values: v.map((x) => jitter(x, unit)) });
-  }
-  return writeFree(doc, out);
-}
-
-/**
- * The factor the numeric rung scales a figure's claim arguments by before judging them: the
- * evaluation scale over the figure's size (probes excluded) when the size is below it (SPEC
- * §3.1's clamp to ≥ 1), so a small figure is judged as the same figure at size 1; else 1.
- * Degenerate cases: no size (a single point, no free point) or a non-finite one → 1.
- */
-function judgingFactor(doc: Document, ctx: EvalContext): number {
-  const d = figureDiameter(withoutProbes(doc));
-  return d !== undefined && Number.isFinite(d) && d > 0 && d < ctx.scale ? ctx.scale / d : 1;
-}
-
-/** The claim's arguments scaled by k about the origin (numbers are dimensionless: kept). */
-function scaledArgs(args: readonly Value<number>[], k: number): Value<number>[] {
-  if (k === 1) return [...args];
-  const s = similarity(false, { re: k, im: 0 }, { re: 0, im: 0 });
-  return args.map((v) => (v.kind === 'number' ? v : applySimilarity(FloatField, s, v)));
-}
-
 function numericRung(
   prep: Prepared,
   doc: Document,
@@ -250,8 +196,9 @@ function numericRung(
 ): SampleOutcome {
   const k = judgingFactor(doc, ctx);
   const others: (Value<number>[] | Undefined)[] = [];
+  const glider = (input: FreeInput) => prep.gliderObjects.get(freeKey(input.id, input.path));
   for (let i = 0; i < FLOOR_SAMPLES; i++) {
-    const p = perturbed(prep, doc, rng, ctx.scale / k);
+    const p = perturbFree(prep.free, glider, doc, rng, ctx.scale / k);
     const values = evaluate(truncate(p, prep.claimClosure), prep.registry, FloatField, ctx).values;
     const a = claimArgs(prep, FloatField, values);
     others.push(Array.isArray(a) ? scaledArgs(a, k) : a.kind === 'undefined' ? a : undef(a.reason));

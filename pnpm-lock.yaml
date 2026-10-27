@@ -68,6 +68,9 @@ importers:
       '@geomira/claims':
         specifier: workspace:*
         version: link:../../packages/claims
+      '@geomira/discovery':
+        specifier: workspace:*
+        version: link:../../packages/discovery
       '@geomira/editor':
         specifier: workspace:*
         version: link:../../packages/editor
@@ -121,11 +124,26 @@ importers:
         specifier: workspace:*
         version: link:../num
 
+  packages/discovery:
+    dependencies:
+      '@geomira/claims':
+        specifier: workspace:*
+        version: link:../claims
+      '@geomira/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@geomira/num':
+        specifier: workspace:*
+        version: link:../num
+
   packages/editor:
     dependencies:
       '@geomira/claims':
         specifier: workspace:*
         version: link:../claims
+      '@geomira/discovery':
+        specifier: workspace:*
+        version: link:../discovery
       '@geomira/kernel':
         specifier: workspace:*
         version: link:../kernel

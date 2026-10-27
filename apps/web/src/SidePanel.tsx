@@ -10,6 +10,7 @@ import { ObjectsPanel } from './panels/ObjectsPanel';
 import { TextPanel, type TextDraft } from './panels/TextPanel';
 import { useSettled } from './settled';
 import type { EditorStore } from './store';
+import type { DiscoveryRuns } from './discovery-runs';
 import type { TestRuns } from './test-runs';
 
 /** The tabs; styles are edited in the style card of each object (ADR-0029), not in a tab. */
@@ -23,6 +24,8 @@ export interface SidePanelProps {
   /** Ids of the curves not drawable at the current zoom (ADR-0023). */
   readonly undrawable: readonly number[];
   readonly runs: TestRuns;
+  /** The discovery jobs (ADR-0035, ADR-0036), shown in the Claims panel. */
+  readonly discovery: DiscoveryRuns;
   readonly tab: Tab;
   /** Shows a tab (on a phone this also opens the drawer). */
   readonly onTab: (t: Tab) => void;
@@ -36,7 +39,7 @@ export interface SidePanelProps {
 
 type BodyProps = Pick<
   SidePanelProps,
-  'tab' | 'store' | 'state' | 'runs' | 'onTestClaim' | 'undrawable' | 'onStyle'
+  'tab' | 'store' | 'state' | 'runs' | 'discovery' | 'onTestClaim' | 'undrawable' | 'onStyle'
 > & {
   readonly coincident: number;
   readonly kept: RefObject<TextDraft | null>;
@@ -48,6 +51,7 @@ const Body = memo(function Body({
   store,
   state,
   runs,
+  discovery,
   onTestClaim,
   coincident,
   kept,
@@ -62,7 +66,15 @@ const Body = memo(function Body({
     case 'Layers':
       return <LayersPanel store={store} state={state} coincident={coincident} />;
     case 'Claims':
-      return <ClaimsPanel store={store} state={state} runs={runs} onTestClaim={onTestClaim} />;
+      return (
+        <ClaimsPanel
+          store={store}
+          state={state}
+          runs={runs}
+          discovery={discovery}
+          onTestClaim={onTestClaim}
+        />
+      );
     case 'Help':
       return <HelpPanel />;
     default:
@@ -78,7 +90,8 @@ const Body = memo(function Body({
  * shown (Run 10 audit, W4).
  */
 export function SidePanel(props: SidePanelProps) {
-  const { store, scene, runs, tab, onTab, open, onClose, onTestClaim, undrawable, onStyle } = props;
+  const { store, scene, runs, discovery, tab, onTab, open, onClose } = props;
+  const { onTestClaim, undrawable, onStyle } = props;
   const state = useSettled(props.state);
   const kept = useRef<TextDraft>(null);
   return (
@@ -108,6 +121,7 @@ export function SidePanel(props: SidePanelProps) {
           store={store}
           state={state}
           runs={runs}
+          discovery={discovery}
           onTestClaim={onTestClaim}
           coincident={scene.coincident.length}
           kept={kept}

@@ -98,6 +98,30 @@ export interface Signature {
    * change their meaning, so packages/claims' samplers do not apply one unless they map them.
    */
   readonly absolute?: readonly number[];
+  /**
+   * The facts the overload's result has BY DEFINITION (ADR-0035), as claim templates: the
+   * claim kind's name (packages/claims) and its arguments over the call. Read by the generated
+   * docs and by packages/discovery, which hides such facts ("construction facts") instead of
+   * reporting them as findings. Every declared guarantee is property-tested there.
+   */
+  readonly guarantees?: readonly Guarantee[];
+}
+
+/**
+ * A term of a guarantee (ADR-0035): the call's result, one of its arguments (0-based), a
+ * nested call of a registry tool over such terms (`midpoint(0, 1)`), or an exact literal.
+ */
+export type GuaranteeTerm =
+  | 'result'
+  | number
+  | { readonly tool: string; readonly args: readonly GuaranteeTerm[] }
+  | { readonly lit: string };
+
+/** A claim that holds for every call of the overload where its objects are defined. */
+export interface Guarantee {
+  /** A claim kind of packages/claims (the kernel stores claims as data, ADR-0003 item 5). */
+  readonly claim: string;
+  readonly args: readonly GuaranteeTerm[];
 }
 
 /**

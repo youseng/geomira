@@ -16,7 +16,7 @@ interface SpecDependencies {
 const require = createRequire(import.meta.url);
 const config = require('../.dependency-cruiser.cjs') as DepcruiseConfig;
 const table = require('./spec-dependencies.cjs') as SpecDependencies;
-const PACKAGES = ['num', 'kernel', 'claims', 'lang', 'scene', 'editor', 'export'];
+const PACKAGES = ['num', 'kernel', 'claims', 'lang', 'scene', 'editor', 'export', 'discovery'];
 
 /** SPEC §2, restated independently of the config so a config edit cannot weaken both. */
 const SPEC: Record<string, readonly string[]> = {
@@ -25,8 +25,9 @@ const SPEC: Record<string, readonly string[]> = {
   claims: ['kernel', 'num'],
   lang: ['kernel', 'claims', 'num'],
   scene: ['kernel', 'num'],
-  editor: ['kernel', 'claims', 'lang', 'scene', 'num'],
+  editor: ['kernel', 'claims', 'lang', 'scene', 'num', 'discovery'],
   export: ['scene', 'kernel', 'lang', 'num'],
+  discovery: ['kernel', 'claims', 'num'],
 };
 
 let root: string;

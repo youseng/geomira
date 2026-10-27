@@ -7,10 +7,16 @@
  * Run 12). Workers count as unavailable when the platform has no Worker, when creating one
  * throws (a page from file:// in some browsers), or when the worker fails or stays silent for
  * READY_MS before it says `ready`; the jobs already sent then move to the page. A worker that
- * fails after it was ready is a real failure of its jobs, reported as before.
+ * fails after it was ready is a real failure of its jobs, reported as before. Discovery jobs
+ * (find, hunt, branchFix: ADR-0035, ADR-0036) take the same path, with `stop` for the page's
+ * time budget besides `cancel`.
  */
 import type { JobResult, TestClaimJob } from '@geomira/claims/job';
+import type { DiscoveryJob, DiscoveryOutcome } from '@geomira/discovery/job';
+import type { DiscoveryProgress } from '@geomira/discovery/types';
+import { branchChooser } from '@geomira/editor/discovery';
 import { createRegistry } from '@geomira/kernel/registry';
+import { assertNever } from '@geomira/num/assert';
 import { cryptoSource } from '@geomira/num/rng';
 import { InlineRunner, pageClock } from './inline-runner';
 import { isFromWorker, READY_MS, type ToWorker } from './protocol';
@@ -41,12 +47,19 @@ export type Runner =
   | { readonly kind: 'idle' | 'starting' | 'worker' }
   | { readonly kind: 'page'; readonly reason: string };
 
-interface Pending {
-  readonly job: TestClaimJob;
-  readonly callbacks: JobCallbacks;
+export type DiscoveryCallbacks = JobCallbacks<DiscoveryProgress, DiscoveryOutcome>;
+
+type Pending = (
+  | { readonly kind: 'test'; readonly job: TestClaimJob; readonly callbacks: JobCallbacks }
+  | {
+      readonly kind: 'discovery';
+      readonly job: DiscoveryJob;
+      readonly callbacks: DiscoveryCallbacks;
+    }
+) & {
   /** The page runner's id, after a fallback. */
   inline?: number;
-}
+};
 
 /** The browser's: a module worker (or the single-file build's inlined one) and Web Crypto. */
 export function browserDeps(): HostDeps {
@@ -57,6 +70,7 @@ export function browserDeps(): HostDeps {
         {
           registry: createRegistry(),
           entropy: cryptoSource((b) => crypto.getRandomValues(b)),
+          choose: branchChooser,
         },
         pageClock(),
       ),
@@ -138,13 +152,29 @@ export class TestHost {
     }
     const p = this.jobs.get(m.id);
     if (p === undefined || p.inline !== undefined) return;
-    if (m.type === 'progress') {
-      p.callbacks.progress(m.progress);
+    if (m.type === 'error') {
+      this.jobs.delete(m.id);
+      p.callbacks.error(m.message);
       return;
     }
-    this.jobs.delete(m.id);
-    if (m.type === 'result') p.callbacks.result(m.result);
-    else p.callbacks.error(m.message);
+    switch (p.kind) {
+      case 'test':
+        if (m.type === 'progress') p.callbacks.progress(m.progress);
+        else if (m.type === 'result') {
+          this.jobs.delete(m.id);
+          p.callbacks.result(m.result);
+        }
+        return;
+      case 'discovery':
+        if (m.type === 'found-progress') p.callbacks.progress(m.progress);
+        else if (m.type === 'found') {
+          this.jobs.delete(m.id);
+          p.callbacks.result(m.result);
+        }
+        return;
+      default:
+        assertNever(p, 'job');
+    }
   }
 
   private onError(message: string): void {
@@ -170,7 +200,16 @@ export class TestHost {
 
   private runOnPage(p: Pending): void {
     this.page ??= this.deps.inline();
-    p.inline = this.page.start(p.job, p.callbacks);
+    switch (p.kind) {
+      case 'test':
+        p.inline = this.page.start(p.job, p.callbacks);
+        return;
+      case 'discovery':
+        p.inline = this.page.startDiscovery(p.job, p.callbacks);
+        return;
+      default:
+        assertNever(p, 'job');
+    }
   }
 
   /** Starts the worker ahead of the first test (the page calls it once it is idle). */
@@ -190,16 +229,43 @@ export class TestHost {
       callbacks.error(message);
     };
     const p: Pending = {
+      kind: 'test',
       job,
       callbacks: { progress: callbacks.progress, result: done, error: failed },
     };
+    this.send(id, p, { type: 'run', id, job });
+    return id;
+  }
+
+  /** Starts a discovery job (ADR-0035, ADR-0036); returns its id (for cancel and stop). */
+  startDiscovery(job: DiscoveryJob, callbacks: DiscoveryCallbacks): number {
+    const id = this.next++;
+    const p: Pending = {
+      kind: 'discovery',
+      job,
+      callbacks: {
+        progress: callbacks.progress,
+        result: (r) => {
+          this.jobs.delete(id);
+          callbacks.result(r);
+        },
+        error: (message) => {
+          this.jobs.delete(id);
+          callbacks.error(message);
+        },
+      },
+    };
+    this.send(id, p, { type: 'discover', id, job });
+    return id;
+  }
+
+  private send(id: number, p: Pending, message: ToWorker): void {
     this.jobs.set(id, p);
     this.ensure();
     // A fallback inside ensure() already moved this job to the page.
     if (this.state.kind === 'page') {
       if (p.inline === undefined) this.runOnPage(p);
-    } else this.worker?.postMessage({ type: 'run', id, job });
-    return id;
+    } else this.worker?.postMessage(message);
   }
 
   cancel(id: number): void {
@@ -207,5 +273,13 @@ export class TestHost {
     if (p === undefined) return;
     if (p.inline !== undefined) this.page?.cancel(p.inline);
     else this.worker?.postMessage({ type: 'cancel', id });
+  }
+
+  /** The time budget of a discovery job is over: it finishes with what it has confirmed. */
+  stop(id: number): void {
+    const p = this.jobs.get(id);
+    if (p === undefined) return;
+    if (p.inline !== undefined) this.page?.stop(p.inline);
+    else this.worker?.postMessage({ type: 'stop', id });
   }
 }

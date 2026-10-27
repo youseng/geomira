@@ -10,7 +10,7 @@ const pages = process.env['GEOMIRA_PAGES_URL'];
 const singleFile = pathToFileURL(fileURLToPath(new URL('dist-single/', import.meta.url))).href;
 
 /** Specs that run only in their own projects below. */
-const OWN = 'long-task|drag-frame|pages-smoke|file-url|fallback-long-task|pwa';
+const OWN = 'long-task|drag-frame|pages-smoke|file-url|fallback-long-task|fallback-discovery|pwa';
 
 export default defineConfig({
   testDir: 'e2e',
@@ -84,6 +84,14 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'], baseURL: singleFile },
       testMatch: /fallback-long-task\.spec/u,
       dependencies: ['measure-drag'],
+    },
+    // Run 17 (ADR-0037): find on 150 objects without workers, after the others and alone (in
+    // one project with fallback-long-task, the two specs would run in parallel and compete).
+    {
+      name: 'measure-discovery',
+      use: { ...devices['Desktop Chrome'], baseURL: singleFile },
+      testMatch: /fallback-discovery\.spec/u,
+      dependencies: ['measure-fallback'],
     },
   ],
   // Against the deployed site no local server is needed (deploy.yml's smoke job).

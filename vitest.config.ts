@@ -14,6 +14,7 @@ export default defineConfig({
         'packages/scene/src/**/*.ts',
         'packages/editor/src/**/*.ts',
         'packages/export/src/**/*.ts',
+        'packages/discovery/src/**/*.ts',
       ],
       reporter: ['text', 'json-summary', 'html'],
       reportsDirectory: 'coverage',
@@ -31,6 +32,8 @@ export default defineConfig({
         'packages/editor/src/**/*.ts': { lines: 90, branches: 85 },
         // Run 9a: export gated like the other packages.
         'packages/export/src/**/*.ts': { lines: 90, branches: 85 },
+        // Run 17: discovery gated like the other packages.
+        'packages/discovery/src/**/*.ts': { lines: 90, branches: 85 },
       },
     },
     projects: [

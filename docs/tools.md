@@ -16,6 +16,7 @@ The point with coordinates (x, y); `(x, y)` is the same. Free when x and y are l
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Same construction: never (a free input: two of them are independent objects)
+- By construction: nothing
 - Degenerate cases: none
 - Examples:
   - `point(1, -2/3)` → point (1, -2/3)
@@ -29,6 +30,7 @@ param(min, max, v): a free number v in [min, max] (a slider).
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Same construction: never (a free input: two of them are independent objects)
+- By construction: nothing
 - Degenerate cases:
   - min ≥ max → Undefined
   - v outside [min, max] → Undefined
@@ -47,6 +49,8 @@ The midpoint of A and B.
 - Export: constructive (midpoint)
 - Symmetry:
   - `midpoint(point, point)`: arguments 1, 2 in any order (the same value)
+- By construction:
+  - `midpoint(point, point)`: collinear(result, #1, #2); length(#1, result, result, #2, 1); length(#1, #2, #1, result, 2); length(#1, #2, result, #2, 2)
 - Degenerate cases:
   - midpoint(A, A) = A
 - Examples:
@@ -61,6 +65,8 @@ divide(A, B, t) = A + t·(B − A): t = 1/2 is the midpoint, t = 2 reflects A in
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction:
+  - `divide(point, point, number)`: collinear(result, #1, #2)
 - Degenerate cases:
   - divide(A, A, t) = A
 - Examples:
@@ -76,6 +82,9 @@ foot(P, l) or foot(P, A, B): the orthogonal projection of P on the line.
 - Export: constructive (foot)
 - Symmetry:
   - `foot(point, point, point)`: arguments 2, 3 in any order (the same value)
+- By construction:
+  - `foot(point, linear)`: on(result, #2); perpendicular(line(#1, result), #2)
+  - `foot(point, point, point)`: collinear(result, #2, #3); perpendicular(line(#1, result), line(#2, #3))
 - Degenerate cases:
   - foot(P, A, A) → Undefined (coincident points)
   - P on the line → P
@@ -97,6 +106,11 @@ intersect(a, b, selectors): the common point of two lines, a line and a circle, 
   - `intersect(linear, round)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
   - `intersect(round, linear)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
   - `intersect(round, round)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
+- By construction:
+  - `intersect(linear, linear)`: on(result, #1); on(result, #2)
+  - `intersect(linear, round)`: on(result, #1); on(result, #2)
+  - `intersect(round, linear)`: on(result, #1); on(result, #2)
+  - `intersect(round, round)`: on(result, #1); on(result, #2)
 - Degenerate cases:
   - parallel lines → Undefined
   - coincident lines → Undefined
@@ -137,6 +151,8 @@ The center of the circle through A, B, C.
 - Export: constructive (circumcenter)
 - Symmetry:
   - `circumcenter(point, point, point)`: arguments 1, 2, 3 in any order (the same value)
+- By construction:
+  - `circumcenter(point, point, point)`: length(result, #1, result, #2, 1); length(result, #2, result, #3, 1); length(result, #1, result, #3, 1); on(result, perp_bisector(#1, #2)); on(result, perp_bisector(#2, #3)); on(result, perp_bisector(#3, #1))
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined (use cline)
@@ -153,6 +169,8 @@ The centroid (A + B + C) / 3, where the medians meet.
 - Export: constructive (centroid)
 - Symmetry:
   - `centroid(point, point, point)`: arguments 1, 2, 3 in any order (the same value)
+- By construction:
+  - `centroid(point, point, point)`: collinear(#1, result, midpoint(#2, #3)); collinear(#2, result, midpoint(#3, #1)); collinear(#3, result, midpoint(#1, #2))
 - Degenerate cases:
   - collinear or coincident vertices → the mean of the vertices
 - Examples:
@@ -168,6 +186,8 @@ The orthocenter, where the altitudes meet.
 - Export: constructive (orthocenter)
 - Symmetry:
   - `orthocenter(point, point, point)`: arguments 1, 2, 3 in any order (the same value)
+- By construction:
+  - `orthocenter(point, point, point)`: perpendicular(line(#1, result), line(#2, #3)); perpendicular(line(#2, result), line(#3, #1)); perpendicular(line(#3, result), line(#1, #2))
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined
@@ -183,6 +203,7 @@ The center of a circle.
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases: none
 - Examples:
   - `center(circle((0, 0), (4, 0), (1, 3)))` → point (2, 1)
@@ -196,6 +217,10 @@ Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range);
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Same construction: never (a free input: two of them are independent objects)
+- By construction:
+  - `on(linear, number)`: on(result, #1)
+  - `on(round, number, number)`: on(result, #1)
+  - `on(round, number)`: on(result, #1)
 - Degenerate cases:
   - a glider on an Undefined object → Undefined
   - on(l, t) on a segment or ray clamps t to the range
@@ -222,6 +247,10 @@ other(a, b, P): the second intersection of a line and a circle, or of two circle
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction:
+  - `other(linear, round, point)`: on(result, #1); on(result, #2)
+  - `other(round, linear, point)`: on(result, #1); on(result, #2)
+  - `other(round, round, point)`: on(result, #1); on(result, #2)
 - Degenerate cases:
   - P not on both objects → Undefined
   - P within the band of an object → Undefined (ambiguous)
@@ -246,6 +275,8 @@ The incenter of ABC (where the internal bisectors meet).
 - Export: constructive (incenter)
 - Symmetry:
   - `incenter(point, point, point)`: arguments 1, 2, 3 in any order (the same value)
+- By construction:
+  - `incenter(point, point, point)`: on(result, bisector(#2, #1, #3)); on(result, bisector(#1, #2, #3)); on(result, bisector(#1, #3, #2))
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined
@@ -264,6 +295,8 @@ excenter(A, B, C): the excenter opposite A.
 - Export: numeric
 - Symmetry:
   - `excenter(point, point, point)`: arguments 2, 3 in any order (the same value)
+- By construction:
+  - `excenter(point, point, point)`: on(result, bisector(#2, #1, #3)); on(result, ext_bisector(#1, #2, #3)); on(result, ext_bisector(#1, #3, #2))
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined
@@ -282,6 +315,8 @@ The center of the nine-point circle of ABC: the midpoint of the circumcenter and
 - Export: numeric
 - Symmetry:
   - `ninepoint_center(point, point, point)`: arguments 1, 2, 3 in any order (the same value)
+- By construction:
+  - `ninepoint_center(point, point, point)`: equal(result, midpoint(circumcenter(#1, #2, #3), orthocenter(#1, #2, #3))); collinear(result, circumcenter(#1, #2, #3), orthocenter(#1, #2, #3))
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined
@@ -297,6 +332,8 @@ tangent_point(P, c, selectors): a point where a tangent from P touches c; two ca
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction:
+  - `tangent_point(point, round)`: on(result, #2); on(result, polar(#1, #2)); perpendicular(line(#1, result), line(center(#2), result))
 - Degenerate cases:
   - P inside c (or P = the center) → Undefined
   - P on c (the gap |OP| − r within the band) → the double point
@@ -320,6 +357,7 @@ spiral_center(A, B, C, D): the center of the spiral similarity taking A to C and
 - Symmetry:
   - `spiral_center(point, point, point, point)`: arguments 2, 3 in any order (the same value)
   - `spiral_center(point, point, point, point)`: arguments 1, 4 in any order (the same value)
+- By construction: nothing
 - Degenerate cases:
   - D − C = B − A (a translation; four equal points included) → Undefined
   - A = B, C = D, A = C or B = D → that point
@@ -336,6 +374,7 @@ isogonal(P, A, B, C): the isogonal conjugate of P in triangle ABC (the reflectio
 - Export: numeric
 - Symmetry:
   - `isogonal(point, point, point, point)`: arguments 2, 3, 4 in any order (the same value)
+- By construction: nothing
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined
@@ -356,6 +395,8 @@ symmedian_point(A, B, C): the symmedian (Lemoine) point K, where the three symme
 - Export: numeric
 - Symmetry:
   - `symmedian_point(point, point, point)`: arguments 1, 2, 3 in any order (the same value)
+- By construction:
+  - `symmedian_point(point, point, point)`: on(result, symmedian(#1, #2, #3)); on(result, symmedian(#2, #3, #1)); on(result, symmedian(#3, #1, #2))
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined
@@ -371,6 +412,8 @@ pole(l, c): the pole of the line l with respect to c, the point whose polar is l
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction:
+  - `pole(linear, round)`: perpendicular(line(center(#2), result), #1)
 - Degenerate cases:
   - l through the center → Undefined (the pole is at infinity)
   - l tangent to c → the touch point
@@ -389,6 +432,8 @@ radical_center(c1, c2, c3): the point with equal power to the three circles, whe
 - Export: numeric
 - Symmetry:
   - `radical_center(round, round, round)`: arguments 1, 2, 3 in any order (the same value)
+- By construction:
+  - `radical_center(round, round, round)`: on(result, radical_axis(#1, #2)); on(result, radical_axis(#2, #3)); on(result, radical_axis(#1, #3))
 - Degenerate cases:
   - two concentric circles → Undefined
   - collinear centers → Undefined (parallel radical axes)
@@ -408,6 +453,8 @@ The line through A and B (achiral direction B − A).
 - Export: constructive (line)
 - Symmetry:
   - `line(point, point)`: arguments 1, 2 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `line(point, point)`: on(#1, result); on(#2, result)
 - Degenerate cases:
   - line(A, A) → Undefined (coincident points)
 - Examples:
@@ -423,6 +470,8 @@ The segment AB: A + t·(B − A) for t in [0, 1].
 - Export: constructive (segment)
 - Symmetry:
   - `segment(point, point)`: arguments 1, 2 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `segment(point, point)`: on(#1, result); on(#2, result)
 - Degenerate cases:
   - segment(A, A) → Undefined (coincident points)
 - Examples:
@@ -437,6 +486,8 @@ The ray from A through B: A + t·(B − A) for t ≥ 0.
 - Exact run (RationalField): can succeed
 - Export: constructive (ray)
 - Symmetry: none
+- By construction:
+  - `ray(point, point)`: on(#1, result); on(#2, result)
 - Degenerate cases:
   - ray(A, A) → Undefined (coincident points)
 - Examples:
@@ -451,6 +502,8 @@ The line through P parallel to l (keeps the chirality of l).
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction:
+  - `parallel(point, linear)`: on(#1, result); parallel(result, #2)
 - Degenerate cases:
   - P on l → the carrier line of l
   - a segment or ray gives a full line
@@ -466,6 +519,8 @@ The line through P perpendicular to l (a quarter turn: toggles the chirality).
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction:
+  - `perp(point, linear)`: on(#1, result); perpendicular(result, #2)
 - Degenerate cases:
   - P on l → the perpendicular at P
   - a segment or ray gives a full line
@@ -482,6 +537,8 @@ The perpendicular bisector of AB (chiral: a quarter turn of B − A).
 - Export: numeric
 - Symmetry:
   - `perp_bisector(point, point)`: arguments 1, 2 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `perp_bisector(point, point)`: perpendicular(result, line(#1, #2)); on(midpoint(#1, #2), result)
 - Degenerate cases:
   - perp_bisector(A, A) → Undefined (coincident points)
 - Examples:
@@ -496,6 +553,8 @@ tangent(P, c): the tangent to c at P (P on c); chiral (a quarter turn of P − O
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction:
+  - `tangent(point, round)`: on(#1, result); tangent(result, #2); perpendicular(result, line(center(#2), #1))
 - Degenerate cases:
   - P not on c → Undefined
   - P within the band of c → Undefined (ambiguous)
@@ -511,6 +570,8 @@ polar(P, c): the polar of P with respect to c; chiral (a quarter turn of P − O
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction:
+  - `polar(point, round)`: perpendicular(result, line(center(#2), #1))
 - Degenerate cases:
   - P = the center → Undefined
   - P on c → the tangent at P
@@ -527,6 +588,8 @@ radical_axis(c1, c2): the points with equal power to both circles; chiral (a qua
 - Export: numeric
 - Symmetry:
   - `radical_axis(round, round)`: arguments 1, 2 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `radical_axis(round, round)`: perpendicular(result, line(center(#1), center(#2)))
 - Degenerate cases:
   - concentric circles → Undefined (equal circles included)
   - tangent circles → the common tangent at the touch point
@@ -543,6 +606,8 @@ bisector(A, B, C): the internal bisector of ∠ABC, through B (achiral).
 - Export: numeric
 - Symmetry:
   - `bisector(point, point, point)`: arguments 1, 3 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `bisector(point, point, point)`: on(#2, result)
 - Degenerate cases:
   - A = B or C = B → Undefined
   - within the band of a straight angle → Undefined (ambiguous)
@@ -563,6 +628,8 @@ ext_bisector(A, B, C): the external bisector of ∠ABC, through B (chiral).
 - Export: numeric
 - Symmetry:
   - `ext_bisector(point, point, point)`: arguments 1, 3 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `ext_bisector(point, point, point)`: on(#2, result); perpendicular(result, bisector(#1, #2, #3))
 - Degenerate cases:
   - A = B or C = B → Undefined
   - within the band of a straight angle → Undefined (ambiguous)
@@ -582,6 +649,8 @@ tangent_from(P, c, selectors): a tangent from P to c, the line through its touch
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction:
+  - `tangent_from(point, round)`: on(#1, result); tangent(result, #2)
 - Degenerate cases:
   - P inside c (or P = the center) → Undefined
   - P on c (the gap |OP| − r within the band) → the double point
@@ -604,6 +673,8 @@ symmedian(A, B, C): the symmedian of triangle ABC from A (the median from A refl
 - Export: numeric
 - Symmetry:
   - `symmedian(point, point, point)`: arguments 2, 3 in any order (the same value)
+- By construction:
+  - `symmedian(point, point, point)`: on(#1, result)
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined
@@ -623,6 +694,10 @@ circle(O, A): center O through A (anchor A); circle(O, r): center O, radius r (n
 - Symmetry:
   - `circle(point, point, point)`: arguments 2, 3 in any order (the same value)
   - `circle(point, point, point)`: arguments 1, 2, 3 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `circle(point, point)`: on(#2, result); equal(center(result), #1)
+  - `circle(point, number)`: equal(center(result), #1)
+  - `circle(point, point, point)`: on(#1, result); on(#2, result); on(#3, result); equal(center(result), circumcenter(#1, #2, #3))
 - Degenerate cases:
   - circle(O, O) → Undefined (coincident points)
   - circle(O, r) with r ≤ 0 → Undefined
@@ -647,6 +722,8 @@ The circle through A, B, C (the same as circle(A, B, C)); anchor A.
 - Symmetry:
   - `circumcircle(point, point, point)`: arguments 2, 3 in any order (the same value)
   - `circumcircle(point, point, point)`: arguments 1, 2, 3 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `circumcircle(point, point, point)`: on(#1, result); on(#2, result); on(#3, result); equal(center(result), circumcenter(#1, #2, #3))
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined (use cline)
@@ -663,6 +740,8 @@ The circle through A, B, C (anchor A), or the line AB when A, B, C are collinear
 - Export: numeric
 - Symmetry:
   - `cline(point, point, point)`: arguments 1, 2, 3 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `cline(point, point, point)`: on(#1, result); on(#2, result); on(#3, result)
 - Degenerate cases:
   - coincident points → Undefined
   - collinear points → the line through them
@@ -680,6 +759,8 @@ The circle with diameter AB; anchor A.
 - Export: numeric
 - Symmetry:
   - `diameter_circle(point, point)`: arguments 1, 2 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `diameter_circle(point, point)`: on(#1, result); on(#2, result); equal(center(result), midpoint(#1, #2))
 - Degenerate cases:
   - diameter_circle(A, A) → Undefined (coincident points)
 - Examples:
@@ -696,6 +777,8 @@ The nine-point circle of ABC (through the midpoints of the sides); anchor: the m
 - Symmetry:
   - `ninepoint_circle(point, point, point)`: arguments 2, 3 in any order (the same value)
   - `ninepoint_circle(point, point, point)`: arguments 1, 2, 3 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `ninepoint_circle(point, point, point)`: on(midpoint(#2, #3), result); on(midpoint(#3, #1), result); on(midpoint(#1, #2), result); equal(center(result), ninepoint_center(#1, #2, #3))
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined
@@ -713,6 +796,8 @@ The incircle of ABC; anchor: its touch point on BC.
 - Symmetry:
   - `incircle(point, point, point)`: arguments 2, 3 in any order (the same value)
   - `incircle(point, point, point)`: arguments 1, 2, 3 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `incircle(point, point, point)`: tangent(result, line(#1, #2)); tangent(result, line(#2, #3)); tangent(result, line(#3, #1)); equal(center(result), incenter(#1, #2, #3))
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined
@@ -731,6 +816,8 @@ excircle(A, B, C): the excircle opposite A; anchor: its touch point on BC.
 - Export: numeric
 - Symmetry:
   - `excircle(point, point, point)`: arguments 2, 3 in any order (the same value)
+- By construction:
+  - `excircle(point, point, point)`: tangent(result, line(#1, #2)); tangent(result, line(#2, #3)); tangent(result, line(#3, #1)); equal(center(result), excenter(#1, #2, #3))
 - Degenerate cases:
   - coincident vertices → Undefined
   - collinear vertices → Undefined
@@ -749,6 +836,8 @@ arc(A, B, C): the arc from A through B to C of the circle through A, B, C (a cir
 - Export: numeric
 - Symmetry:
   - `arc(point, point, point)`: arguments 1, 3 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `arc(point, point, point)`: on(#1, result); on(#2, result); on(#3, result)
 - Degenerate cases:
   - coincident points → Undefined
   - collinear points → Undefined (use segment)
@@ -768,6 +857,9 @@ reflect(l): the reflection in the carrier line of l (an anti-similarity); reflec
 - Exact run (RationalField): can succeed
 - Export: constructive (reflect)
 - Symmetry: none
+- By construction:
+  - `reflect(point, linear)`: perpendicular(line(#1, result), #2); on(midpoint(#1, result), #2)
+  - `reflect(point, point)`: collinear(#1, #2, result); length(#1, #2, #2, result, 1)
 - Degenerate cases:
   - a line with no direction → Undefined
   - an Undefined mirror → Undefined
@@ -787,6 +879,8 @@ rotate(O, θ): the rotation by θ degrees counter-clockwise about O. rotate(X, O
 - Exact run (RationalField): can succeed
 - Export: constructive (rotate)
 - Symmetry: none
+- By construction:
+  - `rotate(point, point, number)`: length(#2, #1, #2, result, 1)
 - Degenerate cases:
   - θ a multiple of 360° → the identity
   - θ not a multiple of 90° → Inexact over Q and mod p
@@ -805,6 +899,8 @@ homothety(O, k): the homothety with center O and ratio k (negative k allowed). h
 - Exact run (RationalField): can succeed
 - Export: constructive (homothety)
 - Symmetry: none
+- By construction:
+  - `homothety(point, point, number)`: collinear(#2, #1, result)
 - Degenerate cases:
   - k = 0 → Undefined
   - k = 1 → the identity; k = −1 → the half turn about O
@@ -822,6 +918,8 @@ translate(A, B): the translation taking A to B. translate(X, A, B) is the image 
 - Exact run (RationalField): can succeed
 - Export: constructive (translate)
 - Symmetry: none
+- By construction:
+  - `translate(point, point, point)`: length(#1, result, #2, #3, 1); parallel(line(#1, result), line(#2, #3))
 - Degenerate cases:
   - A = B → the identity
 - Examples:
@@ -837,6 +935,7 @@ spiral(A, B, C, D): the direct similarity taking A to C and B to D (a spiral sim
 - Exact run (RationalField): can succeed
 - Export: constructive (spiral)
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - A = B or C = D → Undefined (coincident points)
   - B − A = D − C → a translation
@@ -853,6 +952,7 @@ compose(T1, T2): the map X ↦ T1(T2(X)) (T2 first). Similarities and Möbius ma
 - Exact run (RationalField): can succeed
 - Export: constructive (compose)
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - scale factors below EPS (10⁻⁵ · 10⁻⁵) → a valid map: a composition never collapses
   - a scale factor beyond the double range (floats) → Inexact
@@ -873,6 +973,7 @@ inverse(T): the inverse map (the preimage of Y is apply(inverse(T), Y)).
 - Exact run (RationalField): can succeed
 - Export: constructive (inverse)
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - a reflection or a half turn → itself
   - a hand-built map with scale factor 0 → Undefined
@@ -890,6 +991,7 @@ apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mar
 - Exact run (RationalField): can succeed
 - Export: constructive (apply)
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - X a number or a transform → Undefined (not imaged)
   - an Undefined T or X → Undefined
@@ -922,6 +1024,7 @@ inversion(c): the inversion in the circle c; inversion(O, k): the inversion with
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - k = 0 → Undefined
   - k < 0 → the inversion with power |k| followed by the half turn about O
@@ -940,6 +1043,7 @@ sqrt_bc(A, B, C): the √(bc) inversion of triangle ABC at A, compose(reflect(bi
 - Export: numeric
 - Symmetry:
   - `sqrt_bc(point, point, point)`: arguments 2, 3 in any order (the same value)
+- By construction: nothing
 - Degenerate cases:
   - A = B or A = C → Undefined
   - collinear A, B, C → still defined (it swaps B and C)
@@ -956,6 +1060,7 @@ orthocenter_inversion(A, B, C): the inversion at the orthocenter H with power HA
 - Export: numeric
 - Symmetry:
   - `orthocenter_inversion(point, point, point)`: arguments 1, 2, 3 in any order (the same value)
+- By construction: nothing
 - Degenerate cases:
   - coincident or collinear vertices → Undefined
   - a right angle (H on the circumcircle) → Undefined (power 0)
@@ -971,6 +1076,7 @@ inversion_fixing(O, c): the inversion centered at O that maps c to itself, inver
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - O on c → Undefined (power 0)
   - O inside c → a negative power (still fixes c)
@@ -987,6 +1093,7 @@ inversion_swap(O, A, B): the inversion centered at O that swaps A and B, for O o
 - Export: numeric
 - Symmetry:
   - `inversion_swap(point, point, point)`: arguments 2, 3 in any order (the same value)
+- By construction: nothing
 - Degenerate cases:
   - O off line AB → Undefined (no inversion centered at O swaps them)
   - A = B → Undefined
@@ -1004,6 +1111,7 @@ feet_inversion(A, B, C): the inversion at A with power AB·AC·cos A (the dot pr
 - Export: numeric
 - Symmetry:
   - `feet_inversion(point, point, point)`: arguments 2, 3 in any order (the same value)
+- By construction: nothing
 - Degenerate cases:
   - AB⃗·AC⃗ = 0 (a right angle at A, or A = B or A = C) → Undefined
   - B = C → Undefined
@@ -1022,6 +1130,7 @@ sqrt_bc2(A, B, C): the √(bc/2) inversion of triangle ABC at A, compose(reflect
 - Export: numeric
 - Symmetry:
   - `sqrt_bc2(point, point, point)`: arguments 2, 3 in any order (the same value)
+- By construction: nothing
 - Degenerate cases:
   - A = B or A = C → Undefined
   - collinear A, B, C → still defined (B goes to the midpoint of AC)
@@ -1040,6 +1149,7 @@ dist(A, B): the length AB; dist(P, l): the distance from P to the line l.
 - Export: numeric
 - Symmetry:
   - `dist(point, point)`: arguments 1, 2 in any order (the same value)
+- By construction: nothing
 - Degenerate cases:
   - dist(A, A) = 0
   - P on l → 0
@@ -1057,6 +1167,7 @@ ratio(A, B, C, D) = AB / CD.
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - C = D → Undefined (coincident points)
   - A = B → 0
@@ -1072,6 +1183,7 @@ angle(A, B, C): the undirected angle ABC in degrees, in [0, 180].
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - A = B or C = B → Undefined
   - collinear: 0° or 180°
@@ -1089,6 +1201,7 @@ dangle(A, B, C): the directed angle ∡ABC (line BA to line BC, counter-clockwis
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - A = B or C = B → Undefined
   - collinear → 0
@@ -1107,6 +1220,7 @@ The (unsigned) area of a polygon, or of the polygon through the given points.
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - collinear vertices → 0
   - mod p → Inexact (unsigned area needs an order)
@@ -1123,6 +1237,7 @@ power(P, c) = |PO|² − r²: negative inside c, zero on c, positive outside (ex
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - P on c → 0
   - P = the center → −r²
@@ -1138,6 +1253,7 @@ radius(c) = √r²: exact over Q when r² is the square of a rational.
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - r² not the square of a rational → Inexact over Q (always Inexact mod p)
 - Examples:
@@ -1156,6 +1272,7 @@ The polygon with the given vertices, in order (at least three).
 - Export: constructive (polygon)
 - Symmetry:
   - `polygon(point, point, point, point…)`: the arguments in any rotation or reversal (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction: nothing
 - Degenerate cases:
   - consecutive coincident vertices → Undefined
   - collinear vertices → a flat polygon
@@ -1171,6 +1288,7 @@ mark_angle(A, B, C[, n]): n arcs (1–3, default 1) marking the convex angle ABC
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - A = B or C = B → Undefined (coincident points)
   - a zero angle (A and C on one ray from B) → Undefined
@@ -1191,6 +1309,7 @@ mark_right(A, B, C): the right-angle square at B. Only a right angle (decided wi
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - A = B or C = B → Undefined (coincident points)
   - an angle that is not right → Undefined
@@ -1208,6 +1327,7 @@ mark_segment(A, B[, n]): n ticks (1–3, default 1) across the middle of segment
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - A = B → Undefined (coincident points)
   - a tick count that is not an exact 1, 2 or 3 → Undefined
@@ -1224,6 +1344,7 @@ text(P, "…"): the string at P (label grammar: A_1, \omega, primes).
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - an empty string → Undefined
 - Examples:
@@ -1240,6 +1361,7 @@ a + b on numbers (exact when both are exact).
 - Exact run (RationalField): can succeed
 - Export: constructive (add)
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases: none
 - Examples:
   - `add(2/3, 3/4)` → number 17/12
@@ -1253,6 +1375,7 @@ a − b on numbers (exact when both are exact).
 - Exact run (RationalField): can succeed
 - Export: constructive (sub)
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases: none
 - Examples:
   - `sub(2/3, 3/4)` → number -1/12
@@ -1266,6 +1389,7 @@ a × b on numbers (exact when both are exact).
 - Exact run (RationalField): can succeed
 - Export: constructive (mul)
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases: none
 - Examples:
   - `mul(2/3, 3/4)` → number 1/2
@@ -1279,6 +1403,7 @@ a ÷ b on numbers (exact when both are exact).
 - Exact run (RationalField): can succeed
 - Export: constructive (div)
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - b = 0 → Undefined (division by zero)
 - Examples:
@@ -1293,6 +1418,7 @@ a ÷ b on numbers (exact when both are exact).
 - Exact run (RationalField): can succeed
 - Export: constructive (neg)
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases: none
 - Examples:
   - `neg(2/3)` → number -2/3
@@ -1306,6 +1432,7 @@ a ÷ b on numbers (exact when both are exact).
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - x ≤ −BAND, or an exact x < 0 → Undefined (sqrt of a negative number)
   - −BAND < x < 0 counts as 0 → 0 (x ≥ 0 → √x: continuous)
@@ -1323,6 +1450,7 @@ sin θ, θ in degrees (exact where rational).
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - off the angles where it is rational → Inexact (over Q; mod p unless the angle is exact)
 - Examples:
@@ -1338,6 +1466,7 @@ cos θ, θ in degrees (exact where rational).
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - off the angles where it is rational → Inexact (over Q; mod p unless the angle is exact)
 - Examples:
@@ -1353,6 +1482,7 @@ tan θ, θ in degrees (exact where rational: multiples of 45°).
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
+- By construction: nothing
 - Degenerate cases:
   - θ ≡ 90° (mod 180°) → Undefined
   - cos θ within the band of 0 counts as 0 → Undefined
