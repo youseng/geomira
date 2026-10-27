@@ -1,6 +1,6 @@
 # STATUS
 
-## Maintainer request: trivial facts in What is special?: NOT ACCEPTED (pending CI and the nightly)
+## Maintainer request: trivial facts in What is special?: ACCEPTED (2026-10-27)
 
 Not a kit run (no tag). Decisions: [ADR-0039](adr/0039-no-trivial-facts-in-what-is-special.md)
 (amends ADR-0035 decisions 6, 7, 11, 12 and SPEC §6.1). PR: https://github.com/youseng/geomira/pull/25
@@ -44,16 +44,16 @@ facts.
 
 Manual examples (seed 1, default budget; Run 17's count in brackets, measured on `run-17`):
 
-| Figure                                                                    | Reported now                                              | Run 17            |
-| ------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------- |
-| inversion in w                                                            | nothing                                                   | 57                |
-| reflection in AB                                                          | nothing                                                   | 50                |
-| incenter–excenter                                                         | MB = MC = MI = MI_a                                       | 60                |
-| nine-point                                                                | the nine-point circle; M_aK_a = M_bK_b = M_cK_c           | 60                |
-| rotation by 90° / homothety 2 / spiral / inversion of a line and a circle | nothing                                                   | 25 / 53 / 22 / 29 |
-| incenter–excenter inverted in circle(M, B)                                | I = I*, I_a = I_a*                                        | 60                |
-| triangle centres (find.test.ts)                                           | 8 (Euler line, 2:1 ratios, AH = 2·OM_a, …)                | 31                |
-| 150 objects (ADR-0037's figure)                                           | 9 (P_8 = P_121 first: the coincidence explains its class) | 50                |
+| Figure                                                                    | Reported now                                               | Run 17            |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------- |
+| inversion in w                                                            | nothing                                                    | 57                |
+| reflection in AB                                                          | nothing                                                    | 50                |
+| incenter–excenter                                                         | MB = MC = MI = MI_a                                        | 60                |
+| nine-point                                                                | the nine-point circle; M_aK_a = M_bK_b = M_cK_c            | 60                |
+| rotation by 90° / homothety 2 / spiral / inversion of a line and a circle | nothing                                                    | 25 / 53 / 22 / 29 |
+| incenter–excenter inverted in circle(M, B)                                | I = I*, I_a = I_a*                                         | 60                |
+| triangle centres (find.test.ts)                                           | 8 (Euler line, 2:1 ratios, AH = 2·OM_a, …)                 | 31                |
+| 150 objects (ADR-0037's figure)                                           | 10 (P_8 = P_121 first: the coincidence explains its class) | 50                |
 
 ### Not done
 
@@ -83,11 +83,69 @@ Manual examples (seed 1, default budget; Run 17's count in brackets, measured on
 
 ### Acceptance command output
 
-Pending (filled in when CI, deploy, tex and the nightly are green on the final code commit).
+#### Local (`pnpm verify` on af4ec62, the final commit)
+
+```
+✔ no dependency violations found (773 modules, 4373 dependencies cruised)
+ok   tolerance: 1084 files scanned, 0 violation(s)
+ok   file-length: 1084 files scanned, 0 violation(s)
+ok   test-count: 3693 tests, floor 3609, 0 violation(s)
+ok   disabled-tests: 1084 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-17, 0 violation(s)
+ok   forbidden-words: 1084 files scanned, 0 violation(s)
+ Test Files  1 failed | 411 passed (412)
+      Tests  1 failed | 3692 passed (3693)
+```
+
+The one local failure is `Test timed out in 5000ms` in a frozen claims test this request does
+not touch (`packages/claims/test/sampler-local-10sigma.test.ts`, "four points on a circle", 5.6 s
+under the container's load); alone it passes (`pnpm exec vitest run <file>`: 10 passed), as Run
+17 recorded for the same file. CI's verify on the same commit passed every test (below).
+
+#### CI on GitHub (af4ec62)
+
+- ci (push) https://github.com/youseng/geomira/actions/runs/40554408018: success. Verify:
+  `Test Files 412 passed (412)`, `Tests 3693 passed (3693)`, `All files | 96.85 | 90.78 | 99.16 | 98.44`;
+  end-to-end 125 passed, with ADR-0037's gate (≤ 150 ms, under 1 % over 16 ms):
+
+  ```
+  main thread during find on 150 objects without workers: {"objects":150,"tasks":2981,"seconds":11.9,"longest":[41.8,22.2,20.4,16.5,16],"over16":5,"longTasks":[]}
+  ```
+
+  (On 241eebe this gate failed, 65 of 3,545 tasks over 16 ms, from the knowledge rebuilds in long
+  steps; c47299a split them, see its commit.)
+
+- ci (pull request) https://github.com/youseng/geomira/actions/runs/40554415076: success.
+- deploy https://github.com/youseng/geomira/actions/runs/40554408005: success.
+- tex https://github.com/youseng/geomira/actions/runs/40554415184: success.
+- nightly https://github.com/youseng/geomira/actions/runs/40554417064 (dispatch): success, the
+  gate (six discovery shards, ADR-0039 decision 11):
+
+```
+num mutation gate: 93.47% (730 detected, 51 undetected; threshold 80%): pass
+kernel mutation gate: 97.95% (2391 detected, 50 undetected; threshold 75%): pass
+claims mutation gate: 85.70% (2248 detected, 375 undetected; threshold 75%): pass
+discovery mutation gate: 82.65% (2743 detected, 576 undetected; threshold 75%): pass
+discovery-a mutation score: 89.69% (200 detected, 23 undetected; 387 mutants outside the shard not counted; target 75%, gated from v1.1)
+discovery-b mutation score: 94.16% (500 detected, 31 undetected; target 75%, gated from v1.1)
+discovery-c mutation score: 77.43% (782 detected, 228 undetected; target 75%, gated from v1.1)
+discovery-d mutation score: 81.27% (447 detected, 103 undetected; target 75%, gated from v1.1)
+discovery-e mutation score: 81.96% (359 detected, 79 undetected; target 75%, gated from v1.1)
+discovery mutation score: 80.25% (455 detected, 112 undetected; 853 mutants outside the shard not counted; target 75%, gated from v1.1)
+```
+
+Shard times: discovery-a 1 min (its cache), discovery-b 12, discovery-c 35, discovery-d 78 (a cold
+run: a new shard), discovery-e 69, discovery 56; num, kernel and claims unchanged (every shard
+under 3 minutes). Earlier dispatches on this branch were cancelled by pushes (72fd001, 241eebe:
+"no report"), and the one on c47299a ran out of time in its last shard (four shards), which this
+layout fixes.
 
 ### Requests
 
-- None. No new runtime dependencies.
+- No new runtime dependencies. The test-count floor is raised to 3693 (docs/test-count.txt).
+- Follow-up (nightly): discovery-d took 78 minutes cold (closure-merge, closure-maps,
+  closure-mid: their mutants often loop until the timeout). Main's first nightly after the merge
+  runs it cold again; if it nears 100 minutes, split closure-merge from the other two.
 
 ---
 
