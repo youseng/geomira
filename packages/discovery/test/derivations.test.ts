@@ -15,6 +15,7 @@ import { claimKindRegistry } from '@geomira/claims/kind-registry';
 import { screenSteps } from '@geomira/claims/screen';
 import { baseFigure } from '../../claims/test/helpers/corpus';
 import { FALSE_CLAIMS } from '../../claims/test/helpers/corpus-false';
+import { lawCount } from '../../claims/test/helpers/laws';
 import { objectify } from '../../claims/test/helpers/objectify';
 import { poolsOf, type Candidate } from '../src/candidates';
 import { knowledgeSteps } from '../src/derive';
@@ -37,18 +38,20 @@ import { REGISTRY, show, triangle } from './helpers';
 
 const KINDS = claimKindRegistry();
 
-const FIGURES: readonly (readonly [string, () => { doc: Document }])[] = [
+/** The cheapest first: the mutation runs (GEOMIRA_LAW_SCALE) keep the first ones (lawCount). */
+const ALL_FIGURES: readonly (readonly [string, () => { doc: Document }])[] = [
   ['inversion', inversionFigure],
   ['reflection', reflectionFigure],
   ['rotation', rotationFigure],
   ['homothety', homothetyFigure],
-  ['spiral', spiralFigure],
-  ['inversion of a line and a circle', inversionCurvesFigure],
-  ['incenter–excenter', incenterExcenterFigure],
-  ['incenter–excenter under an inversion', incenterInversionFigure],
   ['triangle centres', triangle],
+  ['incenter–excenter', incenterExcenterFigure],
+  ['inversion of a line and a circle', inversionCurvesFigure],
+  ['spiral', spiralFigure],
+  ['incenter–excenter under an inversion', incenterInversionFigure],
   ['nine-point circle', ninePointFigure],
 ];
+const FIGURES = ALL_FIGURES.slice(0, lawCount(ALL_FIGURES.length));
 
 function holdsIn(doc: Document, f: Pick<Fact, 'kind' | 'args'>): string {
   const w = withFact(doc, f);

@@ -20,6 +20,7 @@ import {
   rotationFigure,
   spiralFigure,
 } from './figures';
+import { lawCount } from '../../claims/test/helpers/laws';
 import { REGISTRY, show } from './helpers';
 
 function found(doc: Document): FindResult {
@@ -27,6 +28,21 @@ function found(doc: Document): FindResult {
   if (r.kind !== 'found') throw new Error(JSON.stringify(r));
   return r;
 }
+
+/**
+ * The job's result, run once by the first test that needs it (inside a test, so that the
+ * mutation runs attribute its coverage to the tests: packages/claims/test/helpers/laws.ts).
+ */
+function lazy(doc: Document): () => FindResult {
+  let r: FindResult | undefined;
+  return () => (r ??= found(doc));
+}
+
+/**
+ * The nine-point figure and the more expensive map figures run at full scale only (`pnpm
+ * verify`, CI); the mutation runs (GEOMIRA_LAW_SCALE) keep the cheaper ones.
+ */
+const FULL = lawCount(4) === 4;
 
 /** Every text a reported fact shows: the fact itself, or the links of its class. */
 function shownTexts(doc: Document, f: FoundFact): string[] {
@@ -63,10 +79,10 @@ describe('case 1: facts that hold by the map alone are never findings', () => {
 
 describe('case 2: consequences of shown or construction facts are not findings', () => {
   const f = incenterExcenterFigure();
-  const r = found(f.doc);
-  const shown = r.facts.flatMap((x) => shownTexts(f.doc, x));
+  const result = lazy(f.doc);
 
   it('ranks first the one equal-length class MB = MC = MI = MI_a', () => {
+    const r = result();
     const first = r.facts[0];
     expect(first?.kind).toBe('length');
     const names = (first?.objects ?? []).map((id) => f.doc.objects.find((o) => o.id === id)?.name);
@@ -75,6 +91,7 @@ describe('case 2: consequences of shown or construction facts are not findings',
   });
 
   it('the collinearity of A, I, I_a, M is one construction fact (the maximal set)', () => {
+    const r = result();
     expect(r.construction.shown.map((x) => show(f.doc, x))).toContain('collinear(A, I, I_a, M)');
   });
 
@@ -85,6 +102,8 @@ describe('case 2: consequences of shown or construction facts are not findings',
       'dangle(1, I, B, M, A, I, B)',
       'dangle(1, I, C, M, A, I, C)',
     ];
+    const r = result();
+    const shown = r.facts.flatMap((x) => shownTexts(f.doc, x));
     const hidden = hiddenTexts(f.doc, r);
     for (const t of consequences) {
       expect(shown, t).not.toContain(t);
@@ -103,53 +122,53 @@ describe('case 2: consequences of shown or construction facts are not findings',
   });
 
   it('reports nothing but the class', () => {
-    expect(r.facts).toHaveLength(1);
+    expect(result().facts).toHaveLength(1);
   });
 });
 
-describe('case 3: one fact per configuration, not one per subset', () => {
-  const f = ninePointFigure();
-  const r = found(f.doc);
-  const name = (id: number) => f.doc.objects.find((o) => o.id === id)?.name;
-
-  it('the nine points are ONE concyclic fact; no subset of them is reported', () => {
-    const cyclic = r.facts.filter((x) => x.kind === 'concyclic');
-    expect(cyclic).toHaveLength(1);
-    expect(new Set(cyclic[0]?.objects.map(name))).toEqual(
-      new Set(['M_a', 'M_b', 'M_c', 'D', 'E', 'F', 'K_a', 'K_b', 'K_c']),
-    );
-  });
-
-  it('equal lengths are classes: no two reported facts share a pair of equal segments', () => {
-    const seen = new Set<string>();
-    for (const x of r.facts.filter((y) => y.kind === 'length'))
-      for (const link of x.chain ?? [x]) {
-        const t = show(f.doc, link);
-        expect(seen.has(t), t).toBe(false);
-        seen.add(t);
-      }
-  });
-});
-
-describe('case 3: the whole list', () => {
-  it('the nine-point figure reports the circle and the class of its three diameters', () => {
+// The nine-point figure's job runs for seconds: at full scale only (see FULL).
+if (FULL)
+  describe('case 3: one fact per configuration, not one per subset', () => {
     const f = ninePointFigure();
-    const r = found(f.doc);
-    // The circle is tagged (the nine-point circle), so it comes first.
-    expect(r.facts.map((x) => shownTexts(f.doc, x).join(' & '))).toEqual([
-      'concyclic(M_a, M_b, M_c, D, E, F, K_a, K_b, K_c)',
-      'length(M_a, K_a, M_b, K_b, 1) & length(M_a, K_a, M_c, K_c, 1)',
-    ]);
-  }, 120_000);
-});
+    const result = lazy(f.doc);
+    const name = (id: number) => f.doc.objects.find((o) => o.id === id)?.name;
+
+    it('the nine points are ONE concyclic fact; no subset of them is reported', () => {
+      const cyclic = result().facts.filter((x) => x.kind === 'concyclic');
+      expect(cyclic).toHaveLength(1);
+      expect(new Set(cyclic[0]?.objects.map(name))).toEqual(
+        new Set(['M_a', 'M_b', 'M_c', 'D', 'E', 'F', 'K_a', 'K_b', 'K_c']),
+      );
+    }, 120_000);
+
+    it('equal lengths are classes: no two reported facts share a pair of equal segments', () => {
+      const seen = new Set<string>();
+      for (const x of result().facts.filter((y) => y.kind === 'length'))
+        for (const link of x.chain ?? [x]) {
+          const t = show(f.doc, link);
+          expect(seen.has(t), t).toBe(false);
+          seen.add(t);
+        }
+    }, 120_000);
+
+    it('the whole list: the circle and the class of its three diameters', () => {
+      // The circle is tagged (the nine-point circle), so it comes first.
+      expect(result().facts.map((x) => shownTexts(f.doc, x).join(' & '))).toEqual([
+        'concyclic(M_a, M_b, M_c, D, E, F, K_a, K_b, K_c)',
+        'length(M_a, K_a, M_b, K_b, 1) & length(M_a, K_a, M_c, K_c, 1)',
+      ]);
+    }, 120_000);
+  });
+
+const MAPS = [
+  ['rotation by 90°', rotationFigure],
+  ['homothety with ratio 2', homothetyFigure],
+  ['inversion of a line and a circle', inversionCurvesFigure],
+  ['spiral similarity', spiralFigure],
+] as const;
 
 describe('more maps: nothing that holds by the map alone (ADR-0039)', () => {
-  for (const [name, make] of [
-    ['rotation by 90°', rotationFigure],
-    ['homothety with ratio 2', homothetyFigure],
-    ['spiral similarity', spiralFigure],
-    ['inversion of a line and a circle', inversionCurvesFigure],
-  ] as const)
+  for (const [name, make] of MAPS.slice(0, lawCount(MAPS.length)))
     it(
       name,
       () => {
@@ -159,12 +178,12 @@ describe('more maps: nothing that holds by the map alone (ADR-0039)', () => {
       120_000,
     );
 
-  it('the incenter–excenter figure under the inversion in circle(M, B): I and I_a are fixed', () => {
-    const f = incenterInversionFigure();
-    const r = found(f.doc);
-    expect(r.facts.flatMap((x) => shownTexts(f.doc, x))).toEqual([
-      'equal(I_a, I_a*)',
-      'equal(I, I*)',
-    ]);
-  }, 120_000);
+  if (FULL)
+    it('the incenter–excenter figure under the inversion in circle(M, B): I and I_a are fixed', () => {
+      const f = incenterInversionFigure();
+      expect(found(f.doc).facts.flatMap((x) => shownTexts(f.doc, x))).toEqual([
+        'equal(I_a, I_a*)',
+        'equal(I, I*)',
+      ]);
+    }, 120_000);
 });
