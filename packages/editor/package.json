@@ -32,13 +32,15 @@
     "./tool-groups": "./src/tool-groups.ts",
     "./prompt": "./src/prompt.ts",
     "./preview": "./src/preview.ts",
-    "./views": "./src/views.ts"
+    "./views": "./src/views.ts",
+    "./discovery": "./src/discovery.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@geomira/claims": "workspace:*",
+    "@geomira/discovery": "workspace:*",
     "@geomira/kernel": "workspace:*",
     "@geomira/lang": "workspace:*",
     "@geomira/num": "workspace:*",

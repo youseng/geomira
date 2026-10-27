@@ -13,7 +13,8 @@ import { evaluate, type Evaluation } from '@geomira/kernel/evaluate';
 import { exprEquals, refsOf, type CallExpr, type Expr, type Selector } from '@geomira/kernel/expr';
 import type { Registry } from '@geomira/kernel/registry';
 import type { EvalContext } from '@geomira/kernel/tool';
-import type { Value, Vec } from '@geomira/kernel/value';
+import type { Line, Value, Vec } from '@geomira/kernel/value';
+import { isOrientationDependent, selectorClass } from '@geomira/kernel/selector';
 import { callsOf, exprAt, replaceAt } from '@geomira/claims/expr-path';
 import { closureIds } from './solve';
 import type { Chooser } from './types';
@@ -142,11 +143,28 @@ function lowLevel(
   return undefined;
 }
 
+/**
+ * Whether a kept site's own selectors still pick its candidate and are firm: filters, other(P)
+ * and low-level selectors that do not depend on the orientation (SPEC §7) are left as written;
+ * near / far_from (a distance ranking, which a small motion can tie) and orientation-dependent
+ * ones are rewritten by the GUI choice.
+ */
+function keeps(call: CallExpr, s: Shape, target: Vec<number>, ctx: EvalContext): boolean {
+  if (gap(target, s.value) > bandThreshold('length', ctx)) return false;
+  const line = s.args.find((a): a is Line<number> => a.kind === 'line') ?? null;
+  return call.selectors.every(
+    (x) =>
+      !isOrientationDependent(x, line) &&
+      (selectorClass(x.kind) !== 'ranker' || x.kind === 'other'),
+  );
+}
+
 /** The selectors that make site `site`'s call pick `target` in `doc`. */
 function selectorsFor(
   doc: Document,
   registry: Registry,
   ctx: EvalContext,
+  site: Site,
   call: CallExpr,
   s: Shape,
   target: Vec<number>,
@@ -154,8 +172,12 @@ function selectorsFor(
 ): Selector[] | undefined {
   const ids = call.args.map((a) => (a.kind === 'ref' ? a.id : -1));
   if (choose !== undefined && ids.every((id) => id >= 0)) {
-    const values: Evaluation<number> = evaluate(doc, registry, FloatField, ctx);
-    const r = choose(doc, values, registry, call.tool, ids, target);
+    // A selector may name only objects defined before the call's object (invariant I2): the
+    // chooser sees the document up to it, as the GUI sees it when the object is built.
+    const at = doc.objects.findIndex((o) => o.id === site.object);
+    const before: Document = { ...doc, objects: doc.objects.slice(0, Math.max(0, at)) };
+    const values: Evaluation<number> = evaluate(before, registry, FloatField, ctx);
+    const r = choose(before, values, registry, call.tool, ids, target);
     if (r.ok) return [...r.selectors];
   }
   return lowLevel(registry, call, s, target, ctx);
@@ -185,7 +207,8 @@ export function assign(
     const index = flips[i] === true ? 1 - Math.max(0, keepIndex) : Math.max(0, keepIndex);
     const target = s.cands[index];
     if (target === undefined) return undefined;
-    const selectors = selectorsFor(d, registry, c.ctx, call, s, target, choose);
+    if (flips[i] !== true && keeps(call, s, target, c.ctx)) continue;
+    const selectors = selectorsFor(d, registry, c.ctx, site, call, s, target, choose);
     if (selectors === undefined) return undefined;
     const next: CallExpr = { ...call, selectors };
     if (exprEquals(next, call)) continue;

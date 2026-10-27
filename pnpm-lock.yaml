@@ -68,6 +68,9 @@ importers:
       '@geomira/claims':
         specifier: workspace:*
         version: link:../../packages/claims
+      '@geomira/discovery':
+        specifier: workspace:*
+        version: link:../../packages/discovery
       '@geomira/editor':
         specifier: workspace:*
         version: link:../../packages/editor
@@ -138,6 +141,9 @@ importers:
       '@geomira/claims':
         specifier: workspace:*
         version: link:../claims
+      '@geomira/discovery':
+        specifier: workspace:*
+        version: link:../discovery
       '@geomira/kernel':
         specifier: workspace:*
         version: link:../kernel

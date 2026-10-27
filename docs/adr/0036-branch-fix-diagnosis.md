@@ -39,7 +39,11 @@ ADR-0029), not a document edit; applying one is ONE edit; reflection-equivariant
    `env.choose` (discovery cannot import the editor: SPEC §2). A site whose arguments are not
    objects, or when no chooser is given, gets the low-level selector that the kernel's compute
    confirms (along(±) or orient(±)). Every written selector is verified by the kernel: the call
-   with it must give the target.
+   with it must give the target. The chooser sees the document up to the site's object only (a
+   selector may name earlier objects alone, invariant I2; the first version offered the object
+   itself and wrote `same_side(X, ab)` in X's own definition). A site that keeps its candidate
+   keeps its selectors when they are firm: filters, other(P) and low-level selectors that do not
+   depend on the orientation; near / far_from and orientation-dependent ones are rewritten.
 4. **Testing**: each assignment's document is tested with the regime of the verdict it fixes
    (MIXED: local; ORIENTATION-DEPENDENT: global, so the global sampler's mirroring decides), n
    and seed from the job. Listed iff it HOLDS (local: HOLDS IN THIS CONFIGURATION; global: HOLDS
