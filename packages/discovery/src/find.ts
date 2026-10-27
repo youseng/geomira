@@ -10,7 +10,7 @@ import { deriveSeed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
 import { claimKindRegistry, type ClaimKinds } from '@geomira/claims/kind-registry';
 import { runJob } from '@geomira/claims/job';
-import { screenFigure, type Screen } from '@geomira/claims/screen';
+import { screenSteps, type Screen } from '@geomira/claims/screen';
 import type { Verdict } from '@geomira/claims/verdict';
 import { poolsOf, type Candidate, type Pools } from './candidates';
 import { scanKinds } from './scan';
@@ -44,9 +44,14 @@ interface State {
   readonly closure: Closure;
   readonly reports: KindReport[];
   readonly notSearched: { kind: string; reason: string }[];
-  readonly survivors: Candidate[];
+  /** The first budget.tests survivors in test order (kept sorted while screening). */
+  readonly best: Candidate[];
+  /** Every survivor counted (the untested are the count beyond those tested). */
+  survivors: number;
   readonly construction: Fact[];
   constructionCount: number;
+  /** Each kind's registry index (the test order). */
+  readonly kindIndex: ReadonlyMap<string, number>;
 }
 
 function progress(phase: string, done: number, total: number): DiscoveryProgress {
@@ -63,7 +68,10 @@ function judge(s: State, c: Candidate): void {
   if (s.closure.isConstruction({ kind: c.kind.name, args: c.args })) {
     s.constructionCount++;
     if (s.construction.length < CONSTRUCTION_SHOWN) s.construction.push(asFact(c));
-  } else s.survivors.push(c);
+  } else {
+    s.survivors++;
+    keepBest(s, c);
+  }
 }
 
 /** The document with the fact as a claim, and the claim's id. */
@@ -112,7 +120,7 @@ function* testFact(
       ...(env.entropy === undefined ? {} : { entropy: env.entropy }),
     },
   );
-  const total = Math.min(s.survivors.length, s.budget.tests);
+  const total = Math.min(s.survivors, s.budget.tests);
   for (let r = it.next(); ; r = it.next()) {
     if (r.done === true) {
       const v = r.value;
@@ -130,9 +138,18 @@ export function* runFind(
   env: DiscoveryEnv,
 ): Generator<DiscoveryProgress, FindOutcome, DiscoveryCommand> {
   const kinds = env.kinds ?? claimKindRegistry();
-  const screen = screenFigure(job.doc, env.registry, deriveSeed(job.seed, 0));
-  if ('reason' in screen) return { kind: 'invalid', reason: screen.reason };
   const budget = { ...DEFAULT_FIND_BUDGET, ...job.budget };
+  const screened = yield* asSteps<
+    Screen | { readonly reason: string },
+    DiscoveryProgress,
+    DiscoveryCommand
+  >(screenSteps(job.doc, env.registry, deriveSeed(job.seed, 0)), () =>
+    progress('evaluating the figure', 0, 1),
+  );
+  if ('cmd' in screened)
+    return screened.cmd === 'cancel' ? { kind: 'cancelled' } : stoppedEarly(job, budget);
+  const screen = screened.value;
+  if ('reason' in screen) return { kind: 'invalid', reason: screen.reason };
   const ids = job.doc.objects.map((o) => o.id);
   const pools = poolsOf(ids, screen.values, screen.ctx.scale);
   const built = yield* asSteps<Closure, DiscoveryProgress, DiscoveryCommand>(
@@ -150,7 +167,9 @@ export function* runFind(
     closure,
     reports: [],
     notSearched: [],
-    survivors: [],
+    best: [],
+    survivors: 0,
+    kindIndex: new Map(kinds.kinds.map((k, i) => [k.name, i])),
     construction: [],
     constructionCount: 0,
   };
@@ -187,17 +206,35 @@ function stoppedEarly(job: FindJob, budget: FindBudget): FindResult {
  * first, then the kind's registry order, then the newest objects first (ADR-0035 decision 12's
  * criteria that need no verdict), then the claim key.
  */
-function testOrder(s: State): Candidate[] {
-  const kindIndex = new Map(s.kinds.kinds.map((k, i) => [k.name, i]));
+function testBefore(s: State, a: Candidate, b: Candidate): number {
   const latest = (c: Candidate) =>
     Math.max(-1, ...c.objects.map((id) => s.pools.order.get(id) ?? -1));
-  return [...s.survivors].sort(
-    (a, b) =>
-      a.objects.length - b.objects.length ||
-      (kindIndex.get(a.kind.name) ?? 0) - (kindIndex.get(b.kind.name) ?? 0) ||
-      latest(b) - latest(a) ||
-      (a.key < b.key ? -1 : a.key > b.key ? 1 : 0),
+  return (
+    a.objects.length - b.objects.length ||
+    (s.kindIndex.get(a.kind.name) ?? 0) - (s.kindIndex.get(b.kind.name) ?? 0) ||
+    latest(b) - latest(a) ||
+    (a.key < b.key ? -1 : a.key > b.key ? 1 : 0)
   );
+}
+
+/**
+ * Keeps `c` among the first budget.tests survivors in test order: a binary-search insertion
+ * into a list of at most budget.tests, so screening never sorts every survivor in one step.
+ */
+function keepBest(s: State, c: Candidate): void {
+  const n = s.budget.tests;
+  const list = s.best;
+  let lo = 0;
+  let hi = list.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    const m = list[mid];
+    if (m !== undefined && testBefore(s, m, c) <= 0) lo = mid + 1;
+    else hi = mid;
+  }
+  if (lo >= n) return;
+  list.splice(lo, 0, c);
+  if (list.length > n) list.pop();
 }
 
 /** The confirmed facts, and why testing ended. */
@@ -217,7 +254,7 @@ function* testAll(
   const found: FoundFact[] = [];
   const unconfirmed: Unconfirmed[] = [];
   let tested = 0;
-  for (const [i, c] of testOrder(s).entries()) {
+  for (const [i, c] of s.best.entries()) {
     if (i >= s.budget.tests) break;
     const t = yield* testFact(job, env, s, c, i);
     if (t.kind === 'command') return { found, unconfirmed, tested, cmd: t.cmd };
@@ -281,7 +318,7 @@ function* confirm(
     beyondResults: r.value.length - facts.length,
     construction: { count: s.constructionCount, shown: s.construction },
     unconfirmed: t.unconfirmed,
-    untested: s.survivors.length - t.tested,
+    untested: s.survivors - t.tested,
     kinds: s.reports,
     notSearched: s.notSearched,
     stopped: stoppedBefore || t.cmd === 'stop' || stopNow,

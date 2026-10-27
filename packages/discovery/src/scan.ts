@@ -15,8 +15,8 @@ import {
 } from './candidates';
 import type { DiscoveryCommand, DiscoveryJobKind, DiscoveryProgress, KindReport } from './types';
 
-/** Candidates visited between two yields. */
-export const BATCH = 64;
+/** Candidates visited between two yields (each is screened and checked against the closure). */
+export const BATCH = 16;
 
 export interface ScanBudget {
   readonly candidatesPerKind: number;

@@ -88,12 +88,10 @@ describe('the find job (ADR-0035)', () => {
     it1.next();
     expect(it1.next('cancel')).toEqual({ done: true, value: { kind: 'cancelled' } });
     const it2 = runFind(job, { registry: REGISTRY });
-    let steps = 0;
+    // Advance into the screen (the first steps evaluate the figure and build the closure).
     let res = it2.next();
-    while (res.done !== true && steps < 5) {
-      res = it2.next();
-      steps++;
-    }
+    while (res.done !== true && !res.value.phase.startsWith('screening')) res = it2.next();
+    for (let k = 0; k < 4 && res.done !== true; k++) res = it2.next();
     const stopped = res.done === true ? res.value : it2.next('stop').value;
     if (stopped.kind !== 'found') throw new Error('stop');
     expect(stopped.stopped).toBe(true);

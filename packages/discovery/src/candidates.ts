@@ -20,7 +20,7 @@ import {
 import type { ScreenArg } from '@geomira/claims/screen';
 import { claimKey, transposition } from '@geomira/claims/symmetry';
 import { objectKey } from './terms';
-import { TICK, type Ticking } from './ticking';
+import { sortSteps, TICK, type Ticking } from './ticking';
 
 /** A candidate fact: a kind, its arguments, its claim key and the objects it names. */
 export interface Candidate {
@@ -282,7 +282,10 @@ export function* measureCandidates(
   const [g0, g1] = m.groups;
   const measured = yield* measuredGroups(g0.length, m, p, countLimit);
   const groups = measured.list;
-  const sorted = groups.map((g, i) => ({ m: g.x, i })).sort((a, b) => a.m - b.m);
+  const sorted = yield* sortSteps(
+    groups.map((g, i) => ({ m: g.x, i })),
+    (a, b) => a.m < b.m,
+  );
   const out = new Map<string, Candidate>();
   let total = 0;
   let k = 0;

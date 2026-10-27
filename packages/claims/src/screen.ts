@@ -78,6 +78,22 @@ export function screenFigure(
   registry: Registry,
   seed: Seed,
 ): Screen | { readonly reason: string } {
+  const g = screenSteps(doc, registry, seed);
+  for (;;) {
+    const r = g.next();
+    if (r.done === true) return r.value;
+  }
+}
+
+/**
+ * screenFigure in bounded steps: it yields after each evaluation (the figure's, then each
+ * perturbation's), so a job on a large figure keeps its steps short (SPEC §16).
+ */
+export function* screenSteps(
+  doc: Document,
+  registry: Registry,
+  seed: Seed,
+): Generator<undefined, Screen | { readonly reason: string }, unknown> {
   const c = evalContextFor(doc);
   if (!c.ok) return { reason: c.reason };
   const ctx = c.ctx;
@@ -99,10 +115,13 @@ export function screenFigure(
   const k = judgingFactor(doc, ctx);
   const rng = createRng(seed);
   const glider = (input: FreeInput) => gliderValue.get(freeKey(input.id, input.path));
-  const perturbedValues = Array.from({ length: FLOOR_SAMPLES }, () => {
+  yield undefined;
+  const perturbedValues: ReadonlyMap<number, Value<number>>[] = [];
+  for (let i = 0; i < FLOOR_SAMPLES; i++) {
     const p = perturbFree(free, glider, doc, rng, ctx.scale / k);
-    return evaluate(p, registry, FloatField, ctx).values;
-  });
+    perturbedValues.push(evaluate(p, registry, FloatField, ctx).values);
+    yield undefined;
+  }
   const decide = (kind: ClaimKindSpec, args: readonly ScreenArg[]): ScreenDecision => {
     const a = valuesOf(kind, args, base);
     if (!Array.isArray(a))

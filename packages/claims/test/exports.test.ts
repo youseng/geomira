@@ -70,7 +70,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     ],
   },
   './kind-registry': { module: kindRegistry, names: ['claimKindRegistry'] },
-  './screen': { module: screen, names: ['screenFigure'] },
+  './screen': { module: screen, names: ['screenFigure', 'screenSteps'] },
   './free': { module: free, names: ['findFree', 'readFree', 'writeFree'] },
   './expr-path': {
     module: exprPath,
