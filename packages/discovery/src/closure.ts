@@ -210,30 +210,40 @@ function* fixpoint(
     for (let changed = true; changed;) {
       index();
       const l = merge(c.lines, raw.lines, c.points, 2, apart);
-      const k = merge(c.circles, raw.circles, c.points, 3, apart);
       c.lineSets = l.sets;
+      yield undefined;
+      const k = merge(c.circles, raw.circles, c.points, 3, apart);
       c.circleSets = k.sets;
-      // One circle has one centre: the centres of merged circles are one point.
-      c.centerOf.clear();
-      let centred = false;
-      for (const [circle, center] of [...c.terms.centers, ...c.virtualCenters]) {
-        const cls = c.circles.find(circle);
-        const known = c.centerOf.get(cls);
-        if (known === undefined) c.centerOf.set(cls, c.points.find(center));
-        else if (c.points.union(known, center)) centred = true;
-      }
-      changed = l.changed || k.changed || centred;
+      changed = l.changed || k.changed || centres(c);
       yield undefined;
     }
+    // One rule per step: on a large figure each pass of a rule takes milliseconds.
     relate(c, inst);
     mapLengths(c);
     radii(c);
-    const eq = equalDistances(c, raw.circles, apart);
-    const mapped = mapUnions(c) || fixedIncidences(c, raw);
-    const mid = midpointRules(c, raw.circles);
-    outer = parallelsThroughOne(c) || eq || mapped || mid;
     yield undefined;
+    const eq = yield* equalDistances(c, raw.circles, apart);
+    yield undefined;
+    const mapped = mapUnions(c);
+    const fixed = fixedIncidences(c, raw);
+    yield undefined;
+    const mid = yield* midpointRules(c, raw.circles);
+    yield undefined;
+    outer = parallelsThroughOne(c) || eq || mapped || fixed || mid;
   }
+}
+
+/** One circle has one centre: the centres of merged circles are one point. Whether any merged. */
+function centres(c: Closure): boolean {
+  c.centerOf.clear();
+  let centred = false;
+  for (const [circle, center] of [...c.terms.centers, ...c.virtualCenters]) {
+    const cls = c.circles.find(circle);
+    const known = c.centerOf.get(cls);
+    if (known === undefined) c.centerOf.set(cls, c.points.find(center));
+    else if (c.points.union(known, center)) centred = true;
+  }
+  return centred;
 }
 
 /** The current figure's points by object key, and the band they must be apart by. */

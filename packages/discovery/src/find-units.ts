@@ -19,7 +19,7 @@ import { objectKey } from './terms';
 import type { FoundFact, LemmaTag } from './types';
 
 /** Parts of a group asked for a tag at most (the rest are not looked at). */
-const TAGGED_PARTS = 64;
+const TAGGED_PARTS = 8;
 
 function notCollinear(c: Closure, a: string, b: string, d: string): boolean {
   const [pa, pb, pd] = [c.at(a), c.at(b), c.at(d)];

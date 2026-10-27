@@ -50,6 +50,9 @@ export interface GroupEnv {
 /** n-ary kinds and the size of the subset that determines their line, circle or point. */
 const DETERMINED: Readonly<Record<string, number>> = { collinear: 2, concyclic: 3, concurrent: 2 };
 
+/** Classes built between two yields (sorting a class's nodes costs with its size). */
+const CLASSES_PER_STEP = 16;
+
 /** Class kinds and the literal a member must have (k = 1, n = 1) to be an equality. */
 export const CLASS_KINDS: readonly string[] = ['length', 'dangle', 'angle_eq'];
 
@@ -255,10 +258,10 @@ function* classGroups(
   const byRoot = new Map<string, number[][]>();
   for (const [k, n] of nodeOf) pushTo(byRoot, uf.find(k), n);
   yield undefined;
-  for (const [root, fs] of comps) {
+  for (const [i, [root, fs]] of [...comps].entries()) {
     const u = classUnit(kind, env, byRoot.get(root) ?? [], fs, checks);
     if (u !== undefined) out.push(u);
-    if (out.length % TICK === 0) yield undefined;
+    if (i % CLASSES_PER_STEP === CLASSES_PER_STEP - 1) yield undefined;
   }
   return out;
 }

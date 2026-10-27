@@ -41,6 +41,12 @@ import {
 
 export { withFact };
 
+/**
+ * Units tagged or checked against the knowledge between two yields: each costs up to a
+ * millisecond on a large figure (a lemma's search, a derivation per link), so a step stays short.
+ */
+const UNITS_PER_STEP = 16;
+
 interface State {
   readonly budget: FindBudget;
   readonly kinds: ClaimKinds;
@@ -164,21 +170,28 @@ function stoppedEarly(job: FindJob, budget: FindBudget): FindResult {
  * class its first link), a group standing for more facts first, the kind's registry order, the
  * newest objects first (ADR-0035 decision 12's criteria that need no verdict), then the key.
  */
-function testBefore(s: State, a: Unit, b: Unit): number {
-  const latest = (c: Candidate) =>
-    Math.max(-1, ...c.objects.map((id) => s.pools.order.get(id) ?? -1));
-  const untagged = (u: Unit) => (s.tags.get(u.key) === undefined ? 1 : 0);
-  const size = (u: Unit) =>
-    u.chain?.[0]?.objects.length ??
-    (u.parts.length > 1 ? Math.min(u.objects.length, u.kind.params.length) : u.objects.length);
-  return (
-    untagged(a) - untagged(b) ||
-    size(a) - size(b) ||
-    b.parts.length - a.parts.length ||
-    (s.kindIndex.get(a.kind.name) ?? 0) - (s.kindIndex.get(b.kind.name) ?? 0) ||
-    latest(b) - latest(a) ||
-    (a.key < b.key ? -1 : a.key > b.key ? 1 : 0)
-  );
+function testOrder(s: State, units: readonly Unit[]): Unit[] {
+  const keyOf = (u: Unit) => ({
+    u,
+    untagged: s.tags.get(u.key) === undefined ? 1 : 0,
+    size:
+      u.chain?.[0]?.objects.length ??
+      (u.parts.length > 1 ? Math.min(u.objects.length, u.kind.params.length) : u.objects.length),
+    kind: s.kindIndex.get(u.kind.name) ?? 0,
+    latest: Math.max(-1, ...u.objects.map((id) => s.pools.order.get(id) ?? -1)),
+  });
+  return units
+    .map(keyOf)
+    .sort(
+      (a, b) =>
+        a.untagged - b.untagged ||
+        a.size - b.size ||
+        b.u.parts.length - a.u.parts.length ||
+        a.kind - b.kind ||
+        b.latest - a.latest ||
+        (a.u.key < b.u.key ? -1 : a.u.key > b.u.key ? 1 : 0),
+    )
+    .map((x) => x.u);
 }
 
 /** The units to test, in test order: groups of the grouped kinds, and the single facts. */
@@ -206,9 +219,9 @@ function* unitSteps(s: State): Generator<undefined, Unit[], unknown> {
   const tagger = lemmaTagger(s.knowledge.closure);
   for (const [i, u] of out.entries()) {
     s.tags.set(u.key, tagUnit(tagger, u));
-    if (i % TICK === TICK - 1) yield undefined;
+    if (i % UNITS_PER_STEP === UNITS_PER_STEP - 1) yield undefined;
   }
-  return out.sort((a, b) => testBefore(s, a, b));
+  return testOrder(s, out);
 }
 
 /** What the local tests need: the budget, the tags, and how a class is rebuilt (group.ts). */
@@ -357,7 +370,7 @@ function* listHidden(
   });
   let untested = 0;
   for (const [i, u] of units.entries()) {
-    if (!halt.stopped && i % TICK === TICK - 1) {
+    if (!halt.stopped && i % UNITS_PER_STEP === UNITS_PER_STEP - 1) {
       const cmd = yield progress('listing consequences', i, units.length);
       if (cmd === 'cancel') return 'cancel';
       if (cmd === 'stop') halt.stopped = true;

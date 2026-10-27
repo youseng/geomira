@@ -8,10 +8,14 @@
  */
 import { addRatio, MAX_MIDPOINTS } from './closure-mid';
 import type { ClosureState } from './closure-view';
+import type { Ticking } from './ticking';
 import type { Instance } from './terms';
 import type { UnionFind } from './uf';
 
 export type Sets = Map<string, Set<string>>;
+
+/** Segments or point pairs looked at between two yields of a rule's pass (a step stays short). */
+const STEP_WORK = 1024;
 
 /** Circles of equal distances the closure keeps (beyond them it adds none: fewer facts follow). */
 const MAX_VIRTUAL_CIRCLES = 150;
@@ -174,13 +178,15 @@ export function radii(c: ClosureState): void {
  * made before point classes merged are first joined to their current names. Returns whether
  * anything was added.
  */
-export function equalDistances(
+export function* equalDistances(
   c: ClosureState,
   raw: Sets,
   apart: (a: string, b: string) => boolean,
-): boolean {
+): Ticking<boolean> {
   let changed = false;
+  let work = 0;
   for (const k of c.lengths.keys()) {
+    if (++work % STEP_WORK === 0) yield undefined;
     const [a, b] = k.split('|');
     if (a === undefined || b === undefined || a === '' || b === '') continue;
     const now = c.segment(a, b);
@@ -188,6 +194,7 @@ export function equalDistances(
   }
   const stars = new Map<string, { center: string; pts: Set<string> }>();
   for (const k of c.lengths.keys()) {
+    if (++work % STEP_WORK === 0) yield undefined;
     const [a, b] = k.split('|').map((x) => c.points.find(x));
     if (a === undefined || b === undefined || a === b || k !== c.segment(a, b)) continue;
     const cls = c.lengths.find(k);
@@ -205,6 +212,11 @@ export function equalDistances(
   for (const [key, star] of stars) {
     const pts = [...star.pts];
     if (pts.length < 2) continue;
+    work += pts.length * pts.length;
+    if (work > STEP_WORK) {
+      work = 0;
+      yield undefined;
+    }
     midpoints(c, star.center, pts, apart);
     // Two points at one distance from M: the base angles of MXY (angle-rules.ts); three or more:
     // a circle centred at M, while the closure keeps at most MAX_VIRTUAL_CIRCLES of them.

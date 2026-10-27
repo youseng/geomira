@@ -8,6 +8,7 @@
  * has one ratio k to. Every rule is a theorem about the facts it reads, so it stays sound.
  */
 import type { ClosureState } from './closure-view';
+import type { Ticking } from './ticking';
 
 /** Midpoints the closure records (beyond them it records none: fewer facts follow). */
 export const MAX_MIDPOINTS = 200;
@@ -153,10 +154,12 @@ function ratioUnions(c: ClosureState): boolean {
 }
 
 /** One pass of the midpoint rules (raw: the raw circles); returns whether anything was added. */
-export function midpointRules(c: ClosureState, raw: Map<string, Set<string>>): boolean {
+export function* midpointRules(c: ClosureState, raw: Map<string, Set<string>>): Ticking<boolean> {
   const before = c.ratios.size;
   for (const [m, n, y, z] of midlines(c)) addRatio(c, c.segment(y, z), c.segment(m, n), 'q2');
+  yield undefined;
   const t = diameters(c, raw);
+  yield undefined;
   const r = ratioUnions(c);
   return t || r || c.ratios.size !== before;
 }
