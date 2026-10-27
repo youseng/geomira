@@ -79,6 +79,7 @@ Manual examples (seed 1, default budget; Run 17's count in brackets, measured on
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages/discovery/test/find.test.ts` | 4 lines (ADR-0039 decision 10): `toBeGreaterThan(10)` → `toBeGreaterThanOrEqual(8)`; the small-budget check `results: 2` → `1` with its two expectations |
 | `packages/kernel/test/exports.test.ts` | lines added only (`./map-facts`)                                                                                                                         |
+| `scripts/mutation-discovery.test.ts`   | 3 lines (ADR-0039 decision 11): six discovery shards (ids and parents lists), the catch-all checked as the last shard                                    |
 
 ### Acceptance command output
 
