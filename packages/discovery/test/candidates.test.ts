@@ -152,4 +152,29 @@ describe('candidates (ADR-0035)', () => {
     expect(cs).toHaveLength(4);
     for (const c of cs) expect([4, 5]).toContain(c.objects[1]);
   });
+
+  it('a later kind with a rotation symmetry: deduplicated by key, its count an upper bound', () => {
+    // A test-only kind: three points up to rotation (not a transposition), without hints.
+    const base = kind('collinear');
+    const rotating: ClaimKindSpec = {
+      ...base,
+      name: 'rotation_test',
+      params: ['point', 'point', 'point'],
+      symmetry: [{ perm: [1, 2, 0] }],
+      finder: {},
+    };
+    const p = pools([P(0, 0), P(1, 0), P(2, 1), P(3, 5)]);
+    const cs = [...plainCandidates(rotating, p)];
+    // 4·3·2 = 24 ordered triples; each rotation class of 3 once: 8.
+    expect(cs).toHaveLength(8);
+    expect(new Set(cs.map((c) => c.key)).size).toBe(8);
+    expect(run(countPlain(rotating, p, 1000))).toMatchObject({ exact: false });
+  });
+
+  it('a later kind with a literal parameter and no literals in its hints has no candidates', () => {
+    const base = kind('length');
+    const bare: ClaimKindSpec = { ...base, name: 'bare_test', finder: {} };
+    const p = pools([P(0, 0), P(1, 0), P(2, 1), P(3, 5)]);
+    expect([...plainCandidates(bare, p)]).toEqual([]);
+  });
 });
