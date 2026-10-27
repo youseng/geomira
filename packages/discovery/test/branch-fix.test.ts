@@ -94,7 +94,7 @@ describe('branch fixes (ADR-0036)', () => {
     expect(first?.verdict.kind).toBe('holds');
     expect(first?.edits.map((e) => e.id)).toEqual([f.id('X')]);
     // Line ∩ circle has only along(±): the firm selector is R's own definition, so the fix says
-    // it repeats R (the editor would refuse it; the UI explains and does not apply it).
+    // it repeats R (two objects with one construction; the UI explains and does not apply it).
     expect(first?.repeats).toEqual([{ object: f.id('X'), of: f.id('R') }]);
     for (const x of r.fixes) expect(x.verdict.kind).toBe('holds');
   });
@@ -149,7 +149,7 @@ describe('branch fixes (ADR-0036)', () => {
     expect(r.fixes[0]?.moves).toEqual([f.id('U')]);
     expect(r.fixes[1]?.moves).toEqual([f.id('X'), f.id('K')]);
     // Circle ∩ circle has only orient(±): a flip writes the other point's definition. The fix
-    // makes the claim hold, and says that it repeats it (the editor would refuse the edit).
+    // makes the claim hold, and says that it repeats it (one construction for two objects).
     expect(r.fixes[0]?.repeats).toEqual([{ object: f.id('U'), of: f.id('X') }]);
     expect(r.fixes[1]?.repeats).toEqual([{ object: f.id('X'), of: f.id('U') }]);
     expect(r.note).toBeUndefined();

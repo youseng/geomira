@@ -32,7 +32,8 @@ export function movesText(doc: Document, fix: Pick<Fix, 'moves'>): string {
 
 /**
  * Why a fix is not applied (ADR-0036 decision 7): "X would be the same construction as R:
- * use R instead of X" (the editor allows no two objects with one construction).
+ * use R instead of X" (applying it would leave two objects with one construction, which the
+ * language warns about).
  */
 export function repeatsText(doc: Document, fix: Pick<Fix, 'repeats'>): string {
   return fix.repeats

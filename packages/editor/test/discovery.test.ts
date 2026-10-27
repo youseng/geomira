@@ -75,6 +75,10 @@ describe('the apply step of discovery', () => {
     if (first === undefined) throw new Error('no fix');
     expect(first.moves).toEqual([]);
     expect(first.verdict.kind).toBe('holds-across');
+    // X's only reflection-equivariant selector is Y's own definition: reported as a repeat (the
+    // UI does not apply it; the edit itself is still one undoable batch, checked below).
+    const id = (name: string) => d.objects.find((o) => o.name === name)?.id;
+    expect(first.repeats).toEqual([{ object: id('X'), of: id('Y') }]);
     const s0 = createEditor(d, env);
     const s1 = applyEdit(s0, branchFixEdit(first), env);
     expect(s1.ok).toBe(true);

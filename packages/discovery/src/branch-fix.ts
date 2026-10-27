@@ -58,8 +58,9 @@ export interface Fix {
   readonly rungs: string;
   /**
    * Rewritten objects that would be the same construction as another object (the only
-   * selectors that pick the candidate repeat its definition): the editor refuses such an edit,
-   * so this fix is shown, explained, and not applied.
+   * selectors that pick the candidate repeat its definition): applying it would leave two
+   * objects with one construction (the language warns and says to delete one), so this fix is
+   * shown and explained ("use R instead of X"), and the UI does not apply it.
    */
   readonly repeats: readonly { readonly object: number; readonly of: number }[];
 }

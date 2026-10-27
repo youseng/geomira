@@ -203,12 +203,11 @@ interface SiteWrite {
 /**
  * The document with the site's call rewritten by the first option the kernel confirms picks
  * the target (ADR-0036 decision 3: every written selector is verified), in this preference:
- * (1) an option that does not make the definition the same construction as another object (the
- * editor refuses such an edit); (2) the call's own selectors, when they still pick the target,
- * nothing better exists and they are not a ranker (near / far_from: what made the claim MIXED);
- * (3) an option that repeats another object (the assignment still makes the claim hold; the fix
- * reports the repeat, ADR-0036 decision 7).
- * Undefined when no option picks the target.
+ * (1) an option that does not make the definition the same construction as another object
+ * (two objects with one construction: the language warns "R is the same construction as X:
+ * use X"); (2) an option that does, which the fix reports (ADR-0036 decision 7); (3) the call's
+ * own selectors when nothing else picks the target and they are not a ranker (near / far_from:
+ * what made the claim MIXED). Undefined when none picks the target.
  */
 function writeSite(w: SiteWrite, options: readonly Selector[][]): Document | undefined {
   const band = bandThreshold('length', w.ctx);
@@ -227,12 +226,13 @@ function writeSite(w: SiteWrite, options: readonly Selector[][]): Document | und
     if (sameConstruction(d, def, w.registry, { except: w.object.id }) === undefined) return d;
     repeating ??= d;
   }
-  // A ranker (near, far_from) is what made the claim MIXED: never kept as the fix.
+  if (repeating !== undefined) return repeating;
+  // Nothing else picks the candidate: its own selectors stay, unless they are a ranker (near,
+  // far_from: what made the claim MIXED), which a fix never keeps.
   const ranked = w.call.selectors.some(
     (x) => selectorClass(x.kind) === 'ranker' && x.kind !== 'other',
   );
-  if (repeating === undefined || !ranked) return picks(w.doc, w.call) ? w.doc : repeating;
-  return repeating;
+  return !ranked && picks(w.doc, w.call) ? w.doc : undefined;
 }
 
 /** The rewritten objects of `doc` that are the same construction as another object. */
