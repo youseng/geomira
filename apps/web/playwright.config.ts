@@ -82,8 +82,16 @@ export default defineConfig({
     {
       name: 'measure-fallback',
       use: { ...devices['Desktop Chrome'], baseURL: singleFile },
-      testMatch: /fallback-(long-task|discovery)\.spec/u,
+      testMatch: /fallback-long-task\.spec/u,
       dependencies: ['measure-drag'],
+    },
+    // Run 17 (ADR-0037): find on 150 objects without workers, after the others and alone (in
+    // one project with fallback-long-task, the two specs would run in parallel and compete).
+    {
+      name: 'measure-discovery',
+      use: { ...devices['Desktop Chrome'], baseURL: singleFile },
+      testMatch: /fallback-discovery\.spec/u,
+      dependencies: ['measure-fallback'],
     },
   ],
   // Against the deployed site no local server is needed (deploy.yml's smoke job).

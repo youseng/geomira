@@ -103,7 +103,8 @@ test('a MIXED claim: branch fixes preview as a draft and apply as one edit', asy
     'k = circle(O, 5)',
     'l = line(L_1, L_2)',
     'X = intersect(l, k, near(P))',
-    'R = intersect(l, k, along(+))',
+    'S = intersect(l, k, along(-))',
+    'R = other(l, k, S)',
     'claim X = R',
   ])
     await command(page, line);
@@ -130,10 +131,11 @@ test('a MIXED claim: branch fixes preview as a draft and apply as one edit', asy
     .first()
     .getByRole('button', { name: 'Apply' })
     .click();
+  // The text panel shows the edit once it has re-rendered: wait for it, then read it.
+  await expect(await textArea(page)).not.toHaveValue(before);
   const applied = await text(page);
-  expect(applied).not.toBe(before);
   expect(applied).not.toContain('near(P)');
   await undo(page);
-  expect(await text(page)).toBe(before);
+  await expect(await textArea(page)).toHaveValue(before);
   expect(errors).toEqual([]);
 });
