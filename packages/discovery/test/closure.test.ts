@@ -93,13 +93,15 @@ describe('the closure of construction facts (ADR-0035)', () => {
     expect(cl.isConstruction(fact(f, 'equal', 'X', 'G_c'))).toBe(false);
   });
 
-  it('directed angles with arms on the same lines; vertical angles', () => {
+  it('directed angles with arms on the same lines; undirected ones only for the same arms', () => {
     const f = baseFigure()
       .add('P', c('on', c('line', 'B', 'A'), n(3)))
       .add('Q', c('on', c('line', 'B', 'C'), n(-1)));
     const cl = closure(f);
     expect(cl.isConstruction(fact(f, 'dangle', ONE, 'A', 'B', 'C', 'P', 'B', 'Q'))).toBe(true);
-    expect(cl.isConstruction(fact(f, 'angle_eq', 'A', 'B', 'C', 'P', 'B', 'Q'))).toBe(true);
+    // Q is on the ray opposite to C: ∠PBQ = 180° − ∠ABC, supplementary, so never hidden.
+    expect(cl.isConstruction(fact(f, 'angle_eq', 'A', 'B', 'C', 'P', 'B', 'Q'))).toBe(false);
+    expect(cl.isConstruction(fact(f, 'angle_eq', 'A', 'B', 'C', 'C', 'B', 'A'))).toBe(true);
     expect(cl.isConstruction(fact(f, 'dangle', ONE, 'A', 'B', 'C', 'B', 'C', 'A'))).toBe(false);
     expect(cl.isConstruction(fact(f, 'angle_eq', 'A', 'B', 'C', 'B', 'C', 'A'))).toBe(false);
   });

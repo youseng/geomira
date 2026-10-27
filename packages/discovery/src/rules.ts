@@ -83,20 +83,19 @@ function sameDirected(c: Closure, p: readonly string[]): boolean {
   );
 }
 
-/** ∠ABC = ∠DEF follows for one vertex and arms on the same lines (the same or vertical angles). */
+/**
+ * ∠ABC = ∠DEF (undirected) follows only for one vertex and the same arm points, in either
+ * order. Arms on the same lines are not enough: with one arm reversed the angles are
+ * supplementary, equal only at 90° (a finding, never to be hidden), and which side of the
+ * vertex a point lies on is the configuration's, not the construction's.
+ */
 function sameUndirected(c: Closure, p: readonly string[]): boolean {
   const [a, b, cc, d, e, f] = p;
   if (a === undefined || b === undefined || cc === undefined) return false;
   if (d === undefined || e === undefined || f === undefined) return false;
   if (!c.points.same(b, e)) return false;
-  const [l1, l2, m1, m2] = [
-    c.lineThrough(b, a),
-    c.lineThrough(b, cc),
-    c.lineThrough(e, d),
-    c.lineThrough(e, f),
-  ];
-  if ([l1, l2, m1, m2].some((x) => x === undefined)) return false;
-  return (l1 === m1 && l2 === m2) || (l1 === m2 && l2 === m1);
+  const same = (x: string, y: string) => c.points.same(x, y);
+  return (same(a, d) && same(cc, f)) || (same(a, f) && same(cc, d));
 }
 
 function litOf(args: readonly ScreenArg[], i: number): Rational | undefined {

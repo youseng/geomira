@@ -98,8 +98,9 @@ what "trivial" means, or how positions are searched.
    of a guarantee of that kind (generic: every kind); or, for the v1 kinds, the closure implies
    it (all points on one line or circle class; three lines through one point class; one
    parallel class; a perpendicular pair; a tangent pair; one length class; for directed angles
-   arms in the same parallel classes in order; for undirected angles the same vertex and arms
-   on the same lines). Construction facts are counted and listed ("12 construction facts
+   arms in the same parallel classes in order; for undirected angles the same vertex and the
+   same arm points, in either order: arms on the same lines are not enough, since with one arm
+   reversed the angles are supplementary and equal only at 90°, a finding). Construction facts are counted and listed ("12 construction facts
    hidden", expandable), never reported as findings. The filter is sound by construction (it
    only follows declared definitions), so it can let a trivial fact through but never hides a
    non-trivial one.
