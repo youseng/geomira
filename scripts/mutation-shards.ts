@@ -81,14 +81,13 @@ export const V11_B: readonly string[] = [`${K}/tools/arc.ts`, `${K}/tools/arc-ra
  * gains map-ops.ts (compose, inverse and apply, moved out of transforms.ts). The frozen shard
  * test keeps eleven kernel shards, so the files join existing ones by weight: the unit
  * inversion's small helpers kernel-a, its per-kind maps kernel-b, the tool specs (mostly static
- * literals) the light kernel-j (Run 17 spread inversion-tools.ts over kernel-i and kernel-k:
- * MOBIUS_I), the map core kernel-k (lighter since compose, inverse and apply
+ * literals) the light kernel-j (Run 17 spread them over kernel-e, -g, -i and -k: MOBIUS_I and
+ * the SPREAD lists), the map core kernel-k (lighter since compose, inverse and apply
  * left transforms.ts).
  */
 const T = `${K}/transform`;
 export const MOBIUS_A: readonly string[] = [`${T}/j-core.ts`, `${T}/proj-range.ts`];
 export const MOBIUS_B: readonly string[] = [`${T}/j-lines.ts`, `${T}/j-circles.ts`];
-export const MOBIUS_J: readonly string[] = [`${K}/tools/map-ops.ts`];
 export const MOBIUS_K: readonly string[] = [
   `${T}/mobius.ts`,
   `${T}/apply-map.ts`,
@@ -96,12 +95,18 @@ export const MOBIUS_K: readonly string[] = [
 ];
 
 /**
- * Run 17: map-ops.ts and inversion-tools.ts in one shard (kernel-j, 814 mutants) ran past
- * Stryker's 100-minute limit on main (78 % done after Run 14's merge) and has never saved an
- * incremental file there. inversion-tools.ts is cut between its functions (lines 1–177) and
- * its tool specs (178 on): the functions join kernel-i (lines.ts), the specs kernel-k.
+ * Run 17 (ADR-0038): kernel-j (transforms.ts:133-265, map-ops.ts and inversion-tools.ts) ran
+ * past Stryker's 100-minute limit on main (78 % done after Run 14's merge) and has never saved
+ * an incremental file there. Its code is spread over light shards, each file cut between
+ * top-level statements: inversion-tools.ts's functions (lines 1–177) to kernel-i and its tool
+ * specs (178 on) to kernel-k; map-ops.ts's functions (1–86) to kernel-e and its tool specs
+ * (87 on) to kernel-g. kernel-j keeps transforms.ts:133-265 (190 mutants; the frozen summary
+ * test fixes that range). Moving inversion-tools.ts alone was not enough: kernel-j still had
+ * 399 mutants, most of them covered by the whole suite, and its timeouts cost minutes each.
  */
 export const MOBIUS_I: readonly string[] = [`${T}/inversion-tools.ts:1-177`];
+export const SPREAD_E: readonly string[] = [`${K}/tools/map-ops.ts:1-86`];
+export const SPREAD_G: readonly string[] = [`${K}/tools/map-ops.ts:87-${String(OPEN_END)}`];
 
 /** The entries whose file exists at this commit (a `file:a-b` entry by its file). */
 function present(files: readonly string[]): string[] {
@@ -138,14 +143,22 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     files: [`${K}/tools/tangent-from.ts`, `${K}/tools/tangents.ts`, `${K}/tools/other.ts`],
     parent: 'kernel-2',
   },
-  { files: [`${K}/tools/points.ts`, `${K}/tools/triangle.ts`], parent: 'kernel-3' },
+  {
+    files: [`${K}/tools/points.ts`, `${K}/tools/triangle.ts`, ...present(SPREAD_E)],
+    parent: 'kernel-3',
+  },
   { files: [`${K}/tools/circles.ts`, `${K}/tools/incircle.ts`], parent: 'kernel-3' },
   {
-    files: [`${K}/tools/measures.ts`, `${K}/tools/functions.ts`, `${K}/tools/display.ts`],
+    files: [
+      `${K}/tools/measures.ts`,
+      `${K}/tools/functions.ts`,
+      `${K}/tools/display.ts`,
+      ...present(SPREAD_G),
+    ],
     parent: 'kernel-4',
   },
   { files: [`${K}/tools/lines.ts`, ...present(MOBIUS_I)], parent: 'kernel-h' },
-  { files: [`${K}/tools/transforms.ts:133-265`, ...present(MOBIUS_J)], parent: 'kernel-b' },
+  { files: [`${K}/tools/transforms.ts:133-265`], parent: 'kernel-b' },
   {
     files: [`${K}/tools/transforms.ts:266-${String(OPEN_END)}`, ...present(MOBIUS_K)],
     parent: 'kernel-b',

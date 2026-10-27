@@ -30,10 +30,18 @@ out of time saves nothing and starts over the next night: it never passes the ga
    has about 850 source lines. The gate still sums the package over its shards at 75 %.
    `scripts/mutation-discovery.test.ts` checks that the shards partition stryker.discovery.json's
    files and that a new file falls to the last shard.
-2. **inversion-tools.ts spread over two light shards**: lines 1–177 (its functions) join kernel-i
-   (lines.ts), lines 178 on (its tool specs) join kernel-k (mobius.ts, apply-map.ts). kernel-j
-   keeps transforms.ts:133-265 and map-ops.ts. The cut is between top-level statements, as the
-   frozen test of cuts requires. There are still eleven kernel shards, with the same parents.
+2. **kernel-j's Run 14 files spread over light shards**, each cut between top-level statements
+   (as the frozen test of cuts requires): `transform/inversion-tools.ts` lines 1–177 (its
+   functions) join kernel-i (lines.ts) and lines 178 on (its tool specs) kernel-k (mobius.ts,
+   apply-map.ts); `tools/map-ops.ts` lines 1–86 (compose, inverse, apply) join kernel-e
+   (points.ts, triangle.ts) and lines 87 on (its tool specs) kernel-g (measures.ts,
+   functions.ts, display.ts). kernel-j keeps transforms.ts:133-265, the range the frozen
+   summary test fixes for it. There are still eleven kernel shards, with the same parents.
+   Moving inversion-tools.ts alone was not enough: on a933455's tree kernel-j still held 399
+   mutants (190 in transforms.ts:133-265, 209 in map-ops.ts) and ran for more than 50 minutes,
+   while kernel-i took one minute for its 88 and kernel-k 16 minutes for its 251 new ones.
+   kernel-j's mutants are covered by most of the kernel suite (about 85 s per run), so each of
+   its timeouts costs minutes.
 3. **Frozen test changed** (one line, this ADR): in `scripts/mutation-shards.test.ts`, "every
    file a shard names exists" looked files up in packages/kernel/src only, so a discovery shard
    that names a file failed it. The lookup now also covers packages/discovery/src. That check is
@@ -43,7 +51,7 @@ out of time saves nothing and starts over the next night: it never passes the ga
 
 ## Consequences
 
-- With the split, each shard's full run is about half (kernel-j) or a quarter (discovery) of
+- With the split, each shard's full run is about a quarter (kernel-j, discovery) of
   what it was, well inside the limit even on a slower runner. The first night after a change to
   these files still runs them in full; later nights reuse each shard's own incremental file.
 - Moving a file to another shard makes it run in full once (the new shard's cache does not have
