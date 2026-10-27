@@ -190,15 +190,37 @@ export const DISCOVERY_GROUPS: readonly {
 }[] = [
   {
     id: 'discovery-a',
-    files: ['closure', 'closure-view', 'terms', 'uf'].map((f) => `${D}/${f}.ts`),
+    // ADR-0039: the closure's rules moved out of closure.ts stay with it.
+    files: [
+      'closure',
+      'closure-view',
+      'terms',
+      'uf',
+      'closure-merge',
+      'closure-maps',
+      'closure-mid',
+    ].map((f) => `${D}/${f}.ts`),
   },
   {
     id: 'discovery-b',
-    files: ['candidates', 'scan', 'ticking', 'solve', 'job'].map((f) => `${D}/${f}.ts`),
+    files: ['candidates', 'scan', 'ticking', 'solve', 'job', 'lattice', 'consequences'].map(
+      (f) => `${D}/${f}.ts`,
+    ),
   },
   {
     id: 'discovery-c',
-    files: ['lemmas', 'hunt', 'position', 'text', 'rules'].map((f) => `${D}/${f}.ts`),
+    files: [
+      'lemmas',
+      'hunt',
+      'position',
+      'text',
+      'rules',
+      'angles',
+      'angle-rules',
+      'angle-maps',
+      'angle-lattice',
+      'derive',
+    ].map((f) => `${D}/${f}.ts`),
   },
 ];
 
