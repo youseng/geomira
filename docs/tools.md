@@ -50,7 +50,7 @@ The midpoint of A and B.
 - Symmetry:
   - `midpoint(point, point)`: arguments 1, 2 in any order (the same value)
 - By construction:
-  - `midpoint(point, point)`: collinear(result, #1, #2); length(#1, result, result, #2, 1)
+  - `midpoint(point, point)`: collinear(result, #1, #2); length(#1, result, result, #2, 1); length(#1, #2, #1, result, 2); length(#1, #2, result, #2, 2)
 - Degenerate cases:
   - midpoint(A, A) = A
 - Examples:
