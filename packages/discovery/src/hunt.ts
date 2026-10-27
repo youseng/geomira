@@ -181,8 +181,12 @@ function keeps(
 ): 'ok' | 'hypotheses' | 'degenerate' {
   if (hypothesesInFigure(doc, env.registry).some((h) => h.status !== 'holds')) return 'hypotheses';
   const values = evaluate(doc, env.registry, FloatField, screen.ctx).values;
-  for (const [id, v] of screen.values) {
-    const w = values.get(id);
+  // The document's objects only: the screen's map also holds its probes' values (the probed
+  // document's extra objects), which the position's evaluation does not have.
+  for (const o of doc.objects) {
+    const v = screen.values.get(o.id);
+    if (v === undefined) continue;
+    const w = values.get(o.id);
     const was = v.kind !== 'undefined' && v.kind !== 'inexact';
     if (was && (w === undefined || w.kind === 'undefined' || w.kind === 'inexact'))
       return 'degenerate';
