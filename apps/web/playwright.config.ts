@@ -10,7 +10,7 @@ const pages = process.env['GEOMIRA_PAGES_URL'];
 const singleFile = pathToFileURL(fileURLToPath(new URL('dist-single/', import.meta.url))).href;
 
 /** Specs that run only in their own projects below. */
-const OWN = 'long-task|drag-frame|pages-smoke|file-url|fallback-long-task|pwa';
+const OWN = 'long-task|drag-frame|pages-smoke|file-url|fallback-long-task|fallback-discovery|pwa';
 
 export default defineConfig({
   testDir: 'e2e',
@@ -82,7 +82,7 @@ export default defineConfig({
     {
       name: 'measure-fallback',
       use: { ...devices['Desktop Chrome'], baseURL: singleFile },
-      testMatch: /fallback-long-task\.spec/u,
+      testMatch: /fallback-(long-task|discovery)\.spec/u,
       dependencies: ['measure-drag'],
     },
   ],

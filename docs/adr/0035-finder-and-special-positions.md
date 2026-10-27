@@ -183,8 +183,9 @@ what "trivial" means, or how positions are searched.
     candidates, one sample of a local test, one Gauss–Newton solve), answering `cancel`
     (cancelled, nothing reported) and `stop` (the time budget: finish with what is confirmed).
     apps/web's worker runs them, and the page's time-sliced fallback (ADR-0030) runs them with
-    the same slice loop; a 150-object figure keeps every main-thread task within ADR-0030's
-    budget in that fallback (an end-to-end measurement). `env` is the tool registry, the claim
+    the same slice loop; on a 150-object figure in that fallback an end-to-end measurement gates
+    regressions (no task over 150 ms, under 1 % over 16 ms: ADR-0037, which waives ADR-0030's
+    16 ms for this job in Run 17). `env` is the tool registry, the claim
     kinds, and the host's entropy for the mod-p rung.
 
 ### UI

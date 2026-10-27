@@ -13,7 +13,7 @@ links, static site.
 v1.1 (Runs 12–13, before Phase 2): single-file offline build, PWA, views UI, long-tail
 tools (spiral_center, isogonal, symmedian, pole, radical_center, arc), mutation-testing
 gates. Run 14 (ADR-0032): inversion through Möbius maps (`inversion` and the presets of
-ADR-0032), the range `outside` flag. Run 17 (ADR-0035, ADR-0036; before Run 16, Run 15
+ADR-0032), the range `outside` flag. Run 17 (ADR-0035, ADR-0036, ADR-0037; before Run 16, Run 15
 skipped): discovery: the finder ("what is special?"), special-position hunting, lemma tags,
 branch-fix diagnosis.
 Phase 2 (must not be referenced by v1 code; the extension points in §18 are built and
