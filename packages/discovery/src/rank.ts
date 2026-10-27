@@ -49,15 +49,22 @@ export function preliminary(
   );
 }
 
-/** The ranked facts (one closure per fact, in bounded steps). */
-export function* rankFacts(facts: readonly FoundFact[], env: RankEnv): Ticking<FoundFact[]> {
+/**
+ * The ranked facts (one closure per fact, in bounded steps). Once `stopped()` (the host's time
+ * budget), the facts not yet checked keep the preliminary order, unmarked.
+ */
+export function* rankFacts(
+  facts: readonly FoundFact[],
+  env: RankEnv,
+  stopped: () => boolean = () => false,
+): Ticking<FoundFact[]> {
   const pre = preliminary(facts, env.kinds, env.order);
   const accepted: FoundFact[] = [];
   const out: FoundFact[] = [];
   for (const f of pre) {
     const same = accepted.filter((a) => a.kind === f.kind);
     let follows: string[] = [];
-    if (same.length > 0) {
+    if (same.length > 0 && !stopped()) {
       const c = yield* closureSteps(env.doc, env.registry, env.kinds, {
         extra: same,
         values: env.values,

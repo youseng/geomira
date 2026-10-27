@@ -251,18 +251,25 @@ function* confirm(
     ? { found: [], unconfirmed: [], tested: 0 }
     : yield* testAll(job, env, s);
   if (t.cmd === 'cancel') return { kind: 'cancelled' };
-  const ranking = rankFacts(t.found, {
-    doc: job.doc,
-    registry: env.registry,
-    kinds: s.kinds,
-    values: s.screen.values,
-    order: s.pools.order,
-    terms: s.closure.terms,
-  });
+  // A stop while ranking ends the "follows" checks; the job is then stopped too.
+  let stopNow = false;
+  const ranking = rankFacts(
+    t.found,
+    {
+      doc: job.doc,
+      registry: env.registry,
+      kinds: s.kinds,
+      values: s.screen.values,
+      order: s.pools.order,
+      terms: s.closure.terms,
+    },
+    () => stopNow,
+  );
   let r = ranking.next();
   while (r.done !== true) {
     const cmd = yield progress('ranking', 0, t.found.length);
     if (cmd === 'cancel') return { kind: 'cancelled' };
+    if (cmd === 'stop') stopNow = true;
     r = ranking.next();
   }
   const facts = r.value.slice(0, s.budget.results);
@@ -277,7 +284,7 @@ function* confirm(
     untested: s.survivors.length - t.tested,
     kinds: s.reports,
     notSearched: s.notSearched,
-    stopped: stoppedBefore || t.cmd === 'stop',
+    stopped: stoppedBefore || t.cmd === 'stop' || stopNow,
   };
   return { ...result, caps: capLines(result) };
 }
