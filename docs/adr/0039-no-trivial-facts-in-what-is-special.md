@@ -136,6 +136,20 @@ Three causes:
     expectations (two facts shown, "showing 2 of …") became `results: 1` and "showing 1 of …":
     the cap line and the cut are checked as before.
 
+### Mutation shards
+
+11. **Six discovery shards** (amends ADR-0038 decision 1). The nightly on c47299a (run 40537385274) ran discovery-a in 44 minutes, discovery-b in 52 and discovery-c in 28, but the
+    last shard, which held every file this ADR adds (3,642 mutants with find, rank and the
+    branch-fix files), had tested 2,592 when Stryker's 100 minutes ran out (278 timeouts). The
+    new files go to two new shards and the light ones: discovery-d (closure-merge, closure-maps,
+    closure-mid: the closure's rules), discovery-e (derive, group, confirm, find-units),
+    discovery-b (+ lattice, consequences), discovery-c (+ the angle modules); the last shard
+    keeps find, rank, the branch-fix files and types. The gate still sums the package at 75 %.
+    Frozen test changed, three lines of `scripts/mutation-discovery.test.ts` "four shards …":
+    the id list and the parents list gain discovery-d and discovery-e, and the catch-all is
+    checked as the last shard (`shards[shards.length - 1]`) instead of `shards[3]`. The check
+    is as strict as before; the test's title still says four.
+
 ## Consequences
 
 - On the request's figures (default budget): inversion and reflection report nothing; the
