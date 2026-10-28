@@ -9,7 +9,8 @@
  *
  * Placement (ADR-0023): a point of the curve is computed as c + x·u + y·v in doubles, off by
  * about ROUNDING·(|c| + |x| + |y|) world units; where that exceeds PLACEMENT_PX at the zoom on a
- * visible interval, the conic is not drawn and listed as not drawable at this zoom.
+ * visible interval, the conic is not drawn and listed as not drawable at this zoom; so is a conic
+ * that may pass through the rectangle while that error hides it from the crossings (mayPass).
  */
 import { assertNever } from '@geomira/num/assert';
 import { conicPoint, type ConicShape } from './conic-shape';
@@ -150,12 +151,52 @@ export function conicPaths(view: View, s: ConicShape, r: Rect): Path[] {
 }
 
 /**
+ * Whether a conic with no visible interval found may still pass through `r` unseen: the
+ * rounding of its points at r's centre (ROUNDING·size) is beyond PLACEMENT_PX at the zoom and
+ * the curve is within that error of r (first-order distance |F|/|∇F| from r's centre, F the
+ * local equation). Then the crossings cannot be trusted and the conic is not drawable, rather
+ * than silently missing.
+ */
+function mayPass(s: ConicShape, r: Rect, zoom: number): boolean {
+  const p = { x: (r.minX + r.maxX) / 2 - s.c.x, y: (r.minY + r.maxY) / 2 - s.c.y };
+  const [X, Y] = [p.x * s.u.x + p.y * s.u.y, -p.x * s.u.y + p.y * s.u.x];
+  const err =
+    ROUNDING * (Math.abs(s.c.x) + Math.abs(s.c.y) + Math.abs(X) + Math.abs(Y) + s.a + s.b);
+  if (!(err * zoom > PLACEMENT_PX)) return false;
+  const [f, gx, gy] = localEquation(s, X, Y);
+  const half = Math.hypot(r.maxX - r.minX, r.maxY - r.minY) / 2;
+  return Math.abs(f) <= (half + err) * Math.hypot(gx, gy);
+}
+
+/** The local equation F(X, Y) = 0 of the shape and its gradient, at (X, Y). */
+function localEquation(s: ConicShape, X: number, Y: number): readonly [number, number, number] {
+  switch (s.type) {
+    case 'ellipse':
+      return [
+        (X * X) / (s.a * s.a) + (Y * Y) / (s.b * s.b) - 1,
+        (2 * X) / (s.a * s.a),
+        (2 * Y) / (s.b * s.b),
+      ];
+    case 'hyperbola':
+      return [
+        (X * X) / (s.a * s.a) - (Y * Y) / (s.b * s.b) - 1,
+        (2 * X) / (s.a * s.a),
+        (-2 * Y) / (s.b * s.b),
+      ];
+    case 'parabola':
+      return [X - s.a * Y * Y, 1, -2 * s.a * Y];
+    default:
+      return assertNever(s.type, 'conic type');
+  }
+}
+
+/**
  * Whether the conic can be placed within PLACEMENT_PX at `zoom` (see the module comment):
  * 'outside' when no part of it is in `r`.
  */
 export function conicPlacement(s: ConicShape, r: Rect, zoom: number): Placement {
   const spans = conicSpans(s, r);
-  if (spans.length === 0) return 'outside';
+  if (spans.length === 0) return mayPass(s, r, zoom) ? 'unplaceable' : 'outside';
   let size = Math.abs(s.c.x) + Math.abs(s.c.y);
   for (const sp of spans)
     for (const t of [sp.from, (sp.from + sp.to) / 2, sp.to]) {
