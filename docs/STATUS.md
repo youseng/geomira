@@ -86,6 +86,13 @@ claimKey listed 720 arrangements per six-point candidate (four times slower find
   1 %). That theorem runs exactly over Q only; L3 compares floats with Q on its own figures.
 - The refusal "pick a line or circle" also accepts a conic (the words of a frozen test are
   kept).
+- The known 16 ms slice flake (`apps/web/test/host-discovery.test.ts`, "without a worker the
+  page finds the Euler line in slices within its budget") fails a little more often. Over 18
+  fresh-process runs each it failed 3/18 at head, 1/18 at run-16a and 0/18 at head without
+  the conconic search. The late slices fall in "evaluating the figure" and "collecting
+  construction facts" (JIT/GC warm-up). It failed once in CI on 8db5f13 (4 late slices, 3
+  allowed) and that job was re-run once (PR comment). Moving the conic closure rules into
+  their own step did not change the rate.
 
 ### Uncertain
 
