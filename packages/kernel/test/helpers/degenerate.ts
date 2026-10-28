@@ -27,6 +27,7 @@ export function plain<T>(F: Field<T>, v: Value<T>): unknown {
     case 'circle':
     case 'polygon':
     case 'transform':
+    case 'ideal_point':
     case 'angle_mark':
     case 'segment_mark':
     case 'text':

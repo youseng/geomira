@@ -9,7 +9,10 @@
  *   - polygon → Undefined (its sides would become arcs); segment mark → Undefined (lengths are
  *     not kept); angle mark → the mark on the tangents of the image arms (angles are kept,
  *     orientation reversed: the arms swap); text → its anchor's image;
+ *   - ideal point → Undefined (a Möbius map with a pole sends every point at infinity to one
+ *     point, ADR-0040); with c = 0 the map is a similarity and maps its direction;
  *   - number, transform, string → Undefined (never imaged); Undefined and Inexact pass.
+ * A projective map: proj-apply.ts (ADR-0040); a composite: its maps in turn.
  */
 import { assertNever } from '@geomira/num/assert';
 import { cAbs2, cAdd, cConj, cDiv, cMul, cNeg, complex, type Complex } from '@geomira/num/complex';
@@ -31,6 +34,9 @@ import { AT_POLE, jPoint, poleTest } from './j-core';
 import { jCircle } from './j-circles';
 import { jLine } from './j-lines';
 import { determinant, hasNoPole } from './mobius';
+import { applyProjective } from './proj-apply';
+import { wOf } from './proj-side';
+import { det3 } from './projective';
 
 const toC = <T>(v: Vec<T>): Complex<T> => complex(v.x, v.y);
 const toV = <T>(z: Complex<T>): Vec<T> => ({ x: z.re, y: z.im });
@@ -76,6 +82,10 @@ function applyJ<T>(F: Field<T>, v: Value<T>, ctx: EvalContext): Value<T> {
       return jLine(F, v, ctx);
     case 'circle':
       return jCircle(F, v, ctx);
+    case 'ideal_point':
+      return undef(
+        'apply: a Möbius map with a pole sends every point at infinity to one point, so a direction has no image of its own',
+      );
     case 'polygon':
       return undef('apply: an inversion maps the sides of a polygon to arcs, so it has no image');
     case 'segment_mark':
@@ -107,7 +117,10 @@ function applyMobius<T>(F: Field<T>, m: Mobius<T>, v: Value<T>, ctx: EvalContext
   return applySimilarity(F, s2, applyJ(F, applySimilarity(F, s1, v), ctx));
 }
 
-/** apply(t, v) for either map type (t valid: mapProblem passed). */
+/**
+ * apply(t, v) for any map type (t valid: mapProblem passed). A composite applies its maps in
+ * turn, so its image is defined exactly where every step is (ADR-0040 decision 8).
+ */
 export function applyMap<T>(
   F: Field<T>,
   t: TransformData<T>,
@@ -119,6 +132,10 @@ export function applyMap<T>(
       return applySimilarity(F, t, v);
     case 'mobius':
       return applyMobius(F, t, v, ctx);
+    case 'projective':
+      return applyProjective(F, t, v, ctx);
+    case 'composite':
+      return t.maps.reduce<Value<T>>((x, m) => applyMap(F, m, x, ctx), v);
     default:
       return assertNever(t, 'transform');
   }
@@ -126,15 +143,39 @@ export function applyMap<T>(
 
 /**
  * The local scale factor |f′(x)| of a map at x (floats; for the editor's drag-end rounding):
- * |a| for a similarity, |ad − bc|/|c·x̂ + d|² for a Möbius map (|a/d| when c = 0).
- * Degenerate: x at the pole (a zero denominator), or a non-finite result → 1 (the rounding is
- * then not scaled).
+ * |a| for a similarity, |ad − bc|/|c·x̂ + d|² for a Möbius map (|a/d| when c = 0),
+ * √(|det m|/|W(x)|³) for a projective map (the square root of its Jacobian), the product along
+ * the maps of a composite (each at the image of x so far). Degenerate: x at the pole or on the
+ * line sent to infinity (a zero denominator), or a non-finite result → 1 (the rounding is then
+ * not scaled).
  */
 export function localScale(t: TransformData<number>, x: Vec<number>): number {
   const F = FloatField;
-  if (t.type === 'similarity') return finiteScale(Math.hypot(t.a.re, t.a.im));
-  const den = cAbs2(F, cAdd(F, cMul(F, t.c, t.anti ? cConj(F, toC(x)) : toC(x)), t.d));
-  return finiteScale(Math.sqrt(cAbs2(F, determinant(F, t))) / den);
+  switch (t.type) {
+    case 'similarity':
+      return finiteScale(Math.hypot(t.a.re, t.a.im));
+    case 'mobius': {
+      const den = cAbs2(F, cAdd(F, cMul(F, t.c, t.anti ? cConj(F, toC(x)) : toC(x)), t.d));
+      return finiteScale(Math.sqrt(cAbs2(F, determinant(F, t))) / den);
+    }
+    case 'projective': {
+      const w = Math.abs(wOf(F, t.m, x, true));
+      return finiteScale(Math.sqrt(Math.abs(det3(F, t.m)) / (w * w * w)));
+    }
+    case 'composite': {
+      let k = 1;
+      let at: Vec<number> = x;
+      for (const m of t.maps) {
+        k *= localScale(m, at);
+        const next = applyMap(F, m, { kind: 'point', ...at }, { scale: 1 });
+        if (next.kind !== 'point') return finiteScale(k);
+        at = next;
+      }
+      return finiteScale(k);
+    }
+    default:
+      return assertNever(t, 'transform');
+  }
 }
 
 function finiteScale(k: number): number {

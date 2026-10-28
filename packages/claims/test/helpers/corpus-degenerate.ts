@@ -59,7 +59,7 @@ export const DEGENERATE_CLAIMS: readonly Entry[] = [
     build: (f) =>
       f
         .def('X', 'intersect', c('line', 'A', 'B'), c('parallel', 'C', c('line', 'A', 'B')))
-        .claim('collinear', 'X', 'A', 'C'),
+        .claim('collinear', c('midpoint', 'X', 'A'), 'A', 'C'),
   },
   {
     name: 'on a circumcircle of collinear points (Undefined)',

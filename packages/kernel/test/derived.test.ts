@@ -48,7 +48,7 @@ describe('a derived layer images every geometric object of its source', () => {
         def: T(
           'intersect',
           T('line', refOf(doc, 'A'), refOf(doc, 'B')),
-          T('line', pt(0, 1), pt(1, 1)),
+          T('line', refOf(doc, 'B'), refOf(doc, 'A')),
         ),
       },
     });

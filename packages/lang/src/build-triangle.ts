@@ -59,7 +59,7 @@ function existingId(st: State, name: string, line: number): number | undefined {
 
 /**
  * The values of the existing vertices in the figure so far (undefined where a vertex is new),
- * or why one cannot be used: it is undefined here, or not a point.
+ * or why one cannot be used: it is undefined here, at infinity (ADR-0040), or not a point.
  */
 function existingPoints(
   st: State,
@@ -80,6 +80,7 @@ function existingPoints(
     else if (v?.kind === 'point') out.push([v.x, v.y]);
     else if (v === undefined || v.kind === 'undefined' || v.kind === 'inexact')
       return `${name} is undefined here${forNew}`;
+    else if (v.kind === 'ideal_point') return `${name} is a point at infinity here${forNew}`;
     else
       return `${name} is ${/^[aeiou]/u.test(v.kind) ? 'an' : 'a'} ${v.kind.replace(/_/gu, ' ')}, not a point`;
   }

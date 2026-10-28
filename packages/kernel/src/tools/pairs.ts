@@ -14,17 +14,7 @@
  * select.ts applies the selectors.
  */
 import { isInexact, type Field, type Inexact } from '@geomira/num/field';
-import {
-  abs,
-  isZeroNormalized,
-  isZeroVec,
-  vAdd,
-  vCross,
-  vDot,
-  vRot90,
-  vScale,
-  vSub,
-} from '../geom';
+import { abs, isZeroVec, vAdd, vCross, vDot, vRot90, vScale, vSub } from '../geom';
 import { rootGap } from '../incidence';
 import type { BranchShape, EvalContext } from '../tool';
 import {
@@ -39,6 +29,7 @@ import {
 import { degenerateCircle, degenerateLine } from './args';
 import { offArcs, onArcs } from './arc-range';
 import { outsideReason, rangeStatus } from './range';
+import { isFull, parallelism } from './parallel-lines';
 
 export type Side = -1 | 0 | 1;
 
@@ -174,9 +165,11 @@ export function lineLinePair<T>(
 }
 
 /**
- * Degenerate cases: parallel lines → Undefined; coincident lines → Undefined; the
- * intersection outside a segment or ray → Undefined; within the band of an end →
- * Undefined (ambiguous); a range check mod p → Inexact.
+ * Degenerate cases: parallel lines → Undefined (a segment or ray contains no point at
+ * infinity: "parallel lines: their common point is at infinity, …"; two full lines meet at
+ * their ideal point, idealMeet); coincident lines → Undefined; the intersection outside a
+ * segment or ray → Undefined; within the band of an end → Undefined (ambiguous); a range
+ * check mod p → Inexact.
  */
 function lineLine<T>(
   F: Field<T>,
@@ -186,11 +179,14 @@ function lineLine<T>(
 ): Vec<T> | Undefined | Inexact {
   const den = vCross(F, a.d, b.d);
   const w = vSub(F, b.p, a.p);
-  const [aa, bb] = [vDot(F, a.d, a.d), vDot(F, b.d, b.d)];
-  if (isZeroNormalized(F, den, F.mul(aa, bb), 'dimensionless', ctx)) {
-    const on = isZeroNormalized(F, vCross(F, w, a.d), aa, 'length', ctx);
-    return undef(on ? 'coincident lines' : 'parallel lines');
-  }
+  const meets = parallelism(F, a, b, ctx);
+  if (meets === 'coincident') return undef('coincident lines');
+  if (meets === 'parallel')
+    return undef(
+      isFull(a) && isFull(b)
+        ? 'parallel lines'
+        : 'parallel lines: their common point is at infinity, which is not on a segment or ray',
+    );
   const t = F.div(vCross(F, w, b.d), den);
   const s = F.div(vCross(F, w, a.d), den);
   for (const [l, u] of [

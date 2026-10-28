@@ -54,7 +54,8 @@ function candidate(
   const s = shapeOf(value);
   if (s.kind === 'none') return undefined;
   if (s.kind === 'unavailable') {
-    unavailable.push({ id: o.id, name: o.name, reason: s.reason });
+    const base = { id: o.id, name: o.name, reason: s.reason };
+    unavailable.push(s.atInfinity === true ? { ...base, atInfinity: true } : base);
     return undefined;
   }
   const kind = s.shape.kind;

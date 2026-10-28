@@ -56,6 +56,11 @@ export interface ClaimKindSpec {
   readonly params: readonly ClaimParam[];
   /** Further arguments of one kind (collinear(A, B, C, D, …)). */
   readonly rest?: ClaimParam;
+  /**
+   * Its point parameters also take points at infinity (ADR-0040: collinear). Any other kind
+   * given a point at infinity is undefined ("X is a point at infinity"), never invalid.
+   */
+  readonly atInfinity?: true;
   /** In the POLYNOMIAL KINDS whitelist of the mod-p rung (SPEC §10.1). */
   readonly polynomial: boolean;
   readonly test: FloatTest;
@@ -184,6 +189,29 @@ export function fitsParam(v: Value<unknown>, p: ClaimParam): boolean {
     default:
       return assertNever(p, 'claim parameter');
   }
+}
+
+/**
+ * Why argument value v does not fit parameter p of `kind`, or undefined when it fits: a point at
+ * infinity where a point is expected is undefined (`text` names it) unless the kind takes one
+ * (ADR-0040); anything else is an invalid claim.
+ */
+export function argMismatch(
+  kind: ClaimKindSpec,
+  v: Value<unknown>,
+  p: ClaimParam | undefined,
+  i: number,
+  text: string,
+): { readonly invalid: boolean; readonly reason: string } | undefined {
+  if (p !== undefined && fitsParam(v, p)) return undefined;
+  if (p === 'point' && v.kind === 'ideal_point')
+    return kind.atInfinity === true
+      ? undefined
+      : { invalid: false, reason: `${text} is a point at infinity` };
+  return {
+    invalid: true,
+    reason: `invalid claim: ${kind.name} needs ${p ?? 'nothing'} as argument ${String(i + 1)}, not ${v.kind}`,
+  };
 }
 
 /** Whether a parameter takes an exact literal (not an object). */

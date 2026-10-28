@@ -121,9 +121,11 @@ export interface Signature {
 /**
  * How a map acts (ADR-0039). A similarity keeps every v1 claim kind (directed angles reversed
  * when anti); an inversion keeps equal points, incidence and tangency, takes clines to clines,
- * and has a centre; another Möbius map keeps incidence, tangency and clines.
+ * and has a centre; another Möbius map keeps incidence, tangency and clines; a projective map
+ * (ADR-0040) keeps equal points, the incidence of points and lines and cross ratios, never
+ * lengths, angles, circles or tangency.
  */
-export type MapType = 'similarity' | 'anti-similarity' | 'inversion' | 'moebius';
+export type MapType = 'similarity' | 'anti-similarity' | 'inversion' | 'moebius' | 'projective';
 
 /** A map's facts as data over its call (ADR-0039); terms as in guarantees. */
 export interface MapFacts {

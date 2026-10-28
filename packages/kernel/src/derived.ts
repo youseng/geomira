@@ -24,10 +24,12 @@ import type { ValueKind } from './value';
 
 /**
  * The kinds a map takes to the same kind: figures and, since ADR-0011, the display values
- * that have a position (marks and text). Everything else has no image.
+ * that have a position (marks and text), and points at infinity (ADR-0040). Everything else has
+ * no image.
  */
 const IMAGED_KINDS: readonly ValueKind[] = [
   'point',
+  'ideal_point',
   'line',
   'circle',
   'polygon',

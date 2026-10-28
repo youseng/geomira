@@ -32,7 +32,7 @@ describe('evalClaim: three-valued, in the current figure', () => {
     const f = triangle(1, 3)
       .def('l', 'line', 'A', 'B')
       .def('m', 'parallel', 'C', 'l')
-      .def('X', 'intersect', 'l', 'm');
+      .def('X', 'intersect', 'l', 'l');
     const id = f.claim('collinear', 'X', 'A', 'B');
     const v = evalClaim(f.doc, id, REGISTRY);
     expect(v).toMatchObject({ value: 'undefined', status: 'undefined' });

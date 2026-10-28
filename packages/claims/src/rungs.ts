@@ -30,7 +30,7 @@ import { budgetField } from './budget';
 import { exactDecide, floatDecide, floatNdg, type Decision } from './decide';
 import { readFree, writeFree, type Assignment, type FreeInput } from './free';
 import { checkAssumption } from './hypotheses';
-import { fitsParam, formatClaimMessage, paramAt } from './kind';
+import { argMismatch, formatClaimMessage, paramAt } from './kind';
 import { freeKey, type Prepared } from './prepare';
 import { judgingFactor, perturbFree, scaledArgs } from './perturb';
 import { truncate } from './probes';
@@ -80,11 +80,8 @@ export function claimArgs<T>(
     }
     if (v.kind === 'undefined') return undef(`${text} is undefined (${v.reason})`);
     if (v.kind === 'inexact') return v;
-    const p = paramAt(prep.kind, i);
-    if (p === undefined || !fitsParam(v, p))
-      return undef(
-        `invalid claim: ${prep.kind.name} needs ${p ?? 'nothing'} as argument ${String(i + 1)}, not ${v.kind}`,
-      );
+    const bad = argMismatch(prep.kind, v, paramAt(prep.kind, i), i, text);
+    if (bad !== undefined) return undef(bad.reason);
     out.push(v);
   }
   return out;

@@ -102,6 +102,8 @@ describe('createRegistry', () => {
       'inversion_swap',
       'feet_inversion',
       'sqrt_bc2',
+      'projective',
+      'send_to_infinity',
     ]);
     for (const t of REGISTRY.tools) {
       expect(t.id).toBe(t.name);

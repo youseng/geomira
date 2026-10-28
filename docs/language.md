@@ -270,11 +270,11 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `midpoint` | points | `midpoint(point, point)` | point | can succeed | — |
 | `divide` | points | `divide(point, point, number)` | point | can succeed | — |
 | `foot` | points | `foot(point, linear)` · `foot(point, point, point)` | point | can succeed | — |
-| `intersect` | points | `intersect(linear, linear)` · `intersect(linear, round)` · `intersect(round, linear)` · `intersect(round, round)` | point | can succeed | √(2) is not rational |
+| `intersect` | points | `intersect(linear, linear)` · `intersect(linear, round)` · `intersect(round, linear)` · `intersect(round, round)` | point, ideal_point | can succeed | √(2) is not rational |
 | `circumcenter` | points | `circumcenter(point, point, point)` | point | can succeed | — |
 | `centroid` | points | `centroid(point, point, point)` | point | can succeed | — |
 | `orthocenter` | points | `orthocenter(point, point, point)` | point | can succeed | — |
-| `line` | lines | `line(point, point)` | line | can succeed | — |
+| `line` | lines | `line(point, point)` · `line(ppoint, ppoint)` | line | can succeed | — |
 | `segment` | lines | `segment(point, point)` | line | can succeed | — |
 | `ray` | lines | `ray(point, point)` | line | can succeed | — |
 | `parallel` | lines | `parallel(point, linear)` | line | can succeed | — |
@@ -324,7 +324,7 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `spiral` | transformations | `spiral(point, point, point, point)` · `spiral(point, point, point, point, point)` · `spiral(curve, point, point, point, point)` · `spiral(polygon, point, point, point, point)` | transform, point, line, circle, polygon | can succeed | — |
 | `compose` | transformations | `compose(transform, transform)` | transform | can succeed | — |
 | `inverse` | transformations | `inverse(transform)` | transform | can succeed | — |
-| `apply` | transformations | `apply(transform, point)` · `apply(transform, curve)` · `apply(transform, polygon)` · `apply(transform, annotation)` | point, line, circle, polygon, angle_mark, segment_mark, text | can succeed | — |
+| `apply` | transformations | `apply(transform, point)` · `apply(transform, curve)` · `apply(transform, polygon)` · `apply(transform, annotation)` · `apply(transform, ideal)` | point, line, circle, polygon, angle_mark, segment_mark, text, ideal_point | can succeed | — |
 | `mark_angle` | display | `mark_angle(point, point, point)` · `mark_angle(point, point, point, number)` | angle_mark | can succeed | — |
 | `mark_right` | display | `mark_right(point, point, point)` | angle_mark | can succeed | — |
 | `mark_segment` | display | `mark_segment(point, point)` · `mark_segment(point, point, number)` | segment_mark | can succeed | — |
@@ -343,6 +343,8 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `inversion_swap` | transformations | `inversion_swap(point, point, point)` | transform | can succeed | — |
 | `feet_inversion` | transformations | `feet_inversion(point, point, point)` | transform | can succeed | — |
 | `sqrt_bc2` | transformations | `sqrt_bc2(point, point, point)` | transform | can succeed | — |
+| `projective` | transformations | `projective(ppoint, ppoint, ppoint, ppoint, ppoint, ppoint, ppoint, ppoint)` | transform | can succeed | — |
+| `send_to_infinity` | transformations | `send_to_infinity(linear)` | transform | can succeed | — |
 
 ## Versions
 

@@ -45,8 +45,8 @@ interface Env<T> {
 /**
  * Every object's value. Degenerate cases: an invalid ctx → every object Undefined with
  * the reason; an unknown tool, a reference to a missing or later object, arguments no
- * signature accepts (a bare index on a branchable tool: with a hint), selectors on a tool
- * that takes none → Undefined for that object; an Undefined argument or selector
+ * signature accepts (a bare index on a branchable tool: with a hint; a point at infinity:
+ * named, ADR-0040), selectors on a tool that takes none → Undefined for that object; an Undefined argument or selector
  * argument → Undefined ("A is undefined"); an Inexact one → that Inexact; FloatField
  * arguments beyond 2^200 or a non-finite FloatField result → Inexact.
  */
@@ -176,7 +176,8 @@ function evalCall<T>(e: CallExpr, env: Env<T>): Value<T> {
   const args = evalAll(e.args, env);
   if (!Array.isArray(args)) return args;
   const r = env.registry.resolve(e.tool, args);
-  if (!r.ok) return undef(bareIndexProblem(e, args, env.registry) ?? r.reason);
+  if (!r.ok)
+    return undef(bareIndexProblem(e, args, env.registry) ?? atInfinity(e, args, env) ?? r.reason);
   const selectors = evalSelectors(e, env);
   if (!Array.isArray(selectors)) return selectors;
   const inputs = [...args, ...selectors.flatMap((s) => s.args)];
@@ -187,6 +188,20 @@ function evalCall<T>(e: CallExpr, env: Env<T>): Value<T> {
   return inFloatRange(env.F, out, Infinity)
     ? out
     : inexact(`${e.tool}: the result is beyond the double range`);
+}
+
+/**
+ * E2 for ideal points (ADR-0040 decision 3): when no overload takes the arguments and one of
+ * them is a point at infinity, the reason names it ("X is a point at infinity: midpoint does
+ * not take one"), as its dependents read "X is undefined" when parallel lines had no meeting
+ * point.
+ */
+function atInfinity<T>(e: CallExpr, args: readonly Value<T>[], env: Env<T>): string | undefined {
+  const i = args.findIndex((a) => a.kind === 'ideal_point');
+  if (i < 0) return undefined;
+  const src = e.args[i];
+  const name = src?.kind === 'ref' ? env.names.get(src.id) : undefined;
+  return `${name ?? 'an argument'} is a point at infinity: ${e.tool} does not take one`;
 }
 
 /**

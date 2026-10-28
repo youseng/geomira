@@ -83,6 +83,9 @@ function draw<T>(F: Field<T>, cap: Capability, rng: Rng, exact: boolean): Value<
       return { kind: 'segment_mark', p: v(), q: v(), ticks: 1 };
     case 'string':
       return { kind: 'string', s: 'M_a' };
+    case 'ideal':
+    case 'ppoint':
+      return { kind: 'ideal_point', d: { x: lift(F, nonzero(rng)), y: n() }, chiral: false };
     default:
       throw new Error(`unknown capability ${String(cap)}`);
   }

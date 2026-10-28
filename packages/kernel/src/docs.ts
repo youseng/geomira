@@ -27,7 +27,7 @@ import {
   type ToolFamily,
   type ToolSpec,
 } from './tool';
-import { undef, type Value } from './value';
+import { undef, type TransformData, type Value } from './value';
 
 function number(text: string): Expr {
   const r = parseRational(text);
@@ -104,6 +104,8 @@ export function formatValue<T>(v: Value<T>, show: (x: T) => string): string {
   switch (v.kind) {
     case 'point':
       return `point ${pair(v)}`;
+    case 'ideal_point':
+      return `point at infinity, direction ${pair(v.d)}${v.chiral ? ', chiral' : ''}`;
     case 'line': {
       const range = `[${v.lo === null ? '−∞' : show(v.lo)}, ${v.hi === null ? '∞' : show(v.hi)}]`;
       const where = v.outside === true ? `t ∉ (${range.slice(1, -1)})` : `t ∈ ${range}`;
@@ -122,7 +124,7 @@ export function formatValue<T>(v: Value<T>, show: (x: T) => string): string {
     case 'polygon':
       return `polygon ${v.pts.map(pair).join(' ')}`;
     case 'transform':
-      return `${v.t.type === 'mobius' ? 'Möbius map' : 'similarity'}${v.t.anti ? ' (anti)' : ''}`;
+      return mapName(v.t);
     case 'angle_mark': {
       const what = v.right ? 'right-angle mark' : `angle mark (${String(v.arcs)} arc(s))`;
       return `${what} at ${pair(v.b)} from ${pair(v.from)} to ${pair(v.to)}`;
@@ -142,18 +144,58 @@ export function formatValue<T>(v: Value<T>, show: (x: T) => string): string {
   }
 }
 
+/** "similarity", "Möbius map (anti)", "projective map", "composite of 2 maps". */
+function mapName<T>(t: TransformData<T>): string {
+  switch (t.type) {
+    case 'similarity':
+      return `similarity${t.anti ? ' (anti)' : ''}`;
+    case 'mobius':
+      return `Möbius map${t.anti ? ' (anti)' : ''}`;
+    case 'projective':
+      return 'projective map';
+    case 'composite':
+      return `composite of ${String(t.maps.length)} maps`;
+    default:
+      return assertNever(t, 'transform');
+  }
+}
+
 /**
- * formatValue, with a map's coefficients: "similarity z ↦ (a)·z + (b)", z̄ for an anti map
- * (the reference shows what a transformation example computes).
+ * A map's coefficients: "z ↦ (a)·z + (b)", z̄ for an anti map; a projective map's matrix by
+ * rows; a composite's maps in the order they apply.
+ */
+function mapFormula<T>(t: TransformData<T>, show: (x: T) => string): string {
+  const c = (z: { readonly re: T; readonly im: T }): string => `(${show(z.re)}, ${show(z.im)})`;
+  switch (t.type) {
+    case 'similarity':
+      return `z ↦ ${c(t.a)}·${t.anti ? 'z̄' : 'z'} + ${c(t.b)}`;
+    case 'mobius': {
+      const z = t.anti ? 'z̄' : 'z';
+      return `z ↦ (${c(t.a)}·${z} + ${c(t.b)}) / (${c(t.c)}·${z} + ${c(t.d)})`;
+    }
+    case 'projective': {
+      const r = (i: number): string =>
+        t.m
+          .slice(i, i + 3)
+          .map(show)
+          .join(', ');
+      return `[${r(0)}; ${r(3)}; ${r(6)}]`;
+    }
+    case 'composite':
+      return t.maps.map((m) => `${mapName(m)} ${mapFormula(m, show)}`).join(', then ');
+    default:
+      return assertNever(t, 'transform');
+  }
+}
+
+/**
+ * formatValue, with a map's coefficients (the reference shows what a transformation example
+ * computes).
  */
 function formatDocValue<T>(v: Value<T>, show: (x: T) => string): string {
-  if (v.kind !== 'transform') return formatValue(v, show);
-  const c = (z: { readonly re: T; readonly im: T }): string => `(${show(z.re)}, ${show(z.im)})`;
-  const z = v.t.anti ? 'z̄' : 'z';
-  const num = `${c(v.t.a)}·${z} + ${c(v.t.b)}`;
-  return v.t.type === 'mobius'
-    ? `${formatValue(v, show)} z ↦ (${num}) / (${c(v.t.c)}·${z} + ${c(v.t.d)})`
-    : `${formatValue(v, show)} z ↦ ${num}`;
+  return v.kind === 'transform'
+    ? `${formatValue(v, show)} ${mapFormula(v.t, show)}`
+    : formatValue(v, show);
 }
 
 const showFloat = (x: number): string => String(Number.parseFloat(x.toPrecision(12)));

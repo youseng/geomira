@@ -3,7 +3,8 @@
  * z ↦ a·z̄ + b (anti). Everything here is a polynomial in the coordinates, so it is exact
  * over Q and mod p; the only division (`inverse`) is by |a|² (or by a itself), which
  * `similarityProblem` guarantees is not zero. A Transform holds a Similarity or, since
- * Run 14, a Möbius map (transform/, ADR-0032); 'projective' is reserved (SPEC §18 E3).
+ * Run 14, a Möbius map (transform/, ADR-0032), and since Run 16a a projective map or a composite
+ * of maps (ADR-0040).
  */
 import { assertNever } from '@geomira/num/assert';
 import {
@@ -190,7 +191,8 @@ function mapAngleMark<T>(F: Field<T>, s: Similarity<T>, m: AngleMark<T>): AngleM
 }
 
 /**
- * apply(s, X) for every kind (SPEC §8.1). Degenerate cases: a number or a transform has
+ * apply(s, X) for every kind (SPEC §8.1); an ideal point's direction is mapped like a line's
+ * (ADR-0040), keeping its flag. Degenerate cases: a number or a transform has
  * no image → Undefined (numbers, maps and strings are not imaged, ADR-0007, ADR-0011); marks
  * and text are mapped (ADR-0011); Undefined and Inexact
  * pass through unchanged (SPEC §6.3: transform of Undefined → Undefined).
@@ -199,6 +201,8 @@ export function applySimilarity<T>(F: Field<T>, s: Similarity<T>, v: Value<T>): 
   switch (v.kind) {
     case 'point':
       return { kind: 'point', ...mapPoint(F, s, v) };
+    case 'ideal_point':
+      return { ...v, d: mapDirection(F, s, v.d) };
     case 'line':
       return mapLine(F, s, v);
     case 'circle':

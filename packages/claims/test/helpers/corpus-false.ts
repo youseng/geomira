@@ -249,4 +249,11 @@ export const FALSE_CLAIMS: readonly Entry[] = [
         c('ext_bisector', 'A', 'C', 'B'),
       ),
   },
+  {
+    name: 'collinear(X∞, A, C) with X∞ the point at infinity of AB (ADR-0040)',
+    build: (f) =>
+      f
+        .def('X', 'intersect', c('line', 'A', 'B'), c('parallel', 'C', c('line', 'A', 'B')))
+        .claim('collinear', 'X', 'A', 'C'),
+  },
 ];

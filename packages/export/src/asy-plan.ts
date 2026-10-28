@@ -56,6 +56,7 @@ export function typeOfValue(v: Value<number>): AsyType | undefined {
       return v.t.type === 'similarity' ? 'transform' : undefined;
     case 'polygon':
       return 'path';
+    case 'ideal_point':
     case 'angle_mark':
     case 'segment_mark':
     case 'text':
@@ -104,6 +105,7 @@ function numeric(v: Value<number>): { code: string; helpers: string[] } | undefi
     }
     case 'polygon':
       return { code: `${v.pts.map(pairOf).join('--')}--cycle`, helpers: [] };
+    case 'ideal_point':
     case 'angle_mark':
     case 'segment_mark':
     case 'text':

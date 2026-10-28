@@ -1,7 +1,8 @@
 /**
  * intersect(a, b, selectors) (SPEC §6.2, §7): the common point of two curves.
  *   - line ∩ line (Run 2): at most one point; a segment or ray keeps its range (ADR-0003
- *     item 15); parallelism is decided on the sine of the angle between the directions.
+ *     item 15); parallelism is decided on the sine of the angle between the directions; two
+ *     parallel full lines meet at their ideal point (ADR-0040; Undefined with selectors).
  *   - line ∩ circle and circle ∩ circle (Run 3b, ADR-0006): branchable, 0–2 candidates
  *     decided on the discriminant with the band (tools/pairs.ts), chosen by the selectors
  *     (select.ts): along(±) on line ∩ circle, orient(±) on circle ∩ circle, other(P) exact.
@@ -21,6 +22,7 @@ import {
   lineLinePair,
   type Pair,
 } from './pairs';
+import { idealMeet } from './parallel-lines';
 
 function pairOf<T>(
   F: Field<T>,
@@ -45,6 +47,14 @@ function intersect<T>(
   ctx: EvalContext,
   selectors: readonly EvaluatedSelector<T>[] = [],
 ): Value<T> {
+  // Two parallel full lines meet at infinity (ADR-0040); a selector judges positions, so with
+  // selectors the call stays Undefined there, as before.
+  const [l0, l1] = [lineAt(args, 0), lineAt(args, 1)];
+  const ideal =
+    l0 === undefined || l1 === undefined || selectors.length > 0 || args.length !== 2
+      ? undefined
+      : idealMeet(F, l0, l1, ctx);
+  if (ideal !== undefined) return ideal;
   const p = pairOf(F, args, ctx);
   if (p === 'bad') return badArgs('intersect');
   return 'kind' in p ? p : choose(F, p, selectors, ctx);
@@ -82,16 +92,22 @@ export const INTERSECT_TOOLS: readonly ToolSpec[] = [
     name: 'intersect',
     family: 'points',
     signatures: [
-      { params: ['linear', 'linear'], branch: LINE_LINE, symmetry: EITHER },
+      {
+        params: ['linear', 'linear'],
+        branch: LINE_LINE,
+        symmetry: EITHER,
+        output: ['point', 'ideal_point'],
+      },
       { params: ['linear', 'round'], branch: LINE_CIRCLE, symmetry: EITHER },
       { params: ['round', 'linear'], branch: LINE_CIRCLE, symmetry: EITHER },
       { params: ['round', 'round'], branch: CIRCLE_CIRCLE, symmetry: EITHER },
     ],
-    outputKinds: ['point'],
+    outputKinds: ['point', 'ideal_point'],
     compute: intersect,
     candidates,
     degenerate: [
-      'parallel lines → Undefined',
+      "parallel lines → their ideal point (the first line's direction and flag)",
+      'parallel segments or rays → Undefined (no point at infinity is on them)',
       'coincident lines → Undefined',
       'the intersection outside a segment or ray → Undefined',
       'the intersection within the band of a segment end → Undefined (ambiguous)',

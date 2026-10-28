@@ -110,7 +110,10 @@ describe('images keep their figure kinds in the static checks', () => {
       ['polygon'],
     ]);
     // An argument of unknown kind (an unknown tool) may be any figure apply takes.
-    const applied = ['point', 'line', 'circle', 'polygon', 'angle_mark', 'segment_mark', 'text'];
+    const applied = [
+      ...['point', 'line', 'circle', 'polygon', 'angle_mark', 'segment_mark', 'text'],
+      'ideal_point',
+    ];
     expect(both(call('apply', [r('t'), call('nosuch', [])]))).toEqual([applied, applied]);
     // No overload fits: staticKinds falls back to the tool's outputKinds, exprKinds is unknown.
     expect(both(call('apply', [r('A'), r('A')]))).toEqual([applied, undefined]);

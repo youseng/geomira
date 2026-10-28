@@ -14,6 +14,7 @@ import {
   threeCircles,
   type Entry,
 } from './corpus';
+import { PROJECTIVE_TRUE } from './corpus-true-projective';
 
 const Q = 'exact over Q' as const;
 const NUM = 'numeric' as const;
@@ -383,4 +384,5 @@ export const TRUE_THEOREMS: readonly Entry[] = [
         .def('X', 'intersect', c('perp_bisector', 'B', 'C'), 'w', onArc('B', 'C', 'A', true))
         .claim('angle_eq', 'B', 'A', 'X', 'X', 'A', 'C'),
   },
+  ...PROJECTIVE_TRUE,
 ];

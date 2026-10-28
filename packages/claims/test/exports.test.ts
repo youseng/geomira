@@ -29,6 +29,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     module: kind,
     names: [
       'argLabel',
+      'argMismatch',
       'badClaim',
       'circleAt',
       'distinctAll',

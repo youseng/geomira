@@ -25,9 +25,18 @@ export const IMAGED: readonly Capability[] = ['point', 'curve', 'polygon'];
 /** The figure kinds a map takes to the same kind (the sugar's result kinds). */
 export const IMAGE_KINDS: readonly ValueKind[] = ['point', 'line', 'circle', 'polygon'];
 
-/** apply also maps marks and text (ADR-0011: derived layers image them). */
-const APPLIED: readonly Capability[] = [...IMAGED, 'annotation'];
-const APPLIED_KINDS: readonly ValueKind[] = [...IMAGE_KINDS, 'angle_mark', 'segment_mark', 'text'];
+/**
+ * apply also maps marks and text (ADR-0011: derived layers image them) and points at infinity
+ * (ADR-0040).
+ */
+const APPLIED: readonly Capability[] = [...IMAGED, 'annotation', 'ideal'];
+const APPLIED_KINDS: readonly ValueKind[] = [
+  ...IMAGE_KINDS,
+  'angle_mark',
+  'segment_mark',
+  'text',
+  'ideal_point',
+];
 
 export const TRANSFORM_KIND: readonly ValueKind[] = ['transform'];
 
@@ -173,6 +182,18 @@ export const MAP_OPERATIONS: readonly ToolSpec[] = [
       'a segment mark under an inversion → Undefined (lengths are not kept)',
       'an angle mark under an inversion → the mark on the tangents (arms swapped)',
       'mod p, an arc or a range through an inversion → Inexact (needs an order)',
+      'a point at infinity under a similarity → the point at infinity of the mapped direction',
+      'a point at infinity under a Möbius map with a pole → Undefined',
+      'under a projective map: a point on the line sent to infinity → a point at infinity',
+      'under a projective map: a point at infinity off its direction → a point',
+      'under a projective map: a segment crossing the line sent to infinity → two rays',
+      'under a projective map: the line sent to infinity → Undefined',
+      'under a projective map: a circle → Undefined (a conic)',
+      'under a projective map: a polygon with a side through infinity → Undefined',
+      'under a projective map: a segment mark → Undefined; an angle mark → not right',
+      'under a projective map: a position within the band of the line sent to infinity → Undefined (ambiguous)',
+      'mod p, a range through a projective map → Inexact (needs an order)',
+      'a composite of a Möbius map and a projective map → each map in turn',
     ],
     export: { constructive: 'apply' },
     doc:

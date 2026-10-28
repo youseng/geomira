@@ -2,11 +2,13 @@
  * Values → shapes. A drawable value (point, line, circle, polygon, and the display values of
  * ADR-0011: angle and segment marks, text) becomes a world Shape; numbers, transforms and
  * strings are not drawn; Undefined and Inexact are reported with their
- * reason. Every number of a Shape is finite (L9): a value whose derived numbers are not
+ * reason, and so is a point at infinity (ADR-0040: never drawn, listed "at infinity, direction
+ * θ°" with `atInfinity`). Every number of a Shape is finite (L9): a value whose derived numbers are not
  * (a direction or radius that overflows; impossible for kernel values, which are finite,
  * but checked so a hand-made value cannot slip through) is reported as unavailable.
  */
 import { assertNever } from '@geomira/num/assert';
+import { atInfinityText } from '@geomira/kernel/ideal';
 import { isKnownKind, type Value } from '@geomira/kernel/value';
 import type { Vec2 } from './viewport';
 import type { Shape } from './types';
@@ -14,7 +16,7 @@ import type { Shape } from './types';
 export type ShapeResult =
   | { readonly kind: 'shape'; readonly shape: Shape }
   | { readonly kind: 'none' }
-  | { readonly kind: 'unavailable'; readonly reason: string };
+  | { readonly kind: 'unavailable'; readonly reason: string; readonly atInfinity?: true };
 
 const NOT_FINITE: ShapeResult = {
   kind: 'unavailable',
@@ -125,6 +127,10 @@ export function shapeOf(v: Value<number>): ShapeResult {
       if (v.text === '') return { kind: 'unavailable', reason: 'the text is empty' };
       return finiteVec(v.at)
         ? { kind: 'shape', shape: { kind: 'text', at: { x: v.at.x, y: v.at.y }, text: v.text } }
+        : NOT_FINITE;
+    case 'ideal_point':
+      return finiteVec(v.d)
+        ? { kind: 'unavailable', reason: atInfinityText(v.d), atInfinity: true }
         : NOT_FINITE;
     case 'number':
     case 'transform':

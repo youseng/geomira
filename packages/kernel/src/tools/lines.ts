@@ -6,7 +6,7 @@
 import type { Field } from '@geomira/num/field';
 import type { EvalContext, ExampleArg, Signature, ToolSpec } from '../tool';
 import { half, vAdd, vRot90, vScale, vSub } from '../geom';
-import type { Line, Value } from '../value';
+import { undef, type Line, type Value } from '../value';
 import { badArgs, coincident, lineAt, pointAt, pointsOf } from './args';
 
 type Range = 'line' | 'segment' | 'ray';
@@ -32,7 +32,20 @@ function through<T>(
   return { kind: 'line', p, d, lo, hi, chiral: false };
 }
 
+/**
+ * line(A, B) of two points, or (ADR-0040) of a point and an ideal point in either order: the
+ * line through the point with the ideal point's direction and flag (the parallel). Degenerate:
+ * two ideal points span the line at infinity, which is not an object → Undefined.
+ */
 function line<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
+  const [a, b] = args;
+  if (args.length !== 2 || a === undefined || b === undefined) return badArgs('line');
+  if (a.kind === 'ideal_point' && b.kind === 'ideal_point')
+    return undef(
+      'line(X, Y): two points at infinity span the line at infinity, which is not an object',
+    );
+  if (a.kind === 'ideal_point' && b.kind === 'point') return lineFrom(b, a.d, a.chiral);
+  if (a.kind === 'point' && b.kind === 'ideal_point') return lineFrom(a, b.d, b.chiral);
   return through(F, args, ctx, 'line');
 }
 
@@ -85,6 +98,14 @@ const EITHER_ORDER: readonly Signature[] = [
     symmetry: [{ kind: 'permute', positions: [0, 1], same: 'figure' }],
   },
 ];
+/** line also takes a point at infinity (ADR-0040): the parallel through the other point. */
+const LINE_SIGNATURES: readonly Signature[] = [
+  ...EITHER_ORDER,
+  {
+    params: ['ppoint', 'ppoint'],
+    symmetry: [{ kind: 'permute', positions: [0, 1], same: 'figure' }],
+  },
+];
 const POINT_LINE: readonly Signature[] = [{ params: ['point', 'linear'] }];
 const A: readonly [string, string] = ['0', '0'];
 const B: readonly [string, string] = ['2', '1'];
@@ -95,13 +116,37 @@ export const LINE_TOOLS: readonly ToolSpec[] = [
     id: 'line',
     name: 'line',
     family: 'lines',
-    signatures: EITHER_ORDER,
+    signatures: LINE_SIGNATURES,
     outputKinds: ['line'],
     compute: line,
-    degenerate: ['line(A, A) → Undefined (coincident points)'],
+    degenerate: [
+      'line(A, A) → Undefined (coincident points)',
+      "line(P, X) with X a point at infinity → the parallel through P (X's direction and flag)",
+      'line(X, Y) of two points at infinity → Undefined (the line at infinity is not an object)',
+    ],
     export: { constructive: 'line' },
-    doc: 'The line through A and B (achiral direction B − A).',
-    examples: [{ args: AB }],
+    doc: 'The line through A and B (achiral direction B − A); through a point and a point at infinity, the parallel with its direction.',
+    examples: [
+      { args: AB },
+      {
+        args: [
+          ['0', '2'],
+          {
+            call: 'intersect',
+            args: [
+              { through: [A, B], as: 'line' },
+              {
+                through: [
+                  ['0', '1'],
+                  ['2', '2'],
+                ],
+                as: 'line',
+              },
+            ],
+          },
+        ],
+      },
+    ],
   },
   {
     id: 'segment',

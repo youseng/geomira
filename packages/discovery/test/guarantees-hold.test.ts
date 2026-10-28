@@ -31,6 +31,7 @@ const FIGURES: Readonly<Record<string, () => Arg[]>> = {
   'centroid(point,point,point)': () => ['A', 'B', 'C'],
   'orthocenter(point,point,point)': () => ['A', 'B', 'C'],
   'line(point,point)': () => ['A', 'B'],
+  'line(ppoint,ppoint)': () => ['A', 'B'],
   'segment(point,point)': () => ['A', 'B'],
   'ray(point,point)': () => ['A', 'B'],
   'parallel(point,linear)': () => ['D', AB()],

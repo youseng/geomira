@@ -236,7 +236,7 @@ export const GUARANTEE_TABLE: Readonly<
   circumcenter: { 'point,point,point': CIRCUMCENTER },
   centroid: { 'point,point,point': CENTROID },
   orthocenter: { 'point,point,point': ORTHOCENTER },
-  line: { 'point,point': THROUGH_BOTH },
+  line: { 'point,point': THROUGH_BOTH, 'ppoint,ppoint': THROUGH_BOTH },
   segment: { 'point,point': THROUGH_BOTH },
   ray: { 'point,point': THROUGH_BOTH },
   parallel: { 'point,linear': PARALLEL },

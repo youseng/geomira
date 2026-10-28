@@ -1,6 +1,6 @@
 /**
  * The v1 tools of Runs 2, 3a, 3b, 4 and 8a, the v1.1 tools of Run 13 and the inversion tools
- * of Run 14 (ADR-0032), in registry order (read only by registry.ts; the generated docs group
+ * of Run 14 (ADR-0032) and the projective tools of Run 16a (ADR-0040), in registry order (read only by registry.ts; the generated docs group
  * them by family).
  */
 import { withGuarantees } from '../guarantees';
@@ -27,6 +27,7 @@ import { TANGENT_TOOLS } from './tangents';
 import { TRANSFORM_TOOLS } from './transforms';
 import { TRIANGLE_TOOLS } from './triangle';
 import { INVERSION_TOOLS } from '../transform/inversion-tools';
+import { PROJECTIVE_TOOLS } from '../transform/projective-tools';
 
 export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze(
   [
@@ -52,6 +53,7 @@ export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze(
     ...POLE_TOOLS,
     ...ARC_TOOLS,
     ...INVERSION_TOOLS,
+    ...PROJECTIVE_TOOLS,
   ]
     .map(withGuarantees)
     .map(withMapFacts),

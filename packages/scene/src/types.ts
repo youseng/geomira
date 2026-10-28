@@ -87,6 +87,8 @@ export interface Unavailable {
   readonly id: number;
   readonly name: string;
   readonly reason: string;
+  /** A point at infinity (ADR-0040): defined, never drawn; `reason` names its direction. */
+  readonly atInfinity?: true;
 }
 
 /** A curve that exists but cannot be placed at the current zoom (ADR-0023): listed, not drawn. */

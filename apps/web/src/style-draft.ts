@@ -70,7 +70,8 @@ export function fieldsOf(kind: CardKind): CardFields {
 
 /**
  * The card kind of a value kind: lines, circles, polygons and marks are curves; numbers,
- * strings and maps (the static kind 'mobius' marks a map, ADR-0032) are not drawn. Undefined and Inexact values have no kind of their own:
+ * strings and maps (the static kinds 'mobius' and 'projective' mark a map, ADR-0032, ADR-0040)
+ * are not drawn; a point at infinity takes a point's fields. Undefined and Inexact values have no kind of their own:
  * the object's static kind decides (null when it has none or several: then the card offers
  * the curve fields, the most general set).
  */
@@ -79,6 +80,9 @@ export function cardKindOf(v: ValueKind, fixed: ValueKind | null): CardKind {
     case 'point':
     case 'text':
       return v;
+    case 'ideal_point':
+      // Not drawn now (ADR-0040), but a point again when the figure moves: a point's fields.
+      return 'point';
     case 'line':
     case 'circle':
     case 'polygon':
@@ -89,6 +93,7 @@ export function cardKindOf(v: ValueKind, fixed: ValueKind | null): CardKind {
     case 'string':
     case 'transform':
     case 'mobius':
+    case 'projective':
       return 'none';
     case 'undefined':
     case 'inexact':
@@ -114,6 +119,8 @@ export function kindName(v: Value<number> | undefined, fixed: ValueKind | null):
       return 'segment mark';
     case 'transform':
       return 'map';
+    case 'ideal_point':
+      return 'point at infinity';
     case 'inexact':
       return fixed === null ? 'not representable' : `${fixed}, not representable`;
     case 'undefined':

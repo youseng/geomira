@@ -3,10 +3,13 @@
  * maps' facts and the shown facts (closure.ts), the angle lattice of the same (angles.ts), and
  * transport through a map: a fact about images is the corresponding fact about their preimages
  * (a similarity keeps every kind; an inversion or another Möbius map keeps equal points,
- * incidence, tangency and clines), so when the preimages' fact follows, the image fact does.
+ * incidence, tangency, clines and cross ratios of points; a projective map keeps equal points,
+ * the incidence of points and lines and cross ratios, ADR-0040), so when the preimages' fact
+ * follows, the image fact does.
  * `derives` names the rule a fact follows by; every rule is sound, so a fact it does not name
  * is never hidden.
  */
+import { assertNever } from '@geomira/num/assert';
 import type { Document } from '@geomira/kernel/document';
 import type { Registry } from '@geomira/kernel/registry';
 import type { Value } from '@geomira/kernel/value';
@@ -21,8 +24,50 @@ import type { Ticking } from './ticking';
 import type { MapRecord, Terms } from './terms';
 import type { DeriveRule } from './types';
 
-/** Kinds an inversion or another Möbius map keeps (with their objects' images). */
-const MOEBIUS_KINDS: readonly string[] = ['equal', 'on', 'tangent', 'concyclic'];
+/**
+ * Kinds an inversion or another Möbius map keeps (with their objects' images): a Möbius map also
+ * keeps the complex cross ratio of four points up to conjugation, so their real cross ratio
+ * (ADR-0040).
+ */
+const MOEBIUS_KINDS: readonly string[] = [
+  'equal',
+  'on',
+  'tangent',
+  'concyclic',
+  'cross_ratio',
+  'harmonic',
+];
+
+/**
+ * Kinds a projective map keeps (ADR-0040): equal points, the incidence of points and lines, and
+ * cross ratios; never lengths, angles, circles or tangency.
+ */
+const PROJECTIVE_KINDS: readonly string[] = [
+  'equal',
+  'on',
+  'collinear',
+  'concurrent',
+  'cross_ratio',
+  'harmonic',
+  'cross_ratio_lines',
+  'harmonic_lines',
+];
+
+/** Whether a map of this type keeps facts of this kind. */
+function keeps(type: MapRecord['type'], kind: string): boolean {
+  switch (type) {
+    case 'similarity':
+    case 'anti-similarity':
+      return true;
+    case 'inversion':
+    case 'moebius':
+      return MOEBIUS_KINDS.includes(kind);
+    case 'projective':
+      return PROJECTIVE_KINDS.includes(kind);
+    default:
+      return assertNever(type, 'map type');
+  }
+}
 
 export class Knowledge {
   constructor(
@@ -50,8 +95,7 @@ export class Knowledge {
   /** Whether the preimages' fact follows under some map whose images (or fixed objects) these are. */
   private transported(kind: string, args: readonly TermArg[]): boolean {
     for (const m of this.closure.terms.maps.values()) {
-      const similar = m.type === 'similarity' || m.type === 'anti-similarity';
-      if (!similar && !MOEBIUS_KINDS.includes(kind)) continue;
+      if (!keeps(m.type, kind)) continue;
       // An anti-similarity reverses ∡(l, m): its literal would change sign.
       if (m.type === 'anti-similarity' && kind === 'dangle_lines') continue;
       const pre = this.preimages(m, args);
@@ -59,7 +103,7 @@ export class Knowledge {
       if (this.derivesTerms(kind, pre, false) !== undefined) return true;
       // A Möbius map takes a circle or a line to a circle or a line.
       if (
-        !similar &&
+        (m.type === 'inversion' || m.type === 'moebius') &&
         kind === 'concyclic' &&
         this.derivesTerms('collinear', pre, false) !== undefined
       )
