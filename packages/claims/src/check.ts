@@ -16,10 +16,13 @@ export type ArgKinds = (e: Expr) => readonly ValueKind[] | undefined;
 
 /**
  * Whether a value of kind `k` may fit an object parameter (as fitsParam decides at test
- * time). 'undefined' and 'inexact' say nothing about the kind, so they may fit.
+ * time). 'undefined' and 'inexact' say nothing about the kind, so they may fit; nor does a point
+ * at infinity where a point is expected (a claim on it is undefined unless the kind takes one).
  */
 function mayFit(k: ValueKind, p: ClaimParam): boolean {
   if (k === 'undefined' || k === 'inexact') return true;
+  // A point at infinity is a point of the projective plane (ADR-0040): taken, or undefined.
+  if (k === 'ideal_point' && p === 'point') return true;
   switch (p) {
     case 'point':
     case 'line':

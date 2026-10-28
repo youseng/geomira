@@ -65,6 +65,29 @@ export const CLAIM_NOTATION: readonly NotationEntry[] = Object.freeze([
   },
   { kind: 'angle_sum', forms: ['∠ABC + ∠DEF = θ'], example: 'claim ∠BHC + ∠BAC = 180°' },
   { kind: 'angle_diff', forms: ['∠ABC - ∠DEF = θ'], example: 'claim ∠ABH - ∠ACH = 0' },
+  {
+    kind: 'cross_ratio',
+    forms: ['cross_ratio(A, B, C, D) = k (four collinear or concyclic points)'],
+    example: 'claim cross_ratio(B, C, M_a, P) = 2',
+  },
+  {
+    kind: 'harmonic',
+    forms: ['harmonic(A, B; C, D) (four collinear or concyclic points)'],
+    example: 'claim harmonic(B, C; M_a, P)',
+  },
+  {
+    kind: 'cross_ratio_lines',
+    forms: [
+      'cross_ratio(a, b, c, d) = k (four concurrent lines)',
+      'cross_ratio_lines(a, b, c, d, k)',
+    ],
+    example: 'claim cross_ratio_lines(line(A, B), line(A, C), line(A, M_a), line(A, H), -1)',
+  },
+  {
+    kind: 'harmonic_lines',
+    forms: ['harmonic(a, b; c, d) (four concurrent lines)', 'harmonic_lines(a, b, c, d)'],
+    example: 'claim harmonic_lines(line(A, B), line(A, C), line(A, M_a), line(A, H))',
+  },
 ]);
 
 export const ASSUMPTION_NOTATION: readonly NotationEntry[] = Object.freeze([

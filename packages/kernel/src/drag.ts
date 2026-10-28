@@ -8,7 +8,9 @@
  * result is an edit (a redefinition of X, for applyDocEdit), never a document. Stated rule
  * (tested): if a map of the chain depends on X (X defines the mirror, the centre, …), the
  * image is NOT draggable, since moving X would move the map as well. Inversion (ADR-0032)
- * inherits the rule unchanged; a cursor at the image of the center has no preimage.
+ * inherits the rule unchanged; a cursor at the image of the center has no preimage. A projective
+ * map (ADR-0040) too; a cursor on the line it takes the line at infinity onto has a point at
+ * infinity as preimage, and is refused.
  */
 import { assertNever } from '@geomira/num/assert';
 import { FloatField } from '@geomira/num/float-field';
@@ -68,6 +70,7 @@ function preimage(
       values.ctx,
     );
     if (q.kind === 'undefined' || q.kind === 'inexact') return q.reason;
+    if (q.kind === 'ideal_point') return `the preimage under ${name} is a point at infinity`;
     if (q.kind !== 'point') return `the preimage under ${name} is not a point`;
     p = q;
   }

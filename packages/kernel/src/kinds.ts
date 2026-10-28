@@ -27,9 +27,15 @@ export function fits(s: Signature, args: ArgKinds): boolean {
   });
 }
 
-/** Whether an argument of a 'transform' parameter of `s` may be a Möbius map. */
-function mobiusArg(s: Signature, args: ArgKinds): boolean {
-  return args.some((k, i) => (s.params[i] ?? s.rest) === 'transform' && k?.includes('mobius'));
+/** Whether an argument of a 'transform' parameter of `s` may be a map of this static kind. */
+function mapArg(s: Signature, args: ArgKinds, marker: 'mobius' | 'projective'): boolean {
+  return args.some((k, i) => (s.params[i] ?? s.rest) === 'transform' && k?.includes(marker));
+}
+
+/** A point or a point at infinity under a map that may be projective may be either (ADR-0040). */
+function exchangePoints(kinds: readonly ValueKind[]): readonly ValueKind[] {
+  const pt = kinds.includes('point') || kinds.includes('ideal_point');
+  return pt ? [...new Set<ValueKind>([...kinds, 'point', 'ideal_point'])] : kinds;
 }
 
 /** A line or a circle under a map that may be Möbius may be either (ADR-0032). */
@@ -41,20 +47,26 @@ function exchangeCurves(kinds: readonly ValueKind[]): readonly ValueKind[] {
 /**
  * The kinds of an overload's result: the kinds of the preserved argument that its parameter
  * takes (an unknown argument: every kind of the parameter), lines and circles exchanged under
- * a map that may be Möbius; else `output` (with 'mobius' added to a transform computed from
- * one), else the tool's outputKinds.
+ * a map that may be Möbius, points and points at infinity under one that may be projective;
+ * else `output` (with 'mobius' or 'projective' added to a transform computed from one), else
+ * the tool's outputKinds.
  */
 function overloadKinds(tool: ToolSpec, s: Signature, args: ArgKinds): readonly ValueKind[] {
   const cap = s.preserves === undefined ? undefined : s.params[s.preserves];
-  const mob = mobiusArg(s, args);
+  const [mob, proj] = [mapArg(s, args, 'mobius'), mapArg(s, args, 'projective')];
   if (s.preserves === undefined || cap === undefined) {
     const out = s.output ?? tool.outputKinds;
-    return mob && out.includes('transform') && !out.includes('mobius') ? [...out, 'mobius'] : out;
+    if (!out.includes('transform')) return out;
+    const extra: ValueKind[] = [];
+    if (mob && !out.includes('mobius')) extra.push('mobius');
+    if (proj && !out.includes('projective')) extra.push('projective');
+    return extra.length === 0 ? out : [...out, ...extra];
   }
   const taken = capabilityKinds(cap);
   const arg = args[s.preserves];
   const kept = arg === undefined ? taken : taken.filter((k) => arg.includes(k));
-  return mob ? exchangeCurves(kept) : kept;
+  const curves = mob ? exchangeCurves(kept) : kept;
+  return proj ? exchangePoints(curves) : curves;
 }
 
 /**

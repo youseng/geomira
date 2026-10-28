@@ -138,6 +138,12 @@ class CircleFuzzer {
         this.add('point', call('intersect', [l, call('parallel', [p(), l])]));
       },
       () => {
+        // A segment and a parallel line: no common point (ADR-0040: full lines meet at infinity).
+        const [a, b] = [p(), p()];
+        const l = call('parallel', [p(), call('line', [a, b])]);
+        this.add('point', call('intersect', [call('segment', [a, b]), l]));
+      },
+      () => {
         const k = c();
         const other = pick(this.rng, [c(), k, call('circle', [call('center', [k]), p()])]);
         this.add('line', call('radical_axis', [k, other]));

@@ -75,7 +75,7 @@ describe('the screen (ADR-0035)', () => {
       throw new Error('ids');
     expect(s1.decide(col, [A, B, C])).toEqual(s2.decide(col, [A, B, C]));
     expect(s1.decide(col, [A, B, C]).kind).toBe('false');
-    expect(s1.decide(col, [A, B, X]).kind).toBe('undefined');
+    expect(s1.decide(col, [A, B, X]).kind).toBe('true');
     expect(s1.decide(col, [A, { id: f.id('w') }, C]).kind).toBe('invalid');
     expect(s1.decide(col, [A, A, C]).kind).toBe('degenerate');
     expect(s1.decide(col, [A, { id: 9999 }, C])).toMatchObject({ kind: 'undefined' });

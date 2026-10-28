@@ -229,7 +229,10 @@ const COMPOSE_CASES: Record<string, () => void> = {
   'two inversions → a direct Möbius map (the same center: a homothety, with no pole)': () => {
     for (const F of FIELDS) {
       const h = at(F, 'compose', J4, T('inversion', O0, num(1)));
-      expect(h.kind === 'transform' && [h.t.type, h.t.anti]).toEqual(['mobius', false]);
+      expect(h.kind === 'transform' && h.t.type === 'mobius' && [h.t.type, h.t.anti]).toEqual([
+        'mobius',
+        false,
+      ]);
       expect(h.kind === 'transform' && h.t.type === 'mobius' && F.eq(h.t.c.re, F.zero)).toBe(true);
     }
     for (const F of ORDERED)

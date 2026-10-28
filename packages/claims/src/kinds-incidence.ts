@@ -23,6 +23,11 @@ import {
   type ClaimKindSpec,
 } from './kind';
 import type { Ndg } from './ndg';
+import {
+  collinearInfinityAlgebra,
+  collinearInfinityResidual,
+  hasIdeal,
+} from './collinear-infinity';
 
 /** z(A, B, C) = (C − B)·conj(A − B) = (dot, cross) of A − B and C − B: arg z = ∡ABC. */
 export function angleZ<T>(F: Field<T>, a: Vec<T>, b: Vec<T>, c: Vec<T>): Vec<T> {
@@ -199,11 +204,14 @@ export const INCIDENCE_KINDS: readonly ClaimKindSpec[] = [
     name: 'collinear',
     params: ['point', 'point', 'point'],
     rest: 'point',
+    atInfinity: true,
     polynomial: true,
     test: 'floor',
-    doc: 'collinear(A, B, C, …): the points lie on one line.',
-    algebra: (F, args) => collinearAlgebra(F, args),
-    residual: collinearResidual,
+    doc: 'collinear(A, B, C, …): the points lie on one line (points at infinity included: X∞ lies on the lines of its direction, ADR-0040).',
+    algebra: (F, args) =>
+      hasIdeal(args) ? collinearInfinityAlgebra(F, args) : collinearAlgebra(F, args),
+    residual: (args) =>
+      hasIdeal(args) ? collinearInfinityResidual(args) : collinearResidual(args),
   },
   {
     name: 'concyclic',

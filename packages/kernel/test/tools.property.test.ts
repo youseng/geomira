@@ -21,6 +21,7 @@ import { DISPLAY_PROPERTIES } from './helpers/display-properties';
 import { V11_PROPERTIES } from './helpers/v11-properties';
 import { MOBIUS_PROPERTIES } from './helpers/mobius-properties';
 import { SYMMEDIAN_POINT_PROPERTIES } from './helpers/symmedian-point-properties';
+import { PROJECTIVE_PROPERTIES } from './helpers/projective-properties';
 
 interface Property {
   readonly tools: readonly string[];
@@ -151,8 +152,8 @@ const PROPERTIES: readonly Property[] = [
     check: (f) => {
       const [x, y] = [f.get('X'), f.get('Y')];
       return (
-        x.kind === 'undefined' &&
-        /parallel|coincident/.test(x.reason) &&
+        x.kind === 'ideal_point' &&
+        !x.chiral &&
         y.kind === 'undefined' &&
         y.reason === 'coincident lines'
       );
@@ -286,6 +287,7 @@ const PROPERTIES: readonly Property[] = [
   ...V11_PROPERTIES,
   ...MOBIUS_PROPERTIES,
   ...SYMMEDIAN_POINT_PROPERTIES,
+  ...PROJECTIVE_PROPERTIES,
   {
     tools: ['add', 'sub', 'mul', 'div', 'neg'],
     name: 'arithmetic: a − b = a + (−b), (a·b)/b = a, exact values carried',

@@ -1,5 +1,302 @@
 # STATUS
 
+## Run 16a: ideal points, projective maps, cross ratios: ACCEPTED (2026-10-28)
+
+Decisions: [ADR-0040](adr/0040-ideal-points-and-projective-maps.md). SPEC §1, §4, §6.2, §10.1 and
+§18 (E2, E3, E8) are updated to match. PR: https://github.com/youseng/geomira/pull/26 (branch
+claude/run-16a-ideal-point-epfqc8) against main. Base: main = a9753c0. The add-only guard compares
+with `run-17b`. The maintainer chose, when asked during the run: "collinear" takes points at
+infinity, "concurrent" stays affine, and the finder never uses points at infinity as candidates.
+No conic work: circles under projective maps are Undefined ("… a conic, which is not an object
+until Run 16b").
+
+Accepted on the criteria and CI (CLAUDE.md: the maintainer's review is the merge): CI on d1a6105,
+the PR's head, is green (below), as are CI and the nightly mutation run on cebd9bb, the last code
+commit. The maintainer's decisions on the open questions, after review:
+
+1. send_to_infinity keeps the chart of ADR-0040 decision 12.
+2. "On the circle" for concyclic cross ratios is a condition of the claim, not an NDG item.
+3. Building the ideal point from the GUI intersection tool (with an info notice and the object
+   selected) and `pole(l, c)` at infinity go to Run 16b (Not done).
+4. The two shards under the 75 % per-shard target go to Run 16b's scoped audit.
+
+### Done (each item → the test file that proves it)
+
+1. IdealPoint (SPEC §18 E8, ADR-0040 decisions 1–6):
+   - The meet of two parallel full lines is the ideal point (the first line's direction and flag).
+     Parallel segments and rays stay Undefined; coincident lines stay Undefined.
+   - E2: every overload of every tool, with an ideal point in each point position, is either
+     declared or Undefined with a reason naming infinity (kind safety).
+   - Declared in: `line(P, X∞)` (the parallel through P), `line(X∞, Y∞)` (Undefined: the line at
+     infinity), `apply` (similarity, projective; a Möbius map with a pole gives Undefined),
+     `harmonic_conjugate`, `projective`, and the `collinear` claim.
+   - Not drawn: the Objects panel and the scene show "at infinity, direction θ°", every export
+     lists a warning, and it is not draggable.
+   - Tests: `packages/kernel/test/ideal-points.test.ts`, `kernel/test/degenerate.test.ts` (with
+     `helpers/degenerate-projective.ts`), `claims/test/kinds-projective.test.ts` (collinear with
+     ideal points), `editor/test/projective-layer.test.ts` (panel), `export/test/ideal-points.test.ts`
+     (scene and all six export formats).
+2. TransformData 'projective' (3×3) and 'composite' (Möbius and projective factors):
+   - compose, inverse and apply on every kind, with one compute per tool. Exact over Q and mod p
+     (L3), and compose/inverse/apply laws (L13).
+   - A point on the line sent to infinity becomes an ideal point. A segment crossing it becomes
+     two rays (`outside`), and ranges are mapped as projective arcs.
+   - Circles → Undefined ("… a conic …: Run 16b"). Polygons crossing → Undefined, segment marks →
+     Undefined, angle marks are mapped (no longer right angles).
+   - Tests: `kernel/test/laws/l3-projective.test.ts`, `kernel/test/laws/l13-projective.test.ts`,
+     `helpers/degenerate-projective.ts` (the apply cases), and `helpers/projective-properties.ts`
+     (spread into `tools.property.test.ts`).
+3. Constructors:
+   - `projective(A, B, C, D, A′, B′, C′, D′)`: no three collinear, else Undefined with the reason.
+   - `send_to_infinity(l)`: the chart (t, s) ↦ (t/s, 1/s) in the frame of l, an involution.
+     ADR-0040 decision 12 states why this chart and why drags are continuous.
+   - Full checklist (registry, degenerate cases, properties, theorem tests, `numeric` export,
+     generated docs): `kernel/test/registry.test.ts`, `degenerate-projective.ts`,
+     `projective-properties.ts`, `theorems-projective.test.ts`, docs/tools.md.
+4. The derived layer `@layer inf = image(send_to_infinity(l), main)`:
+   - Views and drag-through through f⁻¹ = f.
+   - A cursor whose preimage is at infinity is refused ("the preimage under f is a point at
+     infinity"). Images of points of l are ideal points; images of ideal points are points of l.
+   - Tests: `editor/test/projective-layer.test.ts`, `kernel/test/ideal-points.test.ts`.
+5. Claims `cross_ratio(A, B, C, D) = k` and `harmonic(A, B; C, D)` (four collinear or concyclic
+   points: the complex cross ratio), and `cross_ratio_lines` and `harmonic_lines` (four
+   concurrent lines):
+   - Field-generic, on the polynomial whitelist (L12, L17).
+   - Notation: `harmonic(A, B; C, D)` and `cross_ratio(A, B, C, D) = k`; four line arguments
+     build the line kinds.
+   - Invariance under projective maps is a corpus entry ("a projective map keeps the cross
+     ratio") and a theorem test.
+   - Tests: `claims/test/kinds-projective.test.ts`, `claims/test/helpers/corpus-true-projective.ts`
+     (true, false and degenerate entries, run by the L12 and L17 laws),
+     `lang/test/cross-ratio-notation.test.ts`.
+6. Tool `harmonic_conjugate(A, B, C)`, with a line form `harmonic_conjugate(a, b, c)`:
+   - C the midpoint → the ideal point of AB. C at infinity in AB's direction → the midpoint.
+     C = A or C = B → Undefined.
+   - Symmetric in A ↔ B (ADR-0029, 'value'). Guarantees: harmonic and collinear.
+   - Full checklist: `degenerate-projective.ts` (HARMONIC_CASES), `projective-properties.ts`,
+     `kernel/test/construction-key.test.ts`, `discovery/test/guarantees-hold.test.ts`,
+     `theorems-projective.test.ts`.
+7. Theorem tests, in `kernel/test/theorems-projective.test.ts` (FloatField, and exactly over Q;
+   200 figures each):
+   - cross-ratio invariance under `projective` and under `send_to_infinity`;
+   - Desargues with AB ∥ A′B′ (the axis is parallel to AB);
+   - Pappus with two pairs of cross-joins parallel (the third pair is parallel too);
+   - the complete quadrilateral's harmonic division (also equal to `harmonic_conjugate`);
+   - Brokard (the polar of P is EF, and the centre is the orthocenter of PEF);
+   - the cyclic quadrilateral with the tangents at A and C meeting on BD is harmonic, and the
+     tangents at B and D then meet on AC;
+   - projecting a harmonic quadruple of a circle from a point of it onto a line keeps it harmonic.
+     Desargues and Pappus in general position were already in the corpus.
+8. Discovery:
+   - The new kinds join "What is special?" through the claim-kind registry (symmetries, finder
+     hints; cross_ratio with a free k is not searched).
+   - Projective maps keep incidence and cross ratios (transport), and send_to_infinity records
+     the image of the line at infinity as map data.
+   - New knowledge rules: image lines, the inversion harmonic rule, and sections of a pencil.
+   - Results:
+     - A projective layer reports nothing.
+     - The complete quadrilateral reports (A, C; P, X) = −1 alone; its pencil from F is listed
+       under it.
+     - The harmonic quadrilateral on a circle reports (A, C; B, D) = −1.
+     - Each rule has a false neighbour.
+   - Tests: `discovery/test/projective-facts.test.ts`, and `trivial-facts.test.ts` (the inversion
+     rule).
+9. Every existing example and fixture evaluates identically: all 20 figures (examples/,
+   tests/fixtures/export, the language's migration fixtures) were summarised on a9753c0 (values,
+   drawn and unavailable objects, claim badges, local verdicts). `editor/test/figure-baseline.test.ts`
+   compares them with the summaries now: no difference.
+
+Visible differences elsewhere (none in any example or fixture):
+
+- `intersect` of two parallel lines shows "at infinity, direction θ°" instead of "undefined:
+  parallel lines".
+- Its dependents say "X is a point at infinity: <tool> does not take one" instead of "X is
+  undefined".
+- `collinear(…)` on such a point is true or false instead of undefined.
+- Exports list "X is a point at infinity (direction θ°): not drawn" instead of "X is undefined in
+  this figure (parallel lines): not drawn".
+- docs/tools.md has the new tools and the "takes the line at infinity onto l" map datum, and
+  docs/language.md has the new claims.
+
+### Not done
+
+Moved to Run 16b by the maintainer's decision:
+
+- → 16b: the GUI intersection tool builds the ideal point of two parallel lines, with an info
+  notice and the object selected. It still refuses them: it builds only points it can show. The
+  text, and any tool taking a line, builds the ideal point.
+- → 16b: `pole(l, c)` with l through the centre gives the ideal point. It stays Undefined ("l passes through the center: its
+  pole is at infinity").
+- → 16b's scoped audit: two shards are under the 75 % per-shard target. The gate is per package,
+  and all four packages pass.
+  - kernel-b at 68.39 %: proj-lines.ts and proj-apply.ts, the range and polygon cases of
+    projective apply.
+  - The discovery catch-all at 73.03 %: the three new rule files.
+  - The kernel package went from 97.95 % to 93.03 %.
+
+### Known bugs
+
+- None known. Found and fixed during the run, each with a test:
+  - `harmonic_conjugate` called with argument lists its signatures reject answered with a
+    degeneracy reason instead of "received arguments it does not accept"
+    (`kernel/test/tools-circles.direct.test.ts`).
+  - A find job in `projective-facts.test.ts` exceeded CI's 5 s default timeout; it now has
+    ADR-0039's 120 s.
+
+### Uncertain
+
+Resolved by the maintainer (see the decisions above):
+
+- send_to_infinity's chart and orientation (ADR-0040 decision 12) stay as they are. The
+  normalisation (origin p, unit |d|, the side of l by rot90(d)) is a choice, not mathematics. A
+  projective map sending a line to infinity cannot commute with a mirror symmetry of that line, so
+  under a mirrored figure the image is the mirrored image followed by a reflection: congruent
+  figures, and claims invariant under isometries keep their truth.
+- "NDG: on the circle" (the brief, for concyclic cross ratios) is a condition. An NDG item must be
+  non-zero, and "on one circle" is an equation; a claim on four points on neither a line nor a
+  circle is false, never silently true.
+- The GUI intersection tool: Run 16b (Not done).
+
+Still open, for the record:
+
+- **The ideal-point representative under 'value' symmetry**: `harmonic_conjugate(A, B, M)` and
+  `harmonic_conjugate(B, A, M)` give ideal points with directions B − A and A − B. They are the
+  same point with opposite representatives, so a line built from them has the opposite direction.
+- **A frozen test name kept**: "parallel(C, AB) never meets AB" (tools.property.test.ts) now
+  asserts that the meet is the ideal point. Its name is kept, since renaming would be a further
+  modification.
+
+### Changed frozen tests
+
+All listed with their reasons in ADR-0040 decision 22, and every commit that changes one cites
+ADR-0040.
+
+| file                                                     | change                                                                                             |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `packages/kernel/test/degenerate.test.ts`                | 3 lines: "parallel lines → Undefined" becomes "→ their ideal point"; cases added                   |
+| `packages/kernel/test/tools.property.test.ts`            | 2 lines: the meet is the ideal point (not chiral), not Undefined; properties added                 |
+| `packages/kernel/test/helpers/degenerate-transforms.ts`  | 1 line: the Undefined fixture point uses coincident lines; narrowing lines added                   |
+| `packages/kernel/test/helpers/degenerate-mobius.ts`      | 1 line: narrows `h.t.type === 'mobius'` first                                                      |
+| `packages/kernel/test/laws/l13-compose-collapse.test.ts` | 3 lines: the Möbius fields read through a `vs` constant after narrowing                            |
+| `packages/kernel/test/derived.test.ts`                   | 1 line: an Undefined meet uses line(B, A) instead of a parallel line                               |
+| `packages/kernel/test/image-kinds.test.ts`               | 1 line: the applied kinds gain `ideal_point`                                                       |
+| `packages/claims/test/eval-claim.test.ts`                | 1 line: an Undefined object is intersect(l, l), not the meet of parallels                          |
+| `packages/claims/test/helpers/corpus-degenerate.ts`      | 1 line: collinear(midpoint(X, A), A, C); the old claim (false projectively) joins the false corpus |
+| `packages/claims/test/screen.test.ts`                    | 1 line: collinear(A, B, X∞ of AB) is true (was undefined)                                          |
+| `packages/discovery/test/find.test.ts`                   | 1 line: the kinds not searched add cross_ratio and cross_ratio_lines                               |
+| `packages/lang/test/triangle-existing.test.ts`           | 1 line: an Undefined vertex uses coincident lines (an ideal vertex has its own test)               |
+| `docs/adr/0009-grammar.md` (tested verbatim)             | the claim rule gains the cross-ratio notation and `;`                                              |
+
+Lines added only: claims `exports.test.ts`, `corpus-false.ts`, `corpus-true.ts`, `kinds.test.ts`;
+discovery `guarantees-hold.test.ts`; kernel `construction-key.test.ts`, `exports.test.ts`,
+`helpers/degenerate.ts`, `helpers/fuzz-circles.ts`, `helpers/similarity-gen.ts`,
+`inverse-range.test.ts`, `radical.test.ts`, `registry.test.ts`.
+
+### Acceptance command output
+
+#### Local (`pnpm verify` on the commit before the STATUS update; typecheck, lint and depcruise passed)
+
+```
+✔ no dependency violations found (802 modules, 4572 dependencies cruised)
+ok   tolerance: 1114 files scanned, 0 violation(s)
+ok   file-length: 1114 files scanned, 0 violation(s)
+ok   test-count: 3875 tests, floor 3693, 0 violation(s)
+ok   disabled-tests: 1114 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-17b, 0 violation(s)
+ok   forbidden-words: 1114 files scanned, 0 violation(s)
+ Test Files  422 passed (422)
+      Tests  3875 passed (3875)
+All files          |   96.68 |    90.64 |   99.23 |   98.34 |
+```
+
+Theorem tests (`kernel/test/theorems-projective.test.ts`, local):
+
+```
+a projective map keeps the cross ratio of four collinear points: float 196 hold, 4 ill-conditioned; rational 200 hold
+send_to_infinity(l) keeps the cross ratio of four collinear points: float 194 hold, 6 ill-conditioned; rational 200 hold
+Desargues with AB ∥ A′B′: float 200 hold; rational 200 hold
+Pappus with P₁Q₂ ∥ P₂Q₁ and P₂Q₃ ∥ P₃Q₂: float 196 hold, 4 ill-conditioned; rational 200 hold
+the complete quadrilateral: float 195 hold, 5 ill-conditioned; rational 200 hold
+Brokard: float 190 hold, 10 ill-conditioned; rational 200 hold
+the tangents at A and C meet on BD: float 197 hold, 3 ill-conditioned; rational 200 hold
+projecting a harmonic quadruple of a circle from a point of it: float 192 hold, 8 ill-conditioned; rational 200 hold
+```
+
+L3 (local): `L3 projective images: 1831 defined + 1169 Undefined agree, 0 not exact, 0 excluded (band); mod p 964`.
+
+#### CI on GitHub
+
+On d1a6105 (the PR's head; STATUS only): ci (push) https://github.com/youseng/geomira/actions/runs/40645416112:
+success; deploy https://github.com/youseng/geomira/actions/runs/40645416091: success.
+
+On cebd9bb (the last code commit):
+
+- ci (push) https://github.com/youseng/geomira/actions/runs/40637072522: success. The verify step
+  (typecheck, lint, depcruise, rules with the floor 3875, tests) passed; end-to-end 125 passed,
+  with ADR-0037's gate:
+
+  ```
+  main thread during find on 150 objects without workers: {"objects":150,"tasks":2091,"seconds":7.9,"longest":[26.7,16.3,13,12,11.8],"over16":2,"longTasks":[]}
+  ```
+
+- ci (pull request) https://github.com/youseng/geomira/actions/runs/40637078888: success.
+- deploy https://github.com/youseng/geomira/actions/runs/40637072724: success.
+- tex https://github.com/youseng/geomira/actions/runs/40637072497 (push) and
+  https://github.com/youseng/geomira/actions/runs/40637078834 (pull request): success.
+- Earlier heads: 2067a1f failed one test on CI (a find job past the 5 s default timeout; fixed in
+  1668528), and the nightly on 1668528 stopped in Stryker's initial test run (the float Brokard
+  theorem at law scale 0.25; fixed in cebd9bb).
+
+- nightly https://github.com/youseng/geomira/actions/runs/40637076823 (dispatch, incremental, on
+  cebd9bb): success; the test job (NIGHTLY=1) and every mutation shard passed, and the gate:
+
+```
+num mutation gate: 93.47% (730 detected, 51 undetected; threshold 80%): pass
+kernel mutation gate: 93.03% (2748 detected, 206 undetected; threshold 75%): pass
+claims mutation gate: 85.43% (2334 detected, 398 undetected; threshold 75%): pass
+discovery mutation gate: 80.92% (2879 detected, 679 undetected; threshold 75%): pass
+kernel-a mutation score: 86.67% (273 detected, 42 undetected; target 75%, gated from v1.1)
+kernel-b mutation score: 68.39% (212 detected, 98 undetected; target 75%, gated from v1.1)
+kernel-c mutation score: 95.56% (280 detected, 13 undetected; target 75%, gated from v1.1)
+kernel-d mutation score: 97.26% (284 detected, 8 undetected; target 75%, gated from v1.1)
+kernel-e mutation score: 98.99% (197 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-f mutation score: 99.59% (241 detected, 1 undetected; target 75%, gated from v1.1)
+kernel-g mutation score: 99.37% (313 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-i mutation score: 94.90% (279 detected, 15 undetected; target 75%, gated from v1.1)
+kernel-j mutation score: 100.00% (117 detected, 0 undetected; 4 mutants outside the shard not counted; target 75%, gated from v1.1)
+kernel-k mutation score: 91.10% (215 detected, 21 undetected; 143 mutants outside the shard not counted; target 75%, gated from v1.1)
+kernel-h mutation score: 98.83% (337 detected, 4 undetected; target 75%, gated from v1.1)
+claims mutation score: 85.43% (2334 detected, 398 undetected; target 75%, gated from v1.1)
+discovery-a mutation score: 90.09% (209 detected, 23 undetected; target 75%, gated from v1.1)
+discovery-b mutation score: 91.34% (485 detected, 46 undetected; target 75%, gated from v1.1)
+discovery-c mutation score: 77.38% (787 detected, 230 undetected; target 75%, gated from v1.1)
+discovery-d mutation score: 81.82% (450 detected, 100 undetected; target 75%, gated from v1.1)
+discovery-e mutation score: 84.33% (382 detected, 71 undetected; target 75%, gated from v1.1)
+discovery mutation score: 73.03% (566 detected, 209 undetected; 851 mutants outside the shard not counted; target 75%, gated from v1.1)
+```
+
+Stryker minutes per shard (this run; tests changed in every package, so most shards ran without
+reusable results): num 0, kernel-a 18, b 7, c 15, d 31, e 10, f 3, g 5, h 7, i 38, j 2, k 5,
+claims 37, discovery-a 35, discovery-b 77, discovery-c 66, discovery-d 77, discovery-e 68,
+discovery (catch-all) 47. Every shard is under the 100-minute limit.
+
+### Requests
+
+- No new runtime dependencies. The test-count floor is raised to 3875 (docs/test-count.txt).
+- Mutation shards (ADR-0040 decision 19):
+  - No source file of discovery-d changed. The three new discovery files are in the catch-all
+    `discovery` shard (56 minutes cold before this run); with them it took 47 minutes on this
+    branch.
+  - discovery-b and discovery-d took 77 minutes each, discovery-e 68 and discovery-c 66: tests
+    changed in the package, so their results were not reused. A run after the merge reuses them.
+    If one nears 100 minutes, split it. That changes `scripts/mutation-discovery.test.ts`
+    (frozen), so it needs an ADR.
+- For Run 16b (the maintainer's decisions): the GUI intersection tool and `pole(l, c)` at
+  infinity (Not done), and the kernel-b and discovery catch-all mutation scores, in its scoped
+  audit.
+
+---
+
 ## Maintainer request: trivial facts in What is special?: ACCEPTED (2026-10-27)
 
 Not a kit run (no tag). Decisions: [ADR-0039](adr/0039-no-trivial-facts-in-what-is-special.md)

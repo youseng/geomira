@@ -59,6 +59,7 @@ describe('valid float maps are closed under inversion', () => {
         ).toBeUndefined();
         const id = direct('compose', [transformOf(s), inv]);
         if (id.kind !== 'transform') throw new Error(`10^${String(e)}: ${JSON.stringify(id)}`);
+        if (id.t.type === 'projective' || id.t.type === 'composite') throw new Error(id.t.type);
         expect(Math.abs(id.t.a.re - 1), `10^${String(e)}`).toBeLessThan(1e-14);
         expect(Math.abs(id.t.a.im), `10^${String(e)}`).toBeLessThan(1e-14);
         expect(id.t.anti).toBe(false);

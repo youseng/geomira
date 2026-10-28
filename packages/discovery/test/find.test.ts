@@ -59,7 +59,10 @@ describe('the find job (ADR-0035)', () => {
   });
 
   it('states its caps and what it did not search', () => {
-    expect(r.notSearched.map((x) => x.kind)).toEqual(['ratio', 'ratio_value']);
+    expect(r.notSearched.map((x) => x.kind)).toEqual([
+      ...['ratio', 'ratio_value'],
+      ...['cross_ratio', 'cross_ratio_lines'],
+    ]);
     expect(r.caps).toContain('ratio not searched: eight points: too many tuples to search in v1');
     expect(r.untested).toBeGreaterThan(0);
     expect(r.caps.some((c) => /^tested 40 of [\d,]+ facts: test budget$/u.test(c))).toBe(true);

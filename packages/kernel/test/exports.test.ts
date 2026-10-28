@@ -32,6 +32,7 @@ import * as tool from '../src/tool';
 import * as value from '../src/value';
 import * as mobius from '../src/transform/mobius';
 import * as applyMap from '../src/transform/apply-map';
+import * as ideal from '../src/ideal';
 
 /** The public modules of @geomira/kernel (ADR-0002) and the runtime names each exports. */
 const SURFACE: Record<string, { module: object; names: string[] }> = {
@@ -40,6 +41,8 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     names: [
       'CAPABILITIES',
       'DISPLAY_KINDS',
+      'PROJECTIVE_CAPABILITIES',
+      'PROJECTIVE_KINDS',
       'VALUE_KINDS',
       'capabilityKinds',
       'hasCapability',
@@ -198,6 +201,8 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'FOOT_LINE',
       'FOOT_POINTS',
       'GUARANTEE_TABLE',
+      'HARMONIC_LINE',
+      'HARMONIC_POINT',
       'HOMOTHETY_POINT',
       'INCENTER',
       'INCIRCLE',
@@ -248,6 +253,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     ],
   },
   './transform/apply-map': { module: applyMap, names: ['applyMap', 'localScale'] },
+  './ideal': { module: ideal, names: ['atInfinityText', 'idealDegrees'] },
   './map-facts': {
     module: mapFacts,
     names: ['MAP_TABLE', 'imageOfFor', 'mapFactsFor', 'withMapFacts'],

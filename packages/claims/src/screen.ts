@@ -21,7 +21,7 @@ import type { EvalContext } from '@geomira/kernel/tool';
 import { numOf, undef, type Undefined, type Value } from '@geomira/kernel/value';
 import { floatDecide, floatNdg, type Decision } from './decide';
 import { findFree, type FreeInput } from './free';
-import { fitsParam, paramAt, type ClaimKindSpec } from './kind';
+import { argMismatch, paramAt, type ClaimKindSpec } from './kind';
 import { judgingFactor, perturbFree, scaledArgs } from './perturb';
 import { freeKey, gliderExprs } from './prepare';
 import { addProbes } from './probes';
@@ -60,9 +60,12 @@ function valuesOf(
     if (v.kind === 'undefined') return v;
     if (v.kind === 'inexact') return undef(v.reason);
     const p = paramAt(kind, i);
-    if (p === undefined || !fitsParam(v, p))
+    const bad = argMismatch(kind, v, p, i, `#${String(i + 1)}`);
+    if (bad !== undefined)
       return undef(
-        `invalid claim: ${kind.name} needs ${p ?? 'nothing'} as argument ${String(i + 1)}`,
+        bad.invalid
+          ? `invalid claim: ${kind.name} needs ${p ?? 'nothing'} as argument ${String(i + 1)}`
+          : bad.reason,
       );
     out.push(v);
   }

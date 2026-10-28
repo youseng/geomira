@@ -167,7 +167,7 @@ describe('no place for the new vertices: an error, nothing applied', () => {
 
   it('an existing vertex that is undefined, or not a point', () => {
     const undef = parse(
-      file('A = (0, 0)', 'B = intersect(line(A, (1, 0)), line((0, 1), (1, 1)))', 'triangle ABC'),
+      file('A = (0, 0)', 'B = intersect(line(A, (1, 0)), line((2, 0), (3, 0)))', 'triangle ABC'),
       registry,
     );
     expect(undef.diagnostics.filter((d) => d.severity === 'error').map((d) => d.message)).toEqual([

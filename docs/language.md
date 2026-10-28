@@ -86,6 +86,10 @@ claim         = kind , "(" , expr , { "," , expr } , ")"    (* every kind by nam
               | "∡" , "(" , expr , "," , expr , ")" , "=" , number           (* dangle_lines *)
               | angle , "=" , angle                                          (* angle_eq *)
               | angle , ( "+" | "-" ) , angle , "=" , number                 (* angle_sum, angle_diff *)
+              | "harmonic" , "(" , expr , "," , expr , ";" , expr , "," , expr , ")"
+                                    (* harmonic, or harmonic_lines on four lines (ADR-0040) *)
+              | "cross_ratio" , "(" , expr , "," , expr , [ "," | ";" ] , expr , "," , expr , ")" ,
+                "=" , number        (* cross_ratio, or cross_ratio_lines on four lines *)
               | expr , "=" , expr ;                                          (* equal *)
 segment       = pointName , pointName                       (* glued: AB *)
               | "dist" , "(" , expr , "," , expr , ")" ;
@@ -190,6 +194,10 @@ P = on(ω, 2, 1)
 | `angle_eq` | `∠ABC = ∠DEF`, `angle(X, Y, Z) = angle(…)` | `claim ∠ABH = ∠ACH` | no |
 | `angle_sum` | `∠ABC + ∠DEF = θ` | `claim ∠BHC + ∠BAC = 180°` | no |
 | `angle_diff` | `∠ABC - ∠DEF = θ` | `claim ∠ABH - ∠ACH = 0` | no |
+| `cross_ratio` | `cross_ratio(A, B, C, D) = k (four collinear or concyclic points)` | `claim cross_ratio(B, C, M_a, P) = 2` | yes |
+| `harmonic` | `harmonic(A, B; C, D) (four collinear or concyclic points)` | `claim harmonic(B, C; M_a, P)` | yes |
+| `cross_ratio_lines` | `cross_ratio(a, b, c, d) = k (four concurrent lines)`, `cross_ratio_lines(a, b, c, d, k)` | `claim cross_ratio_lines(line(A, B), line(A, C), line(A, M_a), line(A, H), -1)` | yes |
+| `harmonic_lines` | `harmonic(a, b; c, d) (four concurrent lines)`, `harmonic_lines(a, b, c, d)` | `claim harmonic_lines(line(A, B), line(A, C), line(A, M_a), line(A, H))` | yes |
 
 ## Assumptions
 
@@ -270,11 +278,11 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `midpoint` | points | `midpoint(point, point)` | point | can succeed | — |
 | `divide` | points | `divide(point, point, number)` | point | can succeed | — |
 | `foot` | points | `foot(point, linear)` · `foot(point, point, point)` | point | can succeed | — |
-| `intersect` | points | `intersect(linear, linear)` · `intersect(linear, round)` · `intersect(round, linear)` · `intersect(round, round)` | point | can succeed | √(2) is not rational |
+| `intersect` | points | `intersect(linear, linear)` · `intersect(linear, round)` · `intersect(round, linear)` · `intersect(round, round)` | point, ideal_point | can succeed | √(2) is not rational |
 | `circumcenter` | points | `circumcenter(point, point, point)` | point | can succeed | — |
 | `centroid` | points | `centroid(point, point, point)` | point | can succeed | — |
 | `orthocenter` | points | `orthocenter(point, point, point)` | point | can succeed | — |
-| `line` | lines | `line(point, point)` | line | can succeed | — |
+| `line` | lines | `line(point, point)` · `line(ppoint, ppoint)` | line | can succeed | — |
 | `segment` | lines | `segment(point, point)` | line | can succeed | — |
 | `ray` | lines | `ray(point, point)` | line | can succeed | — |
 | `parallel` | lines | `parallel(point, linear)` | line | can succeed | — |
@@ -324,7 +332,7 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `spiral` | transformations | `spiral(point, point, point, point)` · `spiral(point, point, point, point, point)` · `spiral(curve, point, point, point, point)` · `spiral(polygon, point, point, point, point)` | transform, point, line, circle, polygon | can succeed | — |
 | `compose` | transformations | `compose(transform, transform)` | transform | can succeed | — |
 | `inverse` | transformations | `inverse(transform)` | transform | can succeed | — |
-| `apply` | transformations | `apply(transform, point)` · `apply(transform, curve)` · `apply(transform, polygon)` · `apply(transform, annotation)` | point, line, circle, polygon, angle_mark, segment_mark, text | can succeed | — |
+| `apply` | transformations | `apply(transform, point)` · `apply(transform, curve)` · `apply(transform, polygon)` · `apply(transform, annotation)` · `apply(transform, ideal)` | point, line, circle, polygon, angle_mark, segment_mark, text, ideal_point | can succeed | — |
 | `mark_angle` | display | `mark_angle(point, point, point)` · `mark_angle(point, point, point, number)` | angle_mark | can succeed | — |
 | `mark_right` | display | `mark_right(point, point, point)` | angle_mark | can succeed | — |
 | `mark_segment` | display | `mark_segment(point, point)` · `mark_segment(point, point, number)` | segment_mark | can succeed | — |
@@ -343,6 +351,9 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `inversion_swap` | transformations | `inversion_swap(point, point, point)` | transform | can succeed | — |
 | `feet_inversion` | transformations | `feet_inversion(point, point, point)` | transform | can succeed | — |
 | `sqrt_bc2` | transformations | `sqrt_bc2(point, point, point)` | transform | can succeed | — |
+| `projective` | transformations | `projective(ppoint, ppoint, ppoint, ppoint, ppoint, ppoint, ppoint, ppoint)` | transform | can succeed | — |
+| `send_to_infinity` | transformations | `send_to_infinity(linear)` | transform | can succeed | — |
+| `harmonic_conjugate` | points | `harmonic_conjugate(point, point, ppoint)` · `harmonic_conjugate(linear, linear, linear)` | point, ideal_point, line | can succeed | — |
 
 ## Versions
 

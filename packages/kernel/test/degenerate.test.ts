@@ -34,6 +34,7 @@ import { TRANSFORM_CASES } from './helpers/degenerate-transforms';
 import { APPLY_DISPLAY_CASES, DISPLAY_CASES } from './helpers/degenerate-display';
 import { MOBIUS_CASES } from './helpers/degenerate-mobius';
 import { PRESET_CASES } from './helpers/degenerate-presets';
+import { PROJECTIVE_CASES } from './helpers/degenerate-projective';
 import { SYMMEDIAN_POINT_CASES } from './helpers/degenerate-symmedian-point';
 import {
   ARC_INTERSECT_CASES,
@@ -108,19 +109,29 @@ const CASES: Record<string, Record<string, () => void>> = {
     },
   },
   intersect: {
-    'parallel lines → Undefined': () => {
+    "parallel lines → their ideal point (the first line's direction and flag)": () => {
       for (const F of FIELDS) {
         expect(reason(at(F, 'intersect', line(pt(0, 0), pt(1, 0)), line(pt(0, 1), pt(3, 1))))).toBe(
-          'undefined: parallel lines',
+          'ideal_point',
         );
       }
       // Nearly parallel: sin θ ≈ 1e-12 is a zero angle in FloatField, not over Q.
       const near = [line(pt(0, 0), pt(1, 0)), line(pt(0, 1), pt(1, 1 + 1e-12))];
-      expect(reason(at(FloatField, 'intersect', ...near))).toBe('undefined: parallel lines');
+      expect(reason(at(FloatField, 'intersect', ...near))).toBe('ideal_point');
       expect(at(RationalField, 'intersect', ...near).kind).toBe('point');
       // Short but perpendicular segments are never called parallel.
       const short = [seg(pt(0, 0), pt(1e-5, 0)), seg(pt(0, -1e-5), pt(0, 1e-5))];
       expect(plain(FloatField, at(FloatField, 'intersect', ...short))).toEqual([0, 0]);
+    },
+    'parallel segments or rays → Undefined (no point at infinity is on them)': () => {
+      for (const F of FIELDS) {
+        expect(reason(at(F, 'intersect', seg(pt(0, 0), pt(1, 0)), line(pt(0, 1), pt(3, 1))))).toBe(
+          'undefined: parallel lines: their common point is at infinity, which is not on a segment or ray',
+        );
+        expect(
+          reason(at(F, 'intersect', line(pt(0, 0), pt(1, 0)), ray(pt(0, 1), pt(3, 1)))),
+        ).toMatch(/^undefined: parallel lines: /);
+      }
     },
     'coincident lines → Undefined': () => {
       for (const F of FIELDS) {
@@ -274,6 +285,7 @@ const CASES: Record<string, Record<string, () => void>> = {
   ...MOBIUS_CASES,
   ...SYMMEDIAN_POINT_CASES,
   ...PRESET_CASES,
+  ...PROJECTIVE_CASES,
 };
 
 describe('degenerate cases (ToolSpec.degenerate), each a test', () => {

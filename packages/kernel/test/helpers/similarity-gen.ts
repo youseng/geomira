@@ -125,8 +125,11 @@ export function sameValues<T>(F: Field<T>, u: Value<T>, v: Value<T>): boolean {
     case 'number':
       return v.kind === 'number' && close(F, u.v, v.v);
     case 'transform':
+      if (u.t.type === 'projective' || u.t.type === 'composite') return false;
       return (
         v.kind === 'transform' &&
+        v.t.type !== 'projective' &&
+        v.t.type !== 'composite' &&
         u.t.anti === v.t.anti &&
         sameVec(F, { x: u.t.a.re, y: u.t.a.im }, { x: v.t.a.re, y: v.t.a.im }) &&
         sameVec(F, { x: u.t.b.re, y: u.t.b.im }, { x: v.t.b.re, y: v.t.b.im })
@@ -151,6 +154,8 @@ export function sameValues<T>(F: Field<T>, u: Value<T>, v: Value<T>): boolean {
       return v.kind === 'text' && u.text === v.text && sameVec(F, u.at, v.at);
     case 'string':
       return v.kind === 'string' && u.s === v.s;
+    case 'ideal_point':
+      return v.kind === 'ideal_point' && u.chiral === v.chiral && sameVec(F, u.d, v.d);
     case 'undefined':
     case 'inexact':
       return v.kind === u.kind && v.reason === u.reason;

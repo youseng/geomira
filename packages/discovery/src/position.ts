@@ -85,7 +85,11 @@ export function* rounded(
   return undefined;
 }
 
-/** Whether the position keeps the figure: every assume line holds, nothing becomes undefined. */
+/**
+ * Whether the position keeps the figure: every assume line holds, nothing becomes undefined,
+ * and no point goes to infinity (a point at infinity is not drawn: the figure degenerates there,
+ * ADR-0040).
+ */
 export function keeps(
   doc: Document,
   screen: Screen,
@@ -102,6 +106,7 @@ export function keeps(
     const was = v.kind !== 'undefined' && v.kind !== 'inexact';
     if (was && (w === undefined || w.kind === 'undefined' || w.kind === 'inexact'))
       return 'degenerate';
+    if (v.kind === 'point' && w?.kind === 'ideal_point') return 'degenerate';
   }
   return 'ok';
 }

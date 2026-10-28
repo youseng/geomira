@@ -48,7 +48,9 @@ export type ExportWarning =
   /** A visible object whose value is undefined here: it has no position, so it is not drawn. */
   | { readonly kind: 'undefined'; readonly object: string; readonly reason: string }
   /** A visible object that cannot be placed at the zoom (ADR-0023): not drawn (ADR-0028). */
-  | { readonly kind: 'undrawable'; readonly object: string };
+  | { readonly kind: 'undrawable'; readonly object: string }
+  /** A visible point at infinity (ADR-0040): listed with its direction, never drawn. */
+  | { readonly kind: 'infinite'; readonly object: string; readonly reason: string };
 
 /** The warning as one sentence (the UI and the `% Warning` lines show it). */
 export function warningText(w: ExportWarning): string {
@@ -61,6 +63,8 @@ export function warningText(w: ExportWarning): string {
       return `${w.object} is undefined in this figure (${w.reason}): not drawn`;
     case 'undrawable':
       return `${w.object} is not drawable at this zoom: not drawn`;
+    case 'infinite':
+      return `${w.object} is a point ${w.reason.replace(/^at infinity, /u, 'at infinity (')}): not drawn`;
     case 'colour':
       return `the color ${JSON.stringify(w.colour)} of ${w.object} cannot be read: drawn in the default ink`;
     default:

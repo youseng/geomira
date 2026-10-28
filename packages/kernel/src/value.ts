@@ -7,8 +7,8 @@
  * Str a text shows. They are values like any other (images map them, the scene draws them),
  * but no claim or construction tool takes them.
  *
- * Reserved kinds, documented only (Phase 2 / later runs, no code): IdealPoint (the common
- * direction of parallel lines; v1 parallel lines are Undefined), Conic, Locus. Capability
+ * IdealPoint (ADR-0040, Run 16a): the point at infinity of the lines with a direction, the
+ * meeting point of parallel lines. Reserved kinds, documented only: Conic (Run 16b), Locus. Capability
  * tests accept any `{ kind: string }`, so a future kind matches no capability and every
  * existing tool rejects it with Undefined("<tool> does not accept …").
  */
@@ -27,6 +27,17 @@ export interface Vec<T> {
 
 export interface Point<T> extends Vec<T> {
   readonly kind: 'point';
+}
+
+/**
+ * The point at infinity of the lines with direction `d` (ADR-0040): d ≠ 0 is a REPRESENTATIVE
+ * (d and λd, λ ≠ 0, are the same point; never normalised, so float and exact runs agree entry by
+ * entry). `chiral` is SPEC §4's flag of d, kept by a line built through the ideal point.
+ */
+export interface IdealPoint<T> {
+  readonly kind: 'ideal_point';
+  readonly d: Vec<T>;
+  readonly chiral: boolean;
 }
 
 /**
@@ -133,7 +144,26 @@ export interface Mobius<T> {
   readonly d: Complex<T>;
 }
 
-export type TransformData<T> = Similarity<T> | Mobius<T>;
+/**
+ * A projective map (ADR-0040): the 3×3 matrix `m`, row by row, acting on homogeneous columns
+ * (x, y, 1); defined up to a non-zero factor and never normalised; valid when det m ≠ 0.
+ */
+export interface Projective<T> {
+  readonly type: 'projective';
+  readonly m: readonly [T, T, T, T, T, T, T, T, T];
+}
+
+/**
+ * A composition kept as its factors (ADR-0040 decision 8): `maps` in the order they apply
+ * (the first is applied first), adjacent maps of one family already merged, so it always mixes
+ * a Möbius map with a pole and a projective map. Applying it applies each map in turn.
+ */
+export interface Composite<T> {
+  readonly type: 'composite';
+  readonly maps: readonly (Similarity<T> | Mobius<T> | Projective<T>)[];
+}
+
+export type TransformData<T> = Similarity<T> | Mobius<T> | Projective<T> | Composite<T>;
 
 export interface Transform<T> {
   readonly kind: 'transform';
@@ -148,6 +178,7 @@ export interface Undefined {
 
 export type DefinedValue<T> =
   | Point<T>
+  | IdealPoint<T>
   | Line<T>
   | Circle<T>
   | Num<T>
@@ -161,11 +192,12 @@ export type DefinedValue<T> =
 export type Value<T> = DefinedValue<T> | Undefined | Inexact;
 
 /**
- * The kinds of values, plus one STATIC kind (ADR-0032 decision 13): 'mobius' marks, beside
+ * The kinds of values, plus two STATIC kinds: 'mobius' (ADR-0032 decision 13) marks, beside
  * 'transform', a transformation that may be a Möbius map, whose images of lines and circles
- * may change kind. No value has kind 'mobius'.
+ * may change kind; 'projective' (ADR-0040) one that may be a projective map, whose images of
+ * points may be ideal points and the reverse. No value has either kind.
  */
-export type ValueKind = Value<unknown>['kind'] | 'mobius';
+export type ValueKind = Value<unknown>['kind'] | 'mobius' | 'projective';
 
 /**
  * The kinds of SPEC §4's Value union. The display kinds ADR-0011 added are DISPLAY_KINDS;
@@ -190,9 +222,12 @@ export const DISPLAY_KINDS: readonly ValueKind[] = Object.freeze([
   'string',
 ]);
 
+/** The kinds of the projective plane beyond SPEC §4's (ADR-0040): the ideal point. */
+export const PROJECTIVE_KINDS: readonly ValueKind[] = Object.freeze(['ideal_point']);
+
 /** Whether a value's kind belongs to the Value union (false for future or test-only kinds). */
 export function isKnownKind(v: { readonly kind: string }): boolean {
-  return VALUE_KINDS.some((k) => k === v.kind) || DISPLAY_KINDS.some((k) => k === v.kind);
+  return [...VALUE_KINDS, ...DISPLAY_KINDS, ...PROJECTIVE_KINDS].some((k) => k === v.kind);
 }
 
 /**
@@ -208,7 +243,9 @@ export type Capability =
   | 'transform'
   | 'polygon'
   | 'annotation'
-  | 'string';
+  | 'string'
+  | 'ideal'
+  | 'ppoint';
 
 export const CAPABILITIES: readonly Capability[] = Object.freeze([
   'point',
@@ -221,6 +258,13 @@ export const CAPABILITIES: readonly Capability[] = Object.freeze([
   'annotation',
   'string',
 ]);
+
+/**
+ * The capabilities of the projective plane (ADR-0040), outside SPEC §4's list above (its frozen
+ * test enumerates it): `ideal` (an ideal point) and `ppoint` (a point or an ideal point). Only the
+ * signatures that declare them take an ideal point.
+ */
+export const PROJECTIVE_CAPABILITIES: readonly Capability[] = Object.freeze(['ideal', 'ppoint']);
 
 /** The value kinds that have each capability. */
 export function capabilityKinds(cap: Capability): readonly ValueKind[] {
@@ -243,6 +287,10 @@ export function capabilityKinds(cap: Capability): readonly ValueKind[] {
       return ['angle_mark', 'segment_mark', 'text'];
     case 'string':
       return ['string'];
+    case 'ideal':
+      return ['ideal_point'];
+    case 'ppoint':
+      return ['point', 'ideal_point'];
     default:
       return assertNever(cap, 'capability');
   }
@@ -289,13 +337,20 @@ export function numOf<T>(v: T, exact?: Rational): Num<T> {
   return exact === undefined ? { kind: 'number', v } : { kind: 'number', v, exact };
 }
 
-/** The entries of a map: a and b, then c and d for a Möbius map. */
+/**
+ * The entries of a map: a and b, then c and d for a Möbius map; a projective map's matrix row by
+ * row; a composite's maps in turn.
+ */
 function transformNumbers<T>(t: TransformData<T>): T[] {
   switch (t.type) {
     case 'similarity':
       return [t.a.re, t.a.im, t.b.re, t.b.im];
     case 'mobius':
       return [t.a.re, t.a.im, t.b.re, t.b.im, t.c.re, t.c.im, t.d.re, t.d.im];
+    case 'projective':
+      return [...t.m];
+    case 'composite':
+      return t.maps.flatMap((x) => transformNumbers(x));
     default:
       return assertNever(t, 'transform');
   }
@@ -306,6 +361,8 @@ export function numbersOf<T>(v: Value<T>): T[] {
   switch (v.kind) {
     case 'point':
       return [v.x, v.y];
+    case 'ideal_point':
+      return [v.d.x, v.d.y];
     case 'line':
       return [
         v.p.x,

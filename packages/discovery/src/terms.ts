@@ -40,6 +40,8 @@ export interface MapRecord {
   readonly fixedCurve?: string;
   readonly invariant: readonly string[];
   readonly center?: string;
+  /** A projective map's image of the line at infinity (the images of points at infinity are on it). */
+  readonly infinityImage?: string;
   readonly sends: readonly (readonly [string, string])[];
 }
 
@@ -157,6 +159,7 @@ class Builder {
       xs.flatMap((x, i) => this.termKey(x, w, `${tag}${String(i)}`) ?? []);
     const center = m.center === undefined ? undefined : this.termKey(m.center, w, 'c');
     const curve = m.fixedCurve === undefined ? undefined : this.termKey(m.fixedCurve, w, 'f');
+    const inf = m.infinityImage === undefined ? undefined : this.termKey(m.infinityImage, w, 'v');
     const ratio = m.ratio === undefined ? undefined : literalOf(m.ratio, w.c);
     const turn = m.turn === undefined ? undefined : literalOf(m.turn, w.c);
     const factor = m.factor === undefined ? undefined : literalOf(m.factor, w.c);
@@ -171,6 +174,7 @@ class Builder {
       ...(curve === undefined ? {} : { fixedCurve: curve }),
       invariant: keys(m.invariantCurves ?? [], 'i'),
       ...(center === undefined ? {} : { center }),
+      ...(inf === undefined ? {} : { infinityImage: inf }),
       sends: (m.sends ?? []).flatMap(([a, b], i) => {
         const [x, y] = [this.termKey(a, w, `s${String(i)}a`), this.termKey(b, w, `s${String(i)}b`)];
         return x === undefined || y === undefined ? [] : [[x, y] as const];

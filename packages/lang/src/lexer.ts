@@ -34,6 +34,7 @@ const OPERAND_START = /[\p{L}0-9_(\\]/u;
 const PUNCT: Readonly<Record<string, string>> = {
   '(': '(',
   ')': ')',
+  ';': ';',
   '[': '[',
   ']': ']',
   ',': ',',

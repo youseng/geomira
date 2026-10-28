@@ -10,6 +10,7 @@
 import { evalClaim, type ClaimValue } from '@geomira/claims/eval-claim';
 import { hypothesesInFigure, type FigureStatus } from '@geomira/claims/figure-hypotheses';
 import type { Document } from '@geomira/kernel/document';
+import { atInfinityText } from '@geomira/kernel/ideal';
 import { formatExpr } from '@geomira/kernel/selector';
 import { print } from '@geomira/lang/print';
 import type { EditorEnv, EditorState } from './state';
@@ -24,6 +25,8 @@ export interface ObjectRow {
   readonly status: 'ok' | 'undefined' | 'inexact';
   /** Why the value is Undefined or Inexact. */
   readonly reason?: string;
+  /** What the panel shows for a value that is not drawn: "at infinity, direction θ°" (ADR-0040). */
+  readonly note?: string;
   /** A managed image of a derived layer. */
   readonly managed: boolean;
   readonly hidden: boolean;
@@ -50,6 +53,8 @@ function rowOf(state: EditorState, o: Document['objects'][number], names: Names)
     return { ...row, kind: 'undefined', status: 'undefined', reason: 'not evaluated' };
   if (v.kind === 'undefined' || v.kind === 'inexact')
     return { ...row, kind: v.kind, status: v.kind, reason: v.reason };
+  if (v.kind === 'ideal_point')
+    return { ...row, kind: v.kind, status: 'ok', note: atInfinityText(v.d) };
   return { ...row, kind: v.kind, status: 'ok' };
 }
 

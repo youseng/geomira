@@ -130,6 +130,20 @@ const SQRT_BC2: MapFacts = {
   sends: swaps([1, t('midpoint', 0, 2)], [2, t('midpoint', 0, 1)]),
 };
 
+/** send_to_infinity(l): a projective involution (it swaps l and the line at infinity). */
+const SEND_TO_INFINITY: MapFacts = { type: 'projective', involution: true, infinityImage: 0 };
+
+/** projective(A, B, C, D, A′, B′, C′, D′): a projective map with four known images. */
+const PROJECTIVE: MapFacts = {
+  type: 'projective',
+  sends: [
+    [0, 4],
+    [1, 5],
+    [2, 6],
+    [3, 7],
+  ],
+};
+
 /**
  * The map overloads: tool name → the overload's parameter capabilities → its facts. Read only
  * by `withMapFacts`; a kernel test checks that every entry names an existing overload.
@@ -147,6 +161,10 @@ export const MAP_TABLE: Readonly<Record<string, Readonly<Record<string, MapFacts
   inversion_swap: { 'point,point,point': INVERSION_SWAP },
   feet_inversion: { 'point,point,point': FEET_INVERSION },
   sqrt_bc2: { 'point,point,point': SQRT_BC2 },
+  send_to_infinity: { linear: SEND_TO_INFINITY },
+  projective: {
+    'ppoint,ppoint,ppoint,ppoint,ppoint,ppoint,ppoint,ppoint': PROJECTIVE,
+  },
 };
 
 /** `apply(T, X)`: the image of X under T. */

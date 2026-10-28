@@ -18,6 +18,7 @@ import { Builder, REGISTRY, evalDoc, must, num, pt, valueOf } from './doc';
 /** A transform as plain numbers ({ anti, a, b }), or the reason / kind. */
 export function tv<T>(F: Field<T>, v: Value<T>): unknown {
   if (v.kind !== 'transform') return reason(v);
+  if (v.t.type === 'projective' || v.t.type === 'composite') return v.t.type;
   const n = (x: T) => F.toNumber(x) + 0;
   return { anti: v.t.anti, a: [n(v.t.a.re), n(v.t.a.im)], b: [n(v.t.b.re), n(v.t.b.im)] };
 }
@@ -35,7 +36,7 @@ const T = (tool: string, ...args: Expr[]): Expr => call(tool, args);
 /** The value of `last` in a document `O = intersect(line(A, B), parallel(C, line(A, B)))`, … */
 function withUndefined<X>(F: Field<X>, build: (b: Builder, O: Expr) => void): Value<X> {
   const b = new Builder();
-  const O = b.add('O', T('intersect', line(A, B), T('parallel', C, line(A, B))));
+  const O = b.add('O', T('intersect', line(A, B), T('parallel', A, line(A, B))));
   build(b, O);
   return valueOf(b.doc, evalDoc(b.doc, F), 'x');
 }
@@ -161,6 +162,7 @@ export const TRANSFORM_CASES: Record<string, Record<string, () => void>> = {
       for (const F of FIELDS) expect(at(F, 'compose', h, h).kind).toBe('transform');
       const k = at(FloatField, 'compose', h, h);
       if (k.kind !== 'transform') throw new Error(k.kind);
+      if (k.t.type === 'projective' || k.t.type === 'composite') throw new Error(k.t.type);
       expect(k.t.a.re * 10_000_000_000).toBeCloseTo(1, 9);
     },
     'a scale factor beyond the double range (floats) → Inexact': () => {

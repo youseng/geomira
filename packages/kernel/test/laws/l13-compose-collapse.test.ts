@@ -97,12 +97,13 @@ function draw(i: number): { readonly b: Builder } {
 
 function sameMap<T>(F: Field<T>, u: Value<T>, v: Value<T>): boolean {
   if (u.kind !== 'transform' || v.kind !== 'transform') return false;
+  if (u.t.type === 'projective' || u.t.type === 'composite') return false;
+  if (v.t.type === 'projective' || v.t.type === 'composite') return false;
+  const vs = [v.t.a.re, v.t.a.im, v.t.b.re, v.t.b.im];
   if (F.kind !== 'float')
     return (
       u.t.anti === v.t.anti &&
-      [u.t.a.re, u.t.a.im, u.t.b.re, u.t.b.im].every((x, i) =>
-        F.eq(x, [v.t.a.re, v.t.a.im, v.t.b.re, v.t.b.im][i] ?? F.zero),
-      )
+      [u.t.a.re, u.t.a.im, u.t.b.re, u.t.b.im].every((x, i) => F.eq(x, vs[i] ?? F.zero))
     );
   const n = (x: T) => F.toNumber(x);
   // a relative to |a| (it may be 10⁻²⁴), b relative to its own size (at least 1).
@@ -149,6 +150,8 @@ describe(
           const [once, steps] = [valueOf(b.doc, ev, 'once'), valueOf(b.doc, ev, 'steps')];
           expect(samePoint(F, once, steps), `${at}: ${show([once, steps])}`).toBe(true);
           if (left.kind === 'transform') {
+            if (left.t.type === 'projective' || left.t.type === 'composite')
+              throw new Error(left.t.type);
             const a = Math.hypot(F.toNumber(left.t.a.re), F.toNumber(left.t.a.im));
             if (a < 1e-9) tiny += 1;
           }

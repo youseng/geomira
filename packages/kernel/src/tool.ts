@@ -121,9 +121,11 @@ export interface Signature {
 /**
  * How a map acts (ADR-0039). A similarity keeps every v1 claim kind (directed angles reversed
  * when anti); an inversion keeps equal points, incidence and tangency, takes clines to clines,
- * and has a centre; another Möbius map keeps incidence, tangency and clines.
+ * and has a centre; another Möbius map keeps incidence, tangency and clines; a projective map
+ * (ADR-0040) keeps equal points, the incidence of points and lines and cross ratios, never
+ * lengths, angles, circles or tangency.
  */
-export type MapType = 'similarity' | 'anti-similarity' | 'inversion' | 'moebius';
+export type MapType = 'similarity' | 'anti-similarity' | 'inversion' | 'moebius' | 'projective';
 
 /** A map's facts as data over its call (ADR-0039); terms as in guarantees. */
 export interface MapFacts {
@@ -140,6 +142,11 @@ export interface MapFacts {
   readonly fixedCurve?: GuaranteeTerm;
   /** Curves the map takes onto themselves (not necessarily point by point). */
   readonly invariantCurves?: readonly GuaranteeTerm[];
+  /**
+   * A projective map's image of the line at infinity (ADR-0040): the image of every point at
+   * infinity is on it (send_to_infinity(l), an involution: l).
+   */
+  readonly infinityImage?: GuaranteeTerm;
   /** An inversion's centre: X, X* and the centre are collinear; its own image is Undefined. */
   readonly center?: GuaranteeTerm;
   /**

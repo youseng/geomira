@@ -81,6 +81,7 @@ function gliderDefault(st: State, obj: Expr): readonly Expr[] | string {
     case 'inexact':
       return `on(…) without a parameter needs the object's value to choose one, and it is ${v.kind} here (${v.reason})`;
     case 'point':
+    case 'ideal_point':
     case 'number':
     case 'polygon':
     case 'transform':

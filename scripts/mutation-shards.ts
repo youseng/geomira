@@ -105,8 +105,21 @@ export const MOBIUS_K: readonly string[] = [
  * 399 mutants, most of them covered by the whole suite, and its timeouts cost minutes each.
  */
 export const MOBIUS_I: readonly string[] = [`${T}/inversion-tools.ts:1-177`];
-export const SPREAD_E: readonly string[] = [`${K}/tools/map-ops.ts:1-86`];
-export const SPREAD_G: readonly string[] = [`${K}/tools/map-ops.ts:87-${String(OPEN_END)}`];
+export const SPREAD_E: readonly string[] = [`${K}/tools/map-ops.ts:1-95`];
+export const SPREAD_G: readonly string[] = [`${K}/tools/map-ops.ts:96-${String(OPEN_END)}`];
+
+/**
+ * Run 16a (ADR-0040 decision 19): the projective code joins light shards, as Run 14's did (the
+ * frozen test keeps eleven kernel shards): the matrix core and the side decisions kernel-a, the
+ * per-kind images kernel-b, the constructors (mostly ToolSpec literals) kernel-i, the parallel
+ * lines kernel-c (beside intersect), the harmonic conjugate kernel-d. map-ops.ts grew (apply
+ * takes points at infinity): its cut moved from 86 to 95, still after `apply`.
+ */
+export const PROJECTIVE_A: readonly string[] = [`${T}/projective.ts`, `${T}/proj-side.ts`];
+export const PROJECTIVE_B: readonly string[] = [`${T}/proj-lines.ts`, `${T}/proj-apply.ts`];
+export const PROJECTIVE_I: readonly string[] = [`${T}/projective-tools.ts`];
+export const PROJECTIVE_C: readonly string[] = [`${K}/tools/parallel-lines.ts`];
+export const PROJECTIVE_D: readonly string[] = [`${K}/tools/harmonic.ts`];
 
 /** The entries whose file exists at this commit (a `file:a-b` entry by its file). */
 function present(files: readonly string[]): string[] {
@@ -126,21 +139,42 @@ function present(files: readonly string[]): string[] {
  */
 const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly parent: string }[] = [
   {
-    files: [`${K}/geom.ts`, `${K}/similarity.ts`, ...present(V11_A), ...present(MOBIUS_A)],
+    files: [
+      `${K}/geom.ts`,
+      `${K}/similarity.ts`,
+      ...present(V11_A),
+      ...present(MOBIUS_A),
+      ...present(PROJECTIVE_A),
+    ],
     parent: 'kernel-1',
   },
   // transforms.ts alone took more than 50 minutes: three line ranges (Stryker's
   // `file:start-end` form) cover it, the last one open-ended so no line can drop out.
   {
-    files: [`${K}/tools/transforms.ts:1-132`, ...present(V11_B), ...present(MOBIUS_B)],
+    files: [
+      `${K}/tools/transforms.ts:1-132`,
+      ...present(V11_B),
+      ...present(MOBIUS_B),
+      ...present(PROJECTIVE_B),
+    ],
     parent: 'kernel-b',
   },
   {
-    files: [`${K}/tools/pairs.ts`, `${K}/tools/intersect.ts`, `${K}/tools/range.ts`],
+    files: [
+      `${K}/tools/pairs.ts`,
+      `${K}/tools/intersect.ts`,
+      `${K}/tools/range.ts`,
+      ...present(PROJECTIVE_C),
+    ],
     parent: 'kernel-2',
   },
   {
-    files: [`${K}/tools/tangent-from.ts`, `${K}/tools/tangents.ts`, `${K}/tools/other.ts`],
+    files: [
+      `${K}/tools/tangent-from.ts`,
+      `${K}/tools/tangents.ts`,
+      `${K}/tools/other.ts`,
+      ...present(PROJECTIVE_D),
+    ],
     parent: 'kernel-2',
   },
   {
@@ -157,7 +191,10 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     ],
     parent: 'kernel-4',
   },
-  { files: [`${K}/tools/lines.ts`, ...present(MOBIUS_I)], parent: 'kernel-h' },
+  {
+    files: [`${K}/tools/lines.ts`, ...present(MOBIUS_I), ...present(PROJECTIVE_I)],
+    parent: 'kernel-h',
+  },
   { files: [`${K}/tools/transforms.ts:133-265`], parent: 'kernel-b' },
   {
     files: [`${K}/tools/transforms.ts:266-${String(OPEN_END)}`, ...present(MOBIUS_K)],

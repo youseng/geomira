@@ -31,7 +31,9 @@ export function dragBase(doc: Document, id: number, values: Evaluation<number>):
   const o = findObject(doc, id);
   if (o === undefined) return `there is no object #${String(id)}`;
   if (o.managedBy !== undefined) {
-    const at = positionOf(values.values.get(id));
+    const v = values.values.get(id);
+    if (v?.kind === 'ideal_point') return `${o.name} is a point at infinity: it is not drawn`;
+    const at = positionOf(v);
     if (at === undefined) return `${o.name} is undefined`;
     const r = dragThrough(doc, id, at, values);
     return r.kind === 'edit' && r.edit.kind === 'redefine' ? r.edit.id : notDraggable(o, r);

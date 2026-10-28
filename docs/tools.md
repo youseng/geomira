@@ -98,7 +98,7 @@ foot(P, l) or foot(P, A, B): the orthogonal projection of P on the line.
 intersect(a, b, selectors): the common point of two lines, a line and a circle, or two circles; a curve pair with two candidates needs selectors (along(±) on line ∩ circle, orient(±) on circle ∩ circle, other(P), near(P), same_side(Q, l), …).
 
 - Signatures: `intersect(linear, linear)`, `intersect(linear, round)`, `intersect(round, linear)`, `intersect(round, round)`
-- Result: point
+- Result: point, ideal_point
 - Exact run (RationalField): can succeed
 - Export: constructive (intersect)
 - Symmetry:
@@ -112,7 +112,8 @@ intersect(a, b, selectors): the common point of two lines, a line and a circle, 
   - `intersect(round, linear)`: on(result, #1); on(result, #2)
   - `intersect(round, round)`: on(result, #1); on(result, #2)
 - Degenerate cases:
-  - parallel lines → Undefined
+  - parallel lines → their ideal point (the first line's direction and flag)
+  - parallel segments or rays → Undefined (no point at infinity is on them)
   - coincident lines → Undefined
   - the intersection outside a segment or ray → Undefined
   - the intersection within the band of a segment end → Undefined (ambiguous)
@@ -441,24 +442,57 @@ radical_center(c1, c2, c3): the point with equal power to the three circles, whe
 - Examples:
   - `radical_center(circle((0, 0), 2), circle((6, 0), 3), circle((2, 5), 1))` → point (31/12, 13/6)
 
+### harmonic_conjugate
+
+harmonic_conjugate(A, B, C): the point D of line AB with (A, B; C, D) = −1 (C on AB; the midpoint gives the point at infinity of AB). harmonic_conjugate(a, b, c): the line d through the common point of the concurrent lines a, b, c with (a, b; c, d) = −1. Exact.
+
+- Signatures: `harmonic_conjugate(point, point, ppoint)`, `harmonic_conjugate(linear, linear, linear)`
+- Result: point, ideal_point, line
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `harmonic_conjugate(point, point, ppoint)`: arguments 1, 2 in any order (the same value)
+  - `harmonic_conjugate(linear, linear, linear)`: arguments 1, 2 in any order (the same value)
+- By construction:
+  - `harmonic_conjugate(point, point, ppoint)`: harmonic(#1, #2, #3, result); collinear(#1, #2, result)
+  - `harmonic_conjugate(linear, linear, linear)`: harmonic_lines(#1, #2, #3, result)
+- Degenerate cases:
+  - A = B → Undefined
+  - C not on line AB → Undefined (within the band: ambiguous)
+  - C = A or C = B → Undefined
+  - C the midpoint of AB → the point at infinity of AB
+  - C the point at infinity of AB → the midpoint; of another direction → Undefined
+  - lines: two of a, b, c the same line → Undefined
+  - lines: a, b, c not concurrent → Undefined
+  - lines: a parallel pencil → the parallel line; c midway → Undefined (the line at infinity)
+- Examples:
+  - `harmonic_conjugate((0, 0), (6, 0), (2, 0))` → point (-6, 0)
+  - `harmonic_conjugate((0, 0), (6, 0), (3, 0))` → point at infinity, direction (6, 0)
+  - `harmonic_conjugate(line((0, 0), (1, 0)), line((0, 0), (0, 1)), line((0, 0), (1, 1)))` → line (0, 0) + t·(1, -1), t ∈ [−∞, ∞], chiral
+
 ## Lines
 
 ### line
 
-The line through A and B (achiral direction B − A).
+The line through A and B (achiral direction B − A); through a point and a point at infinity, the parallel with its direction.
 
-- Signatures: `line(point, point)`
+- Signatures: `line(point, point)`, `line(ppoint, ppoint)`
 - Result: line
 - Exact run (RationalField): can succeed
 - Export: constructive (line)
 - Symmetry:
   - `line(point, point)`: arguments 1, 2 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+  - `line(ppoint, ppoint)`: arguments 1, 2 in any order (the same figure; a direction, an anchor or the vertex order may differ)
 - By construction:
   - `line(point, point)`: on(#1, result); on(#2, result)
+  - `line(ppoint, ppoint)`: on(#1, result); on(#2, result)
 - Degenerate cases:
   - line(A, A) → Undefined (coincident points)
+  - line(P, X) with X a point at infinity → the parallel through P (X's direction and flag)
+  - line(X, Y) of two points at infinity → Undefined (the line at infinity is not an object)
 - Examples:
   - `line((0, 0), (2, 1))` → line (0, 0) + t·(2, 1), t ∈ [−∞, ∞]
+  - `line((0, 2), intersect(line((0, 0), (2, 1)), line((0, 1), (2, 2))))` → line (0, 2) + t·(2, 1), t ∈ [−∞, ∞]
 
 ### segment
 
@@ -1015,8 +1049,8 @@ inverse(T): the inverse map (the preimage of Y is apply(inverse(T), Y)).
 
 apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mark or text. Ranges are kept, an anti-similarity reverses arcs, the chirality flag and the anchor of a circle are mapped with it (gliders on an image circle stay exact). Under an inversion lines and circles exchange kinds, segments become arcs or rays, and the center has no image.
 
-- Signatures: `apply(transform, point)`, `apply(transform, curve)`, `apply(transform, polygon)`, `apply(transform, annotation)`
-- Result: point, line, circle, polygon, angle_mark, segment_mark, text
+- Signatures: `apply(transform, point)`, `apply(transform, curve)`, `apply(transform, polygon)`, `apply(transform, annotation)`, `apply(transform, ideal)`
+- Result: point, line, circle, polygon, angle_mark, segment_mark, text, ideal_point
 - Exact run (RationalField): can succeed
 - Export: constructive (apply)
 - Symmetry: none
@@ -1026,6 +1060,7 @@ apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mar
   - `apply(transform, curve)`: the image of #2 under #1
   - `apply(transform, polygon)`: the image of #2 under #1
   - `apply(transform, annotation)`: the image of #2 under #1
+  - `apply(transform, ideal)`: the image of #2 under #1
 - Degenerate cases:
   - X a number or a transform → Undefined (not imaged)
   - an Undefined T or X → Undefined
@@ -1044,6 +1079,18 @@ apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mar
   - a segment mark under an inversion → Undefined (lengths are not kept)
   - an angle mark under an inversion → the mark on the tangents (arms swapped)
   - mod p, an arc or a range through an inversion → Inexact (needs an order)
+  - a point at infinity under a similarity → the point at infinity of the mapped direction
+  - a point at infinity under a Möbius map with a pole → Undefined
+  - under a projective map: a point on the line sent to infinity → a point at infinity
+  - under a projective map: a point at infinity off its direction → a point
+  - under a projective map: a segment crossing the line sent to infinity → two rays
+  - under a projective map: the line sent to infinity → Undefined
+  - under a projective map: a circle → Undefined (a conic)
+  - under a projective map: a polygon with a side through infinity → Undefined
+  - under a projective map: a segment mark → Undefined; an angle mark → not right
+  - under a projective map: a position within the band of the line sent to infinity → Undefined (ambiguous)
+  - mod p, a range through a projective map → Inexact (needs an order)
+  - a composite of a Möbius map and a projective map → each map in turn
 - Examples:
   - `apply(rotate((0, 0), 90), polygon((1, 0), (2, 0), (2, 1)))` → polygon (0, 1) (0, 2) (-1, 2)
   - `apply(reflect(line((0, 0), (1, 0))), circle((1, 2), (1, 3)))` → circle center (1, -2), r² = 1, anchor (1, -3)
@@ -1185,6 +1232,45 @@ sqrt_bc2(A, B, C): the √(bc/2) inversion of triangle ABC at A, compose(reflect
   - collinear A, B, C → still defined (B goes to the midpoint of AC)
 - Examples:
   - `sqrt_bc2((0, 0), (3, 4), (5, 0))` → Möbius map z ↦ ((0, 0)·z + (15/2, 10)) / ((1, 0)·z + (0, 0))
+
+### projective
+
+projective(A, B, C, D, A', B', C', D'): the projective map taking A to A', B to B', C to C' and D to D' (points, or points at infinity); no three of A, B, C, D (nor of A', B', C', D') collinear. Apply it with apply(T, X) or a derived layer. Exact.
+
+- Signatures: `projective(ppoint, ppoint, ppoint, ppoint, ppoint, ppoint, ppoint, ppoint)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry: none
+- By construction: nothing
+- As a map:
+  - `projective(ppoint, ppoint, ppoint, ppoint, ppoint, ppoint, ppoint, ppoint)`: projective; #1 ↦ #5; #2 ↦ #6; #3 ↦ #7; #4 ↦ #8
+- Degenerate cases:
+  - three of A, B, C, D collinear (or coincident) → Undefined
+  - three of A', B', C', D' collinear (or coincident) → Undefined
+  - points at infinity among the eight → the map through them
+- Examples:
+  - `projective((0, 0), (4, 0), (4, 4), (0, 4), (0, 0), (4, 0), (3, 2), (1, 2))` → projective map [-16384, -8192, 0; 0, -16384, 0; 0, -4096, -16384]
+
+### send_to_infinity
+
+send_to_infinity(l): the projective map that swaps line l and the line at infinity: in the frame X = p + t·d + s·rot90(d) of l = p + t·d, X ↦ p + (t/s)·d + (1/s)·rot90(d). It is its own inverse; points of l go to infinity, points at infinity to l. Use it as `@layer inf = image(f, main)` with f = send_to_infinity(l). Exact.
+
+- Signatures: `send_to_infinity(linear)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry: none
+- By construction: nothing
+- As a map:
+  - `send_to_infinity(linear)`: projective; an involution; takes the line at infinity onto #1
+- Degenerate cases:
+  - a line without direction → Undefined
+  - a segment or ray → the map of its carrier line
+  - l itself → Undefined under the map (sent to infinity)
+  - applied twice → the identity (an involution)
+- Examples:
+  - `send_to_infinity(line((0, 0), (4, 0)))` → projective map [16, 0, 0; 0, 0, 64; 0, 4, 0]
 
 ## Measures
 

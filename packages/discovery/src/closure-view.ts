@@ -36,6 +36,8 @@ export interface ClosureView {
   readonly band: number;
   /** A point's position in the figure (any object of its class), if known. */
   at(k: string): { readonly x: number; readonly y: number } | undefined;
+  /** Object keys whose value in the figure is a point at infinity (ADR-0040). */
+  readonly ideal: ReadonlySet<string>;
 }
 
 /** The closure while it is built (the merging steps add to it). */
