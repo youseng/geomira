@@ -15,9 +15,16 @@ import { find } from '../src/find';
 import { drain } from '../src/ticking';
 import type { FindResult, FoundFact } from '../src/types';
 import { noimage } from './figures';
+import { lawCount } from '../../claims/test/helpers/laws';
 import { REGISTRY, show } from './helpers';
 
 const KINDS = claimKindRegistry();
+
+/** The find jobs run for seconds (ADR-0039's trivial-facts tests allow the same). */
+const SLOW = { timeout: 120_000 };
+
+/** The circle figure's job (a larger test budget) runs at full scale only, as trivial-facts.test.ts's. */
+const FULL = lawCount(4) === 4;
 
 function found(doc: Document, tests = 60): FindResult {
   const r = find({ kind: 'find', doc, seed: 1, budget: { n: 20, tests } }, { registry: REGISTRY });
@@ -81,7 +88,7 @@ function harmonicQuadrilateral(): Figure {
     .def('D', 'other', 'm', 'w', 'B');
 }
 
-describe('a projective layer: nothing that holds by the map alone is a finding', () => {
+describe('a projective layer: nothing that holds by the map alone is a finding', SLOW, () => {
   const f = projectiveLayer();
   const result = lazy(f.doc);
 
@@ -107,7 +114,7 @@ describe('a projective layer: nothing that holds by the map alone is a finding',
   });
 });
 
-describe('harmonic facts on a line: the complete quadrilateral', () => {
+describe('harmonic facts on a line: the complete quadrilateral', SLOW, () => {
   it('finds (A, C; P, X) = −1 and nothing else', () => {
     const f = quadrilateral();
     expect(shown(f.doc, found(f.doc))).toEqual(['harmonic(A, C, P, X)']);
@@ -126,20 +133,21 @@ describe('harmonic facts on a line: the complete quadrilateral', () => {
   });
 });
 
-describe('harmonic facts on a circle: the tangents at A and C meet on BD', () => {
-  const f = harmonicQuadrilateral();
-  // The four-point facts come after the smaller ones in the test order: a larger test budget.
-  const result = lazy(f.doc, 400);
+if (FULL)
+  describe('harmonic facts on a circle: the tangents at A and C meet on BD', SLOW, () => {
+    const f = harmonicQuadrilateral();
+    // The four-point facts come after the smaller ones in the test order: a larger test budget.
+    const result = lazy(f.doc, 400);
 
-  it('finds (A, C; B, D) = −1, and the kite O, A, T, C (OA = OC, TA = TC)', () => {
-    const s = shown(f.doc, result());
-    expect(s).toContain('harmonic(A, C, B, D)');
-    expect(s).toContain('harmonic(O, T, A, C)');
-    expect(s.filter((t) => t.startsWith('harmonic'))).toHaveLength(2);
+    it('finds (A, C; B, D) = −1, and the kite O, A, T, C (OA = OC, TA = TC)', () => {
+      const s = shown(f.doc, result());
+      expect(s).toContain('harmonic(A, C, B, D)');
+      expect(s).toContain('harmonic(O, T, A, C)');
+      expect(s.filter((t) => t.startsWith('harmonic'))).toHaveLength(2);
+    });
   });
-});
 
-describe('the section rule (pencil ↔ points, ADR-0040 decision 18)', () => {
+describe('the section rule (pencil ↔ points, ADR-0040 decision 18)', SLOW, () => {
   const f = harmonicQuadrilateral()
     .def('Q', 'on', 'w', n(-1), n(2))
     .def('qa', 'line', 'Q', 'A')
