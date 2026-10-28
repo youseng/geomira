@@ -103,11 +103,16 @@ through a hyperbola's points at infinity, or which projective maps send a conic 
     Undefined there, and comes back on the other. Inverse: (w·f : −w·e), (1 : 0) at A. Drag:
     Newton steps along the gradient from the cursor to the curve (floats), then the inverse.
     Randomize and the samplers use the circle gliders' (u : v) = (cos φ/2, sin φ/2) (packages/claims).
-13. **conic_to_circle(k)**: in the conformal frame X = A + x·rot90(e) + y·e at the anchor A
-    (e = g/|g|², g = ∇Q(A)/2), k is αx² + 2βxy + γy² + 2y = 0, and (x : y : z) ↦ (x + (β/α)y : y :
-    (y − (2/α)(z + (δ′/2)y))/4), δ′ = γ − β²/α, sends it to x² + y² − 4y = 0. So the map fixes A and
-    the tangent at A, and the image is the circle tangent to k at A with centre A + 2e and radius
-    2/|g|; for a conic that is a circle it is the identity. Rational. No anchor → Undefined.
+13. **conic_to_circle(k)**: in the conformal frame X = A + x·rot90(e) + y·e at the anchor A with
+    e = c·g, g = ∇Q(A)/2, c = −|g|²/(2·Q₂(rot90 g)), k divided by g·e is αx² + 2βxy + γy² + 2y = 0
+    (α = −1/2), and (x : y : z) ↦ (x + (β/α)y : y : (y − (2/α)(z + (δ′/2)y))/4), δ′ = γ − β²/α,
+    sends it to x² + y² − 4y = 0. So the map fixes A and the tangent at A, and the image is the
+    OSCULATING circle of k at A: centre A + 2e, radius 2|e| = |g|³/|Q₂(rot90 g)|, the radius of
+    curvature (Q₂ of a tangent direction is never 0 at a finite point of a valid conic); for a
+    conic that is a circle it is the identity. Rational. No anchor → Undefined. The first frame,
+    e = g/|g|², made the image of an eccentric conic about 10⁻³ across in a figure 40 wide: the
+    float matrix was nearly rank one and apply(g, k) lost every digit (a float theorem test;
+    test/conic-to-circle-conditioning.test.ts keeps that figure).
 14. **circle_to_centre(c, P)**: the hyperbolic translation of the Klein model along OP (a Lorentz
     boost, scaled to one square root): with w = P − O, R = r², σ = √(R(R − |w|²)), in coordinates
     X − O, X ↦ (σX + R·w(w·X)/(R + σ) − R·w : −w·X + R). Every projective map keeping c is a
@@ -129,7 +134,120 @@ through a hyperbola's points at infinity, or which projective maps send a conic 
     circle's image under a map that may be projective may be a conic.
 17. Derived layers image conics (`k*`); views and drag-through need no change.
 
-(Decisions 18–29 and 30, frozen tests: see the rest of this ADR as the run completes.)
+### Claims (packages/claims)
+
+18. **on(P, k)** is Q(P) = 0 over the normal-form coefficients; its float gap is Q(P)/|∇Q(P)|,
+    the kernel's incidence length (a claim and a construction never disagree). **tangent(l, k)**
+    (either order) is the dual conic uᵀ·adj(M)·u = 0 with u = (n, −n·p), n = rot90(d); NDG: d is
+    not an asymptotic direction (a new NDG item `nonzero`: dᵀM₂d over |d|²·√(a² + 2b² + c²),
+    dimensionless), since such a line meets k at infinity (an asymptote touches it there); its
+    float gap is the kernel's chord gap (the count of intersect(l, k)). A conic with a circle or
+    with a conic: Undefined "the tangency of a conic and a circle or of two conics is not
+    decided" (conic ∩ conic is Run 16c's). Both stay POLYNOMIAL KINDS.
+19. **conconic(A, B, C, D, E, F, …)**, a rest kind, POLYNOMIAL: per point X after the fifth,
+    Q(X) = 0 for the pencil conic through A…E, which is
+    [ACE][BDE][ABX][CDX] − [ABE][CDE][ACX][BDX] ([PQR] the orientation determinant): the 6×6
+    determinant of the rows (x², xy, y², x, y, 1) up to one constant factor
+    (kinds-conics.test.ts checks the ratio on random rational points), so its zero set is
+    symmetric in the six points (symmetry: any order of six). NDG: the points distinct and no
+    three collinear (three collinear points lie on a conic only as a line pair, which
+    conic(…) refuses); a circle's points qualify (a circle is a conic). Residual: the distance
+    from each later point to the conic through A…E over the points' diameter.
+20. **Corpora**: the conic corpus (corpus-conics.ts: conconic, Pascal, Brianchon, La Hire, the
+    pole of a chord, the centre of the conic through A, B, C, H on the nine-point circle, a
+    reflection of a conic; their mutations; a repeated point, three collinear points) runs in
+    test/laws/l12-conics.test.ts with a minute per test: the normal form multiplies the
+    coefficients by (a² + 2b² + c²)/det M, so a hexagon on a conic takes about a second per seed
+    on the exact rung (the frozen L12 files keep their five seconds). L17: l17-conics.test.ts
+    (rational conic closures eligible, sign-based selectors and circle_to_centre excluded, the
+    rung used agrees).
+21. **Samplers and Randomize**: on(k, u, v) is a stereographic glider like a circle's: (u : v)
+    = (cos φ/2, sin φ/2) globally, perturbed by angle locally; a sample at an asymptotic
+    direction is Undefined there and resampled (Randomize accepts only samples where every
+    defined object stays defined).
+
+### Discovery (packages/discovery)
+
+22. conconic is searched through the claim-kind registry (six points; the candidates are
+    budget-bounded per kind as every kind's). claimKey takes a fast path when a kind's
+    generators are every adjacent transposition: the smallest arrangement is the arguments in
+    the smallest-concatenation order (x before y when x|y| < y|x|), equal to the orbit's
+    minimum (claim-key-symmetric.test.ts) without listing 720 arrangements per candidate.
+    Groups: five points, pairwise apart and no three collinear, determine a conic, so
+    conconic facts sharing five such points are one n-ary fact.
+23. **The closure** (closure-conics.ts): conic sets (the points recorded on a conic object by
+    the guarantees: the five points of conic(…), gliders, intersections, touch points; and the
+    points of a given conconic fact); on(P, k) follows when P is in k's set, conconic when the
+    points are distinct and in one conic set or one circle class. A projective map keeps
+    conconic facts (transport). Non-object terms on(k, u, v) on one conic class with equal
+    literals are one point.
+24. **Maps** (`MapFacts`): conic_to_circle(k) has `circleImage` k (the images of k's points are
+    put on one circle) and fixes on(k, 1, 0), which conic(A, …) declares equal to A;
+    circle_to_centre(c, P) keeps c and line OP, sends P to the centre and the centre to the
+    reflection of P in it (the translation along OP of the Klein model sends O to −P). A new
+    rule: the images of the points of an invariant line or circle are on it. So a layer under
+    either map reports nothing that holds by the map alone (conic-facts.test.ts, ADR-0039's
+    style).
+
+### Drawing, exports, editor
+
+25. **Scene**: the shape (type, centre or vertex, axis, semi-axes or parameter) from the
+    eigenvectors of the quadratic part; the visible part from each branch's crossings with the
+    clip rectangle (closed forms), sampled until every chord is within 1/4 px; one polyline per
+    branch and interval, a closed one for a whole ellipse. Placement (ADR-0023) lists a conic
+    whose points round by more than 1/2 px at the zoom, and also one that the rounding might
+    hide from the crossings (the curve within the rounding error of the view), which was
+    otherwise silently left out. Labels at the middle of the first visible branch; hit testing
+    and snapping on the polylines.
+26. **Exports**: numeric polylines per branch (SVG polyline or polygon, TikZ \draw, Asymptote
+    draw) clipped to the view; points on a conic are numeric variables in Asymptote.
+    tests/fixtures/export/conics.geo with golden snapshots; tex.yml compiles it with every
+    fixture.
+27. **Style card**: a conic is a curve, named "conic".
+28. **Editor**: the glider and point tools put on(k, u, v) on a clicked conic; a drag moves it
+    through the kernel's nearest point (conicDragParameter); its rounding length is 2/|∇Q(A)/2|
+    (a circle's radius when the conic is a circle). A conic without a known point has no
+    glider. Not done here: a toolbar button for conic(A, …, E) and the Tangent button on a conic
+    (both typed in the text).
+
+### Run 16a's queue
+
+29. The GUI intersection of two parallel lines builds their point at infinity, selects it (the
+    Objects panel shows it) and says "point at infinity, direction of l"; pole(l, c) with l
+    through the centre is the point at infinity perpendicular to l (its flag l's toggled), for
+    a conic the direction conjugate to l.
+
+### Frozen tests
+
+30. Changed lines in test files of the tag run-16a (every other change adds lines):
+    - kernel/test/value.test.ts (3 lines) and scene/test/shapes.test.ts (2 lines): they used
+      `conic` as the unknown future kind; now `locus`, the reserved kind left.
+    - kernel/test/cline.test.ts (1 line): the list of on's signatures gains on(conic, number,
+      number).
+    - kernel/test/helpers/degenerate-projective.ts (4 lines): a circle under a projective map
+      was Undefined ("a conic"); it is a conic now (the key and the assertion).
+    - kernel/test/helpers/degenerate-v11.ts (4 lines): pole(l, c) with l through the centre was
+      Undefined; it is the point at infinity (Run 16a's queue).
+    - kernel/test/construction-key.test.ts (4 lines, at its 400-line limit): the samples and the
+      same-figure comparison of the conic tools come from a helper.
+    - editor/test/intersection-lines.test.ts (4 lines): the parallel case asserted the refusal;
+      it asserts the point at infinity, the notice and the selection (Run 16a's queue), and the
+      header says so.
+    - claims/test/kinds.test.ts: two lines inserted into the pinned lists of claim kinds and
+      polynomial kinds (conconic); no line changed, but the assertion is wider.
+    - editor/test/fixtures/run-16a-baseline.json: the summary of the new fixture, inserted lines
+      only.
+
+## Consequences
+
+- A conic is a first-class object: drawn, constructed on, mapped, claimed about, and found by
+  "What is special?".
+- Every existing figure draws and reports as on the base (editor/test/figure-baseline-16b.test.ts).
+- Exact conic figures are slower than circle ones (the normal form's factor); the exact rung's
+  size budget falls through to mod p or floats when a figure is too large.
+- In floats the image of a very eccentric conic under conic_to_circle can lose accuracy (one
+  random figure in 200 of the theorem test, osculating radius about 4·10⁴; STATUS.md, Known
+  bugs): that theorem test runs exactly over Q, and L3 compares floats with Q on its figures.
 
 ## Consequences
 
@@ -143,3 +261,11 @@ through a hyperbola's points at infinity, or which projective maps send a conic 
   division by a small number in floats.
 - **A circle's image under a projective map is a circle when the matrix is a similarity**: in
   floats that is a numeric test, so a figure's kind would differ between fields.
+- **conic_to_circle onto the circle with diameter the normal chord at A**: as well conditioned,
+  but undefined when the normal is an asymptotic direction (a parabola at its vertex).
+- **Working with coefficients divided by one of them in exact fields** (smaller rationals):
+  line values (tangent, polar) would differ between Q and floats in their direction's length,
+  which L3 compares.
+- **conconic with a fixed arity of six**: seven points of one conic could not be one fact.
+- **conconic not searched** (`notSearched`): six points on a conic would never be found; with
+  the claimKey fast path the search costs about 0.1 ms per candidate.

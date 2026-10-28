@@ -198,6 +198,7 @@ P = on(ω, 2, 1)
 | `harmonic` | `harmonic(A, B; C, D) (four collinear or concyclic points)` | `claim harmonic(B, C; M_a, P)` | yes |
 | `cross_ratio_lines` | `cross_ratio(a, b, c, d) = k (four concurrent lines)`, `cross_ratio_lines(a, b, c, d, k)` | `claim cross_ratio_lines(line(A, B), line(A, C), line(A, M_a), line(A, H), -1)` | yes |
 | `harmonic_lines` | `harmonic(a, b; c, d) (four concurrent lines)`, `harmonic_lines(a, b, c, d)` | `claim harmonic_lines(line(A, B), line(A, C), line(A, M_a), line(A, H))` | yes |
+| `conconic` |  | `` | yes |
 
 ## Assumptions
 
