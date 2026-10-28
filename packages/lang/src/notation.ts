@@ -88,6 +88,11 @@ export const CLAIM_NOTATION: readonly NotationEntry[] = Object.freeze([
     forms: ['harmonic(a, b; c, d) (four concurrent lines)', 'harmonic_lines(a, b, c, d)'],
     example: 'claim harmonic_lines(line(A, B), line(A, C), line(A, M_a), line(A, H))',
   },
+  {
+    kind: 'conconic',
+    forms: ['conconic(A, B, C, D, E, F, …) (no three collinear)'],
+    example: 'claim conconic(A, B, C, H, M_a, P)',
+  },
 ]);
 
 export const ASSUMPTION_NOTATION: readonly NotationEntry[] = Object.freeze([
