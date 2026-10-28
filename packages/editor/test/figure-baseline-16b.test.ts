@@ -15,7 +15,7 @@ const FILE = join(__dirname, 'fixtures', 'run-16b-baseline.json');
 const REGISTRY = createRegistry();
 
 /** Figures added by Run 16b (not in the base). */
-const NEW_FIGURES: readonly string[] = [];
+const NEW_FIGURES: readonly string[] = ['tests/fixtures/export/conics.geo'];
 
 describe('every example and fixture draws and reports as before Run 16b', () => {
   const now: Record<string, FigureSummary> = {};

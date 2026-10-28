@@ -36,7 +36,8 @@ const HIT_KINDS: Readonly<Record<PickKind, readonly string[]>> = Object.freeze({
   point: ['point'],
   line: ['line'],
   circle: ['circle'],
-  curve: ['line', 'circle'],
+  // A conic is a curve too (ADR-0042); the words stay "line or circle".
+  curve: ['line', 'circle', 'conic'],
   figure: ['point', 'line', 'circle', 'polygon'],
   mirror: ['point', 'line'],
   transform: [],
@@ -116,7 +117,9 @@ function gliderClick(
   const point = input.hit.hits.find((h) => h.kind === 'point');
   if (point !== undefined)
     return refuse(state, `${point.name} is here already: click the curve where there is no point`);
-  const curve = input.hit.hits.find((h) => h.kind === 'line' || h.kind === 'circle')?.id;
+  const curve = input.hit.hits.find(
+    (h) => h.kind === 'line' || h.kind === 'circle' || h.kind === 'conic',
+  )?.id;
   const v = input.hit.virtual;
   const at = v.kind === 'on' ? v.world : input.world;
   if (curve !== undefined) return withTool(addGlider(state, curve, at, env), reset(state));

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" stroke-linecap="round" stroke-linejoin="round">
+<title>Export: conics</title>
+<rect width="640" height="480" fill="#fbfbf8"/>
+<g data-id="6" data-name="e">
+<polygon points="413.333,240 412.734,233.901 410.942,227.861 407.975,221.938 403.861,216.189 398.639,210.669 392.361,205.431 385.086,200.527 376.884,196.002 367.836,191.902 358.027,188.264 347.552,185.125 336.512,182.514 325.013,180.457 313.167,178.973 301.087,178.077 288.889,177.778 276.691,178.077 264.611,178.973 252.765,180.457 241.266,182.514 230.226,185.125 219.751,188.264 209.942,191.902 200.893,196.002 192.692,200.527 185.417,205.431 179.139,210.669 173.917,216.189 169.803,221.938 166.836,227.861 165.044,233.901 164.444,240 165.044,246.099 166.836,252.139 169.803,258.062 173.917,263.811 179.139,269.331 185.417,274.569 192.692,279.473 200.893,283.998 209.942,288.098 219.751,291.736 230.226,294.875 241.266,297.486 252.765,299.543 264.611,301.027 276.691,301.923 288.889,302.222 301.087,301.923 313.167,301.027 325.013,299.543 336.512,297.486 347.552,294.875 358.027,291.736 367.836,288.098 376.884,283.998 385.086,279.473 392.361,274.569 398.639,269.331 403.861,263.811 407.975,258.062 410.942,252.139 412.734,246.099 413.333,240" fill="none" stroke="#00897B" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="13" data-name="h">
+<polyline points="708,230.762 625.511,228.499 559.257,225.68 506.043,222.171 463.303,217.802 445.2,215.231 428.975,212.363 414.435,209.162 401.403,205.59 389.725,201.605 379.258,197.158 369.878,192.196 361.472,186.66 353.938,180.482 347.186,173.589 341.135,165.897 335.712,157.314 330.852,147.738 326.496,137.052 322.593,125.129 319.094,111.825 315.959,96.98 313.149,80.416 310.631,61.933 308.374,41.309 304.539,-7.38 301.459,-68" fill="none" stroke="#FF8C00" stroke-opacity="1" stroke-width="2"/>
+<polyline points="276.319,548 273.395,489.877 269.791,442.722 265.348,404.466 262.754,388.137 259.873,373.43 256.674,360.182 253.123,348.25 249.181,337.502 244.804,327.822 239.945,319.103 234.55,311.249 228.56,304.175 221.91,297.804 214.527,292.065 206.33,286.895 197.23,282.239 187.127,278.046 175.91,274.268 163.456,270.866 149.63,267.802 134.28,265.041 98.317,260.316 53.988,256.482 -0.651,253.372 -68,250.848" fill="none" stroke="#FF8C00" stroke-opacity="1" stroke-width="2"/>
+</g>
+<g data-id="22" data-name="q">
+<polyline points="464.329,-68 453.364,-8.099 442.399,47.937 431.434,100.109 420.469,148.417 409.504,192.859 398.539,233.437 387.574,270.151 376.609,303 365.644,331.984 354.679,357.104 343.714,378.359 338.231,387.538 332.749,395.75 327.266,402.996 321.784,409.276 316.301,414.59 310.819,418.937 305.336,422.319 299.854,424.734 294.371,426.184 288.889,426.667 283.406,426.184 277.924,424.734 272.441,422.319 266.959,418.937 261.476,414.59 255.994,409.276 250.511,402.996 245.029,395.75 239.546,387.538 234.064,378.359 223.099,357.104 212.134,331.984 201.169,303 190.204,270.151 179.239,233.438 168.274,192.859 157.309,148.417 146.344,100.109 135.379,47.938 124.414,-8.099 113.449,-68" fill="none" stroke="#7B3FA0" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="23" data-name="w">
+<path d="M164.444,115.556 A62.222 62.222 0 1 0 40,115.556 A62.222 62.222 0 1 0 164.444,115.556" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="25" data-name="w&apos;">
+<polygon points="195.657,208.854 197.455,207.909 199.041,206.413 201.511,201.831 202.973,195.286 203.371,187.028 202.688,177.374 200.951,166.697 198.227,155.406 194.621,143.935 190.271,132.725 185.345,122.207 180.031,112.784 174.534,104.82 169.065,98.619 163.834,94.422 159.043,92.387 156.87,92.209 154.875,92.595 153.076,93.54 151.491,95.036 149.02,99.618 147.558,106.164 147.161,114.422 147.844,124.075 149.58,134.752 152.304,146.043 155.91,157.514 160.26,168.724 165.187,179.243 170.501,188.665 175.998,196.63 181.467,202.83 186.697,207.028 191.489,209.062 193.661,209.24 195.657,208.854" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5" stroke-dasharray="9 7"/>
+</g>
+<g data-id="16" data-name="t_1">
+<polyline points="708,49.661 -68,269.645" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5"/>
+</g>
+<g data-id="17" data-name="t_2">
+<polyline points="271.236,548 562.281,-68" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5" stroke-dasharray="9 7"/>
+</g>
+<g data-id="18" data-name="p">
+<polyline points="708,366.056 -68,75.056" fill="none" stroke="#1B1F24" stroke-opacity="1" stroke-width="1.5" stroke-dasharray="1.5 5"/>
+</g>
+<g data-id="1" data-name="A">
+<circle cx="413.333" cy="240" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="2" data-name="B">
+<circle cx="288.889" cy="177.778" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="3" data-name="C">
+<circle cx="164.444" cy="240" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="4" data-name="D">
+<circle cx="288.889" cy="302.222" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="5" data-name="E">
+<circle cx="363.556" cy="190.222" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="7" data-name="O">
+<circle cx="288.889" cy="240" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="8" data-name="H1">
+<circle cx="351.111" cy="177.778" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="9" data-name="H2">
+<circle cx="413.333" cy="208.889" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="10" data-name="H3">
+<circle cx="226.667" cy="302.222" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="11" data-name="H4">
+<circle cx="537.778" cy="224.444" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="12" data-name="H5">
+<circle cx="320" cy="115.556" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="14" data-name="G">
+<circle cx="600" cy="227.556" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="15" data-name="P">
+<circle cx="475.556" cy="115.556" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="19" data-name="T">
+<circle cx="371.852" cy="198.519" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="20" data-name="X">
+<circle cx="334.439" cy="155.003" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g data-id="21" data-name="V">
+<circle cx="288.889" cy="426.667" r="3.5" fill="#1B1F24" fill-opacity="1" stroke="#fbfbf8" stroke-opacity="1" stroke-width="1"/>
+</g>
+<g font-family="&quot;Geomira Math&quot;, &quot;Latin Modern Roman&quot;, &quot;CMU Serif&quot;, &quot;Liberation Serif&quot;, &quot;Times New Roman&quot;, serif" font-style="italic">
+<text data-id="6" x="168.687" y="232.757" text-anchor="start" fill="#00897B" fill-opacity="1"><tspan font-size="15">Γ</tspan></text>
+<text data-id="1" x="419.697" y="230.636" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">A</tspan></text>
+<text data-id="2" x="295.253" y="168.414" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">B</tspan></text>
+<text data-id="3" x="158.08" y="230.636" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">C</tspan></text>
+<text data-id="4" x="295.253" y="320.586" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">D</tspan></text>
+<text data-id="5" x="369.92" y="180.858" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">E</tspan></text>
+<text data-id="7" x="295.253" y="230.636" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">O</tspan></text>
+<text data-id="8" x="344.747" y="196.142" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">H1</tspan></text>
+<text data-id="9" x="419.697" y="199.525" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">H2</tspan></text>
+<text data-id="10" x="233.031" y="292.858" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">H3</tspan></text>
+<text data-id="11" x="544.142" y="215.08" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">H4</tspan></text>
+<text data-id="12" x="326.364" y="106.192" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">H5</tspan></text>
+<text data-id="14" x="606.364" y="218.192" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">G</tspan></text>
+<text data-id="15" x="469.192" y="106.192" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">P</tspan></text>
+<text data-id="19" x="365.488" y="189.155" text-anchor="end" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">T</tspan></text>
+<text data-id="20" x="334.439" y="176.003" text-anchor="middle" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">X</tspan></text>
+<text data-id="21" x="295.253" y="445.031" text-anchor="start" fill="#1B1F24" fill-opacity="1"><tspan font-size="15">V</tspan></text>
+</g>
+</svg>

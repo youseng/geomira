@@ -40,7 +40,11 @@ function paramExprs(p: GliderParameter<number>): Expr[] {
 /** on(curve, …) at the point of the curve nearest to `at`, parameters rounded. */
 export function gliderAt(state: EditorState, curve: number, at: Vec<number>): Expr | string {
   const c = state.values.values.get(curve);
-  if (c?.kind !== 'line' && c?.kind !== 'circle') return 'there is no curve there';
+  if (c?.kind !== 'line' && c?.kind !== 'circle' && c?.kind !== 'conic')
+    return 'there is no curve there';
+  // A conic glider is on(k, u, v) from its known point (ADR-0042): none, no glider.
+  if (c.kind === 'conic' && c.anchor === undefined)
+    return 'the conic has no known point to glide from';
   const form = c.kind === 'line' ? 'line' : c.anchor === undefined ? 'angle' : 'stereo';
   const p = dragParameter(FloatField, c, at, form, state.values.ctx);
   if (isInexact(p) || 'kind' in p) return p.reason;
