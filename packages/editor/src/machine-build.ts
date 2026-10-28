@@ -206,11 +206,31 @@ function intersections(state: EditorState, picks: readonly number[], env: Editor
   if (!r.ok) return refuse(state, r.reason);
   if (r.signature.branch?.candidates === 2)
     return branches(state, 'intersect', [a, b], 'point', env);
-  // One common point at most (two lines): lines that do not meet here (parallel, segments
-  // whose ranges miss) are refused, as curves are, rather than adding an Undefined point.
+  // One common point at most (two lines): parallel lines meet at their point at infinity
+  // (ADR-0042, Run 16a's queue); lines that do not meet here (segments whose ranges miss) are
+  // refused, as curves are, rather than adding an Undefined point.
   const p = r.tool.compute(FloatField, [va, vb], state.values.ctx);
+  if (p.kind === 'ideal_point') return atInfinity(state, a, b, env);
   if (p.kind !== 'point') return refuse(state, 'the curves do not meet here');
   return add(state, call('intersect', [ref(a), ref(b)]), 'point', env);
+}
+
+/**
+ * The common point at infinity of two parallel lines: added, selected (the Objects panel shows
+ * it, as it is not drawn), with the notice "point at infinity, direction of l".
+ */
+function atInfinity(state: EditorState, a: number, b: number, env: EditorEnv): EditResult {
+  const r = add(state, call('intersect', [ref(a), ref(b)]), 'point', env);
+  if (!r.ok || r.id === undefined) return r;
+  const sel = applyEdit(r.state, { kind: 'select', ids: [r.id], mode: 'replace' }, env);
+  if (!sel.ok) return r;
+  const l = state.doc.objects.find((o) => o.id === a)?.name ?? 'the lines';
+  const notice = `point at infinity, direction of ${l}`;
+  return {
+    ...r,
+    state: sel.state,
+    notice: r.notice === undefined ? notice : `${notice}; ${r.notice}`,
+  };
 }
 
 function tangent(state: EditorState, picks: readonly number[], env: EditorEnv): EditResult {
