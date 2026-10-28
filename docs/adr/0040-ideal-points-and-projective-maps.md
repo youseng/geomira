@@ -282,6 +282,19 @@ concyclic points is as a field-generic condition, or what the claims do with ide
       cross-ratio notation and `;`.
       Every other change to a frozen test file adds lines only (new cases, kinds and names).
 
+### Maintainer decisions after review (2026-10-28)
+
+23. The open questions of STATUS, decided by the maintainer:
+    - send_to_infinity keeps the chart of decision 12.
+    - "On the circle" for the cross ratio of four concyclic points is a condition of the claim,
+      not an NDG item (decision 15).
+    - Deferred to Run 16b:
+      - The GUI intersection tool builds the ideal point of two parallel lines, with an info
+        notice and the object selected. Until then it refuses them (decision 5).
+      - `pole(l, c)` with l through the centre gives the ideal point. Until then it is Undefined.
+      - The two mutation shards under the 75 % per-shard target (kernel-b; the discovery
+        catch-all with this ADR's rule files) go to Run 16b's scoped audit.
+
 ## Consequences
 
 - A figure can be sent to a chart where a chosen line is at infinity, as a derived layer, and

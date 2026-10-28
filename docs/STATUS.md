@@ -1,6 +1,6 @@
 # STATUS
 
-## Run 16a: ideal points, projective maps, cross ratios: NOT ACCEPTED (CI and the nightly are green; awaiting the maintainer)
+## Run 16a: ideal points, projective maps, cross ratios: ACCEPTED (2026-10-28)
 
 Decisions: [ADR-0040](adr/0040-ideal-points-and-projective-maps.md). SPEC §1, §4, §6.2, §10.1 and
 §18 (E2, E3, E8) are updated to match. PR: https://github.com/youseng/geomira/pull/26 (branch
@@ -9,6 +9,16 @@ with `run-17b`. The maintainer chose, when asked during the run: "collinear" tak
 infinity, "concurrent" stays affine, and the finder never uses points at infinity as candidates.
 No conic work: circles under projective maps are Undefined ("… a conic, which is not an object
 until Run 16b").
+
+Accepted on the criteria and CI (CLAUDE.md: the maintainer's review is the merge): CI on d1a6105,
+the PR's head, is green (below), as are CI and the nightly mutation run on cebd9bb, the last code
+commit. The maintainer's decisions on the open questions, after review:
+
+1. send_to_infinity keeps the chart of ADR-0040 decision 12.
+2. "On the circle" for concyclic cross ratios is a condition of the claim, not an NDG item.
+3. Building the ideal point from the GUI intersection tool (with an info notice and the object
+   selected) and `pole(l, c)` at infinity go to Run 16b (Not done).
+4. The two shards under the 75 % per-shard target go to Run 16b's scoped audit.
 
 ### Done (each item → the test file that proves it)
 
@@ -110,14 +120,19 @@ Visible differences elsewhere (none in any example or fixture):
 
 ### Not done
 
-- The GUI intersection tool still refuses two parallel lines: it builds points it can show. The
-  text (and any tool taking a line) builds the ideal point. See Uncertain.
-- A pole at infinity (`pole(l, c)` with l through the centre) stays Undefined; it could now be
-  an ideal point, but no item of this run asked for it.
-- Two shards are under the 75 % per-shard target (the gate is per package, and all four packages
-  pass): kernel-b at 68.39 % (proj-lines.ts and proj-apply.ts: the range and polygon cases of
-  projective apply) and the discovery catch-all at 73.03 % (the three new rule files). The kernel
-  package went from 97.95 % to 93.03 %. More targeted tests for those files would raise both.
+Moved to Run 16b by the maintainer's decision:
+
+- → 16b: the GUI intersection tool builds the ideal point of two parallel lines, with an info
+  notice and the object selected. It still refuses them: it builds only points it can show. The
+  text, and any tool taking a line, builds the ideal point.
+- → 16b: `pole(l, c)` with l through the centre gives the ideal point. It stays Undefined ("l passes through the center: its
+  pole is at infinity").
+- → 16b's scoped audit: two shards are under the 75 % per-shard target. The gate is per package,
+  and all four packages pass.
+  - kernel-b at 68.39 %: proj-lines.ts and proj-apply.ts, the range and polygon cases of
+    projective apply.
+  - The discovery catch-all at 73.03 %: the three new rule files.
+  - The kernel package went from 97.95 % to 93.03 %.
 
 ### Known bugs
 
@@ -130,20 +145,23 @@ Visible differences elsewhere (none in any example or fixture):
 
 ### Uncertain
 
-- **send_to_infinity's chart and orientation** (ADR-0040 decision 12): the normalisation (origin
-  p, unit |d|, the side of l by rot90(d)) is a choice, not mathematics. A projective map sending a
-  line to infinity cannot commute with a mirror symmetry of that line, so under a mirrored figure
-  the image is the mirrored image followed by a reflection (congruent figures; claims invariant
-  under isometries keep their truth). If the maintainer prefers another chart, only
-  projective-tools.ts changes.
-- **"NDG: on the circle"** (the brief, for concyclic cross ratios) is handled as a CONDITION: an
-  NDG item must be non-zero, and "on one circle" is an equation. A claim on four points on neither
-  a line nor a circle is false, never silently true.
+Resolved by the maintainer (see the decisions above):
+
+- send_to_infinity's chart and orientation (ADR-0040 decision 12) stay as they are. The
+  normalisation (origin p, unit |d|, the side of l by rot90(d)) is a choice, not mathematics. A
+  projective map sending a line to infinity cannot commute with a mirror symmetry of that line, so
+  under a mirrored figure the image is the mirrored image followed by a reflection: congruent
+  figures, and claims invariant under isometries keep their truth.
+- "NDG: on the circle" (the brief, for concyclic cross ratios) is a condition. An NDG item must be
+  non-zero, and "on one circle" is an equation; a claim on four points on neither a line nor a
+  circle is false, never silently true.
+- The GUI intersection tool: Run 16b (Not done).
+
+Still open, for the record:
+
 - **The ideal-point representative under 'value' symmetry**: `harmonic_conjugate(A, B, M)` and
-  `harmonic_conjugate(B, A, M)` give ideal points with directions B − A and A − B (the same point,
-  opposite representatives). Equal as points; a line built from them has opposite direction.
-- **The GUI intersection tool** refuses parallel lines (see Not done); whether it should build
-  the ideal point is a UI decision for the maintainer.
+  `harmonic_conjugate(B, A, M)` give ideal points with directions B − A and A − B. They are the
+  same point with opposite representatives, so a line built from them has the opposite direction.
 - **A frozen test name kept**: "parallel(C, AB) never meets AB" (tools.property.test.ts) now
   asserts that the meet is the ideal point. Its name is kept, since renaming would be a further
   modification.
@@ -208,7 +226,10 @@ L3 (local): `L3 projective images: 1831 defined + 1169 Undefined agree, 0 not ex
 
 #### CI on GitHub
 
-On cebd9bb:
+On d1a6105 (the PR's head; STATUS only): ci (push) https://github.com/youseng/geomira/actions/runs/40645416112:
+success; deploy https://github.com/youseng/geomira/actions/runs/40645416091: success.
+
+On cebd9bb (the last code commit):
 
 - ci (push) https://github.com/youseng/geomira/actions/runs/40637072522: success. The verify step
   (typecheck, lint, depcruise, rules with the floor 3875, tests) passed; end-to-end 125 passed,
@@ -270,6 +291,9 @@ discovery (catch-all) 47. Every shard is under the 100-minute limit.
     changed in the package, so their results were not reused. A run after the merge reuses them.
     If one nears 100 minutes, split it. That changes `scripts/mutation-discovery.test.ts`
     (frozen), so it needs an ADR.
+- For Run 16b (the maintainer's decisions): the GUI intersection tool and `pole(l, c)` at
+  infinity (Not done), and the kernel-b and discovery catch-all mutation scores, in its scoped
+  audit.
 
 ---
 
