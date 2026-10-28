@@ -116,7 +116,7 @@ const pts =
 describe('conconic(A, B, C, D, E, F)', () => {
   it('six points of a hyperbola or a circle: true in any order', () => {
     check('conconic', pts(ON_HYP), 'true');
-    const order = [5, 2, 0, 4, 1, 3].map((i) => ON_HYP[i] ?? [0, 0]);
+    const order = [5, 2, 0, 4, 1, 3].map((i): Xy => ON_HYP[i] ?? [0, 0]);
     check('conconic', pts(order), 'true');
     const circle6: Xy[] = [
       [1, 0],

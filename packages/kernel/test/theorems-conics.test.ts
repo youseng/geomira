@@ -16,7 +16,7 @@
  */
 import type { Field } from '@geomira/num/field';
 import { describe } from 'vitest';
-import { call } from '../src/expr';
+import { call, type Expr } from '../src/expr';
 import { vSub } from '../src/geom';
 import type { Vec } from '../src/value';
 import { onLine } from './helpers/circle-properties';
@@ -67,7 +67,7 @@ function isCircle<T>(f: Figure<T>, k: string): boolean {
 }
 
 /** Pascal's three meets X, Y, Z of the hexagon h₁…h₆ (by name). */
-function pascal(b: Parameters<Theorem['build']>[0], h: readonly ReturnType<typeof call>[]): void {
+function pascal(b: Parameters<Theorem['build']>[0], h: readonly Expr[]): void {
   const [p1, p2, p3, p4, p5, p6] = h;
   if (p6 === undefined || p1 === undefined || p2 === undefined || p3 === undefined) return;
   if (p4 === undefined || p5 === undefined) return;
@@ -144,8 +144,8 @@ const THEOREMS: readonly Theorem[] = [
       b.call('n', 'ninepoint_circle', A, B, C);
     },
     required: ['H', 'k', 'K', 'n'],
-    check: (f) => {
-      const K = asConic(f.get('k'));
+    check: <T>(f: Figure<T>) => {
+      const K = asConic<T>(f.get('k'));
       const n = f.get('n');
       if (n.kind !== 'circle' || f.get('K').kind !== 'point') return false;
       const w = vSub(f.F, pt(f, 'K'), n.c);
