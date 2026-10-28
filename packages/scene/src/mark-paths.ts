@@ -92,6 +92,7 @@ export function markPaths(view: View, s: Shape, rect: Rect): Path[] {
     case 'point':
     case 'line':
     case 'circle':
+    case 'conic':
     case 'polygon':
       return [];
     default:

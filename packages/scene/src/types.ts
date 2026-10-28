@@ -31,6 +31,19 @@ export type Shape =
       readonly r: number;
       readonly arc: { readonly from: number; readonly to: number } | null;
     }
+  /**
+   * A conic (ADR-0042, conic-shape.ts): an ellipse c + a·cos τ·u + b·sin τ·v, a hyperbola's two
+   * branches c ± a·cosh τ·u + b·sinh τ·v, or a parabola c + a·τ²·u + τ·v (v = rot90(u), u a unit
+   * vector; a parabola's c is its vertex and b is 0).
+   */
+  | {
+      readonly kind: 'conic';
+      readonly type: 'ellipse' | 'hyperbola' | 'parabola';
+      readonly c: Vec2;
+      readonly u: Vec2;
+      readonly a: number;
+      readonly b: number;
+    }
   | { readonly kind: 'polygon'; readonly pts: readonly Vec2[] }
   /**
    * An angle mark (ADR-0011): `arcs` arcs, or the right-angle square, at vertex b over the

@@ -26,16 +26,17 @@ export const IMAGED: readonly Capability[] = ['point', 'curve', 'polygon'];
 export const IMAGE_KINDS: readonly ValueKind[] = ['point', 'line', 'circle', 'polygon'];
 
 /**
- * apply also maps marks and text (ADR-0011: derived layers image them) and points at infinity
- * (ADR-0040).
+ * apply also maps marks and text (ADR-0011: derived layers image them), points at infinity
+ * (ADR-0040) and conics (ADR-0042).
  */
-const APPLIED: readonly Capability[] = [...IMAGED, 'annotation', 'ideal'];
+const APPLIED: readonly Capability[] = [...IMAGED, 'annotation', 'ideal', 'conic'];
 const APPLIED_KINDS: readonly ValueKind[] = [
   ...IMAGE_KINDS,
   'angle_mark',
   'segment_mark',
   'text',
   'ideal_point',
+  'conic',
 ];
 
 export const TRANSFORM_KIND: readonly ValueKind[] = ['transform'];
@@ -188,7 +189,9 @@ export const MAP_OPERATIONS: readonly ToolSpec[] = [
       'under a projective map: a point at infinity off its direction → a point',
       'under a projective map: a segment crossing the line sent to infinity → two rays',
       'under a projective map: the line sent to infinity → Undefined',
-      'under a projective map: a circle → Undefined (a conic)',
+      'under a projective map: a circle → a conic (never a circle); an arc → Undefined',
+      'a conic under a similarity or a projective map → a conic (its known point mapped, dropped at infinity)',
+      'a conic under a Möbius map with a pole → Undefined (a curve of degree 3 or 4)',
       'under a projective map: a polygon with a side through infinity → Undefined',
       'under a projective map: a segment mark → Undefined; an angle mark → not right',
       'under a projective map: a position within the band of the line sent to infinity → Undefined (ambiguous)',

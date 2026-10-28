@@ -8,7 +8,8 @@
  * is decided on the gap |OP| − r as a length with the band (ADR-0006): inside → Undefined,
  * on c → one double point (mid, which is P itself when P lies exactly on c), outside → two.
  * tangent_from's line is the tangent at T: through T, direction rot90(T − O), CHIRAL (a
- * quarter turn of T − O, as tangent(T, c)); it passes through P.
+ * quarter turn of T − O, as tangent(T, c)); it passes through P. A conic (ADR-0042): the polar
+ * of P ∩ the conic, orient(+) when cross(mid − P, T − P) > 0 (conic-pairs.ts).
  */
 import { isInexact, type Field } from '@geomira/num/field';
 import { circleGap } from '../incidence';
@@ -25,7 +26,8 @@ import {
   type Value,
   type Vec,
 } from '../value';
-import { badArgs, circleAt, degenerateCircle, pointAt } from './args';
+import { badArgs, circleAt, conicAt, degenerateCircle, pointAt } from './args';
+import { conicTangentPair } from './conic-pairs';
 import { offArcs, onArcs } from './arc-range';
 import { countFromGap, midOff, reflectIn, type Pair } from './pairs';
 
@@ -39,6 +41,17 @@ const SHAPES: Record<Output, BranchShape> = {
     describe: 'tangent_point(P, c)',
   },
   tangent_from: { candidates: 2, low: 'orient', other: true, describe: 'tangent_from(P, c)' },
+};
+
+/** The same choices on a conic (ADR-0042, conic-pairs.ts). */
+const CONIC_SHAPES: Record<Output, BranchShape> = {
+  tangent_point: {
+    candidates: 2,
+    low: 'orient',
+    other: true,
+    describe: 'tangent_point(P, k)',
+  },
+  tangent_from: { candidates: 2, low: 'orient', other: true, describe: 'tangent_from(P, k)' },
 };
 
 function output<T>(F: Field<T>, c: Circle<T>, tool: Output, X: Vec<T>): Value<T> {
@@ -105,6 +118,10 @@ function pairOf<T>(
   ctx: EvalContext,
   tool: Output,
 ): Pair<T> | Undefined | 'bad' {
+  const k = conicAt(args, 1);
+  const P0 = pointAt(args, 0);
+  if (k !== undefined && P0 !== undefined && args.length === 2)
+    return conicTangentPair(F, P0, k, ctx, tool, CONIC_SHAPES[tool]);
   const [P, c] = [pointAt(args, 0), circleAt(args, 1)];
   if (P === undefined || c === undefined || args.length !== 2) return 'bad';
   return tangentPair(F, P, c, ctx, tool);
@@ -147,6 +164,8 @@ const DEGENERATE = [
   'other(T) with T not a touch point → Undefined',
   'square roots not representable → Inexact over Q and mod p (other(T) is exact)',
   'a touch point outside an arc is not a candidate',
+  'a conic: P its center or no tangent from P (P inside it) → Undefined',
+  'a conic: P on an asymptote → Undefined (one touch point is at infinity)',
 ];
 
 export const TANGENT_FROM_TOOLS: readonly ToolSpec[] = [
@@ -154,13 +173,16 @@ export const TANGENT_FROM_TOOLS: readonly ToolSpec[] = [
     id: 'tangent_point',
     name: 'tangent_point',
     family: 'points',
-    signatures: [{ params: ['point', 'round'], branch: SHAPES.tangent_point }],
+    signatures: [
+      { params: ['point', 'round'], branch: SHAPES.tangent_point },
+      { params: ['point', 'conic'], branch: CONIC_SHAPES.tangent_point },
+    ],
     outputKinds: ['point'],
     compute: computeFor('tangent_point'),
     candidates: candidatesFor('tangent_point'),
     degenerate: DEGENERATE,
     export: 'numeric',
-    doc: 'tangent_point(P, c, selectors): a point where a tangent from P touches c; two candidates (orient(+): cross(O − P, T − P) > 0), one double point when P is on c.',
+    doc: 'tangent_point(P, c, selectors): a point where a tangent from P touches a circle or a conic; two candidates (orient(+): cross(O − P, T − P) > 0, O the center, or for a conic the midpoint of the chord of contact), one double point when P is on the curve.',
     examples: [
       { args: [P5, C5], selectors: [{ kind: 'orient', sign: 1 }] },
       { args: [['6', '0'], C5], selectors: [{ kind: 'orient', sign: 1 }] },
@@ -170,13 +192,16 @@ export const TANGENT_FROM_TOOLS: readonly ToolSpec[] = [
     id: 'tangent_from',
     name: 'tangent_from',
     family: 'lines',
-    signatures: [{ params: ['point', 'round'], branch: SHAPES.tangent_from }],
+    signatures: [
+      { params: ['point', 'round'], branch: SHAPES.tangent_from },
+      { params: ['point', 'conic'], branch: CONIC_SHAPES.tangent_from },
+    ],
     outputKinds: ['line'],
     compute: computeFor('tangent_from'),
     candidates: candidatesFor('tangent_from'),
     degenerate: DEGENERATE,
     export: 'numeric',
-    doc: 'tangent_from(P, c, selectors): a tangent from P to c, the line through its touch point T with direction rot90(T − O) (chiral); selectors judge T.',
+    doc: 'tangent_from(P, c, selectors): a tangent from P to a circle or a conic, the line through its touch point T with direction rot90(T − O) (a conic: a quarter turn of −∇Q(T)) (chiral); selectors judge T.',
     examples: [
       { args: [P5, C5], selectors: [{ kind: 'orient', sign: -1 }] },
       { args: [['6', '0'], C5], selectors: [{ kind: 'orient', sign: -1 }] },

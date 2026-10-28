@@ -57,12 +57,14 @@ export function typeOfValue(v: Value<number>): AsyType | undefined {
     case 'polygon':
       return 'path';
     case 'ideal_point':
+    case 'conic':
     case 'angle_mark':
     case 'segment_mark':
     case 'text':
     case 'string':
     case 'undefined':
     case 'inexact':
+      // A conic (ADR-0042) has no Asymptote primitive: drawn from the display list, numerically.
       return undefined;
     default:
       return assertNever(v, 'value');
@@ -106,6 +108,7 @@ function numeric(v: Value<number>): { code: string; helpers: string[] } | undefi
     case 'polygon':
       return { code: `${v.pts.map(pairOf).join('--')}--cycle`, helpers: [] };
     case 'ideal_point':
+    case 'conic':
     case 'angle_mark':
     case 'segment_mark':
     case 'text':

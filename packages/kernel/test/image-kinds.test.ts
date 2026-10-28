@@ -113,6 +113,7 @@ describe('images keep their figure kinds in the static checks', () => {
     const applied = [
       ...['point', 'line', 'circle', 'polygon', 'angle_mark', 'segment_mark', 'text'],
       'ideal_point',
+      'conic',
     ];
     expect(both(call('apply', [r('t'), call('nosuch', [])]))).toEqual([applied, applied]);
     // No overload fits: staticKinds falls back to the tool's outputKinds, exprKinds is unknown.

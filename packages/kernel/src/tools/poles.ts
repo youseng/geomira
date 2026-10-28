@@ -1,5 +1,5 @@
 /**
- * v1.1 tools (SPEC §6.2, Run 13, ADR-0031): pole(l, c), the inverse of polar(P, c)
+ * v1.1 tools (SPEC §6.2, Run 13, ADR-0031): pole(l, c) (a conic too, ADR-0042), the inverse of polar(P, c)
  * (tangents.ts), and radical_center(c1, c2, c3). Both are rational (exact over Q and mod p).
  * An arc counts as its carrier circle here (arc-range.ts), as polar and radical_axis do.
  */
@@ -7,23 +7,28 @@ import type { Field } from '@geomira/num/field';
 import { isZeroNormalized, isZeroVec, vAdd, vCross, vDot, vRot90, vScale, vSub } from '../geom';
 import type { EvalContext, ExampleArg, ToolSpec } from '../tool';
 import { pointOf, undef, type Circle, type Value } from '../value';
-import { badArgs, circleAt, degenerateCircle, degenerateLine, lineAt } from './args';
+import { badArgs, circleAt, conicAt, degenerateCircle, degenerateLine, lineAt } from './args';
+import { conicPole } from './conic-lines';
 
 /**
  * The pole of l: with n = rot90(d) and k = n·(p − O), the point P = O + (r²/k)·n, whose
  * polar (X − O)·(P − O) = r² is l. Degenerate cases: l through the center (the distance
- * k/|n| zero as a length) → Undefined (its pole is at infinity); l tangent to c → the touch
- * point; a segment or ray → the pole of its carrier line.
+ * k/|n| zero as a length) → the point at infinity of n, perpendicular to l (ADR-0042, the
+ * maintainer's decision on Run 16a; its flag is l's toggled, n being a quarter turn of d); l
+ * tangent to c → the touch point; a segment or ray → the pole of its carrier line. A conic:
+ * conic-lines.ts.
  */
 function pole<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
+  const k0 = conicAt(args, 1);
   const [l, c] = [lineAt(args, 0), circleAt(args, 1)];
+  if (l !== undefined && k0 !== undefined && args.length === 2) return conicPole(F, l, k0, ctx);
   if (l === undefined || c === undefined || args.length !== 2) return badArgs('pole');
   const bad = degenerateLine(F, l, ctx) ?? degenerateCircle(F, c, ctx);
   if (bad !== undefined) return bad;
   const n = vRot90(F, l.d);
   const k = vDot(F, n, vSub(F, l.p, c.c));
   if (isZeroNormalized(F, k, vDot(F, n, n), 'length', ctx))
-    return undef('l passes through the center: its pole is at infinity');
+    return { kind: 'ideal_point', d: n, chiral: !l.chiral };
   const P = vAdd(F, c.c, vScale(F, n, F.div(c.r2, k)));
   return pointOf(P.x, P.y);
 }
@@ -95,16 +100,21 @@ export const POLE_TOOLS: readonly ToolSpec[] = [
     id: 'pole',
     name: 'pole',
     family: 'points',
-    signatures: [{ params: ['linear', 'round'], symmetry: [] }],
-    outputKinds: ['point'],
+    signatures: [
+      { params: ['linear', 'round'], symmetry: [], output: ['point', 'ideal_point'] },
+      { params: ['linear', 'conic'], symmetry: [], output: ['point', 'ideal_point'] },
+    ],
+    outputKinds: ['point', 'ideal_point'],
     compute: pole,
     degenerate: [
-      'l through the center → Undefined (the pole is at infinity)',
+      'l through the center → the point at infinity perpendicular to l',
       'l tangent to c → the touch point',
       'a segment or ray is extended to its carrier line',
+      'a conic: l through its center (a parabola: l parallel to its axis) → the point at infinity of the pole',
+      'a conic within the band of a parabola → Undefined (ambiguous)',
     ],
     export: 'numeric',
-    doc: 'pole(l, c): the pole of the line l with respect to c, the point whose polar is l (the inverse of polar); exact.',
+    doc: 'pole(l, c): the pole of the line l with respect to a circle or a conic, the point whose polar is l (the inverse of polar); exact. A line through the center (a parabola: parallel to its axis) has its pole at infinity.',
     examples: [
       {
         args: [

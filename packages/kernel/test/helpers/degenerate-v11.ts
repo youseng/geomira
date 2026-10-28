@@ -97,11 +97,9 @@ export const V11_CASES: Record<string, Record<string, () => void>> = {
     },
   },
   pole: {
-    'l through the center → Undefined (the pole is at infinity)': () => {
+    'l through the center → the point at infinity perpendicular to l': () => {
       for (const F of FIELDS)
-        expect(reason(at(F, 'pole', line(pt(-1, -1), pt(2, 2)), C5))).toBe(
-          'undefined: l passes through the center: its pole is at infinity',
-        );
+        expect(reason(at(F, 'pole', line(pt(-1, -1), pt(2, 2)), C5))).toBe('ideal_point');
     },
     'l tangent to c → the touch point': () => {
       for (const F of ORDERED) {

@@ -144,6 +144,16 @@ const PROJECTIVE: MapFacts = {
   ],
 };
 
+/** conic_to_circle(k): a projective map whose image of k is a circle (ADR-0042). */
+const CONIC_TO_CIRCLE: MapFacts = { type: 'projective', circleImage: 0 };
+
+/** circle_to_centre(c, P): a projective map keeping c and sending P to its center (ADR-0042). */
+const CIRCLE_TO_CENTRE: MapFacts = {
+  type: 'projective',
+  invariantCurves: [0],
+  sends: [[1, t('center', 0)]],
+};
+
 /**
  * The map overloads: tool name → the overload's parameter capabilities → its facts. Read only
  * by `withMapFacts`; a kernel test checks that every entry names an existing overload.
@@ -165,6 +175,8 @@ export const MAP_TABLE: Readonly<Record<string, Readonly<Record<string, MapFacts
   projective: {
     'ppoint,ppoint,ppoint,ppoint,ppoint,ppoint,ppoint,ppoint': PROJECTIVE,
   },
+  conic_to_circle: { conic: CONIC_TO_CIRCLE },
+  circle_to_centre: { 'round,point': CIRCLE_TO_CENTRE },
 };
 
 /** `apply(T, X)`: the image of X under T. */

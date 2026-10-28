@@ -32,10 +32,16 @@ function mapArg(s: Signature, args: ArgKinds, marker: 'mobius' | 'projective'): 
   return args.some((k, i) => (s.params[i] ?? s.rest) === 'transform' && k?.includes(marker));
 }
 
-/** A point or a point at infinity under a map that may be projective may be either (ADR-0040). */
+/**
+ * A point or a point at infinity under a map that may be projective may be either (ADR-0040),
+ * and a circle's image may be a conic (ADR-0042: a projective map never gives a circle).
+ */
 function exchangePoints(kinds: readonly ValueKind[]): readonly ValueKind[] {
   const pt = kinds.includes('point') || kinds.includes('ideal_point');
-  return pt ? [...new Set<ValueKind>([...kinds, 'point', 'ideal_point'])] : kinds;
+  const withPoints = pt ? [...new Set<ValueKind>([...kinds, 'point', 'ideal_point'])] : kinds;
+  return withPoints.includes('circle') && !withPoints.includes('conic')
+    ? [...withPoints, 'conic']
+    : withPoints;
 }
 
 /** A line or a circle under a map that may be Möbius may be either (ADR-0032). */

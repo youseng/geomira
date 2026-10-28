@@ -147,6 +147,11 @@ export interface MapFacts {
    * infinity is on it (send_to_infinity(l), an involution: l).
    */
   readonly infinityImage?: GuaranteeTerm;
+  /**
+   * A curve whose image under the map is a circle (ADR-0042; conic_to_circle(k): k): the images
+   * of its points are concyclic.
+   */
+  readonly circleImage?: GuaranteeTerm;
   /** An inversion's centre: X, X* and the centre are collinear; its own image is Undefined. */
   readonly center?: GuaranteeTerm;
   /**

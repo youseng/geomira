@@ -113,6 +113,16 @@ export function sameValues<T>(F: Field<T>, u: Value<T>, v: Value<T>): boolean {
           : sameVec(F, u.anchor, v.anchor);
       return arcs && anchors;
     }
+    case 'conic': {
+      if (v.kind !== 'conic') return false;
+      const qs = [close(F, u.a, v.a), close(F, u.b, v.b), close(F, u.c, v.c)];
+      const ls = [close(F, u.d, v.d), close(F, u.e, v.e), close(F, u.f, v.f)];
+      const anchors =
+        u.anchor === undefined || v.anchor === undefined
+          ? u.anchor === v.anchor
+          : sameVec(F, u.anchor, v.anchor);
+      return [...qs, ...ls].every(Boolean) && anchors;
+    }
     case 'polygon':
       return (
         v.kind === 'polygon' &&

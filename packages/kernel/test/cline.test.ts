@@ -46,7 +46,7 @@ describe('cline: circle ↔ line without NaN', () => {
       } else {
         expect([X.kind, Y.kind]).toEqual(['undefined', 'point']);
         expect(X.kind === 'undefined' && X.reason).toBe(
-          'on does not accept (line, number, number); signatures: on(linear, number) · on(round, number, number) · on(round, number)',
+          'on does not accept (line, number, number); signatures: on(linear, number) · on(round, number, number) · on(round, number) · on(conic, number, number)',
         );
       }
       for (const v of [X, Y]) expect(numbersOf(v).every(Number.isFinite)).toBe(true);

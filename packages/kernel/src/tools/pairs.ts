@@ -21,6 +21,7 @@ import {
   pointOf,
   undef,
   type Circle,
+  type Conic,
   type Line,
   type Undefined,
   type Value,
@@ -49,7 +50,7 @@ export type Low<T> =
   | { readonly kind: 'none' };
 
 export interface Curve<T> {
-  readonly obj: Line<T> | Circle<T>;
+  readonly obj: Line<T> | Circle<T> | Conic<T>;
   /** Its role in messages: "the line", "the first circle", "the polar of P". */
   readonly name: string;
 }
@@ -99,7 +100,7 @@ export const CIRCLE_CIRCLE: BranchShape = {
   describe: 'circle ∩ circle',
 };
 
-const asPoint = <T>(X: Vec<T>): Value<T> => pointOf(X.x, X.y);
+export const asPoint = <T>(X: Vec<T>): Value<T> => pointOf(X.x, X.y);
 
 /** a ∓ off, labelled −1 and +1 (or +1 and −1 when `flip`). */
 function plusMinus<T>(F: Field<T>, mid: Vec<T>, off: Vec<T>, flip: boolean): Cand<T>[] {
@@ -201,12 +202,12 @@ function lineLine<T>(
 }
 
 /** The parameter of X's projection on l. */
-function paramOn<T>(F: Field<T>, l: Line<T>, X: Vec<T>): T {
+export function paramOn<T>(F: Field<T>, l: Line<T>, X: Vec<T>): T {
   return F.div(vDot(F, vSub(F, X, l.p), l.d), vDot(F, l.d, l.d));
 }
 
 /** The candidates on l's range: outside ones dropped; none left → the range's reason. */
-function onRange<T>(
+export function onRange<T>(
   F: Field<T>,
   l: Line<T>,
   list: readonly Cand<T>[],

@@ -51,8 +51,8 @@ describe('shapeOf: values → world shapes (every number finite)', () => {
 
   it('numbers and transforms are not drawn; unknown future kinds are unavailable', () => {
     expect(shapeOf({ kind: 'number', v: 1 })).toEqual({ kind: 'none' });
-    const future = { kind: 'conic' } as unknown as Value<number>;
-    expect(shapeOf(future)).toEqual({ kind: 'unavailable', reason: 'a conic cannot be drawn' });
+    const future = { kind: 'locus' } as unknown as Value<number>;
+    expect(shapeOf(future)).toEqual({ kind: 'unavailable', reason: 'a locus cannot be drawn' });
     expect(shapeOf({ kind: 'inexact', reason: 'r' })).toEqual({ kind: 'unavailable', reason: 'r' });
   });
 });

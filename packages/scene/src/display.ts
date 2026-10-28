@@ -19,8 +19,11 @@
  * counter-clockwise angles as seen on the screen, i.e. in the world's orientation; the
  * renderer draws ctx.arc(x, y, r, −from, −to, true)). Marks and text (ADR-0011) are laid
  * out by mark-paths.ts: arcs and short polylines of a fixed pixel size, and a text's handle.
+ * A conic (ADR-0042) is drawn as polylines of its visible part, one per branch and interval
+ * (conic-paths.ts), and placed like a circle.
  */
 import { assertNever } from '@geomira/num/assert';
+import { conicPaths, conicPlacement } from './conic-paths';
 import { clipCircle, clipLine, clipPolygon, inside, type Span } from './clip';
 import { placeLabels, type PlacedLabel } from './labels';
 import { markPaths } from './mark-paths';
@@ -129,6 +132,9 @@ function itemOf(view: View, p: Primitive, rect: Rect): DisplayItem | null {
     case 'circle':
       paths = circlePaths(view, s, rect);
       break;
+    case 'conic':
+      paths = conicPaths(view, s, rect);
+      break;
     case 'polygon': {
       paths = polygonEdges(view, s.pts, rect);
       region = polygonRegion(view, s.pts, rect);
@@ -154,6 +160,8 @@ function placement(s: Primitive['shape'], rect: Rect, zoom: number): Placement {
     case 'circle':
     case 'line':
       return curvePlacement(s, rect, zoom);
+    case 'conic':
+      return conicPlacement(s, rect, zoom);
     case 'polygon':
       return polygonPlacement(s.pts, rect, zoom);
     case 'point':

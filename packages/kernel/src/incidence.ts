@@ -1,6 +1,6 @@
 /**
  * Incidence decisions (internal): "P lies on the circle" and "P lies on the line", used by
- * tangent(P, c) and other(a, b, P). Each is a DECISION with the banded sign of num
+ * tangent(P, c) and other(a, b, P). A conic's: conic-incidence.ts (ADR-0042). Each is a DECISION with the banded sign of num
  * (ADR-0002): a gap of zero (within EPS·scale) is "on"; a gap inside the band is
  * ambiguous (Undefined, never silently on or off); anything larger is "not on". The gap
  * is measured as a length, so small circles and short segments are judged like large ones

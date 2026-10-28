@@ -121,6 +121,23 @@ export const PROJECTIVE_I: readonly string[] = [`${T}/projective-tools.ts`];
 export const PROJECTIVE_C: readonly string[] = [`${K}/tools/parallel-lines.ts`];
 export const PROJECTIVE_D: readonly string[] = [`${K}/tools/harmonic.ts`];
 
+/**
+ * Run 16b (ADR-0042): the conic code joins light shards (the frozen test keeps eleven kernel
+ * shards). The conic core (conic.ts, the gliders) and the two map constructors kernel-a; the
+ * branchable geometry and the poles kernel-b (the shard under the per-shard target since Run
+ * 16a, whose score these well-tested files raise); conics.ts (the two tools) falls to the
+ * catch-all kernel-h with every other tool file.
+ */
+export const CONIC_A: readonly string[] = [
+  `${K}/conic.ts`,
+  `${K}/conic-glider.ts`,
+  `${T}/conic-maps.ts`,
+];
+export const CONIC_B: readonly string[] = [
+  `${K}/tools/conic-pairs.ts`,
+  `${K}/tools/conic-lines.ts`,
+];
+
 /** The entries whose file exists at this commit (a `file:a-b` entry by its file). */
 function present(files: readonly string[]): string[] {
   return files.filter((f) => existsSync(join(import.meta.dirname, '..', fileOf(f))));
@@ -145,6 +162,7 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
       ...present(V11_A),
       ...present(MOBIUS_A),
       ...present(PROJECTIVE_A),
+      ...present(CONIC_A),
     ],
     parent: 'kernel-1',
   },
@@ -156,6 +174,7 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
       ...present(V11_B),
       ...present(MOBIUS_B),
       ...present(PROJECTIVE_B),
+      ...present(CONIC_B),
     ],
     parent: 'kernel-b',
   },

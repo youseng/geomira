@@ -35,6 +35,7 @@ import { APPLY_DISPLAY_CASES, DISPLAY_CASES } from './helpers/degenerate-display
 import { MOBIUS_CASES } from './helpers/degenerate-mobius';
 import { PRESET_CASES } from './helpers/degenerate-presets';
 import { PROJECTIVE_CASES } from './helpers/degenerate-projective';
+import { CONIC_CASES, CONIC_INTERSECT_CASES } from './helpers/degenerate-conics';
 import { SYMMEDIAN_POINT_CASES } from './helpers/degenerate-symmedian-point';
 import {
   ARC_INTERSECT_CASES,
@@ -181,6 +182,7 @@ const CASES: Record<string, Record<string, () => void>> = {
     ...INTERSECT_CURVE_CASES,
     ...NEARLY_COINCIDENT_CASES,
     ...ARC_INTERSECT_CASES,
+    ...CONIC_INTERSECT_CASES,
   },
   circumcenter: {
     'coincident vertices → Undefined': () => {
@@ -286,6 +288,7 @@ const CASES: Record<string, Record<string, () => void>> = {
   ...SYMMEDIAN_POINT_CASES,
   ...PRESET_CASES,
   ...PROJECTIVE_CASES,
+  ...CONIC_CASES,
 };
 
 describe('degenerate cases (ToolSpec.degenerate), each a test', () => {

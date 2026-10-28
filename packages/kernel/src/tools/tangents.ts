@@ -1,14 +1,17 @@
 /**
  * Lines from circles (SPEC §6.2): tangent(P, c) (P on c), polar(P, c), radical_axis(c1,
- * c2). Each turns an achiral direction (a direction from two points) by 90°, so each is
+ * c2); tangent and polar also take a conic (ADR-0042). Each turns an achiral direction (a direction from two points) by 90°, so each is
  * chiral (SPEC §4). All three are exact: no square root is needed.
  */
 import type { Field } from '@geomira/num/field';
 import type { EvalContext, ExampleArg, ToolSpec } from '../tool';
 import { two, vAdd, vDot, vRot90, vScale, vSub } from '../geom';
 import { requireOnCircle } from '../incidence';
-import { undef, type Line, type Value, type Vec } from '../value';
-import { badArgs, circleAt, degenerateCircle, pointAt } from './args';
+import { undef, type Conic, type Line, type Value, type Vec } from '../value';
+import { conicProblem } from '../conic';
+import { requireOnConic } from '../conic-incidence';
+import { badArgs, circleAt, conicAt, degenerateCircle, pointAt } from './args';
+import { conicPolarLine, conicTangentAt, isConicCentre } from './conic-pairs';
 
 function chiralLine<T>(p: Vec<T>, d: Vec<T>): Line<T> {
   return { kind: 'line', p: { x: p.x, y: p.y }, d, lo: null, hi: null, chiral: true };
@@ -19,6 +22,8 @@ function chiralLine<T>(p: Vec<T>, d: Vec<T>): Line<T> {
  * Undefined; P within the band of c → Undefined (ambiguous).
  */
 function tangent<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
+  const k = conicAt(args, 1);
+  if (k !== undefined) return conicTangent(F, args, k, ctx);
   const [P, c] = [pointAt(args, 0), circleAt(args, 1)];
   if (P === undefined || c === undefined || args.length !== 2) return badArgs('tangent');
   const bad =
@@ -27,11 +32,50 @@ function tangent<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): V
 }
 
 /**
+ * The tangent to a conic at P (ADR-0042): through P, direction rot90(−g(P)) (for a circle, the
+ * direction of tangent(P, c)). Degenerate cases: an invalid conic → Undefined; P not on k →
+ * Undefined; within the band → Undefined (ambiguous).
+ */
+function conicTangent<T>(
+  F: Field<T>,
+  args: readonly Value<T>[],
+  k: Conic<T>,
+  ctx: EvalContext,
+): Value<T> {
+  const P = pointAt(args, 0);
+  if (P === undefined || args.length !== 2) return badArgs('tangent');
+  const bad = conicProblem(F, k, ctx) ?? requireOnConic(F, P, k, ctx, 'tangent(P, k) needs P on k');
+  return bad ?? conicTangentAt(F, k, P);
+}
+
+/**
+ * The polar of P with respect to a conic (ADR-0042): g(P)·X + h = 0 (conic-pairs.ts). Degenerate
+ * cases: an invalid conic → Undefined; P the center → Undefined (the line at infinity); P on k →
+ * the tangent at P.
+ */
+function conicPolar<T>(
+  F: Field<T>,
+  args: readonly Value<T>[],
+  k: Conic<T>,
+  ctx: EvalContext,
+): Value<T> {
+  const P = pointAt(args, 0);
+  if (P === undefined || args.length !== 2) return badArgs('polar');
+  const bad = conicProblem(F, k, ctx);
+  if (bad !== undefined) return bad;
+  if (isConicCentre(F, k, P, ctx))
+    return undef('P is the center: its polar is the line at infinity');
+  return conicPolarLine(F, k, P);
+}
+
+/**
  * The polar of P: the points X with (X − O)·(P − O) = r², through O + (P − O)·r²/|P − O|²
  * with direction rot90(P − O). Degenerate cases: P = O → Undefined (the polar of the
  * centre is the line at infinity); P on c → the tangent at P.
  */
 function polar<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
+  const k = conicAt(args, 1);
+  if (k !== undefined) return conicPolar(F, args, k, ctx);
   const [P, c] = [pointAt(args, 0), circleAt(args, 1)];
   if (P === undefined || c === undefined || args.length !== 2) return badArgs('polar');
   const bad = degenerateCircle(F, c, ctx);
@@ -78,24 +122,32 @@ export const TANGENT_TOOLS: readonly ToolSpec[] = [
     id: 'tangent',
     name: 'tangent',
     family: 'lines',
-    signatures: [{ params: ['point', 'round'] }],
+    signatures: [{ params: ['point', 'round'] }, { params: ['point', 'conic'] }],
     outputKinds: ['line'],
     compute: tangent,
-    degenerate: ['P not on c → Undefined', 'P within the band of c → Undefined (ambiguous)'],
+    degenerate: [
+      'P not on c → Undefined',
+      'P within the band of c → Undefined (ambiguous)',
+      'a conic: P not on k (the gap Q/|∇Q| as a length) → Undefined; within the band → ambiguous',
+    ],
     export: 'numeric',
-    doc: 'tangent(P, c): the tangent to c at P (P on c); chiral (a quarter turn of P − O).',
+    doc: 'tangent(P, c): the tangent to c at P (P on c); chiral (a quarter turn of P − O). tangent(P, k) on a conic: the tangent at P, direction a quarter turn of −∇Q(P).',
     examples: [{ args: [['3', '4'], C] }],
   },
   {
     id: 'polar',
     name: 'polar',
     family: 'lines',
-    signatures: [{ params: ['point', 'round'] }],
+    signatures: [{ params: ['point', 'round'] }, { params: ['point', 'conic'] }],
     outputKinds: ['line'],
     compute: polar,
-    degenerate: ['P = the center → Undefined', 'P on c → the tangent at P'],
+    degenerate: [
+      'P = the center → Undefined',
+      'P on c → the tangent at P',
+      'a conic: P = its center (g(P) = 0 as a length) → Undefined; P on k → the tangent at P',
+    ],
     export: 'numeric',
-    doc: 'polar(P, c): the polar of P with respect to c; chiral (a quarter turn of P − O).',
+    doc: 'polar(P, c): the polar of P with respect to c; chiral (a quarter turn of P − O). polar(P, k) for a conic: the line g(P)·X + h = 0, (g, h) = M·(P, 1).',
     examples: [{ args: [['10', '5'], C] }],
   },
   {

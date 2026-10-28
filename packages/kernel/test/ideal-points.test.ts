@@ -32,6 +32,7 @@ function figure(): Builder {
   b.add('t', T('reflect', b.ref('l')));
   b.add('g', T('polygon', b.ref('A'), b.ref('B'), b.ref('C')));
   b.add('m', T('mark_segment', b.ref('A'), b.ref('B')));
+  b.add('k', T('conic', b.ref('A'), b.ref('B'), b.ref('C'), pt(0, 0), pt(3, -1)));
   return b;
 }
 
@@ -58,6 +59,8 @@ function argFor(b: Builder, cap: Capability, i: number): Expr {
       return b.ref('m');
     case 'string':
       return { kind: 'str', value: 'M_a' };
+    case 'conic':
+      return b.ref('k');
   }
 }
 
