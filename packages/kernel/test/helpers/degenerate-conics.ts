@@ -106,6 +106,19 @@ export const CONIC_INTERSECT_CASES: Record<string, () => void> = {
     );
     expect(choose(RationalField, 'intersect', [l, HYP], [ALONG_M]).kind).not.toBe('undefined');
   },
+  'line ∩ conic: every decision is scale-free (the ellipse 10⁸ times larger gives the same points)':
+    () => {
+      const big = (x: number, y: number) => pt(x * 1e8, y * 1e8);
+      const k = conic(big(2, 0), big(0, 1), big(-2, 0), big(0, -1), big(1.2, 0.8));
+      const l = line(big(-3, 0), big(3, 0));
+      expect(isAt(FloatField, choose(FloatField, 'intersect', [l, k], [ALONG_P]), 2e8, 0)).toBe(
+        true,
+      );
+      expect(isAt(FloatField, choose(FloatField, 'intersect', [k, l], [ALONG_M]), -2e8, 0)).toBe(
+        true,
+      );
+      expect(isAt(FloatField, choose(FloatField, 'other', [l, k, big(2, 0)]), -2e8, 0)).toBe(true);
+    },
   'other(P) on line ∩ conic with an asymptotic direction → Undefined (the other point is at infinity)':
     () => {
       for (const F of FIELDS)

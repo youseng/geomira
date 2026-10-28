@@ -45,12 +45,17 @@ export const LINE_CONIC: BranchShape = {
   describe: 'line ∩ conic',
 };
 
-/** x / √n as a dimensionless banded sign, with n = s²·√(a² + 2b² + c²) (exact fields: x). */
+/** x / √n as a dimensionless banded sign, with n = s²·√(a² + 2b² + c²) (exact fields: x). β's scale. */
 function scaledSign<T>(F: Field<T>, x: T, s2: T, q: Coeffs<T>, ctx: EvalContext): FieldSign {
   const r = F.sqrt(quadNorm(F, q));
   return isInexact(r)
     ? F.sign(x, 'dimensionless', ctx)
     : signNormalized(F, x, F.mul(s2, r), 'dimensionless', ctx);
+}
+
+/** α / (|d|²·√(a² + 2b² + c²)) as a dimensionless banded sign (exact fields: α's sign). */
+function alphaSign<T>(F: Field<T>, alpha: T, dd: T, q: Coeffs<T>, ctx: EvalContext): FieldSign {
+  return signNormalized(F, alpha, F.mul(F.mul(dd, dd), quadNorm(F, q)), 'dimensionless', ctx);
 }
 
 /** The quadratic Q(p + t·d) = αt² + βt + γ. */
@@ -74,7 +79,7 @@ type Meet<T> =
 function meet<T>(F: Field<T>, q: Coeffs<T>, p: Vec<T>, d: Vec<T>, ctx: EvalContext): Meet<T> {
   const { alpha, beta, gamma } = quadratic(F, q, p, d);
   const dd = vDot(F, d, d);
-  const sa = scaledSign(F, alpha, F.mul(dd, dd), q, ctx);
+  const sa = alphaSign(F, alpha, dd, q, ctx);
   if (sa === 'ambiguous')
     return undef('ambiguous: the line is within the band of an asymptotic direction of the conic');
   if (sa === 0 || (sa === 'none' && F.isZero(alpha, 'dimensionless', ctx))) {
@@ -118,7 +123,7 @@ function vieta<T>(
 ): { readonly t: T } | Undefined {
   const { alpha, beta } = quadratic(F, q, l.p, l.d);
   const dd = vDot(F, l.d, l.d);
-  const sa = scaledSign(F, alpha, F.mul(dd, dd), q, ctx);
+  const sa = alphaSign(F, alpha, dd, q, ctx);
   if (sa === 'ambiguous')
     return undef('ambiguous: the line is within the band of an asymptotic direction of the conic');
   if (sa === 0 || F.eq(alpha, F.zero))

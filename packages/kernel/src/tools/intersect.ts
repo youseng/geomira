@@ -133,6 +133,7 @@ export const INTERSECT_TOOLS: readonly ToolSpec[] = [
       'line ∩ conic: an asymptotic direction (α within EPS) → the one finite common point (both along signs)',
       'line ∩ conic: an asymptote → Undefined (no finite common point)',
       'line ∩ conic: α within the band of an asymptotic direction → Undefined (ambiguous)',
+      'line ∩ conic: every decision is scale-free (the ellipse 10⁸ times larger gives the same points)',
       'other(P) on line ∩ conic with an asymptotic direction → Undefined (the other point is at infinity)',
       'two candidates and no selector → Undefined (ambiguous: add a selector)',
       'a deciding quantity of a selector within the band → Undefined (ambiguous)',

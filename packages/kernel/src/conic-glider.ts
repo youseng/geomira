@@ -40,11 +40,9 @@ function frame<T>(
 /** α of a direction as a dimensionless banded sign (over |w|²·√(a² + 2b² + c²); exact fields: α). */
 function directionSign<T>(F: Field<T>, k: Conic<T>, w: Vec<T>, ctx: EvalContext): FieldSign {
   const q = coeffsOf(k);
-  const r = F.sqrt(quadNorm(F, q));
-  const a = qDirection(F, q, w);
-  if (isInexact(r)) return F.sign(a, 'dimensionless', ctx);
   const ww = vDot(F, w, w);
-  return signNormalized(F, a, F.mul(F.mul(ww, ww), F.mul(r, r)), 'dimensionless', ctx);
+  const n = F.mul(F.mul(ww, ww), quadNorm(F, q));
+  return signNormalized(F, qDirection(F, q, w), n, 'dimensionless', ctx);
 }
 
 /**
