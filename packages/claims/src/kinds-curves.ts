@@ -26,6 +26,15 @@ import {
   type ClaimKindSpec,
   type OrderItem,
 } from './kind';
+import {
+  conicWithCurve,
+  lineConic,
+  onConicAlgebra,
+  onConicGap,
+  pointConic,
+  tangentConicAlgebra,
+  tangentConicGap,
+} from './kinds-conics';
 
 /**
  * The range of a line as order items: lo·|d|² ≤ (P − p)·d ≤ hi·|d|². The two rays `outside`
@@ -66,6 +75,8 @@ function arcOrder<T>(F: Field<T>, P: Vec<T>, c: Circle<T>): OrderItem<T>[] {
 function onAlgebra<T>(F: Field<T>, args: ClaimArgs<T>): Algebra<T> | ReturnType<typeof badClaim> {
   const [P, l, c] = [pointAt(args, 0), lineAt(args, 1), circleAt(args, 1)];
   if (P === undefined) return badClaim('on');
+  const pk = pointConic(args);
+  if (pk !== undefined) return onConicAlgebra(F, pk[0], pk[1]);
   if (l !== undefined) {
     return { conditions: [vCross(F, l.d, vSub(F, P, l.p))], ndg: [], order: rangeOrder(F, P, l) };
   }
@@ -80,6 +91,8 @@ function onAlgebra<T>(F: Field<T>, args: ClaimArgs<T>): Algebra<T> | ReturnType<
 function onGap(args: ClaimArgs<number>): number {
   const [P, l, c] = [pointAt(args, 0), lineAt(args, 1), circleAt(args, 1)];
   if (P === undefined) return Infinity;
+  const pk = pointConic(args);
+  if (pk !== undefined) return onConicGap(pk[0], pk[1]);
   if (l !== undefined) return f.cross(f.sub(P, l.p), l.d) / f.norm(l.d);
   if (c !== undefined) return circleGap(FloatField, P, c);
   return Infinity;
@@ -107,6 +120,10 @@ function tangentAlgebra<T>(
   F: Field<T>,
   args: ClaimArgs<T>,
 ): Algebra<T> | ReturnType<typeof badClaim> {
+  const lk = lineConic(args);
+  if (lk !== undefined) return tangentConicAlgebra(F, lk);
+  const both = conicWithCurve(args);
+  if (both !== undefined) return both;
   const lc = lineCircle(args);
   if (lc !== undefined) {
     const { cross, dd } = h2Of(F, lc[0], lc[1]);
@@ -144,6 +161,8 @@ function tangentAlgebra<T>(
 
 /** The tangency gap as a length, with the kernel's formulas (smaller of the two for circles). */
 function tangentGap(args: ClaimArgs<number>): number {
+  const lk = lineConic(args);
+  if (lk !== undefined) return tangentConicGap(lk);
   const lc = lineCircle(args);
   if (lc !== undefined) {
     const { cross, dd } = h2Of(FloatField, lc[0], lc[1]);
@@ -163,7 +182,7 @@ export const CURVE_KINDS: readonly ClaimKindSpec[] = [
     params: ['point', 'curve'],
     polynomial: true,
     test: 'incidence',
-    doc: 'on(P, c): P lies on the curve (within its range for a segment, ray or arc).',
+    doc: 'on(P, c): P lies on the curve (within its range for a segment, ray or arc), a line, circle or conic.',
     algebra: (F, args) => onAlgebra(F, args),
     residual: (args, ctx: ToleranceContext) => f.ratio(onGap(args), ctx.scale),
     gap: (args) => onGap(args),
@@ -173,7 +192,7 @@ export const CURVE_KINDS: readonly ClaimKindSpec[] = [
     params: ['curve', 'curve'],
     polynomial: true,
     test: 'tangency',
-    doc: 'tangent(a, b): a line and a circle, or two circles, touch (ranges and arcs play no role).',
+    doc: 'tangent(a, b): a line and a circle, two circles, or a line and a conic touch (ranges and arcs play no role).',
     algebra: (F, args) => tangentAlgebra(F, args),
     residual: (args, ctx: ToleranceContext) => f.ratio(tangentGap(args), ctx.scale),
     gap: (args) => tangentGap(args),

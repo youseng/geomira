@@ -181,7 +181,8 @@ export function fitsParam(v: Value<unknown>, p: ClaimParam): boolean {
     case 'circle':
       return v.kind === p;
     case 'curve':
-      return v.kind === 'line' || v.kind === 'circle';
+      // A conic is a curve of the claims (ADR-0042): on(P, k) and tangent(l, k).
+      return v.kind === 'line' || v.kind === 'circle' || v.kind === 'conic';
     case 'integer':
       return v.kind === 'number' && v.exact !== undefined && v.exact.den === 1n;
     case 'number':

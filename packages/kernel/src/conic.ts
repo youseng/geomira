@@ -299,3 +299,68 @@ export function mapConicBy<T>(
   const base: Conic<T> = { kind: 'conic', a, b, c, d, e, f };
   return anchor === undefined ? base : { ...base, anchor: { x: anchor.x, y: anchor.y } };
 }
+
+type Form<T> = readonly [T, T, T];
+
+/** The line through P and Q as a form (α, β, γ): α·x + β·y + γ = cross(Q − P, X − P). */
+function lineForm<T>(F: Field<T>, P: Vec<T>, Q: Vec<T>): Form<T> {
+  const [alpha, beta] = [F.sub(P.y, Q.y), F.sub(Q.x, P.x)];
+  return [alpha, beta, F.neg(F.add(F.mul(alpha, P.x), F.mul(beta, P.y)))];
+}
+
+/** The product of two line forms, as conic coefficients. */
+function productOf<T>(F: Field<T>, l: Form<T>, m: Form<T>): Coeffs<T> {
+  const h = (x: T): T => F.div(x, two(F));
+  const sym = (i: 0 | 1 | 2, j: 0 | 1 | 2): T => h(F.add(F.mul(l[i], m[j]), F.mul(l[j], m[i])));
+  return [F.mul(l[0], m[0]), sym(0, 1), F.mul(l[1], m[1]), sym(0, 2), sym(1, 2), F.mul(l[2], m[2])];
+}
+
+function formAt<T>(F: Field<T>, l: Form<T>, X: Vec<T>): T {
+  return F.add(F.add(F.mul(l[0], X.x), F.mul(l[1], X.y)), l[2]);
+}
+
+/**
+ * The conic through A, B, C, D, E (no three collinear) as raw coefficients: the member
+ * λ·AB·CD + μ·AC·BD of the pencil of two line pairs through A, B, C, D that passes through E,
+ * (λ, μ) = (AC·BD(E), −AB·CD(E)). A polynomial in the coordinates (not in normal form): the
+ * conconic claim's condition is Q(F) = 0 for it (ADR-0042).
+ */
+export function pencilCoeffs<T>(
+  F: Field<T>,
+  A: Vec<T>,
+  B: Vec<T>,
+  C: Vec<T>,
+  D: Vec<T>,
+  E: Vec<T>,
+): Coeffs<T> {
+  const [ab, cd, ac, bd] = [
+    lineForm(F, A, B),
+    lineForm(F, C, D),
+    lineForm(F, A, C),
+    lineForm(F, B, D),
+  ];
+  const lambda = F.mul(formAt(F, ac, E), formAt(F, bd, E));
+  const mu = F.neg(F.mul(formAt(F, ab, E), formAt(F, cd, E)));
+  const [p, r] = [productOf(F, ab, cd), productOf(F, ac, bd)];
+  const c = (i: 0 | 1 | 2 | 3 | 4 | 5): T => F.add(F.mul(lambda, p[i]), F.mul(mu, r[i]));
+  return [c(0), c(1), c(2), c(3), c(4), c(5)];
+}
+
+/**
+ * The chord gap of the line p + t·d (FloatField; undefined in exact fields or when d is an
+ * asymptotic direction, α = 0 exactly): −sign(α)·Q(mid)/|∇Q(mid)|, mid the chord's midpoint, a
+ * length: positive when the line cuts the conic twice, zero at a tangency, negative when it misses
+ * (tools/conic-pairs.ts decides the count on it with the band; the tangent claim reads it).
+ */
+export function chordGap<T>(F: Field<T>, q: Coeffs<T>, p: Vec<T>, d: Vec<T>): T | undefined {
+  const alpha = qDirection(F, q, d);
+  if (F.kind !== 'float' || F.eq(alpha, F.zero)) return undefined;
+  const beta = F.mul(two(F), vDot(F, halfGradient(F, q, p), d));
+  const t = F.neg(F.div(beta, F.mul(two(F), alpha)));
+  const mid = { x: F.add(p.x, F.mul(t, d.x)), y: F.add(p.y, F.mul(t, d.y)) };
+  const g = halfGradient(F, q, mid);
+  const r = F.sqrt(F.mul(F.mul(two(F), two(F)), vDot(F, g, g)));
+  if (isInexact(r) || F.eq(r, F.zero)) return undefined;
+  const value = F.div(qValue(F, q, mid), r);
+  return F.toNumber(alpha) > 0 ? F.neg(value) : value;
+}

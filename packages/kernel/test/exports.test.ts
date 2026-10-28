@@ -33,6 +33,7 @@ import * as value from '../src/value';
 import * as mobius from '../src/transform/mobius';
 import * as applyMap from '../src/transform/apply-map';
 import * as ideal from '../src/ideal';
+import * as conic from '../src/conic';
 
 /** The public modules of @geomira/kernel (ADR-0002) and the runtime names each exports. */
 const SURFACE: Record<string, { module: object; names: string[] }> = {
@@ -180,6 +181,33 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'vScale',
       'vSub',
       'vec',
+    ],
+  },
+  './conic': {
+    module: conic,
+    names: [
+      'CONIC_BEYOND',
+      'chordGap',
+      'circleCoeffs',
+      'coeffsOf',
+      'coeffsProblem',
+      'conicDet',
+      'conicProblem',
+      'conicType',
+      'delta',
+      'halfGradient',
+      'homCentre',
+      'makeConic',
+      'mapCoeffs',
+      'mapConicBy',
+      'matrixOf',
+      'onConicSign',
+      'pencilCoeffs',
+      'polarCovector',
+      'poleOf',
+      'qDirection',
+      'qValue',
+      'quadNorm',
     ],
   },
   './incidence': {

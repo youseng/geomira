@@ -35,6 +35,17 @@ export type Ndg<T> =
       readonly what: string;
     }
   | { readonly kind: 'distinct_radii'; readonly r2a: T; readonly r2b: T; readonly what: string }
+  /**
+   * `value` ≠ 0, measured in FloatField as value/√norm of dimension `dim` (norm > 0); exact
+   * fields test value (ADR-0042: a line not in an asymptotic direction of a conic).
+   */
+  | {
+      readonly kind: 'nonzero';
+      readonly value: T;
+      readonly norm: T;
+      readonly dim: Dim;
+      readonly what: string;
+    }
   | { readonly kind: 'any'; readonly items: readonly Ndg<T>[]; readonly what: string };
 
 export type NdgStatus = 'ok' | 'degenerate' | 'ambiguous';
@@ -134,6 +145,8 @@ export function ndgStatus<T>(F: Field<T>, item: Ndg<T>, ctx: ToleranceContext): 
     }
     case 'distinct_radii':
       return radiiStatus(F, item.r2a, item.r2b, ctx);
+    case 'nonzero':
+      return decide(F, item.value, () => root(F, item.norm), item.dim, ctx);
     case 'any':
       return anyStatus(item.items.map((x) => ndgStatus(F, x, ctx)));
     default:

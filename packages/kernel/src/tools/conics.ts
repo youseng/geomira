@@ -8,37 +8,12 @@
  * same coefficients. Rational: exact over Q and mod p.
  */
 import { isInexact, type Field } from '@geomira/num/field';
-import { makeConic, mapCoeffs, type Coeffs } from '../conic';
-import { isZeroNormalized, isZeroVec, two, vCross, vDot, vSub } from '../geom';
+import { makeConic, mapCoeffs, pencilCoeffs } from '../conic';
+import { isZeroNormalized, isZeroVec, vCross, vDot, vSub } from '../geom';
 import type { ArgSymmetry, EvalContext, ExampleArg, ToolSpec } from '../tool';
 import { undef, type Undefined, type Value, type Vec } from '../value';
 import { badArgs, conicAt, pointsOf } from './args';
 import { conicCentre } from './conic-lines';
-
-type Form<T> = readonly [T, T, T];
-
-/** The line through P and Q as a form (α, β, γ): α·x + β·y + γ = cross(Q − P, X − P). */
-function lineForm<T>(F: Field<T>, P: Vec<T>, Q: Vec<T>): Form<T> {
-  const d = vSub(F, Q, P);
-  const [alpha, beta] = [F.neg(d.y), d.x];
-  return [alpha, beta, F.neg(F.add(F.mul(alpha, P.x), F.mul(beta, P.y)))];
-}
-
-/** The product of two line forms, as conic coefficients (a, b, c, d, e, f). */
-function productOf<T>(F: Field<T>, l: Form<T>, m: Form<T>): Coeffs<T> {
-  const h = (x: T): T => F.div(x, two(F));
-  const sym = (i: 0 | 1 | 2, j: 0 | 1 | 2): T => h(F.add(F.mul(l[i], m[j]), F.mul(l[j], m[i])));
-  return [F.mul(l[0], m[0]), sym(0, 1), F.mul(l[1], m[1]), sym(0, 2), sym(1, 2), F.mul(l[2], m[2])];
-}
-
-function valueOf<T>(F: Field<T>, l: Form<T>, X: Vec<T>): T {
-  return F.add(F.add(F.mul(l[0], X.x), F.mul(l[1], X.y)), l[2]);
-}
-
-function combine<T>(F: Field<T>, p: Coeffs<T>, lambda: T, q: Coeffs<T>, mu: T): Coeffs<T> {
-  const c = (i: 0 | 1 | 2 | 3 | 4 | 5): T => F.add(F.mul(lambda, p[i]), F.mul(mu, q[i]));
-  return [c(0), c(1), c(2), c(3), c(4), c(5)];
-}
 
 /** Whether three points are collinear (the normalised cross product within EPS, ADR-0003 item 21). */
 function collinear<T>(F: Field<T>, P: Vec<T>, Q: Vec<T>, R: Vec<T>, ctx: EvalContext): boolean {
@@ -106,15 +81,7 @@ function conic<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Val
   const o = { x: F.zero, y: F.zero };
   if (b === undefined || c === undefined || d === undefined || e === undefined)
     return badArgs('conic');
-  const [ab, cd, ac, bd] = [
-    lineForm(F, o, b),
-    lineForm(F, c, d),
-    lineForm(F, o, c),
-    lineForm(F, b, d),
-  ];
-  const lambda = F.mul(valueOf(F, ac, e), valueOf(F, bd, e));
-  const mu = F.neg(F.mul(valueOf(F, ab, e), valueOf(F, cd, e)));
-  const local = combine(F, productOf(F, ab, cd), lambda, productOf(F, ac, bd), mu);
+  const local = pencilCoeffs(F, o, b, c, d, e);
   // Back to world coordinates: the point map w ↦ A + scale·w takes the local conic to the conic.
   const z = F.zero;
   const q = mapCoeffs(F, local, [scale, z, A.x, z, scale, A.y, z, z, F.one]);

@@ -88,6 +88,8 @@ const HINTS: Readonly<Record<string, Pick<ClaimKindSpec, 'symmetry' | 'finder'>>
   equal: { symmetry: anyOrder(2), finder: {} },
   on: { symmetry: [], finder: {} },
   tangent: { symmetry: anyOrder(2), finder: {} },
+  // ADR-0042: the determinant condition vanishes for any order of the six points.
+  conconic: { symmetry: anyOrder(6), finder: {} },
   length: {
     symmetry: [
       { perm: [1, 0, 2, 3, 4] },
