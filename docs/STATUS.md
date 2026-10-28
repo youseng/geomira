@@ -1,6 +1,6 @@
 # STATUS
 
-## Run 16a: ideal points, projective maps, cross ratios: NOT ACCEPTED (awaiting CI and the maintainer)
+## Run 16a: ideal points, projective maps, cross ratios: NOT ACCEPTED (CI and the nightly are green; awaiting the maintainer)
 
 Decisions: [ADR-0040](adr/0040-ideal-points-and-projective-maps.md). SPEC §1, §4, §6.2, §10.1 and
 §18 (E2, E3, E8) are updated to match. PR: https://github.com/youseng/geomira/pull/26 (branch
@@ -114,6 +114,10 @@ Visible differences elsewhere (none in any example or fixture):
   text (and any tool taking a line) builds the ideal point. See Uncertain.
 - A pole at infinity (`pole(l, c)` with l through the centre) stays Undefined; it could now be
   an ideal point, but no item of this run asked for it.
+- Two shards are under the 75 % per-shard target (the gate is per package, and all four packages
+  pass): kernel-b at 68.39 % (proj-lines.ts and proj-apply.ts: the range and polygon cases of
+  projective apply) and the discovery catch-all at 73.03 % (the three new rule files). The kernel
+  package went from 97.95 % to 93.03 %. More targeted tests for those files would raise both.
 
 ### Known bugs
 
@@ -204,17 +208,68 @@ L3 (local): `L3 projective images: 1831 defined + 1169 Undefined agree, 0 not ex
 
 #### CI on GitHub
 
-Added after CI finishes on the pushed commit.
+On cebd9bb:
+
+- ci (push) https://github.com/youseng/geomira/actions/runs/40637072522: success. The verify step
+  (typecheck, lint, depcruise, rules with the floor 3875, tests) passed; end-to-end 125 passed,
+  with ADR-0037's gate:
+
+  ```
+  main thread during find on 150 objects without workers: {"objects":150,"tasks":2091,"seconds":7.9,"longest":[26.7,16.3,13,12,11.8],"over16":2,"longTasks":[]}
+  ```
+
+- ci (pull request) https://github.com/youseng/geomira/actions/runs/40637078888: success.
+- deploy https://github.com/youseng/geomira/actions/runs/40637072724: success.
+- tex https://github.com/youseng/geomira/actions/runs/40637072497 (push) and
+  https://github.com/youseng/geomira/actions/runs/40637078834 (pull request): success.
+- Earlier heads: 2067a1f failed one test on CI (a find job past the 5 s default timeout; fixed in
+  1668528), and the nightly on 1668528 stopped in Stryker's initial test run (the float Brokard
+  theorem at law scale 0.25; fixed in cebd9bb).
+
+- nightly https://github.com/youseng/geomira/actions/runs/40637076823 (dispatch, incremental, on
+  cebd9bb): success; the test job (NIGHTLY=1) and every mutation shard passed, and the gate:
+
+```
+num mutation gate: 93.47% (730 detected, 51 undetected; threshold 80%): pass
+kernel mutation gate: 93.03% (2748 detected, 206 undetected; threshold 75%): pass
+claims mutation gate: 85.43% (2334 detected, 398 undetected; threshold 75%): pass
+discovery mutation gate: 80.92% (2879 detected, 679 undetected; threshold 75%): pass
+kernel-a mutation score: 86.67% (273 detected, 42 undetected; target 75%, gated from v1.1)
+kernel-b mutation score: 68.39% (212 detected, 98 undetected; target 75%, gated from v1.1)
+kernel-c mutation score: 95.56% (280 detected, 13 undetected; target 75%, gated from v1.1)
+kernel-d mutation score: 97.26% (284 detected, 8 undetected; target 75%, gated from v1.1)
+kernel-e mutation score: 98.99% (197 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-f mutation score: 99.59% (241 detected, 1 undetected; target 75%, gated from v1.1)
+kernel-g mutation score: 99.37% (313 detected, 2 undetected; target 75%, gated from v1.1)
+kernel-i mutation score: 94.90% (279 detected, 15 undetected; target 75%, gated from v1.1)
+kernel-j mutation score: 100.00% (117 detected, 0 undetected; 4 mutants outside the shard not counted; target 75%, gated from v1.1)
+kernel-k mutation score: 91.10% (215 detected, 21 undetected; 143 mutants outside the shard not counted; target 75%, gated from v1.1)
+kernel-h mutation score: 98.83% (337 detected, 4 undetected; target 75%, gated from v1.1)
+claims mutation score: 85.43% (2334 detected, 398 undetected; target 75%, gated from v1.1)
+discovery-a mutation score: 90.09% (209 detected, 23 undetected; target 75%, gated from v1.1)
+discovery-b mutation score: 91.34% (485 detected, 46 undetected; target 75%, gated from v1.1)
+discovery-c mutation score: 77.38% (787 detected, 230 undetected; target 75%, gated from v1.1)
+discovery-d mutation score: 81.82% (450 detected, 100 undetected; target 75%, gated from v1.1)
+discovery-e mutation score: 84.33% (382 detected, 71 undetected; target 75%, gated from v1.1)
+discovery mutation score: 73.03% (566 detected, 209 undetected; 851 mutants outside the shard not counted; target 75%, gated from v1.1)
+```
+
+Stryker minutes per shard (this run; tests changed in every package, so most shards ran without
+reusable results): num 0, kernel-a 18, b 7, c 15, d 31, e 10, f 3, g 5, h 7, i 38, j 2, k 5,
+claims 37, discovery-a 35, discovery-b 77, discovery-c 66, discovery-d 77, discovery-e 68,
+discovery (catch-all) 47. Every shard is under the 100-minute limit.
 
 ### Requests
 
 - No new runtime dependencies. The test-count floor is raised to 3875 (docs/test-count.txt).
 - Mutation shards (ADR-0040 decision 19):
-  - discovery-d is not touched. The three new discovery files are in the catch-all `discovery`
-    shard, which took 56 minutes cold on the last full run; the nightly on this branch is its
-    first cold run with them.
-  - If it nears 100 minutes, move harmonic-sections.ts and closure-projective.ts to a seventh
-    shard. That changes `scripts/mutation-discovery.test.ts` (frozen), so it needs an ADR.
+  - No source file of discovery-d changed. The three new discovery files are in the catch-all
+    `discovery` shard (56 minutes cold before this run); with them it took 47 minutes on this
+    branch.
+  - discovery-b and discovery-d took 77 minutes each, discovery-e 68 and discovery-c 66: tests
+    changed in the package, so their results were not reused. A run after the merge reuses them.
+    If one nears 100 minutes, split it. That changes `scripts/mutation-discovery.test.ts`
+    (frozen), so it needs an ADR.
 
 ---
 
