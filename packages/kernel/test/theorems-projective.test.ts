@@ -177,7 +177,7 @@ const THEOREMS: readonly Theorem[] = [
     modes: ALL,
     build: (b, [A, B, C]) => {
       const w = b.call('w', 'circumcircle', A, B, C);
-      const D = b.call('D_1', 'on', w, num(3), num(-2));
+      const D = b.call('D_1', 'on', w, num(2), num(-5));
       const E = b.call('E_1', 'intersect', call('line', [A, B]), call('line', [C, D]));
       const F = b.call('F_1', 'intersect', call('line', [A, D]), call('line', [B, C]));
       const P = b.call('P', 'intersect', call('line', [A, C]), call('line', [B, D]));
