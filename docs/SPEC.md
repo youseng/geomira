@@ -15,10 +15,12 @@ tools (spiral_center, isogonal, symmedian, pole, radical_center, arc), mutation-
 gates. Run 14 (ADR-0032): inversion through Möbius maps (`inversion` and the presets of
 ADR-0032), the range `outside` flag. Run 17 (ADR-0035, ADR-0036, ADR-0037; before Run 16, Run 15
 skipped): discovery: the finder ("what is special?"), special-position hunting, lemma tags,
-branch-fix diagnosis.
+branch-fix diagnosis. Run 16a (ADR-0040): points at infinity (`IdealPoint`), projective maps
+(`projective`, `send_to_infinity`), cross ratios and harmonic quadruples (claims and
+`harmonic_conjugate`).
 Phase 2 (must not be referenced by v1 code; the extension points in §18 are built and
-tested in v1): projective maps (inversion and Möbius maps moved to Run 14 by ADR-0032),
-conics and projective tools, the symbolic
+tested in v1): conics (Run 16b) and the projective tools on them (inversion and Möbius maps
+moved to Run 14 by ADR-0032, projective maps to Run 16a by ADR-0040), the symbolic
 prover (the finder, special-position hunting and branch-fix diagnosis moved to Run 17 by
 ADR-0035 and ADR-0036), the problem library,
 write-ups, loci, animation, macros, accounts.
@@ -110,11 +112,15 @@ Generic over the number type T:
   layers keep exact gliders). Only circle(O, r) has none.
 - `Num { kind:'number', v, exact? }` · `Polygon { kind:'polygon', pts }`
 - `Transform { kind:'transform', t: { type:'similarity', anti, a, b } }` (z ↦ az + b or
-  a·z̄ + b) or `t: { type:'mobius', anti, a, b, c, d }` (z ↦ (aẑ + b)/(cẑ + d), ADR-0032);
-  reserved, documented only: 'projective'.
+  a·z̄ + b) or `t: { type:'mobius', anti, a, b, c, d }` (z ↦ (aẑ + b)/(cẑ + d), ADR-0032), or
+  `t: { type:'projective', m }` (a 3×3 matrix on (x, y, 1), never normalised) or
+  `t: { type:'composite', maps }` (Möbius and projective factors in order, ADR-0040).
+- `IdealPoint { kind:'ideal_point', d, chiral }` (ADR-0040): the point at infinity of the
+  direction d (a representative, not normalised); never drawn; the meet of two parallel lines.
 - `Undefined { kind:'undefined', reason }` and `Inexact { kind:'inexact', reason }`.
-Reserved kinds (documented only): IdealPoint, Conic, Locus. Capabilities: point; curve
-(line | circle); linear; round; number; transform; polygon. A kind a tool does not
+Reserved kinds (documented only): Conic, Locus. Capabilities: point; curve
+(line | circle); linear; round; number; transform; polygon; and (ADR-0040) ideal, ppoint (a
+point or an ideal point), which only declaring overloads take. A kind a tool does not
 accept → Undefined("<tool> does not accept <kind>"), so future kinds are safe by default.
 
 ## 5. Document model (packages/kernel/document.ts)
@@ -172,7 +178,10 @@ v1.1 tools (Run 13): `spiral_center`, `isogonal`, `symmedian`, `pole`,
 `radical_center`, `arc`.
 `symmedian_point` (ADR-0033, the Lemoine point). Run 14 (ADR-0032): `inversion(c)`, `inversion(O, k)`, and the presets `sqrt_bc`,
 `orthocenter_inversion`, `inversion_fixing`, `inversion_swap`, and (ADR-0034) `feet_inversion`,
-`sqrt_bc2` (compositions of the tools above).
+`sqrt_bc2` (compositions of the tools above). Run 16a (ADR-0040): `projective(A,B,C,D,A′,B′,C′,D′)`,
+`send_to_infinity(l)` (the stated chart of ADR-0040 decision 12), `harmonic_conjugate(A,B,C)` and
+`harmonic_conjugate(a,b,c)`; `intersect` of two parallel full lines is their ideal point, and
+`line(P, X∞)` is the parallel through P.
 
 ### 6.3 Degenerate behaviour (each item is a test)
 Parallel / coincident lines → Undefined; coincident defining points → Undefined;
@@ -250,7 +259,10 @@ collinear · concyclic · concurrent · parallel · perpendicular · on(P, curve
 tangent(curve, curve) · equal points · `AB = k·CD` (k exact) · `AB/CD = EF/GH` or
 `= number` · directed angles `n∡ABC = ∡DEF` (mod 180°) and `∡(l, m) = θ` · undirected
 `angle(A,B,C) = angle(D,E,F)` and linear forms `angle(A,B,C) ± angle(D,E,F) = θ`
-(statements like "∠BHC + ∠A = 180°" or "∠A + ∠B = 90°").
+(statements like "∠BHC + ∠A = 180°" or "∠A + ∠B = 90°") · (ADR-0040) `cross_ratio(A,B,C,D) = k`
+and `harmonic(A,B;C,D)` for four collinear or concyclic points (the complex cross ratio),
+`cross_ratio_lines`, `harmonic_lines` for four concurrent lines; collinear accepts points at
+infinity.
 Each kind defines, generically over Field<T>: `conditions(values)` (must all be 0),
 `ndg(values)` (must all be non-zero: NON-DEGENERACY data), and a float `residual`
 (dimensionless, ≥ 0). Directed angles use the complex form: with
@@ -258,7 +270,7 @@ z₁ = (C − B)·conj(A − B) and z₂ = (F − E)·conj(D − E), the conditi
 Im(z₁ⁿ·conj(z₂)) = 0, NDG z₁ ≠ 0 and z₂ ≠ 0 (for n = 1 this is the cross/dot formula).
 Lengths enter as squares. POLYNOMIAL KINDS (the whitelist for the prime-field rung):
 collinear, concyclic, concurrent, parallel, perpendicular, on, tangent, equal points,
-length and ratio equalities, directed angles. Undirected angles and anything involving
+length and ratio equalities, directed angles, cross ratios and harmonic quadruples. Undirected angles and anything involving
 order or inequality are NOT polynomial kinds. Kinds also carry their argument symmetries and
 optional finder hints (ADR-0035); the kinds are a registry value (`claimKindRegistry`).
 
@@ -412,13 +424,15 @@ test (N = 200, 150 objects) ≤ 1.5 s in the worker; page interactive ≤ 1.5 s.
 ## 18. Phase 2 extension points (built and tested in v1)
 E1 Field<T> with Rational and ModP in v1 → the prover adds PolyFraction, DegreeBound
 and QuadExt and reuses the same tool and claim code (guard: L3, L17).
-E2 Capability dispatch; kinds safe by default (guard: a test-only kind).
-E3 Transform union → 'mobius' (built in Run 14, ADR-0032), 'projective' (guard: exhaustive
-switches, §8 laws).
+E2 Capability dispatch; kinds safe by default (guard: a test-only kind; ADR-0040: every overload
+of every tool with an ideal point in each point position).
+E3 Transform union → 'mobius' (built in Run 14, ADR-0032), 'projective' and 'composite' (built in
+Run 16a, ADR-0040) (guard: exhaustive switches, §8 laws).
 E4 Derived layers, exclusion rules, drag-through (guard: L13, editor tests).
 E5 Arcs, cline, chirality flag (guard: tests; inversion maps segments → arcs and needs
    an `outside` range flag: built in Run 14, ADR-0032).
 E6 Claim conditions/NDG as field-generic data (guard: L12, L17).
 E7 Worker job protocol (guard: job tests).
-E8 Reserved kinds IdealPoint, Conic, Locus (v1 parallel lines → Undefined).
+E8 Reserved kinds Conic, Locus; IdealPoint built in Run 16a (ADR-0040: parallel lines meet
+in their ideal point; tools that do not declare it give Undefined with a reason, E2).
 E9 File versioning and migrations. E10 Registry-driven UI and docs.

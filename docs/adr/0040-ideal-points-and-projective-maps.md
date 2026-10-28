@@ -66,9 +66,10 @@ concyclic points is as a field-generic condition, or what the claims do with ide
      written with `parallel`. Every other kind gives "X is at infinity" (undefined, as before:
      a claim on X was undefined), never invalid. The finder never uses ideal points as candidates.
 5. **Not drawn** (scene shapes.ts): an ideal point is listed in the scene's `unavailable` with the
-   reason "at infinity, direction θ° (mod 180°)" and the new flag `atInfinity`; the Objects panel
-   shows "at infinity, direction θ°"; every export lists it as a warning ("X is at infinity
-   (direction θ°): not drawn"), never as coordinates. The GUI intersection tool still refuses two
+   reason "at infinity, direction θ°" (θ in [0°, 180°), to 0.01°: a direction and its opposite are
+   one point) and the new flag `atInfinity`; the Objects panel shows the same text (`ObjectRow.note`);
+   every export lists it as a warning ("X is a point at infinity (direction θ°): not drawn"), never
+   as coordinates; it is not draggable ("X is a point at infinity: it is not drawn"). The GUI intersection tool still refuses two
    parallel lines (it builds points it can show); the text builds the ideal point.
 6. **Static kinds** (kinds.ts): `intersect`'s line ∩ line overload outputs `point` and
    `ideal_point`; imaging (derived.ts) treats `ideal_point` as geometric.
@@ -149,8 +150,9 @@ concyclic points is as a field-generic condition, or what the claims do with ide
     infinity); ideal points of other directions land on l.
 13. **Layers, views, drag-through** need no change: `@layer inf = image(f, main)` with
     `f = send_to_infinity(l)` (ADR-0032 decision 19: the layer line names the map), the views UI of
-    ADR-0031, and drag-through inverts the map; a cursor on the image of ℓ's preimage has an
-    ideal preimage and is refused ("the preimage is a point at infinity"). Images of points of l
+    ADR-0031, and drag-through inverts the map; a cursor whose preimage is an ideal point (for
+    `send_to_infinity(l)`, a cursor on l) is refused ("the preimage under f is a point at
+    infinity"). Images of points of l
     are ideal points (not drawn, listed). The editor's drag-end rounding uses the local scale
     √(|det m|/|W(x)|³).
 
@@ -197,21 +199,42 @@ concyclic points is as a field-generic condition, or what the claims do with ide
 
 ### Discovery (ADR-0035, ADR-0039)
 
-17. **Map facts**: a new MapType `'projective'` (send_to_infinity: involution; projective: none),
-    with what it keeps: equal points, incidence of points and lines (on, collinear, concurrent),
-    cross ratios and harmonic quadruples; never lengths, angles, circles or tangency. Transport
-    through a projective map uses that list; through a Möbius map the point cross ratio kinds are
-    kept too (a Möbius map keeps the complex cross ratio up to conjugation).
-18. **Not flooding**: images in an `inf` layer are reported only when the preimages' fact is not
-    already known (ADR-0039 decision 4); a test runs the finder on a projective layer as ADR-0039's
-    inversion case does.
+17. **Map facts**: a new MapType `'projective'` (send_to_infinity: an involution; projective: its
+    four known images), with what it keeps: equal points, incidence of points and lines (on,
+    collinear, concurrent), cross ratios and harmonic quadruples; never lengths, angles, circles or
+    tangency. Transport through a projective map uses that list; through a Möbius map the point
+    cross ratio kinds are kept too (a Möbius map keeps the complex cross ratio up to conjugation).
+    A new map datum `infinityImage` (MapFacts; the reference says "takes the line at infinity onto
+    l"): the line the map takes the line at infinity onto; send_to_infinity(l), an involution,
+    takes it onto l.
+18. **Not flooding** (rules of the knowledge, ADR-0039 decisions 2–4, each a classical theorem
+    with a false neighbour in `packages/discovery/test/projective-facts.test.ts`):
+    - _Image lines_ (closure-projective.ts): the images under a projective map of the points of
+      one line class are collinear (finite images only: a point at infinity is never put on a
+      line); the images of the figure's points at infinity lie on the map's `infinityImage`.
+    - _Inversion_ (harmonic-maps.ts): for an inversion in a circle with centre O, X, its image X*
+      and the two points P, Q where line OX meets the circle, (P, Q; X, X*) = −1.
+    - _Sections of a pencil_ (harmonic-sections.ts): four concurrent lines through O cut a line
+      not through O, and a circle through O, in four points with the cross ratio of the lines (the
+      inscribed angles make a section of a circle from one of its points a section of a line). So
+      a known `cross_ratio_lines`/`harmonic_lines` fact gives the points' fact on each section the
+      closure knows, and conversely, with the same literal and argument order: a harmonic
+      quadruple and the pencil that cuts it out are one finding, the other listed under it.
+      A projective layer `image(send_to_infinity(l), main)` reports nothing (the images'
+      collinearity, their harmonic quadruple and X* on l are construction facts); the complete
+      quadrilateral reports (A, C; P, X) = −1 alone; the harmonic quadrilateral on a circle (the
+      tangents at A and C meeting on BD) reports (A, C; B, D) = −1.
 
 ### Mutation testing, docs
 
-19. New kernel files join stryker.kernel.json and existing light shards (the frozen test keeps
-    eleven kernel shards); the claims kinds file joins its shard; discovery-d is not touched
-    (ADR-0038's limit), new discovery logic lives in files of other shards. Shards are sized for a
-    cold run.
+19. New kernel files join existing light shards (the frozen test keeps eleven kernel shards):
+    projective.ts and proj-side.ts kernel-a, proj-lines.ts and proj-apply.ts kernel-b,
+    projective-tools.ts kernel-i, parallel-lines.ts kernel-c, harmonic.ts kernel-d; map-ops.ts's
+    range is spread over kernel-e and kernel-g. The claims kinds file is in the claims shard (the
+    whole package). discovery-d (78 minutes cold) is not touched: the new discovery files
+    (closure-projective.ts, harmonic-maps.ts, harmonic-sections.ts) are in the catch-all
+    `discovery` shard (56 minutes cold before this run); closure.ts (discovery-a) and derive.ts
+    (discovery-e) gained a call each.
 20. docs/tools.md and docs/language.md are regenerated; every new tool has the full checklist
     (one compute, degenerate tests, L3, a theorem test, export mapping `'numeric'`, docs, symmetry).
 
@@ -226,17 +249,38 @@ concyclic points is as a field-generic condition, or what the claims do with ide
 
 ### Frozen tests changed under this ADR
 
-22. Listed in STATUS (each commit cites this ADR):
+22. Listed in STATUS (every commit that changes one cites this ADR). Lines modified or deleted,
+    each because the meet of parallel lines is now an ideal point, or because TransformData has
+    two more shapes:
     - `packages/kernel/test/degenerate.test.ts`: the intersect case "parallel lines → Undefined"
-      becomes "parallel lines → their ideal point", asserting the ideal point in every field (and
-      the nearly parallel case: ideal in floats, a point over Q, as before).
+      becomes "parallel lines → their ideal point" (`ideal_point` in every field; the nearly
+      parallel case too, in floats); parallel segments or rays stay Undefined (case added).
+    - `packages/kernel/test/tools.property.test.ts`: "parallel(C, AB) never meets AB" (name kept):
+      the meet is the ideal point (not chiral), no longer Undefined.
+    - `packages/kernel/test/helpers/degenerate-transforms.ts`: a fixture built O as the meet of AB
+      and the parallel through C to stand for an Undefined point; it is now the meet of AB with the
+      parallel through A (the same line: Undefined); narrowing lines added.
+    - `packages/kernel/test/helpers/degenerate-mobius.ts`, `laws/l13-compose-collapse.test.ts`: the
+      reads of a Möbius map's fields narrow the type first (`h.t.type === 'mobius' &&`; a `vs`
+      constant), as the union has two more members.
+    - `packages/kernel/test/derived.test.ts`: the image of an Undefined meet used a line parallel
+      to AB; it uses line(B, A) (coincident: Undefined).
+    - `packages/kernel/test/image-kinds.test.ts`: the applied kinds gain `ideal_point`.
+    - `packages/claims/test/eval-claim.test.ts`: "a claim on an Undefined object" used the meet of
+      parallel lines; it uses intersect(l, l).
     - `packages/claims/test/helpers/corpus-degenerate.ts`: "a claim on the intersection of parallel
       lines (Undefined)" claimed collinear(X, A, C) with X the ideal point of AB, which is FALSE in
-      the projective plane; it now claims collinear(midpoint(X, A), A, C), a claim on an object
-      built from the ideal point (still undefined, as the entry's name says). The claim itself
-      joins the false corpus.
-    - `packages/claims/test/screen.test.ts`: collinear(A, B, X) with X the ideal point of AB is
-      now true (it was undefined).
+      the projective plane; it now claims collinear(midpoint(X, A), A, C), still undefined, as the
+      entry's name says. The claim itself joins the false corpus.
+    - `packages/claims/test/screen.test.ts`: collinear(A, B, X) with X the ideal point of AB is now
+      true (it was undefined).
+    - `packages/discovery/test/find.test.ts`: the kinds not searched add cross_ratio and
+      cross_ratio_lines.
+    - `packages/lang/test/triangle-existing.test.ts`: a triangle on an Undefined vertex used the
+      meet of parallel lines; it uses coincident lines (the ideal vertex has its own test).
+    - `docs/adr/0009-grammar.md` (its EBNF is tested verbatim): the claim rule gains the
+      cross-ratio notation and `;`.
+      Every other change to a frozen test file adds lines only (new cases, kinds and names).
 
 ## Consequences
 
