@@ -57,7 +57,8 @@ function conjugatePoint<T>(
  */
 function pointForm<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const [a, b, c] = [pointAt(args, 0), pointAt(args, 1), args[2]];
-  if (a === undefined || b === undefined || c === undefined) return badArgs(NAME);
+  if (a === undefined || b === undefined || (c?.kind !== 'point' && c?.kind !== 'ideal_point'))
+    return badArgs(NAME);
   const u = vSub(F, b, a);
   if (isZeroVec(F, u, ctx)) return undef(`coincident points: ${NAME}(A, B, C) needs A ≠ B`);
   if (c.kind === 'ideal_point') {
@@ -66,7 +67,6 @@ function pointForm<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext):
       ? { kind: 'point', ...vScale(F, vAdd(F, a, b), half(F)) }
       : undef(`${NAME}: C is a point at infinity off line AB`);
   }
-  if (c.kind !== 'point') return badArgs(NAME);
   const line: Line<T> = { kind: 'line', p: a, d: u, lo: null, hi: null, chiral: false };
   const off = requireOnLine(F, c, line, ctx, `${NAME}(A, B, C) needs C on line AB`);
   if (off !== undefined) return off;

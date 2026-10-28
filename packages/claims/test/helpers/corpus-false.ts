@@ -10,6 +10,7 @@ import {
   threeCircles,
   type Entry,
 } from './corpus';
+import { PROJECTIVE_FALSE } from './corpus-true-projective';
 
 export const FALSE_CLAIMS: readonly Entry[] = [
   {
@@ -256,4 +257,5 @@ export const FALSE_CLAIMS: readonly Entry[] = [
         .def('X', 'intersect', c('line', 'A', 'B'), c('parallel', 'C', c('line', 'A', 'B')))
         .claim('collinear', 'X', 'A', 'C'),
   },
+  ...PROJECTIVE_FALSE,
 ];

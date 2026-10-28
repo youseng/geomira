@@ -201,6 +201,8 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'FOOT_LINE',
       'FOOT_POINTS',
       'GUARANTEE_TABLE',
+      'HARMONIC_LINE',
+      'HARMONIC_POINT',
       'HOMOTHETY_POINT',
       'INCENTER',
       'INCIRCLE',

@@ -18,7 +18,7 @@ export interface ObjectsPanelProps {
 function statusText(r: ObjectRow): string {
   switch (r.status) {
     case 'ok':
-      return r.kind;
+      return r.note ?? r.kind;
     case 'undefined':
       return `undefined: ${r.reason ?? ''}`;
     case 'inexact':

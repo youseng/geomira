@@ -1,6 +1,7 @@
 /** L12: degenerate claims. None may ever be called true or false, in any sample. */
 import { c, n } from './build';
 import type { Entry } from './corpus';
+import { PROJECTIVE_DEGENERATE } from './corpus-true-projective';
 
 export const DEGENERATE_CLAIMS: readonly Entry[] = [
   { name: 'collinear(A, A, B)', build: (f) => f.claim('collinear', 'A', 'A', 'B') },
@@ -91,4 +92,5 @@ export const DEGENERATE_CLAIMS: readonly Entry[] = [
         .derived('bad', 't')
         .claim('on', 'A*', 'w'),
   },
+  ...PROJECTIVE_DEGENERATE,
 ];
