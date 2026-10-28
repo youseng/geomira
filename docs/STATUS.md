@@ -1,12 +1,24 @@
 # STATUS
 
-## Run 16b: conics: NOT ACCEPTED (waiting for CI on GitHub and the maintainer's review)
+## Run 16b: conics: ACCEPTED (2026-10-28)
 
 Decisions: [ADR-0042](adr/0042-conics.md) (and [ADR-0041](adr/0041-add-only-guard-nearest-run-tag.md):
 the add-only guard compares with the previous run's tag, not the highest run number). SPEC §1,
 §3, §4, §10.1 and §18 E8 are updated to match. Base: main = 335803e (tag run-16a), ACCEPTED, and
 `pnpm verify` was green on it before any Run 16b change. Branch: claude/charming-knuth-k8eclp.
-PR: https://github.com/youseng/geomira/pull/27. CI and nightly: pending (filled in when they finish).
+PR: https://github.com/youseng/geomira/pull/27.
+
+Accepted on the criteria and CI (CLAUDE.md: the maintainer's review is the merge). On 8db5f13, the
+last code commit, everything is green:
+
+- CI: https://github.com/youseng/geomira/actions/runs/40717851416 (pull_request) and
+  https://github.com/youseng/geomira/actions/runs/40717841539 (push). The push run's first
+  attempt failed on the 16 ms slice flake (Known bugs); its one re-run passed.
+- tex: https://github.com/youseng/geomira/actions/runs/40717851577.
+- deploy (build and e2e): https://github.com/youseng/geomira/actions/runs/40717841146.
+- Nightly: https://github.com/youseng/geomira/actions/runs/40717841706, mutation gate passed.
+
+The commits after 8db5f13 change only docs/STATUS.md and docs/test-count.txt (4058).
 
 ### Done (each item → the test file that proves it)
 
@@ -87,12 +99,16 @@ claimKey listed 720 arrangements per six-point candidate (four times slower find
 - The refusal "pick a line or circle" also accepts a conic (the words of a frozen test are
   kept).
 - The known 16 ms slice flake (`apps/web/test/host-discovery.test.ts`, "without a worker the
-  page finds the Euler line in slices within its budget") fails a little more often. Over 18
-  fresh-process runs each it failed 3/18 at head, 1/18 at run-16a and 0/18 at head without
-  the conconic search. The late slices fall in "evaluating the figure" and "collecting
-  construction facts" (JIT/GC warm-up). It failed once in CI on 8db5f13 (4 late slices, 3
-  allowed) and that job was re-run once (PR comment). Moving the conic closure rules into
-  their own step did not change the rate.
+  page finds the Euler line in slices within its budget") also fails on this branch. It failed
+  once in CI on 8db5f13 (4 late slices, 3 allowed; the one re-run passed) and once in a local
+  full `pnpm verify` (late slices 34.7, 17.7, 20.8 and 23.3 ms, all among slices 4–10 of 140).
+  It comes from run-16a, not from conics. A step-by-step timing of the test's job (find on
+  A, B, C, O, H, G, seed 5) gives the same 545 steps with the same costs at run-16a and at head.
+  The slices over 16 ms are single cold-start screening steps (dangle, angle_eq, angle_sum:
+  16–25 ms on a process's first run, 4–8 ms after). Under the load of the whole suite they
+  come more often. Rates over 18 isolated runs each (3/18 at head, 1/18 at run-16a) are within
+  noise. Moving the conic closure rules into their own step did not change them. A fix would
+  split those screening steps (Requests).
 
 ### Uncertain
 
@@ -130,26 +146,42 @@ discovery `guarantees-hold.test.ts`.
 
 ### Acceptance command output
 
-Local (`pnpm verify` on 4facc40, the last code commit):
+Local `pnpm verify` on 8db5f13 plus this STATUS (test-count floor now 4058). It ran twice. The
+first run failed only the slice flake (Known bugs: 4057/4058 passed). The second run was green:
 
 ```text
-✔ no dependency violations found (834 modules, 4813 dependencies cruised)
-ok   tolerance: 1157 files scanned, 0 violation(s)
-ok   file-length: 1157 files scanned, 0 violation(s)
-ok   test-count: 4054 tests, floor 3875, 0 violation(s)
-ok   disabled-tests: 1157 files scanned, 0 violation(s)
+✔ no dependency violations found (835 modules, 4819 dependencies cruised)
+ok   tolerance: 1158 files scanned, 0 violation(s)
+ok   file-length: 1158 files scanned, 0 violation(s)
+ok   test-count: 4058 tests, floor 4054, 0 violation(s)
+ok   disabled-tests: 1158 files scanned, 0 violation(s)
 ok   add-only: frozen tests compared with run-16a, 0 violation(s)
-ok   forbidden-words: 1157 files scanned, 0 violation(s)
- Test Files  438 passed (438)
-      Tests  4054 passed (4054)
-All files          |   96.41 |    90.35 |   99.21 |    98.2 |
+ok   forbidden-words: 1158 files scanned, 0 violation(s)
+ Test Files  439 passed (439)
+      Tests  4058 passed (4058)
+All files          |   96.42 |    90.36 |   99.21 |   98.19 |
 ```
 
-CI on GitHub: see the URLs at the top of this section (filled in when the runs finish).
+CI on GitHub: the URLs at the top of this section. Nightly mutation gate on 8db5f13:
+
+```text
+num mutation gate: 93.47% (730 detected, 51 undetected; threshold 80%): pass
+kernel mutation gate: 89.98% (3071 detected, 342 undetected; threshold 75%): pass
+claims mutation gate: 84.99% (2395 detected, 423 undetected; threshold 75%): pass
+discovery mutation gate: 81.87% (3025 detected, 670 undetected; threshold 75%): pass
+kernel-b mutation score: 66.19% (278 detected, 142 undetected; target 75%, gated from v1.1)
+discovery mutation score: 73.16% (567 detected, 208 undetected; 529 mutants outside the shard not counted; target 75%, gated from v1.1)
+```
+
+Every other shard is at or above 75 %. The two shards above are the ones under the per-shard
+target that the maintainer moved to Run 16c (Not done).
 
 ### Requests
 
-- None.
+- The slice flake above: split the screening steps of the angle kinds (dangle, angle_eq,
+  angle_sum, angle_diff) into smaller steps, so that no single step goes over 16 ms on a cold
+  start. This is discovery work outside conics, so it is not in this run; it is for a run you
+  choose.
 
 ## Run 16a: ideal points, projective maps, cross ratios: ACCEPTED (2026-10-28)
 
