@@ -73,6 +73,20 @@ function relationKinds(st: State, c: Condition, xs: readonly Expr[]): void {
   );
 }
 
+/**
+ * `harmonic` and `cross_ratio` on four lines are the line kinds (ADR-0040 decision 16): every one
+ * of the four arguments may be a line and none a point, by its static kinds. Unknown kinds keep
+ * the point kind (its own checks then report the arguments).
+ */
+function crossRatioKind(st: State, kind: string, xs: readonly Expr[]): string {
+  if (kind !== 'harmonic' && kind !== 'cross_ratio') return kind;
+  const lines = xs.slice(0, 4).every((e) => {
+    const k = exprKinds(e, st.kinds, st.registry);
+    return k !== undefined && k.includes('line') && !k.includes('point');
+  });
+  return lines && xs.length >= 4 ? `${kind}_lines` : kind;
+}
+
 /** Builds one claim or assumption; its comment anchor, or undefined when not applied. */
 function one(st: State, d: Deferred): CommentAnchor | undefined {
   st.line = Number.MAX_SAFE_INTEGER;
@@ -91,7 +105,8 @@ function one(st: State, d: Deferred): CommentAnchor | undefined {
     st.doc = { ...st.doc, nextId: id + 1, assumptions: [...st.doc.assumptions, a] };
     return { kind: 'assumption', id };
   }
-  const problem = claimProblem({ kind: d.condition.kind, args: xs });
+  const kind = crossRatioKind(st, d.condition.kind, xs);
+  const problem = claimProblem({ kind, args: xs });
   if (problem !== undefined) {
     st.diags.push(error(d.condition.span, problem, 'see the claim forms in docs/language.md'));
     return undefined;
@@ -100,9 +115,7 @@ function one(st: State, d: Deferred): CommentAnchor | undefined {
   if (!named.ok) return undefined;
   if (d.condition.relation === true) relationKinds(st, d.condition, xs);
   const c: Claim =
-    named.name === undefined
-      ? { id, kind: d.condition.kind, args: xs }
-      : { id, name: named.name, kind: d.condition.kind, args: xs };
+    named.name === undefined ? { id, kind, args: xs } : { id, name: named.name, kind, args: xs };
   st.doc = { ...st.doc, nextId: id + 1, claims: [...st.doc.claims, c] };
   return { kind: 'claim', id };
 }

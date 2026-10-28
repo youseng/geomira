@@ -442,6 +442,34 @@ radical_center(c1, c2, c3): the point with equal power to the three circles, whe
 - Examples:
   - `radical_center(circle((0, 0), 2), circle((6, 0), 3), circle((2, 5), 1))` → point (31/12, 13/6)
 
+### harmonic_conjugate
+
+harmonic_conjugate(A, B, C): the point D of line AB with (A, B; C, D) = −1 (C on AB; the midpoint gives the point at infinity of AB). harmonic_conjugate(a, b, c): the line d through the common point of the concurrent lines a, b, c with (a, b; c, d) = −1. Exact.
+
+- Signatures: `harmonic_conjugate(point, point, ppoint)`, `harmonic_conjugate(linear, linear, linear)`
+- Result: point, ideal_point, line
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `harmonic_conjugate(point, point, ppoint)`: arguments 1, 2 in any order (the same value)
+  - `harmonic_conjugate(linear, linear, linear)`: arguments 1, 2 in any order (the same value)
+- By construction:
+  - `harmonic_conjugate(point, point, ppoint)`: harmonic(#1, #2, #3, result); collinear(#1, #2, result)
+  - `harmonic_conjugate(linear, linear, linear)`: harmonic_lines(#1, #2, #3, result)
+- Degenerate cases:
+  - A = B → Undefined
+  - C not on line AB → Undefined (within the band: ambiguous)
+  - C = A or C = B → Undefined
+  - C the midpoint of AB → the point at infinity of AB
+  - C the point at infinity of AB → the midpoint; of another direction → Undefined
+  - lines: two of a, b, c the same line → Undefined
+  - lines: a, b, c not concurrent → Undefined
+  - lines: a parallel pencil → the parallel line; c midway → Undefined (the line at infinity)
+- Examples:
+  - `harmonic_conjugate((0, 0), (6, 0), (2, 0))` → point (-6, 0)
+  - `harmonic_conjugate((0, 0), (6, 0), (3, 0))` → point at infinity, direction (6, 0)
+  - `harmonic_conjugate(line((0, 0), (1, 0)), line((0, 0), (0, 1)), line((0, 0), (1, 1)))` → line (0, 0) + t·(1, -1), t ∈ [−∞, ∞], chiral
+
 ## Lines
 
 ### line
@@ -1235,7 +1263,7 @@ send_to_infinity(l): the projective map that swaps line l and the line at infini
 - Symmetry: none
 - By construction: nothing
 - As a map:
-  - `send_to_infinity(linear)`: projective; an involution
+  - `send_to_infinity(linear)`: projective; an involution; takes the line at infinity onto #1
 - Degenerate cases:
   - a line without direction → Undefined
   - a segment or ray → the map of its carrier line

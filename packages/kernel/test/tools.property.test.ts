@@ -153,7 +153,7 @@ const PROPERTIES: readonly Property[] = [
       const [x, y] = [f.get('X'), f.get('Y')];
       return (
         x.kind === 'ideal_point' &&
-        x.chiral === false &&
+        !x.chiral &&
         y.kind === 'undefined' &&
         y.reason === 'coincident lines'
       );

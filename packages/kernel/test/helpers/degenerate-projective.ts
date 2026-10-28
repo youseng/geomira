@@ -222,7 +222,90 @@ const APPLY_PROJECTIVE: Record<string, () => void> = {
   },
 };
 
+const ORIGIN = pt(0, 0);
+const X6 = pt(6, 0);
+const xAxis = line(pt(0, 0), pt(1, 0));
+const HARMONIC_CASES: Record<string, () => void> = {
+  'A = B → Undefined': () => {
+    for (const F of FIELDS)
+      expect(reason(at(F, 'harmonic_conjugate', ORIGIN, ORIGIN, pt(1, 0)))).toBe(
+        'undefined: coincident points: harmonic_conjugate(A, B, C) needs A ≠ B',
+      );
+  },
+  'C not on line AB → Undefined (within the band: ambiguous)': () => {
+    for (const F of FIELDS)
+      expect(reason(at(F, 'harmonic_conjugate', ORIGIN, X6, pt(2, 1)))).toMatch(
+        /^undefined: harmonic_conjugate\(A, B, C\) needs C on line AB/,
+      );
+    expect(reason(at(FloatField, 'harmonic_conjugate', ORIGIN, X6, pt(2, 1e-8)))).toMatch(
+      /^undefined: ambiguous/,
+    );
+  },
+  'C = A or C = B → Undefined': () => {
+    for (const F of FIELDS)
+      for (const C of [ORIGIN, X6])
+        expect(reason(at(F, 'harmonic_conjugate', ORIGIN, X6, C))).toBe(
+          'undefined: harmonic_conjugate: C = A or C = B has no harmonic conjugate',
+        );
+  },
+  'C the midpoint of AB → the point at infinity of AB': () => {
+    for (const F of ORDERED)
+      expect(nums(F, at(F, 'harmonic_conjugate', ORIGIN, X6, pt(3, 0)))).toEqual([
+        'ideal',
+        6,
+        0,
+        false,
+      ]);
+    expect(at(ModPField, 'harmonic_conjugate', ORIGIN, X6, pt(3, 0)).kind).toBe('ideal_point');
+    // (0, 6; 2, D) = −1: MC·MD = MA² with M = 3, C = 2 → D = 3 − 9 = −6.
+    for (const F of ORDERED)
+      expect(nums(F, at(F, 'harmonic_conjugate', ORIGIN, X6, pt(2, 0)))).toEqual(['point', -6, 0]);
+  },
+  'C the point at infinity of AB → the midpoint; of another direction → Undefined': () => {
+    for (const F of FIELDS) {
+      const v = at(F, 'harmonic_conjugate', ORIGIN, X6, H_INF);
+      expect(v.kind).toBe('point');
+      if (F !== ModPField) expect(nums(F, v)).toEqual(['point', 3, 0]);
+      expect(reason(at(F, 'harmonic_conjugate', ORIGIN, X6, V_INF))).toBe(
+        'undefined: harmonic_conjugate: C is a point at infinity off line AB',
+      );
+    }
+  },
+  'lines: two of a, b, c the same line → Undefined': () => {
+    for (const F of FIELDS)
+      expect(
+        reason(
+          at(F, 'harmonic_conjugate', xAxis, line(pt(2, 0), pt(5, 0)), line(ORIGIN, pt(0, 1))),
+        ),
+      ).toBe('undefined: harmonic_conjugate: two of a, b, c are the same line');
+  },
+  'lines: a, b, c not concurrent → Undefined': () => {
+    for (const F of FIELDS) {
+      const c = line(pt(0, 1), pt(1, 2));
+      expect(reason(at(F, 'harmonic_conjugate', xAxis, line(ORIGIN, pt(0, 1)), c))).toBe(
+        'undefined: harmonic_conjugate(a, b, c) needs a, b and c concurrent',
+      );
+      const par = line(pt(0, 3), pt(1, 3));
+      expect(reason(at(F, 'harmonic_conjugate', xAxis, par, line(ORIGIN, pt(0, 1))))).toBe(
+        'undefined: harmonic_conjugate(a, b, c) needs a, b and c concurrent',
+      );
+    }
+  },
+  'lines: a parallel pencil → the parallel line; c midway → Undefined (the line at infinity)':
+    () => {
+      const y = (k: number) => line(pt(0, k), pt(1, k));
+      for (const F of ORDERED) {
+        // y = 0, y = 6, y = 2: the conjugate is y = −6.
+        const v = at(F, 'harmonic_conjugate', y(0), y(6), y(2));
+        expect(v.kind === 'line' && F.toNumber(v.p.y) + 0).toBe(-6);
+        expect(v.kind === 'line' && F.toNumber(v.d.y) + 0).toBe(0);
+        expect(reason(at(F, 'harmonic_conjugate', y(0), y(6), y(3)))).toMatch(/line at infinity/);
+      }
+    },
+};
+
 const PROJECTIVE_CASES_OWN: Record<string, Record<string, () => void>> = {
+  harmonic_conjugate: HARMONIC_CASES,
   projective: {
     'three of A, B, C, D collinear (or coincident) → Undefined': () => {
       const sq = [pt(0, 0), pt(4, 0), pt(4, 4), pt(0, 4)];

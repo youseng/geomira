@@ -104,6 +104,7 @@ describe('createRegistry', () => {
       'sqrt_bc2',
       'projective',
       'send_to_infinity',
+      'harmonic_conjugate',
     ]);
     for (const t of REGISTRY.tools) {
       expect(t.id).toBe(t.name);

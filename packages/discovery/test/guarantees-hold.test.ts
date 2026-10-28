@@ -72,6 +72,8 @@ const FIGURES: Readonly<Record<string, () => Arg[]>> = {
   'pole(linear,round)': () => [c('line', 'D', 'E'), 'w'],
   'radical_center(round,round,round)': () => ['w', c('circle', 'D', n(3)), c('circle', 'E', n(2))],
   'arc(point,point,point)': () => ['A', 'B', 'C'],
+  'harmonic_conjugate(point,point,ppoint)': () => ['A', 'B', c('divide', 'A', 'B', n('1/3'))],
+  'harmonic_conjugate(linear,linear,linear)': () => [AB(), c('line', 'A', 'C'), AD()],
 };
 
 function term(t: GuaranteeTerm, args: readonly Arg[]): Arg {

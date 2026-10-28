@@ -6,6 +6,7 @@
 import type { Field } from '@geomira/num/field';
 import { RationalField } from '@geomira/num/rational-field';
 import { call } from '../../src/expr';
+import { num } from './doc';
 import { vCross, vSub } from '../../src/geom';
 import { samePoints, type Figure } from './figure';
 import type { V11Property } from './v11-properties';
@@ -19,6 +20,17 @@ function idealOf<T>(f: Figure<T>, x: string, l: string): boolean {
     v.kind === 'ideal_point' &&
     m.kind === 'line' &&
     f.F.isZero(vCross(f.F, v.d, m.d), 'dimensionless', f.ctx)
+  );
+}
+
+/** Whether two lines have one carrier. */
+function sameLine<T>(f: Figure<T>, a: string, b: string): boolean {
+  const [l, m] = [f.get(a), f.get(b)];
+  if (l.kind !== 'line' || m.kind !== 'line') return false;
+  const F = f.F;
+  return (
+    F.isZero(vCross(F, l.d, m.d), 'dimensionless', f.ctx) &&
+    F.isZero(vCross(F, l.d, vSub(F, m.p, l.p)), 'area', f.ctx)
   );
 }
 
@@ -84,6 +96,33 @@ export const PROJECTIVE_PROPERTIES: readonly V11Property[] = [
     },
     required: ['X_s', 'm'],
     check: (f) => idealOf(f, 'X', 'cd') && onLine(f, 'X_s', 'l') && idealOf(f, 'X', 'm'),
+    fields: EXACT,
+  },
+  {
+    tools: ['harmonic_conjugate', 'divide'],
+    name: 'harmonic_conjugate is an involution on line AB: the conjugate of D is C; swapping A, B keeps D',
+    build: (b, [A, B]) => {
+      const C = b.call('C2', 'divide', A, B, num('2/7'));
+      const D = b.call('D2', 'harmonic_conjugate', A, B, C);
+      b.call('E2', 'harmonic_conjugate', A, B, D);
+      b.call('F2', 'harmonic_conjugate', B, A, C);
+    },
+    required: ['D2', 'E2', 'F2'],
+    check: (f) => samePoints(f, 'E2', 'C2') && samePoints(f, 'F2', 'D2'),
+    fields: EXACT,
+  },
+  {
+    tools: ['harmonic_conjugate', 'line'],
+    name: 'the line form is an involution in the pencil of AB, AC (through A)',
+    build: (b, [A, B, C, D]) => {
+      const [a, c] = [b.call('a', 'line', A, B), b.call('c', 'line', A, C)];
+      const d = b.call('d', 'line', A, D);
+      const e = b.call('e', 'harmonic_conjugate', a, c, d);
+      b.call('g', 'harmonic_conjugate', a, c, e);
+      b.call('Q', 'intersect', e, call('line', [B, C]));
+    },
+    required: ['e', 'g'],
+    check: (f) => sameLine(f, 'g', 'd'),
     fields: EXACT,
   },
 ];

@@ -86,6 +86,10 @@ claim         = kind , "(" , expr , { "," , expr } , ")"    (* every kind by nam
               | "∡" , "(" , expr , "," , expr , ")" , "=" , number           (* dangle_lines *)
               | angle , "=" , angle                                          (* angle_eq *)
               | angle , ( "+" | "-" ) , angle , "=" , number                 (* angle_sum, angle_diff *)
+              | "harmonic" , "(" , expr , "," , expr , ";" , expr , "," , expr , ")"
+                                    (* harmonic, or harmonic_lines on four lines (ADR-0040) *)
+              | "cross_ratio" , "(" , expr , "," , expr , [ "," | ";" ] , expr , "," , expr , ")" ,
+                "=" , number        (* cross_ratio, or cross_ratio_lines on four lines *)
               | expr , "=" , expr ;                                          (* equal *)
 segment       = pointName , pointName                       (* glued: AB *)
               | "dist" , "(" , expr , "," , expr , ")" ;
@@ -190,6 +194,10 @@ P = on(ω, 2, 1)
 | `angle_eq` | `∠ABC = ∠DEF`, `angle(X, Y, Z) = angle(…)` | `claim ∠ABH = ∠ACH` | no |
 | `angle_sum` | `∠ABC + ∠DEF = θ` | `claim ∠BHC + ∠BAC = 180°` | no |
 | `angle_diff` | `∠ABC - ∠DEF = θ` | `claim ∠ABH - ∠ACH = 0` | no |
+| `cross_ratio` | `cross_ratio(A, B, C, D) = k (four collinear or concyclic points)` | `claim cross_ratio(B, C, M_a, P) = 2` | yes |
+| `harmonic` | `harmonic(A, B; C, D) (four collinear or concyclic points)` | `claim harmonic(B, C; M_a, P)` | yes |
+| `cross_ratio_lines` | `cross_ratio(a, b, c, d) = k (four concurrent lines)`, `cross_ratio_lines(a, b, c, d, k)` | `claim cross_ratio_lines(line(A, B), line(A, C), line(A, M_a), line(A, H), -1)` | yes |
+| `harmonic_lines` | `harmonic(a, b; c, d) (four concurrent lines)`, `harmonic_lines(a, b, c, d)` | `claim harmonic_lines(line(A, B), line(A, C), line(A, M_a), line(A, H))` | yes |
 
 ## Assumptions
 
@@ -345,6 +353,7 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `sqrt_bc2` | transformations | `sqrt_bc2(point, point, point)` | transform | can succeed | — |
 | `projective` | transformations | `projective(ppoint, ppoint, ppoint, ppoint, ppoint, ppoint, ppoint, ppoint)` | transform | can succeed | — |
 | `send_to_infinity` | transformations | `send_to_infinity(linear)` | transform | can succeed | — |
+| `harmonic_conjugate` | points | `harmonic_conjugate(point, point, ppoint)` · `harmonic_conjugate(linear, linear, linear)` | point, ideal_point, line | can succeed | — |
 
 ## Versions
 

@@ -142,6 +142,11 @@ export interface MapFacts {
   readonly fixedCurve?: GuaranteeTerm;
   /** Curves the map takes onto themselves (not necessarily point by point). */
   readonly invariantCurves?: readonly GuaranteeTerm[];
+  /**
+   * A projective map's image of the line at infinity (ADR-0040): the image of every point at
+   * infinity is on it (send_to_infinity(l), an involution: l).
+   */
+  readonly infinityImage?: GuaranteeTerm;
   /** An inversion's centre: X, X* and the centre are collinear; its own image is Undefined. */
   readonly center?: GuaranteeTerm;
   /**

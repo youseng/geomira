@@ -82,6 +82,10 @@ claim         = kind , "(" , expr , { "," , expr } , ")"    (* every kind by nam
               | "∡" , "(" , expr , "," , expr , ")" , "=" , number           (* dangle_lines *)
               | angle , "=" , angle                                          (* angle_eq *)
               | angle , ( "+" | "-" ) , angle , "=" , number                 (* angle_sum, angle_diff *)
+              | "harmonic" , "(" , expr , "," , expr , ";" , expr , "," , expr , ")"
+                                    (* harmonic, or harmonic_lines on four lines (ADR-0040) *)
+              | "cross_ratio" , "(" , expr , "," , expr , [ "," | ";" ] , expr , "," , expr , ")" ,
+                "=" , number        (* cross_ratio, or cross_ratio_lines on four lines *)
               | expr , "=" , expr ;                                          (* equal *)
 segment       = pointName , pointName                       (* glued: AB *)
               | "dist" , "(" , expr , "," , expr , ")" ;

@@ -57,6 +57,18 @@ function plainSide(e: Expr): boolean {
   return !['angle', 'dist', 'add', 'sub', 'mul', 'div', 'neg'].includes(e.tool);
 }
 
+/** `harmonic(A, B; C, D)` and `cross_ratio(A, B, C, D) = k` (ADR-0040); undefined: not that form. */
+function crossRatioBody(kind: string, a: readonly Expr[], names: Names): string | undefined {
+  if (kind === 'harmonic')
+    return a.length === 4
+      ? `harmonic(${list(a.slice(0, 2), names)}; ${list(a.slice(2, 4), names)})`
+      : undefined;
+  const k = lit(a[4]);
+  return a.length === 5 && k !== undefined
+    ? `cross_ratio(${list(a.slice(0, 4), names)}) = ${litText(k)}`
+    : undefined;
+}
+
 /** `claim …` body (without attributes). */
 export function printClaimBody(kind: string, args: readonly Expr[], names: Names): string {
   const a = args;
@@ -98,6 +110,9 @@ export function printClaimBody(kind: string, args: readonly Expr[], names: Names
     }
     case 'angle_eq':
       return n === 6 ? `${angle(a.slice(0, 3), names)} = ${angle(a.slice(3, 6), names)}` : fallback;
+    case 'harmonic':
+    case 'cross_ratio':
+      return crossRatioBody(kind, a, names) ?? fallback;
     case 'angle_sum':
     case 'angle_diff': {
       const t = lit(a[6]);

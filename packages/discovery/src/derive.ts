@@ -17,6 +17,8 @@ import type { ClaimKinds } from '@geomira/claims/kind-registry';
 import { closureSteps, termArgs, type Closure, type FactData } from './closure';
 import type { TermArg } from './closure-view';
 import { fixedBy, imagesOf } from './closure-maps';
+import { harmonicByInversion } from './harmonic-maps';
+import { crossRatioBySection } from './harmonic-sections';
 import { anglesFollow, latticeSteps } from './angle-lattice';
 import { AngleVars } from './angles';
 import type { Lattice } from './lattice';
@@ -89,6 +91,8 @@ export class Knowledge {
     if (this.closure.holds(kind, args)) return 'incidence';
     if (anglesFollow(this.closure, this.vars, this.lattice, kind, args)) return 'angles';
     if (transport && this.transported(kind, args)) return 'transport';
+    if (harmonicByInversion(this.closure, kind, args)) return 'transport';
+    if (crossRatioBySection(this.closure, kind, args)) return 'incidence';
     return undefined;
   }
 

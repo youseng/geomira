@@ -150,6 +150,13 @@ export const CIRCLE_THREE: readonly Guarantee[] = [
   g('equal', t('center', R), t('circumcenter', 0, 1, 2)),
 ];
 
+/** harmonic_conjugate (ADR-0040): the quadruple is harmonic, the point on line AB. */
+export const HARMONIC_POINT: readonly Guarantee[] = [
+  g('harmonic', 0, 1, 2, R),
+  g('collinear', 0, 1, R),
+];
+export const HARMONIC_LINE: readonly Guarantee[] = [g('harmonic_lines', 0, 1, 2, R)];
+
 /** cline(A, B, C) and arc(A, B, C): through the three points (a cline may be a line). */
 export const THROUGH_THREE: readonly Guarantee[] = [g('on', 0, R), g('on', 1, R), g('on', 2, R)];
 
@@ -237,6 +244,10 @@ export const GUARANTEE_TABLE: Readonly<
   centroid: { 'point,point,point': CENTROID },
   orthocenter: { 'point,point,point': ORTHOCENTER },
   line: { 'point,point': THROUGH_BOTH, 'ppoint,ppoint': THROUGH_BOTH },
+  harmonic_conjugate: {
+    'point,point,ppoint': HARMONIC_POINT,
+    'linear,linear,linear': HARMONIC_LINE,
+  },
   segment: { 'point,point': THROUGH_BOTH },
   ray: { 'point,point': THROUGH_BOTH },
   parallel: { 'point,linear': PARALLEL },

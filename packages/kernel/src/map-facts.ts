@@ -131,7 +131,7 @@ const SQRT_BC2: MapFacts = {
 };
 
 /** send_to_infinity(l): a projective involution (it swaps l and the line at infinity). */
-const SEND_TO_INFINITY: MapFacts = { type: 'projective', involution: true };
+const SEND_TO_INFINITY: MapFacts = { type: 'projective', involution: true, infinityImage: 0 };
 
 /** projective(A, B, C, D, A′, B′, C′, D′): a projective map with four known images. */
 const PROJECTIVE: MapFacts = {

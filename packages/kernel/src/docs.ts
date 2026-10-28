@@ -295,6 +295,8 @@ function mapFactsText(m: MapFacts): string {
   if (m.fixedCurve !== undefined) parts.push(`fixes every point of ${termText(m.fixedCurve)}`);
   for (const c of m.invariantCurves ?? []) parts.push(`takes ${termText(c)} onto itself`);
   if (m.center !== undefined) parts.push(`centre ${termText(m.center)}`);
+  if (m.infinityImage !== undefined)
+    parts.push(`takes the line at infinity onto ${termText(m.infinityImage)}`);
   if (m.factor !== undefined) parts.push(`signed ratio ${termText(m.factor)}`);
   for (const [a, b] of m.sends ?? []) parts.push(`${termText(a)} ↦ ${termText(b)}`);
   return parts.join('; ');

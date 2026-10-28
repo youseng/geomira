@@ -14,6 +14,7 @@ import { CONJUGATE_TOOLS } from './conjugates';
 import { DISPLAY_TOOLS } from './display';
 import { FUNCTION_TOOLS } from './functions';
 import { INCIRCLE_TOOLS } from './incircle';
+import { HARMONIC_TOOLS } from './harmonic';
 import { INTERSECT_TOOLS } from './intersect';
 import { LINE_TOOLS } from './lines';
 import { MARK_TOOLS } from './marks';
@@ -54,6 +55,7 @@ export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze(
     ...ARC_TOOLS,
     ...INVERSION_TOOLS,
     ...PROJECTIVE_TOOLS,
+    ...HARMONIC_TOOLS,
   ]
     .map(withGuarantees)
     .map(withMapFacts),

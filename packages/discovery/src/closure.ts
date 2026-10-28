@@ -23,6 +23,7 @@ import { drain, TICK, type Ticking } from './ticking';
 import { objectKey, termSteps, type Instance, type Terms } from './terms';
 import { UnionFind } from './uf';
 import type { ClosureState, TermArg } from './closure-view';
+import { projectiveLines } from './closure-projective';
 import { constructionRule } from './rules';
 import {
   equalDistances,
@@ -150,6 +151,8 @@ export class Closure implements ClosureState {
   readonly place = new Map<string, { readonly x: number; readonly y: number }>();
   /** The band two points must be apart by (the figure's length band). */
   band = Infinity;
+  /** Object keys whose value is a point at infinity (set when the closure is built). */
+  readonly ideal = new Set<string>();
 
   at(k: string): { readonly x: number; readonly y: number } | undefined {
     return this.place.get(this.points.find(k));
@@ -225,11 +228,12 @@ function* fixpoint(
     const eq = yield* equalDistances(c, raw.circles, apart);
     yield undefined;
     const mapped = mapUnions(c);
+    const projected = projectiveLines(c, raw);
     const fixed = fixedIncidences(c, raw);
     yield undefined;
     const mid = yield* midpointRules(c, raw.circles);
     yield undefined;
-    outer = parallelsThroughOne(c) || eq || mapped || fixed || mid;
+    outer = parallelsThroughOne(c) || eq || mapped || projected || fixed || mid;
   }
 }
 
@@ -256,8 +260,12 @@ function positions(doc: Document, registry: Registry, given: ClosureOptions['val
       : new Map<number, Value<number>>());
   const band = ctx.ok ? bandThreshold('length', ctx.ctx) : Infinity;
   const at = new Map<string, { x: number; y: number }>();
-  for (const [id, v] of values) if (v.kind === 'point') at.set(objectKey(id), v);
-  return { at, band };
+  const ideal = new Set<string>();
+  for (const [id, v] of values) {
+    if (v.kind === 'point') at.set(objectKey(id), v);
+    if (v.kind === 'ideal_point') ideal.add(objectKey(id));
+  }
+  return { at, band, ideal };
 }
 
 /** The closure of `doc`'s construction facts (see the module comment). */
@@ -305,6 +313,7 @@ export function* closureSteps(
     for (const [k, v] of byClass) c.place.set(k, v);
   };
   c.band = pos.band;
+  for (const k of pos.ideal) c.ideal.add(k);
   const apart = (a: string, b: string): boolean => {
     const [pa, pb] = [byClass.get(c.points.find(a)), byClass.get(c.points.find(b))];
     return (

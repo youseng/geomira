@@ -189,16 +189,39 @@ const HINTS: Readonly<Record<string, Pick<ClaimKindSpec, 'symmetry' | 'finder'>>
   },
 };
 
+/** (A, B; C, D) = (B, A; D, C) = (C, D; A, B), the literal k (position 4) fixed (ADR-0040). */
+const CROSS_RATIO: Pick<ClaimKindSpec, 'symmetry' | 'finder'> = {
+  symmetry: [{ perm: [1, 0, 3, 2, 4] }, { perm: [2, 3, 0, 1, 4] }],
+  finder: { notSearched: 'the value k is not searched (harmonic quadruples are)' },
+};
+
+/** A harmonic quadruple also keeps A ↔ B and C ↔ D: (B, A; C, D) = 1/(−1) = −1. */
+const HARMONIC: Pick<ClaimKindSpec, 'symmetry' | 'finder'> = {
+  symmetry: [{ perm: [1, 0, 2, 3] }, { perm: [0, 1, 3, 2] }, { perm: [2, 3, 0, 1] }],
+  finder: { arity: 4 },
+};
+
+/** The kinds of Run 16a (ADR-0040): cross ratios and harmonic quadruples. */
+const PROJECTIVE_HINTS: Readonly<Record<string, Pick<ClaimKindSpec, 'symmetry' | 'finder'>>> = {
+  cross_ratio: CROSS_RATIO,
+  harmonic: HARMONIC,
+  cross_ratio_lines: CROSS_RATIO,
+  harmonic_lines: HARMONIC,
+};
+
 /** The names the hints table covers (a test checks it against the kinds). */
-export const HINTED_KINDS: readonly string[] = Object.freeze(Object.keys(HINTS));
+export const HINTED_KINDS: readonly string[] = Object.freeze([
+  ...Object.keys(HINTS),
+  ...Object.keys(PROJECTIVE_HINTS),
+]);
 
 /** The kind with its symmetries and finder hints attached (unchanged when the table has none). */
 export function withHints(spec: ClaimKindSpec): ClaimKindSpec {
-  const h = HINTS[spec.name];
+  const h = HINTS[spec.name] ?? PROJECTIVE_HINTS[spec.name];
   return h === undefined ? spec : { ...spec, ...h };
 }
 
 /** For tests: a hint's finder data, or undefined. */
 export function hintsOf(name: string): FinderHints | undefined {
-  return HINTS[name]?.finder;
+  return (HINTS[name] ?? PROJECTIVE_HINTS[name])?.finder;
 }

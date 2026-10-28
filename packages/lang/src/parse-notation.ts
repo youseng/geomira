@@ -3,7 +3,8 @@
  * kind call (`collinear(A, B, C)`, any ADR-0008 kind by name) or a relation:
  *   AB = CD, AB = k·CD (length) · AB/CD = EF/GH (ratio) · AB/CD = k (ratio_value) ·
  *   n∡ABC = ∡DEF (dangle) · ∡(l, m) = θ (dangle_lines) · ∠ABC = ∠DEF (angle_eq) ·
- *   ∠ABC + ∠DEF = θ, ∠ABC − ∠DEF = θ (angle_sum, angle_diff) · P = Q (equal).
+ *   ∠ABC + ∠DEF = θ, ∠ABC − ∠DEF = θ (angle_sum, angle_diff) · P = Q (equal) ·
+ *   harmonic(A, B; C, D) · cross_ratio(A, B, C, D) = k (parse-cross-ratio.ts, ADR-0040).
  * A segment is two glued point names or dist(X, Y) (also written length(X, Y) or
  * distance(X, Y)); an angle ∠ABC, ∠(X, Y, Z) or angle(X, Y, Z); a directed angle ∡ABC or
  * ∡(X, Y, Z).
@@ -25,6 +26,7 @@ import {
 } from './cursor';
 import { parseExpr, parseUnary } from './parse-expr';
 import { geomdrawClaim } from './parse-geomdraw';
+import { crossRatioClaim } from './parse-cross-ratio';
 import { TOOL_ALIASES } from './geomdraw';
 
 export type Side =
@@ -291,6 +293,8 @@ function relation(c: Cursor, l: Side, r: Side, eq: Span): Condition | undefined 
 
 /** The body of `claim …` (attributes, if any, follow). */
 export function parseClaim(c: Cursor): Condition | undefined {
+  const cross = crossRatioClaim(c);
+  if (cross !== 'none') return cross;
   const call = kindCall(c, true);
   if (call !== undefined || c.diags.length > 0) return call;
   const infix = geomdrawClaim(c);
