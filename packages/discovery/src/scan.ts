@@ -15,8 +15,11 @@ import {
 } from './candidates';
 import type { DiscoveryCommand, DiscoveryJobKind, DiscoveryProgress, KindReport } from './types';
 
-/** Candidates visited between two yields (each is screened and checked against the closure). */
-export const BATCH = 16;
+/**
+ * Candidates visited between two yields (each is screened and checked against the closure). A
+ * cold visit of an angle kind takes up to about 1.5 ms, so 16 made page slices over 16 ms.
+ */
+export const BATCH = 4;
 
 export interface ScanBudget {
   readonly candidatesPerKind: number;
@@ -92,7 +95,13 @@ function* scanKind(
       if (cmd !== undefined) return { report: { ...base, checked, stop: 'time' }, cmd };
     }
   }
-  return { report: { ...base, checked, total: Math.max(total, checked) } };
+  const report = { ...base, checked, total: Math.max(total, checked) };
+  // A part batch ends the step too, so the next kind's first batch starts a new one.
+  if (checked % BATCH !== 0) {
+    const cmd = yield progress(job, phase, checked, Math.min(total, budget.candidatesPerKind));
+    if (cmd !== undefined) return { report, cmd };
+  }
+  return { report };
 }
 
 /** Scans every searched kind in registry order (see the module comment). */
