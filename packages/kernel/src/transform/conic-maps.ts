@@ -1,12 +1,14 @@
 /**
  * Projective maps for conics (ADR-0042), as derived layers' maps (no projective mode):
  *   - conic_to_circle(k): a projective map sending k to a circle. Normalisation: with A the
- *     known point of k and g = ∇Q(A)/2 (normal form), in the conformal frame
- *     X = A + x·rot90(e) + y·e, e = g/|g|², k is αx² + 2βxy + γy² + 2y = 0, and
- *     (x : y : z) ↦ (x + (β/α)y : y : (y − (2/α)·(z + (δ′/2)·y))/4), δ′ = γ − β²/α,
- *     sends it to x² + y² − 4y = 0. So the map fixes A and the tangent of k at A, and the image
- *     is the circle tangent to k at A with center A + 2e and radius 2/|g|; for a conic that is a
- *     circle it is the identity. Rational: exact over Q and mod p.
+ *     known point of k and g = ∇Q(A)/2, in the conformal frame X = A + x·rot90(e) + y·e with
+ *     e = c·g, c = −|g|²/(2·Q₂(rot90 g)), k is αx² + 2βxy + γy² + 2y = 0 (divided by g·e;
+ *     α = −1/2), and (x : y : z) ↦ (x + (β/α)y : y : (y − (2/α)·(z + (δ′/2)·y))/4),
+ *     δ′ = γ − β²/α, sends it to x² + y² − 4y = 0. So the map fixes A and the tangent of k at A,
+ *     and the image is the OSCULATING circle of k at A: center A + 2e, radius 2|e| = |g|³ /
+ *     |Q₂(rot90 g)| (the radius of curvature); for a conic that is a circle it is the identity.
+ *     (Scaling by 1/|g|² instead made the image of an eccentric conic tiny and the map's matrix
+ *     nearly singular in floats.) Rational: exact over Q and mod p.
  *   - circle_to_centre(c, P): the projective map keeping c and sending P (inside c) to its
  *     center O: the hyperbolic translation of the Klein model along OP (a Lorentz boost, scaled
  *     to a matrix without square roots but one): with w = P − O, R = r², σ = √(R·(R − |w|²)),
@@ -40,15 +42,19 @@ function conicToCircle<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalConte
   const g = halfGradient(F, q, A);
   const gg = vDot(F, g, g);
   if (F.eq(gg, F.zero)) return undef('conic_to_circle(k): the known point is the center');
-  const e = vScale(F, g, F.div(F.one, gg));
+  // The frame's scale: e = c·g with c = −|g|²/(2·Q₂(rot90 g)), so that the image is the
+  // osculating circle (Q₂ of a tangent direction is never 0 on a valid conic).
+  const q2t = qDirection(F, q, vRot90(F, g));
+  if (F.eq(q2t, F.zero)) return undef('conic_to_circle(k): the conic is degenerate');
+  const two = F.add(F.one, F.one);
+  const e = vScale(F, g, F.neg(F.div(gg, F.mul(two, q2t))));
   const t = vRot90(F, e);
-  const alpha = qDirection(F, q, t);
-  if (F.eq(alpha, F.zero)) return undef('conic_to_circle(k): the conic is degenerate');
+  const ge = vDot(F, g, e);
+  const alpha = F.div(qDirection(F, q, t), ge);
   const sum = { x: F.add(t.x, e.x), y: F.add(t.y, e.y) };
   // β = tᵀM₂e from the quadratic part's polarisation: (Q₂(t + e) − Q₂(t) − Q₂(e))/2.
-  const gamma = qDirection(F, q, e);
-  const two = F.add(F.one, F.one);
-  const beta = F.div(F.sub(F.sub(qDirection(F, q, sum), alpha), gamma), two);
+  const gamma = F.div(qDirection(F, q, e), ge);
+  const beta = F.div(F.sub(F.sub(F.div(qDirection(F, q, sum), ge), alpha), gamma), two);
   const dp = F.sub(gamma, F.div(F.mul(beta, beta), alpha));
   const four = F.mul(two, two);
   const z = F.zero;
@@ -144,8 +150,8 @@ export const CONIC_MAP_TOOLS: readonly ToolSpec[] = [
     export: 'numeric',
     doc:
       'conic_to_circle(k): a projective map sending the conic k to a circle. It fixes the known ' +
-      'point A of k and the tangent there; the image is the circle tangent to k at A with center ' +
-      'A + 2g/|g|² and radius 2/|g| (g = ∇Q(A)/2, normal form); for a circle it is the identity. ' +
+      'point A of k and the tangent there; the image is the osculating circle of k at A (its ' +
+      'circle of curvature); for a circle it is the identity. ' +
       'Use it as `@layer c = image(f, main)` with f = conic_to_circle(k). Exact.',
     examples: [{ args: [ELLIPSE] }],
   },

@@ -1344,7 +1344,7 @@ send_to_infinity(l): the projective map that swaps line l and the line at infini
 
 ### conic_to_circle
 
-conic_to_circle(k): a projective map sending the conic k to a circle. It fixes the known point A of k and the tangent there; the image is the circle tangent to k at A with center A + 2g/|g|² and radius 2/|g| (g = ∇Q(A)/2, normal form); for a circle it is the identity. Use it as `@layer c = image(f, main)` with f = conic_to_circle(k). Exact.
+conic_to_circle(k): a projective map sending the conic k to a circle. It fixes the known point A of k and the tangent there; the image is the osculating circle of k at A (its circle of curvature); for a circle it is the identity. Use it as `@layer c = image(f, main)` with f = conic_to_circle(k). Exact.
 
 - Signatures: `conic_to_circle(conic)`
 - Result: transform
@@ -1358,7 +1358,7 @@ conic_to_circle(k): a projective map sending the conic k to a circle. It fixes t
   - a conic without a known point → Undefined
   - a circle as a conic → the identity
 - Examples:
-  - `conic_to_circle(conic((2, 0), (0, 1), (-2, 0), (0, -1), (6/5, 4/5)))` → projective map [-13/289, 0, -42/289; 0, -64/289, 0; 3/34, 0, -5/17]
+  - `conic_to_circle(conic((2, 0), (0, 1), (-2, 0), (0, -1), (6/5, 4/5)))` → projective map [1/32, 0, -3/16; 0, -1/16, 0; 3/64, 0, -5/32]
 
 ### circle_to_centre
 
