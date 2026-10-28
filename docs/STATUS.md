@@ -1,6 +1,6 @@
 # STATUS
 
-## Run 16b: conics: NOT ACCEPTED (waiting for CI and the nightly on the head)
+## Run 16b: conics: ACCEPTED (2026-10-28)
 
 Decisions: [ADR-0042](adr/0042-conics.md) (and [ADR-0041](adr/0041-add-only-guard-nearest-run-tag.md):
 the add-only guard compares with the previous run's tag, not the highest run number). SPEC §1,
@@ -8,21 +8,21 @@ the add-only guard compares with the previous run's tag, not the highest run num
 `pnpm verify` was green on it before any Run 16b change. Branch: claude/charming-knuth-k8eclp.
 PR: https://github.com/youseng/geomira/pull/27.
 
-Not accepted yet. The slice test (`apps/web/test/host-discovery.test.ts`) failed in CI on
-8db5f13 and again on 7fa114a, so it is a real failure, not a flake to re-run. It is fixed in
-00482eb (Known bugs). The run is accepted once CI and the nightly are green on the head.
+Accepted on the criteria and CI (CLAUDE.md: the maintainer's review is the merge). On c83fb2a,
+the PR's head, which includes the scan step fix 00482eb, everything is green:
 
-Earlier runs on 8db5f13, the code before that fix:
+- CI: https://github.com/youseng/geomira/actions/runs/40743015997 (push) and
+  https://github.com/youseng/geomira/actions/runs/40743025075 (pull_request).
+- tex: https://github.com/youseng/geomira/actions/runs/40743017030 (push) and
+  https://github.com/youseng/geomira/actions/runs/40743025034 (pull_request).
+- deploy (build and e2e): https://github.com/youseng/geomira/actions/runs/40743016164.
+- Nightly: https://github.com/youseng/geomira/actions/runs/40743028098, mutation gate passed.
 
-- CI: https://github.com/youseng/geomira/actions/runs/40717851416 (pull_request, green) and
-  https://github.com/youseng/geomira/actions/runs/40717841539 (push: the first attempt failed
-  the slice test, the one re-run passed).
-- CI on 7fa114a (docs only): https://github.com/youseng/geomira/actions/runs/40736845921 (failed
-  the slice test again).
-- tex: https://github.com/youseng/geomira/actions/runs/40717851577 (green).
-- deploy (build and e2e): https://github.com/youseng/geomira/actions/runs/40717841146 (green).
-- Nightly: https://github.com/youseng/geomira/actions/runs/40717841706 (green; the mutation gate
-  passed).
+Before the fix, the slice test (`apps/web/test/host-discovery.test.ts`) failed in CI on 8db5f13
+(https://github.com/youseng/geomira/actions/runs/40717841539, first attempt; the re-run passed)
+and again on 7fa114a (https://github.com/youseng/geomira/actions/runs/40736845921). So it was
+treated as a real failure and fixed (Known bugs). The commit after c83fb2a changes only this
+file.
 
 ### Done (each item → the test file that proves it)
 
@@ -169,15 +169,15 @@ All files          |   96.41 |    90.35 |   99.21 |   98.19 |
 Before the fix, on 8db5f13, one full local run failed only the slice test (4057/4058) and the
 next run was green.
 
-CI on GitHub: the URLs at the top of this section. Nightly mutation gate on 8db5f13 (before the fix):
+CI on GitHub: the URLs at the top of this section. Nightly mutation gate on c83fb2a:
 
 ```text
 num mutation gate: 93.47% (730 detected, 51 undetected; threshold 80%): pass
 kernel mutation gate: 89.98% (3071 detected, 342 undetected; threshold 75%): pass
 claims mutation gate: 84.99% (2395 detected, 423 undetected; threshold 75%): pass
-discovery mutation gate: 81.87% (3025 detected, 670 undetected; threshold 75%): pass
+discovery mutation gate: 81.86% (3029 detected, 671 undetected; threshold 75%): pass
 kernel-b mutation score: 66.19% (278 detected, 142 undetected; target 75%, gated from v1.1)
-discovery mutation score: 73.16% (567 detected, 208 undetected; 529 mutants outside the shard not counted; target 75%, gated from v1.1)
+discovery mutation score: 73.03% (566 detected, 209 undetected; 529 mutants outside the shard not counted; target 75%, gated from v1.1)
 ```
 
 Every other shard is at or above 75 %. The two shards above are the ones under the per-shard
