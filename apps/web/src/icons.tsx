@@ -162,6 +162,12 @@ const TOOL_PARTS: Readonly<Record<ToolId, readonly ReactNode[]>> = {
     <circle key="2" cx="16" cy="5.1" r="1.9" fill="currentColor" stroke="none" />,
     <circle key="3" cx="14.1" cy="19.7" r="1.9" fill="currentColor" stroke="none" />,
   ],
+  conic5: [
+    <ellipse key="0" cx="12" cy="12" rx="10" ry="6" />,
+    <circle key="1" cx="2" cy="12" r="1.9" fill="currentColor" stroke="none" />,
+    <circle key="2" cx="12" cy="6" r="1.9" fill="currentColor" stroke="none" />,
+    <circle key="3" cx="20" cy="15.6" r="1.9" fill="currentColor" stroke="none" />,
+  ],
   diameter_circle: [
     <circle key="0" cx="12" cy="12" r="8" />,
     <line key="1" x1="4" y1="12" x2="20" y2="12" />,

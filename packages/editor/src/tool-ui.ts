@@ -7,7 +7,16 @@ import type { ToolId } from './tool-state';
 import type { NamePreference } from './conventional-names';
 import type { NameKind } from './names';
 
-export type PickKind = 'point' | 'line' | 'circle' | 'curve' | 'figure' | 'mirror' | 'transform';
+export type PickKind =
+  | 'point'
+  | 'line'
+  | 'circle'
+  /** A circle or a conic (ADR-0042: the Tangent tool). */
+  | 'oval'
+  | 'curve'
+  | 'figure'
+  | 'mirror'
+  | 'transform';
 
 export interface ToolStep {
   readonly pick: PickKind;
@@ -75,6 +84,7 @@ export interface ToolUI {
 export const P = (prompt: string): ToolStep => ({ pick: 'point', prompt });
 export const L = (prompt: string): ToolStep => ({ pick: 'line', prompt });
 export const C = (prompt: string): ToolStep => ({ pick: 'circle', prompt });
+export const OVAL = (prompt: string): ToolStep => ({ pick: 'oval', prompt });
 
 /** A tool that builds `name = tool(picks…)`. */
 export function call(

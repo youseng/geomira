@@ -54,7 +54,9 @@ PR: https://github.com/youseng/geomira/pull/27. CI and nightly: pending (filled 
    testing and snapping, labels; SVG/PNG/TikZ/Asymptote draw the visible part, hyperbola branches
    separately, numeric paths; the style card treats a conic as a curve; the fixture
    `tests/fixtures/export/conics.geo` is compiled by tex.yml: `scene/test/conic-display.test.ts`,
-   `export/test/conic-export.test.ts` (golden snapshots), `web/test/style-card-conic.test.ts`.
+   `export/test/conic-export.test.ts` (golden snapshots), `web/test/style-card-conic.test.ts`;
+   the toolbar's "Conic (5 points)" (key ;) and the Tangent tool on a conic:
+   `editor/test/conic-tools.test.ts`.
 7. Theorem tests (FloatField and exactly over Q, 200 figures each): Pascal on a conic and on a
    circle, Brianchon, La Hire (pole–polar reciprocity), the conic through A, B, C, H is a
    rectangular hyperbola centred on the nine-point circle, images under conic_to_circle and
@@ -73,8 +75,6 @@ claimKey listed 720 arrangements per six-point candidate (four times slower find
 
 ### Not done
 
-- A toolbar button for `conic(A, …, E)` and the Tangent button on a conic: both are typed in
-  the text (`k = conic(A, B, C, D, E)`, `tangent(P, k)`, `tangent_from(P, k, orient(+))`).
 - Out of this run's scope (Run 16c): conic ∩ conic, foci, the scoped audit, the two mutation
   shards under 75 %.
 
@@ -142,8 +142,7 @@ CI on GitHub: see the URLs at the top of this section (filled in when the runs f
 
 ### Requests
 
-- Decide whether a toolbar button for conic(A, …, E) and conic tangents in the Tangent tool
-  belong to Run 16c.
+- None.
 
 ## Run 16a: ideal points, projective maps, cross ratios: ACCEPTED (2026-10-28)
 

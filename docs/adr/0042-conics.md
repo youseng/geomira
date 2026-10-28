@@ -207,8 +207,9 @@ through a hyperbola's points at infinity, or which projective maps send a conic 
 28. **Editor**: the glider and point tools put on(k, u, v) on a clicked conic; a drag moves it
     through the kernel's nearest point (conicDragParameter); its rounding length is 2/|∇Q(A)/2|
     (a circle's radius when the conic is a circle). A conic without a known point has no
-    glider. Not done here: a toolbar button for conic(A, …, E) and the Tangent button on a conic
-    (both typed in the text).
+    glider. The toolbar's "Conic (5 points)" (key ;, in Circles) builds conic(A, …, E); the
+    Tangent tool takes a circle or a conic (a new pick kind), the tangent at a point of it or
+    both tangents from an outside point.
 
 ### Run 16a's queue
 

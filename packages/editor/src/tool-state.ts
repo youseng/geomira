@@ -27,6 +27,7 @@ export type ToolId =
   | 'circle'
   | 'circle_radius'
   | 'circle3'
+  | 'conic5'
   | 'diameter_circle'
   | 'arc'
   | 'circumcircle'

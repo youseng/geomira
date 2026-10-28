@@ -41,6 +41,7 @@ const GROUP_OF: Readonly<Record<ToolId, ToolGroupId>> = {
   circle: 'circles',
   circle_radius: 'circles',
   circle3: 'circles',
+  conic5: 'circles',
   diameter_circle: 'circles',
   arc: 'circles',
   circumcircle: 'circles',
