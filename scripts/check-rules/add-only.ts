@@ -43,11 +43,24 @@ export function adrReferences(message: string): string[] {
   return [...message.matchAll(/\bADR-(\d{4})\b/g)].map((m) => m[1] ?? '');
 }
 
-/** The most recent `run-*` tag by version order (run-10 after run-9), if any. */
+/**
+ * The previous run's tag (ADR-0041): among the `run-*` tags reachable from HEAD, the one on the
+ * most recent commit (the most commits in its history: a later tag on one line of history has
+ * more), ties broken by version order (run-10 after run-9). Runs are not always done in number
+ * order (Run 17 before Run 16a), so version order alone could pick an older run's tag.
+ */
 export function latestRunTag(git: Git, root: string): string | undefined {
-  const tags = git(root, ['tag', '--list', 'run-*', '--sort=-version:refname']);
-  const first = tags.stdout.split('\n').find((t) => t.trim().length > 0);
-  return tags.ok && first !== undefined ? first.trim() : undefined;
+  const tags = git(root, ['tag', '--list', 'run-*', '--merged', 'HEAD', '--sort=-version:refname']);
+  if (!tags.ok) return undefined;
+  let best: { tag: string; count: number } | undefined;
+  for (const raw of tags.stdout.split('\n')) {
+    const tag = raw.trim();
+    if (tag.length === 0) continue;
+    const counted = git(root, ['rev-list', '--count', tag]);
+    const count = counted.ok ? Number(counted.stdout.trim()) : -1;
+    if (best === undefined || count > best.count) best = { tag, count };
+  }
+  return best?.tag;
 }
 
 function gitOrThrow(git: Git, root: string, args: readonly string[]): string {
