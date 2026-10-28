@@ -53,6 +53,8 @@ const PROJECTIVE_KINDS: readonly string[] = [
   'harmonic',
   'cross_ratio_lines',
   'harmonic_lines',
+  // ADR-0042: a projective map sends a conic to a conic.
+  'conconic',
 ];
 
 /** Whether a map of this type keeps facts of this kind. */

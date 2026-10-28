@@ -122,8 +122,14 @@ export const TANGENT_POINT: readonly Guarantee[] = [
 /** A touch point of a tangent from P to a conic (ADR-0042): on the conic and on P's polar. */
 const CONIC_TANGENT_POINT: readonly Guarantee[] = [g('on', R, 1), g('on', R, t('polar', 0, 1))];
 
-/** The conic through five points passes through each (ADR-0042). */
-const THROUGH_FIVE: readonly Guarantee[] = [0, 1, 2, 3, 4].map((i) => g('on', i, R));
+/**
+ * The conic through five points passes through each, and its known point (the glider at
+ * (1 : 0)) is the first (ADR-0042).
+ */
+const THROUGH_FIVE: readonly Guarantee[] = [
+  ...[0, 1, 2, 3, 4].map((i) => g('on', i, R)),
+  g('equal', 0, t('on', R, ONE, { lit: '0' })),
+];
 
 export const POLAR: readonly Guarantee[] = [g('perpendicular', R, t('line', t('center', 1), 0))];
 

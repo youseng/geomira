@@ -271,7 +271,10 @@ export const DISCOVERY_GROUPS: readonly {
   // ADR-0039: the closure's rules (moved out of closure.ts), and the knowledge with the groups.
   {
     id: 'discovery-d',
-    files: ['closure-merge', 'closure-maps', 'closure-mid'].map((f) => `${D}/${f}.ts`),
+    // ADR-0042: the conic rules of the closure.
+    files: ['closure-merge', 'closure-maps', 'closure-mid', 'closure-conics'].map(
+      (f) => `${D}/${f}.ts`,
+    ),
   },
   {
     id: 'discovery-e',

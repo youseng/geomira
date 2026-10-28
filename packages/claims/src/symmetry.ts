@@ -57,14 +57,39 @@ export function orbit(n: number, gens: readonly (readonly number[])[]): number[]
 }
 
 /**
+ * Whether the generators include every adjacent transposition of positions 0..n − 1, so that
+ * they generate every arrangement (the symmetric group: n! of them, 720 for conconic's six
+ * points, too many to list per candidate).
+ */
+function allAdjacent(gens: readonly (readonly number[])[], n: number): boolean {
+  const swaps = new Set(gens.map((g) => (transposition(g) ?? [-1, -1]).join(',')));
+  return Array.from({ length: n - 1 }, (_, i) => `${String(i)},${String(i + 1)}`).every((t) =>
+    swaps.has(t),
+  );
+}
+
+/**
+ * The order of the smallest joined arrangement: x before y when x|y| < y|x| (the classical
+ * smallest-concatenation order, a total preorder; plain string order differs when one key is a
+ * prefix of another, "o1" and "o12").
+ */
+function beforeJoined(x: string, y: string): number {
+  const [a, b] = [`${x}|${y}|`, `${y}|${x}|`];
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/**
  * The key of `kind`(args): the smallest arrangement under the kind's symmetries, with the kind's
  * name. Arguments of a rest kind beyond its symmetries' arity are compared as written.
  */
 export function claimKey(kind: ClaimKindSpec, args: readonly KeyArg[]): string {
   const lits = args.flatMap((a) => ('lit' in a ? [a.lit] : []));
   const texts = args.map(text);
+  const gens = generators(kind.symmetry ?? [], lits, args.length);
+  if (allAdjacent(gens, args.length))
+    return `${kind.name}(${[...texts].sort(beforeJoined).join('|')})`;
   let best: string | undefined;
-  for (const perm of orbit(args.length, generators(kind.symmetry ?? [], lits, args.length))) {
+  for (const perm of orbit(args.length, gens)) {
     const shown = permute(texts, perm)?.join('|');
     if (shown !== undefined && (best === undefined || shown < best)) best = shown;
   }

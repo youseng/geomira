@@ -18,6 +18,8 @@ export interface ClosureView {
   readonly lengths: UnionFind;
   readonly lineSets: ReadonlyMap<string, ReadonlySet<string>>;
   readonly circleSets: ReadonlyMap<string, ReadonlySet<string>>;
+  /** Conic term → the term keys of its recorded points (ADR-0042, closure-conics.ts). */
+  readonly conicSets: ReadonlyMap<string, ReadonlySet<string>>;
   readonly perps: ReadonlyMap<string, ReadonlySet<string>>;
   readonly tangents: ReadonlySet<string>;
   readonly ratios: ReadonlySet<string>;

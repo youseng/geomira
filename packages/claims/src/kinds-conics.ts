@@ -9,7 +9,8 @@
  *     line meets k at a point at infinity, and an asymptote touches it there. Float gap: the
  *     kernel's chord gap (positive: two common points, zero: a tangency), the count of
  *     intersect(l, k).
- *   - conconic(A, B, C, D, E, F): one determinant condition, the 6×6 determinant of the rows
+ *   - conconic(A, B, C, D, E, F, …): per point after the fifth, one determinant condition, the
+ *     6×6 determinant of the rows
  *     (x², xy, y², x, y, 1), written as Q(F) = 0 for the pencil conic through A…E
  *     ([ACE][BDE][ABF][CDF] − [ABE][CDE][ACF][BDF], which is that determinant up to a constant
  *     factor and vanishes for any order of the six points). NDG: the six points pairwise distinct
@@ -116,24 +117,20 @@ export function tangentConicGap(hit: NonNullable<ReturnType<typeof lineConic<num
   return chordGap(FloatField, coeffsOf(hit.k), hit.l.p, hit.l.d) ?? Infinity;
 }
 
-/** The six points of a conconic claim, or undefined. */
-function six<T>(args: ClaimArgs<T>): readonly Vec<T>[] | undefined {
+/** The points of a conconic claim (six or more), or undefined. */
+function points<T>(args: ClaimArgs<T>): readonly Vec<T>[] | undefined {
   const pts = pointsFrom(args, 0);
-  return pts?.length === 6 ? pts : undefined;
+  return pts !== undefined && pts.length >= 6 ? pts : undefined;
 }
 
-function conconicAlgebra<T>(F: Field<T>, args: ClaimArgs<T>): Algebra<T> | Undefined {
-  const pts = six(args);
-  const [a, b, c, d, e, x] = pts ?? [];
-  if (a === undefined || b === undefined || c === undefined) return badClaim('conconic');
-  if (d === undefined || e === undefined || x === undefined) return badClaim('conconic');
-  const condition = qValue(F, pencilCoeffs(F, a, b, c, d, e), x);
-  const triples: Ndg<T>[] = [];
-  for (const [i, j] of pairs(6))
-    for (let m = j + 1; m < 6; m++) {
-      const [p, r, s] = [pts?.[i], pts?.[j], pts?.[m]];
+/** "A, B and C are collinear" for every triple of the points. */
+function noThreeCollinear<T>(pts: readonly Vec<T>[]): Ndg<T>[] {
+  const out: Ndg<T>[] = [];
+  for (const [i, j] of pairs(pts.length))
+    for (let m = j + 1; m < pts.length; m++) {
+      const [p, r, s] = [pts[i], pts[j], pts[m]];
       if (p !== undefined && r !== undefined && s !== undefined)
-        triples.push({
+        out.push({
           kind: 'noncollinear',
           a: p,
           b: r,
@@ -141,33 +138,45 @@ function conconicAlgebra<T>(F: Field<T>, args: ClaimArgs<T>): Algebra<T> | Undef
           what: `${argLabel(i)}, ${argLabel(j)} and ${argLabel(m)} are collinear`,
         });
     }
-  return {
-    conditions: [condition],
-    ndg: [...distinctAll(pts ?? [], argLabel), ...triples],
-    order: [],
-  };
+  return out;
 }
 
-/** The distance from F to the conic through A…E over the six points' diameter. */
+function conconicAlgebra<T>(F: Field<T>, args: ClaimArgs<T>): Algebra<T> | Undefined {
+  const pts = points(args);
+  const [a, b, c, d, e] = pts ?? [];
+  if (pts === undefined || a === undefined || b === undefined || c === undefined)
+    return badClaim('conconic');
+  if (d === undefined || e === undefined) return badClaim('conconic');
+  const q = pencilCoeffs(F, a, b, c, d, e);
+  const conditions = pts.slice(5).map((x) => qValue(F, q, x));
+  return { conditions, ndg: [...distinctAll(pts, argLabel), ...noThreeCollinear(pts)], order: [] };
+}
+
+/** The largest distance from a sixth (or later) point to the conic through A…E, over the diameter. */
 function conconicResidual(args: ClaimArgs<number>): number {
-  const pts = six(args);
-  const [a, b, c, d, e, x] = pts ?? [];
+  const pts = points(args);
+  const [a, b, c, d, e] = pts ?? [];
   if (pts === undefined || a === undefined || b === undefined || c === undefined) return Infinity;
-  if (d === undefined || e === undefined || x === undefined) return Infinity;
+  if (d === undefined || e === undefined) return Infinity;
   const q = pencilCoeffs(FloatField, a, b, c, d, e);
-  const g = halfGradient(FloatField, q, x);
-  const gap = qValue(FloatField, q, x) / (2 * Math.hypot(g.x, g.y));
   const diam = Math.max(...pts.flatMap((p, i) => pts.slice(i + 1).map((r) => f.dist(p, r))));
-  return Number.isNaN(gap) ? Infinity : f.ratio(gap, diam);
+  return f.maxOf(
+    pts.slice(5).map((x) => {
+      const g = halfGradient(FloatField, q, x);
+      const gap = qValue(FloatField, q, x) / (2 * Math.hypot(g.x, g.y));
+      return Number.isNaN(gap) ? Infinity : f.ratio(gap, diam);
+    }),
+  );
 }
 
 export const CONIC_KINDS: readonly ClaimKindSpec[] = [
   {
     name: 'conconic',
     params: ['point', 'point', 'point', 'point', 'point', 'point'],
+    rest: 'point',
     polynomial: true,
     test: 'floor',
-    doc: 'conconic(A, B, C, D, E, F): the six points lie on one conic (no three of them collinear).',
+    doc: 'conconic(A, B, C, D, E, F, …): the points lie on one conic (no three of them collinear).',
     algebra: (F, args) => conconicAlgebra(F, args),
     residual: (args) => conconicResidual(args),
   },

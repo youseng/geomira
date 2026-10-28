@@ -48,7 +48,13 @@ export interface GroupEnv {
 }
 
 /** n-ary kinds and the size of the subset that determines their line, circle or point. */
-const DETERMINED: Readonly<Record<string, number>> = { collinear: 2, concyclic: 3, concurrent: 2 };
+const DETERMINED: Readonly<Record<string, number>> = {
+  collinear: 2,
+  concyclic: 3,
+  concurrent: 2,
+  // ADR-0042: five points, no three collinear, determine a conic.
+  conconic: 5,
+};
 
 /** Classes built between two yields (sorting a class's nodes costs with its size). */
 const CLASSES_PER_STEP = 16;

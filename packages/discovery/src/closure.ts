@@ -42,6 +42,12 @@ import {
   mapUnions,
 } from './closure-maps';
 import { midpointRules } from './closure-mid';
+import {
+  conicImageCircles,
+  conicParameterUnions,
+  conicSetsOf,
+  invariantIncidences,
+} from './closure-conics';
 
 /** A fact about the figure's objects (a candidate, or a reported finding). */
 export interface FactData {
@@ -58,6 +64,8 @@ export class Closure implements ClosureState {
   /** Line class → its points (point classes). */
   lineSets: Sets = new Map();
   circleSets: Sets = new Map();
+  /** Conic term → its points' term keys (ADR-0042). */
+  conicSets: Sets = new Map();
   /** Circle class → its centre's point class. */
   readonly centerOf = new Map<string, string>();
   /** Parallel class → the parallel classes perpendicular to it. */
@@ -230,10 +238,14 @@ function* fixpoint(
     const mapped = mapUnions(c);
     const projected = projectiveLines(c, raw);
     const fixed = fixedIncidences(c, raw);
+    const conics =
+      conicImageCircles(c, raw, c.conicSets) ||
+      invariantIncidences(c, raw) ||
+      conicParameterUnions(c);
     yield undefined;
     const mid = yield* midpointRules(c, raw.circles);
     yield undefined;
-    outer = parallelsThroughOne(c) || eq || mapped || projected || fixed || mid;
+    outer = parallelsThroughOne(c) || eq || mapped || projected || fixed || mid || conics;
   }
 }
 
@@ -322,6 +334,7 @@ export function* closureSteps(
       (Math.abs(pa.x - pb.x) > pos.band || Math.abs(pa.y - pb.y) > pos.band)
     );
   };
+  c.conicSets = conicSetsOf(c, inst);
   yield* fixpoint(c, incidences(c, inst), inst, index, apart);
   index();
   for (const [i, x] of inst.entries()) {

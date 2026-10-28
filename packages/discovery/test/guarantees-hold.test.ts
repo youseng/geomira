@@ -16,6 +16,9 @@ import { REGISTRY } from './helpers';
 
 const AB = () => c('line', 'A', 'B');
 const AD = () => c('line', 'A', 'D');
+/** The conic through A, B, C, D, E (ADR-0042) and the pole of its chord AB (tangents touch A, B). */
+const K = () => c('conic', 'A', 'B', 'C', 'D', 'E');
+const T = () => c('pole', AB(), K());
 
 /** Arguments of each declared overload, in the base figure (A, B, C, D, E, F, G; ω = w). */
 const FIGURES: Readonly<Record<string, () => Arg[]>> = {
@@ -74,6 +77,15 @@ const FIGURES: Readonly<Record<string, () => Arg[]>> = {
   'arc(point,point,point)': () => ['A', 'B', 'C'],
   'harmonic_conjugate(point,point,ppoint)': () => ['A', 'B', c('divide', 'A', 'B', n('1/3'))],
   'harmonic_conjugate(linear,linear,linear)': () => [AB(), c('line', 'A', 'C'), AD()],
+  'intersect(linear,conic)': () => [AD(), K(), along(1)],
+  'intersect(conic,linear)': () => [K(), AD(), along(-1)],
+  'on(conic,number,number)': () => [K(), n(2), n(1)],
+  'other(linear,conic,point)': () => [AD(), K(), 'A'],
+  'other(conic,linear,point)': () => [K(), AD(), 'A'],
+  'tangent(point,conic)': () => ['A', K()],
+  'tangent_point(point,conic)': () => [T(), K(), orient(1)],
+  'tangent_from(point,conic)': () => [T(), K(), orient(-1)],
+  'conic(point,point,point,point,point)': () => ['A', 'B', 'C', 'D', 'E'],
 };
 
 function term(t: GuaranteeTerm, args: readonly Arg[]): Arg {

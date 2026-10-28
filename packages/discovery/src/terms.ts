@@ -42,6 +42,8 @@ export interface MapRecord {
   readonly center?: string;
   /** A projective map's image of the line at infinity (the images of points at infinity are on it). */
   readonly infinityImage?: string;
+  /** A conic whose image under the map is a circle (ADR-0042: conic_to_circle(k)). */
+  readonly circleImage?: string;
   readonly sends: readonly (readonly [string, string])[];
 }
 
@@ -160,6 +162,7 @@ class Builder {
     const center = m.center === undefined ? undefined : this.termKey(m.center, w, 'c');
     const curve = m.fixedCurve === undefined ? undefined : this.termKey(m.fixedCurve, w, 'f');
     const inf = m.infinityImage === undefined ? undefined : this.termKey(m.infinityImage, w, 'v');
+    const round = m.circleImage === undefined ? undefined : this.termKey(m.circleImage, w, 'o');
     const ratio = m.ratio === undefined ? undefined : literalOf(m.ratio, w.c);
     const turn = m.turn === undefined ? undefined : literalOf(m.turn, w.c);
     const factor = m.factor === undefined ? undefined : literalOf(m.factor, w.c);
@@ -175,6 +178,7 @@ class Builder {
       invariant: keys(m.invariantCurves ?? [], 'i'),
       ...(center === undefined ? {} : { center }),
       ...(inf === undefined ? {} : { infinityImage: inf }),
+      ...(round === undefined ? {} : { circleImage: round }),
       sends: (m.sends ?? []).flatMap(([a, b], i) => {
         const [x, y] = [this.termKey(a, w, `s${String(i)}a`), this.termKey(b, w, `s${String(i)}b`)];
         return x === undefined || y === undefined ? [] : [[x, y] as const];

@@ -7,6 +7,7 @@
 import type { Rational } from '@geomira/num/rational';
 import { formatRational } from '@geomira/num/rational';
 import type { ClosureView as Closure, TermArg } from './closure-view';
+import { isConic, onConicSet, onOneConic } from './closure-conics';
 
 type Keys = readonly (string | undefined)[];
 
@@ -144,6 +145,7 @@ export function constructionRule(
       return a !== undefined && b !== undefined && perpendicular(c, a, b);
     case 'on': {
       if (a === undefined || b === undefined) return false;
+      if (isConic(c, b)) return onConicSet(c, c.conicSets, a, b);
       const sets = c.isLine(b)
         ? c.lineSets.get(c.lines.find(b))
         : c.isCircle(b)
@@ -151,6 +153,8 @@ export function constructionRule(
           : undefined;
       return sets?.has(c.points.find(a)) === true;
     }
+    case 'conconic':
+      return onOneConic(c, c.conicSets, k);
     case 'tangent':
       return (
         a !== undefined &&

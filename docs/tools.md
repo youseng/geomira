@@ -937,7 +937,7 @@ conic(A, B, C, D, E): the conic through five points (no three collinear), in the
   - `conic(point, point, point, point, point)`: arguments 2, 3, 4, 5 in any order (the same value)
   - `conic(point, point, point, point, point)`: arguments 1, 2, 3, 4, 5 in any order (the same figure; a direction, an anchor or the vertex order may differ)
 - By construction:
-  - `conic(point, point, point, point, point)`: on(#1, result); on(#2, result); on(#3, result); on(#4, result); on(#5, result)
+  - `conic(point, point, point, point, point)`: on(#1, result); on(#2, result); on(#3, result); on(#4, result); on(#5, result); equal(#1, on(result, 1, 0))
 - Degenerate cases:
   - two coincident points → Undefined
   - four collinear points → Undefined (no unique conic)
@@ -1353,7 +1353,7 @@ conic_to_circle(k): a projective map sending the conic k to a circle. It fixes t
 - Symmetry: none
 - By construction: nothing
 - As a map:
-  - `conic_to_circle(conic)`: projective
+  - `conic_to_circle(conic)`: projective; fixes on(#1, 1, 0); takes tangent(on(#1, 1, 0), #1) onto itself
 - Degenerate cases:
   - a conic without a known point → Undefined
   - a circle as a conic → the identity
@@ -1371,7 +1371,7 @@ circle_to_centre(c, P): the projective map keeping the circle c and sending the 
 - Symmetry: none
 - By construction: nothing
 - As a map:
-  - `circle_to_centre(round, point)`: projective; takes #1 onto itself; #2 ↦ center(#1)
+  - `circle_to_centre(round, point)`: projective; takes #1 onto itself; takes line(center(#1), #2) onto itself; #2 ↦ center(#1); center(#1) ↦ reflect(#2, center(#1))
 - Degenerate cases:
   - P on c → Undefined
   - P within the band of c → Undefined (ambiguous)
