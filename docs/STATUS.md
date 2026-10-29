@@ -1,6 +1,6 @@
 # STATUS
 
-## Run 16c: conic ∩ conic, foci, the scoped audit of Run 16: NOT ACCEPTED (2026-10-29)
+## Run 16c: conic ∩ conic, foci, the scoped audit of Run 16: ACCEPTED (2026-10-29)
 
 Decisions: [ADR-0043](adr/0043-conic-intersections-and-foci.md) (conic ∩ conic and conic ∩
 circle, other(P, Q, R), the choice among four candidates, foci) and
@@ -12,8 +12,21 @@ it before any Run 16c change, and main's nightly on it (40828486953, 40853994653
 Branch: ccr-48d72f20-14hnl9. PR: https://github.com/youseng/geomira/pull/28. Audit report:
 [docs/audit/2026-10-29.md](audit/2026-10-29.md).
 
-Not accepted yet: CI on the final head and the nightly's mutation gate on this branch are
-pending (their URLs replace this paragraph when they are green).
+Accepted on the criteria and CI (CLAUDE.md: the maintainer's review is the merge). On 769dbfc,
+the last code commit (the pencil tests, after the nightly), CI is green:
+
+- CI: https://github.com/youseng/geomira/actions/runs/40892505139 (push) and
+  https://github.com/youseng/geomira/actions/runs/40892515504 (pull_request).
+- tex: https://github.com/youseng/geomira/actions/runs/40892505435 (push) and
+  https://github.com/youseng/geomira/actions/runs/40892515333 (pull_request).
+- deploy (build and e2e, the single file in three engines):
+  https://github.com/youseng/geomira/actions/runs/40892505064.
+
+On 758b5c4 (everything but the pencil tests) CI was green too (ci 40877343146 and 40877349950,
+tex 40877342954 and 40877349957, deploy 40877342942), and the nightly dispatched on it, with
+mutation testing, passed its gate:
+https://github.com/youseng/geomira/actions/runs/40878931952 (scores under Acceptance command
+output). A push to the branch cancels a running nightly, so 769dbfc was pushed after it.
 
 ### Done (each item → the test file that proves it)
 
@@ -105,8 +118,13 @@ pending (their URLs replace this paragraph when they are green).
 - Discovery starves on a 150-object figure with conics: "What is special?" finds nothing in its
   20 s budget. It is a scheduling shape of ADR-0035's budgets, not a wrong result (audit §3;
   Requests).
-- The mutation scores of kernel-b, the discovery catch-all and the shards with the new files are
-  re-measured by the nightly on this branch (pending, above).
+- The maintainer's aim of a kernel score back above 93 %: the kernel is at 88.56 % (it was 89.98 %
+  on main). The two shards under the per-shard target are above it now (kernel-b 77.97 %, the
+  discovery catch-all 78.45 %), but conic-pencil.ts, new in the mutation scope, put kernel-j at
+  68.12 %. 769dbfc's tests kill its Newton and accuracy survivors, checked by hand-made mutants;
+  the next nightly measures them. Many of the other survivors are fallbacks that no input I
+  could construct exercises: the merge of two near points, the near-infinity branch of `finish`
+  (the line meet decides first), and equality boundaries of float thresholds.
 
 ### Known bugs
 
@@ -158,18 +176,42 @@ Lines added only (no ADR needed): kernel `registry.test.ts`, `conic-dispatch.tes
 
 ### Acceptance command output
 
-Local `pnpm verify` (pending its final run on the head; the run before the choice-four fix
-failed only that test's 5 s timeout under coverage, 4207/4208):
+Local `pnpm verify` on 758b5c4 (769dbfc adds the five pencil tests; CI ran them, above):
 
 ```text
 ✔ no dependency violations found (870 modules, 5037 dependencies cruised)
 ok   tolerance: 1196 files scanned, 0 violation(s)
 ok   file-length: 1196 files scanned, 0 violation(s)
-ok   test-count: 4208 tests, floor 4060, 0 violation(s)
+ok   test-count: 4208 tests, floor 4208, 0 violation(s)
 ok   disabled-tests: 1196 files scanned, 0 violation(s)
 ok   add-only: frozen tests compared with run-16b, 0 violation(s)
 ok   forbidden-words: 1196 files scanned, 0 violation(s)
+ Test Files  464 passed (464)
+      Tests  4208 passed (4208)
+All files          |   96.21 |    89.91 |   99.22 |   98.12 |
 ```
+
+The run before the choice-four fix failed only that test's 5 s timeout under coverage
+(4207/4208): it followed 60 copies per candidate; it now follows them once (e416952).
+
+Nightly mutation gate on 758b5c4 (run 40878931952):
+
+```text
+num mutation gate: 93.36% (731 detected, 52 undetected; threshold 80%): pass
+kernel mutation gate: 88.56% (3732 detected, 482 undetected; threshold 75%): pass
+claims mutation gate: 84.70% (2392 detected, 432 undetected; threshold 75%): pass
+discovery mutation gate: 83.70% (3097 detected, 603 undetected; threshold 75%): pass
+kernel-b mutation score: 77.97% (354 detected, 100 undetected; target 75%, gated from v1.1)
+kernel-f mutation score: 99.68% (316 detected, 1 undetected; target 75%, gated from v1.1)
+kernel-h mutation score: 87.42% (667 detected, 96 undetected; target 75%, gated from v1.1)
+kernel-j mutation score: 68.12% (297 detected, 139 undetected; 4 mutants outside the shard not counted; target 75%, gated from v1.1)
+discovery mutation score: 78.45% (608 detected, 167 undetected; 992 mutants outside the shard not counted; target 75%, gated from v1.1)
+```
+
+Every other shard is at or above 75 % (kernel-a 84.69, c 95.11, d 94.46, e 98.99, g 99.37,
+i 97.28, k 91.18; claims 84.70; discovery-a 92.12, b 90.72, c 77.72, d 86.77, e 88.66). Minutes
+per shard: discovery (catch-all) 85, discovery-d 55, kernel-h 47, kernel-f 42, kernel-a 39; every
+other under 30. All are under the 100-minute limit.
 
 ### Requests
 
