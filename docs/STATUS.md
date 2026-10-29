@@ -1,5 +1,185 @@
 # STATUS
 
+## Run 16c: conic ∩ conic, foci, the scoped audit of Run 16: NOT ACCEPTED (2026-10-29)
+
+Decisions: [ADR-0043](adr/0043-conic-intersections-and-foci.md) (conic ∩ conic and conic ∩
+circle, other(P, Q, R), the choice among four candidates, foci) and
+[ADR-0044](adr/0044-run-16c-audit-changes.md) (the audit's decisions: refusal words, the slice
+test's measure, the conic type at the figure's scale, the tangent labels, every changed frozen
+line). SPEC §1, §3.1, §6.2 and §7 are updated in the commits of those ADRs. Base: main = 8bcca80
+(PR #27, tag run-16b), ACCEPTED; `git fetch --tags && pnpm install && pnpm verify` was green on
+it before any Run 16c change, and main's nightly on it (40828486953, 40853994653) passed.
+Branch: ccr-48d72f20-14hnl9. PR: https://github.com/youseng/geomira/pull/28. Audit report:
+[docs/audit/2026-10-29.md](audit/2026-10-29.md).
+
+Not accepted yet: CI on the final head and the nightly's mutation gate on this branch are
+pending (their URLs replace this paragraph when they are green).
+
+### Done (each item → the test file that proves it)
+
+1. **Conic ∩ conic and conic ∩ circle** (a circle stays a circle): `intersect` gains (conic,
+   conic), (conic, round) and (round, conic), one compute and `candidates` for the GUI.
+   - Up to four candidates from the pencil of the two curves, in floats (ADR-0043 decisions
+     3–9):
+     - a frame at points of the curves;
+     - coincidence on the Frobenius sine, with the band;
+     - the binary cubic's most isolated real root, and a triple contact at the cube root of EPS;
+     - the degenerate member split into lines, each line meeting a curve by ADR-0042's
+       line ∩ conic;
+     - candidates merged within the band, a point near infinity ambiguous, Newton polish.
+   - Inexact over Q and mod p: the quartic's roots are not rational in general.
+   - Degenerate cases by name: coincident curves, tangency, osculation, four-fold contact,
+     common points at infinity, no common point. → `kernel/test/degenerate.test.ts`
+     (`helpers/degenerate-conic-conic.ts`), `kernel/test/conic-conic-far-centre.test.ts`.
+   - Properties → `kernel/test/tools.property.test.ts` (`helpers/conic-conic-properties.ts`):
+     - other(A, B, C) of two conics through A, B, C, D is D in either order, on both;
+     - near(B) and far_from(B) pick common points;
+     - the midpoint of the foci is the centre, and other(other(F)) = F;
+     - the foci of a circle are its centre.
+   - L3 (floats agree with the exact other(P, Q, R) and foci; L3's own ambiguity watch) →
+     `kernel/test/laws/l3-conic-conic.test.ts`.
+2. **Selectors on four candidates** (SPEC §7 extended, ADR-0043 decisions 10–13).
+   - `other(P, Q, R)`: the fourth point, rational and exact over Q and mod p; the three given
+     points are checked on both curves and distinct.
+   - Side and arc filters with points of the construction, and `near(P)`.
+   - No along/orient: nothing orientation-dependent is needed, since reflection-equivariant
+     filters decide (L16).
+   - Every written selector is verified by the kernel (parse-level checks:
+     `kernel/selector-check.ts`).
+   - → `kernel/test/degenerate.test.ts`, `kernel/test/theorems-conic-conic.test.ts`,
+     `kernel/test/selector-check.test.ts`, `scripts/exactness/table.test.ts` (5 exact examples
+     of 7).
+3. **The text**: `other(P, Q, R)` parses as the selector, and a trailing `other(point, …)` call
+   is lifted into it (ADR-0009's grammar gains one line). → `lang/test/other-three.test.ts`.
+4. **The GUI choice for four candidates** (choice.ts tiers, `editor/src/choice-many.ts`).
+   - Tier 1 is other(P, Q, R) with the three points in candidate order. Otherwise one filter or
+     two, then near(P).
+   - Firm at 5 deviations of the LOCAL noise. A choice firm only to 2 is written with a note.
+   - The intersection tool builds every candidate it can single out.
+   - → `editor/test/choice-four.test.ts`.
+5. **Continuity (L11)**: candidates move continuously along drags until a merge (tangency);
+   within the band of the merge the result is Undefined or ambiguous (ADR-0006, ADR-0027 item
+   3); osculation, near and far_from across sweeps → `kernel/test/laws/l11-conic-conic.test.ts`.
+6. **foci(k)** (ADR-0043 decisions 15–16).
+   - A circle's centre; a parabola's focus, exact over Q and mod p.
+   - An ellipse's or hyperbola's two foci from the dual conic, with selectors. Inexact where a
+     square root is needed.
+   - Degenerate cases by name.
+   - → `kernel/test/degenerate.test.ts` (`helpers/degenerate-foci.ts`),
+     `kernel/test/laws/l3-conic-conic.test.ts`, `kernel/test/theorems-conic-conic.test.ts`,
+     `kernel/test/conic-type-scale.test.ts`.
+7. **Theorem tests, classical results only**, each in the fields where it is decided →
+   `kernel/test/theorems-conic-conic.test.ts`:
+   - two conics through four common points, the fourth from the other three;
+   - the diagonal triangle of the four common points is self-polar for both conics;
+   - a circle meets a conic in four points whose opposite chords are equally inclined to its
+     axes;
+   - the reflective property: the tangent at a point bisects the lines to the foci;
+   - the focal sum (ellipse) or difference (hyperbola) is the same at every point;
+   - focus and directrix: the polar of a focus is the directrix, and |PF| = e·dist(P, directrix);
+   - the parabola: the image of (0, 1/4) is the focus of the image of y = x².
+8. **The scoped audit of Run 16**: [docs/audit/2026-10-29.md](audit/2026-10-29.md).
+   - Fourteen findings, each with a test that failed before its fix in the same commit: five
+     high, five medium, four low or flaky (the report's table names each test file).
+   - The hunt list covered item by item, and what is still open.
+9. **The 16b queue.**
+   - conic_to_circle in floats → `kernel/test/conic-to-circle-eccentric.test.ts`.
+   - The refusal words, under ADR-0044 → `editor/test/curve-words.test.ts`,
+     `lang/test/on-words.test.ts`, `kernel/test/glider-words.test.ts`.
+   - The flaky slice test, under ADR-0044 → `apps/web/test/host-discovery.test.ts`.
+   - The claims test near 5 s, from a faster `tryToNumber` → `num/test/pow2-exact.test.ts`.
+   - Mutation, with tests against the survivors:
+     - kernel-b → `kernel/test/proj-images-behaviour.test.ts`,
+       `kernel/test/conic-pairs-behaviour.test.ts`;
+     - the discovery catch-all → `discovery/test/harmonic-rules.test.ts`;
+     - the new files in shards (kernel-j: the pencil; kernel-f: the type and the images around a
+       point) → `scripts/mutation-shards*.test.ts`.
+10. The single file without Web Workers with conics and a projective image →
+    `apps/web/e2e/file-url.spec.ts` (last test).
+
+### Not done
+
+- Discovery's branch fixes keep two-candidate sites only (ADR-0043): a conic ∩ conic call is not
+  a branch-fix site.
+- No GUI tool for foci (no free key; the text and the panel's command line give it).
+- Discovery starves on a 150-object figure with conics: "What is special?" finds nothing in its
+  20 s budget. It is a scheduling shape of ADR-0035's budgets, not a wrong result (audit §3;
+  Requests).
+- The mutation scores of kernel-b, the discovery catch-all and the shards with the new files are
+  re-measured by the nightly on this branch (pending, above).
+
+### Known bugs
+
+- Discovery's starvation with conics (above). Reproduction:
+  - the figure of `apps/web/e2e/fallback-discovery.spec.ts`;
+  - plus `D = (6, 6)`, `E = (-2, 4)`, `F = (2, -3)`, `kk = conic(A, B, C, D, E)` and
+    `mm = conic(A, B, C, D, F)`;
+  - plus `X = intersect(kk, mm, other(A, B, C))`.
+
+  "What is special?" ends at its time budget in the conconic scan with 0 facts. The same figure
+  without conics gives 8.
+
+- The pole of a line within the band of a conic's centre is a far finite point, not ambiguous:
+  the test is EPS without a band, as for circles (ADR-0042 decision 9). On an ill-conditioned
+  projective image the pole of an axis can be a point near 10¹⁵. Reproduction: audit §3.
+
+### Uncertain
+
+- Judgement calls, tested on fixtures and laws, not derived:
+  - the triple-contact threshold (the cube root of EPS, ADR-0043 decision 6);
+  - the pencil's 96 samples of the binary cubic;
+  - the frame's reference points;
+  - FALLBACK_SIGMAS = 2 for a choice written with a note;
+  - the parabola decision at the figure's scale (ADR-0044 decision 4; a semi-axis beyond
+    scale/EPS reads as a parabola in floats).
+- The theorem tests are classical results stated in ADR-0043, with no contest attribution. None
+  of them is uncertain to me.
+
+### Changed frozen tests
+
+Every change cites ADR-0044, with its reasons there (Context 1–5, Decision 1–5). Sixteen lines in
+nine files:
+
+| file                                                | change                                                                                   | commit  |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------- |
+| `packages/editor/test/new-tools-review.test.ts:41`  | 1 line: "first curve: pick a line, circle or conic"                                      | 5582bb8 |
+| `packages/editor/test/machine.test.ts:66`           | 1 line: "click a line, a circle or a conic"                                              | 5582bb8 |
+| `packages/lang/test/errors.test.ts:71`              | 1 line: "on(…) takes a line, a circle or a conic"                                        | 5582bb8 |
+| `packages/kernel/test/glider.test.ts:260, 263`      | 2 lines: "a glider needs a line, a circle or a conic, not point"                         | 5582bb8 |
+| `packages/kernel/test/selector-check.test.ts:162`   | 1 line: the hint lists foci among the tools with candidates                              | 910fddc |
+| `scripts/exactness/table.test.ts:49, 50`            | 2 lines: intersect has 5 exact examples of 7 (was 4 of 5)                                | 910fddc |
+| `apps/web/test/host-discovery.test.ts:48`           | 1 line: a task counts min(wall time, thread CPU time)                                    | aaac657 |
+| `packages/kernel/test/helpers/degenerate-conics.ts` | 5 lines: NEAR_PAR's ε 10⁻⁸ → 10⁻⁹ (it stays inside the parabola band under the new rule) | f9bdb1c |
+| `tests/fixtures/export/conics.geo`                  | 2 lines: t_1 and t_2 swap orient(+)/orient(−), so the figure is unchanged                | f8f34da |
+
+Lines added only (no ADR needed): kernel `registry.test.ts`, `conic-dispatch.test.ts`,
+`exports.test.ts`, `degenerate.test.ts`, `tools.property.test.ts`; discovery
+`guarantees-hold.test.ts`; web `e2e/file-url.spec.ts`.
+
+### Acceptance command output
+
+Local `pnpm verify` (pending its final run on the head; the run before the choice-four fix
+failed only that test's 5 s timeout under coverage, 4207/4208):
+
+```text
+✔ no dependency violations found (870 modules, 5037 dependencies cruised)
+ok   tolerance: 1196 files scanned, 0 violation(s)
+ok   file-length: 1196 files scanned, 0 violation(s)
+ok   test-count: 4208 tests, floor 4060, 0 violation(s)
+ok   disabled-tests: 1196 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-16b, 0 violation(s)
+ok   forbidden-words: 1196 files scanned, 0 violation(s)
+```
+
+### Requests
+
+- Discovery's budgets with conics (Known bugs): test the first candidates of every kind before
+  the long scans, or give conconic a smaller per-kind budget. This is a decision on ADR-0035's
+  scheduling, for the maintainer.
+- The slice test uses `process.threadCpuUsage` (Node ≥ 22.19) while package.json's engines field
+  says ≥ 22.12. Raise the engines field, or accept that the test needs a recent Node 22 (CI runs
+  the latest).
+
 ## Run 16b: conics: ACCEPTED (2026-10-28)
 
 Decisions: [ADR-0042](adr/0042-conics.md) (and [ADR-0041](adr/0041-add-only-guard-nearest-run-tag.md):

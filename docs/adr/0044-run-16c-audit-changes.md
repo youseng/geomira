@@ -94,7 +94,7 @@ of SPEC; it records why frozen test lines change in this run, as CLAUDE.md requi
 
 ## Consequences
 
-- Fifteen frozen lines in eight files change, each listed in STATUS (Changed frozen tests), in
+- Sixteen frozen lines in nine files change, each listed in STATUS (Changed frozen tests), in
   commits citing ADR-0044.
 - The slice test needs Node ≥ 22.19 (`process.threadCpuUsage`); the repository's engines field
   says ≥ 22.12, so on 22.12–22.18 this test throws. CI and the dev container run later versions.
