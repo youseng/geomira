@@ -6,6 +6,7 @@
  * whole image segment was one band wide). Every figure below is decided the same at any
  * similarity scale, and an intersection well inside the image segment is defined.
  */
+import type { Field } from '@geomira/num/field';
 import { FloatField } from '@geomira/num/float-field';
 import { RationalField } from '@geomira/num/rational-field';
 import { describe, expect, it } from 'vitest';
@@ -13,6 +14,7 @@ import { call, type Expr } from '../src/expr';
 import { Builder, evalDoc, pt, valueOf } from './helpers/doc';
 
 const T = (tool: string, ...args: Expr[]): Expr => call(tool, args);
+const FIELDS: readonly Field<unknown>[] = [FloatField, RationalField];
 
 /** The ray image intersected with a vertical line, every coordinate times s. */
 function figure(s: number): Builder {
@@ -28,7 +30,7 @@ describe('the range of a projective image is decided at the figure scale', () =>
   for (const s of [1 / 100, 1 / 10, 1, 10, 100])
     it(`a crossing well inside the image of a ray is defined (scale ${String(s)})`, () => {
       const b = figure(s);
-      for (const F of [FloatField, RationalField] as const) {
+      for (const F of FIELDS) {
         const v = valueOf(b.doc, evalDoc(b.doc, F), 'Q');
         const xy = v.kind === 'point' ? [F.toNumber(v.x), F.toNumber(v.y)] : v;
         expect(xy, `${F.name} at scale ${String(s)}`).toEqual([
