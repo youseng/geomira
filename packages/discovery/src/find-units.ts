@@ -29,6 +29,17 @@ function notCollinear(c: Closure, a: string, b: string, d: string): boolean {
   return size > 0 && Math.abs(cross) > c.band * Math.sqrt(size);
 }
 
+/** Points pairwise apart, no three of them collinear (ADR-0042: five of them determine a conic). */
+function generalPosition(c: Closure, pts: readonly string[]): boolean {
+  const apart = pts.every((x, i) => pts.slice(i + 1).every((y) => c.apart(x, y)));
+  return (
+    apart &&
+    pts.every((x, i) =>
+      pts.slice(i + 1).every((y, j) => pts.slice(i + j + 2).every((z) => notCollinear(c, x, y, z))),
+    )
+  );
+}
+
 function notParallel(p: Pools, band: number, l: number, m: number): boolean {
   const [a, b] = [p.values.get(l), p.values.get(m)];
   if (a?.kind !== 'line' || b?.kind !== 'line') return false;
@@ -46,6 +57,7 @@ export function groupEnv(c: Closure, p: Pools): GroupEnv {
       const [a, b, d] = ids;
       if (a === undefined || b === undefined) return false;
       if (kind === 'concurrent') return notParallel(p, c.band, a, b);
+      if (kind === 'conconic') return generalPosition(c, ids.map(k));
       if (!c.apart(k(a), k(b))) return false;
       if (kind === 'collinear') return true;
       return (

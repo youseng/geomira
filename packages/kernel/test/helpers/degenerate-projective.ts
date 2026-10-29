@@ -42,6 +42,7 @@ export function nums<X>(F: Field<X>, v: Value<X>): unknown {
         v.chiral,
       ];
     case 'circle':
+    case 'conic':
     case 'number':
     case 'polygon':
     case 'transform':
@@ -166,11 +167,9 @@ const APPLY_PROJECTIVE: Record<string, () => void> = {
         'undefined: apply: the line is sent to infinity (the line at infinity is not an object)',
       );
   },
-  'under a projective map: a circle → Undefined (a conic)': () => {
+  'under a projective map: a circle → a conic (never a circle); an arc → Undefined': () => {
     for (const F of FIELDS)
-      expect(reason(at(F, 'apply', SEND_X, T('circle', pt(0, 3), pt(1, 3))))).toMatch(
-        /^undefined: apply: a projective map sends a circle to a conic/,
-      );
+      expect(reason(at(F, 'apply', SEND_X, T('circle', pt(0, 3), pt(1, 3))))).toMatch(/^conic$/);
   },
   'under a projective map: a polygon with a side through infinity → Undefined': () => {
     for (const F of ORDERED) {

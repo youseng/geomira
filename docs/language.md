@@ -198,6 +198,7 @@ P = on(ω, 2, 1)
 | `harmonic` | `harmonic(A, B; C, D) (four collinear or concyclic points)` | `claim harmonic(B, C; M_a, P)` | yes |
 | `cross_ratio_lines` | `cross_ratio(a, b, c, d) = k (four concurrent lines)`, `cross_ratio_lines(a, b, c, d, k)` | `claim cross_ratio_lines(line(A, B), line(A, C), line(A, M_a), line(A, H), -1)` | yes |
 | `harmonic_lines` | `harmonic(a, b; c, d) (four concurrent lines)`, `harmonic_lines(a, b, c, d)` | `claim harmonic_lines(line(A, B), line(A, C), line(A, M_a), line(A, H))` | yes |
+| `conconic` | `conconic(A, B, C, D, E, F, …) (no three collinear)` | `claim conconic(A, B, C, H, M_a, P)` | yes |
 
 ## Assumptions
 
@@ -278,7 +279,7 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `midpoint` | points | `midpoint(point, point)` | point | can succeed | — |
 | `divide` | points | `divide(point, point, number)` | point | can succeed | — |
 | `foot` | points | `foot(point, linear)` · `foot(point, point, point)` | point | can succeed | — |
-| `intersect` | points | `intersect(linear, linear)` · `intersect(linear, round)` · `intersect(round, linear)` · `intersect(round, round)` | point, ideal_point | can succeed | √(2) is not rational |
+| `intersect` | points | `intersect(linear, linear)` · `intersect(linear, round)` · `intersect(round, linear)` · `intersect(round, round)` · `intersect(linear, conic)` · `intersect(conic, linear)` | point, ideal_point | can succeed | √(2) is not rational |
 | `circumcenter` | points | `circumcenter(point, point, point)` | point | can succeed | — |
 | `centroid` | points | `centroid(point, point, point)` | point | can succeed | — |
 | `orthocenter` | points | `orthocenter(point, point, point)` | point | can succeed | — |
@@ -305,10 +306,10 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `diameter_circle` | circles | `diameter_circle(point, point)` | circle | can succeed | — |
 | `ninepoint_circle` | circles | `ninepoint_circle(point, point, point)` | circle | can succeed | — |
 | `center` | points | `center(round)` | point | can succeed | — |
-| `on` | points | `on(linear, number)` · `on(round, number, number)` · `on(round, number)` | point | can succeed | cos(30°) is not rational |
-| `other` | points | `other(linear, round, point)` · `other(round, linear, point)` · `other(round, round, point)` | point | can succeed | — |
-| `tangent` | lines | `tangent(point, round)` | line | can succeed | — |
-| `polar` | lines | `polar(point, round)` | line | can succeed | — |
+| `on` | points | `on(linear, number)` · `on(round, number, number)` · `on(round, number)` · `on(conic, number, number)` | point | can succeed | cos(30°) is not rational |
+| `other` | points | `other(linear, round, point)` · `other(round, linear, point)` · `other(round, round, point)` · `other(linear, conic, point)` · `other(conic, linear, point)` | point | can succeed | — |
+| `tangent` | lines | `tangent(point, round)` · `tangent(point, conic)` | line | can succeed | — |
+| `polar` | lines | `polar(point, round)` · `polar(point, conic)` | line | can succeed | — |
 | `radical_axis` | lines | `radical_axis(round, round)` | line | can succeed | — |
 | `incenter` | points | `incenter(point, point, point)` | point | can succeed | √(18) is not rational |
 | `excenter` | points | `excenter(point, point, point)` | point | can succeed | √(18) is not rational |
@@ -323,8 +324,8 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `ninepoint_center` | points | `ninepoint_center(point, point, point)` | point | can succeed | — |
 | `power` | measures | `power(point, round)` | number | can succeed | — |
 | `radius` | measures | `radius(round)` | number | can succeed | √(2) is not rational |
-| `tangent_point` | points | `tangent_point(point, round)` | point | can succeed | √(275/1296) is not rational |
-| `tangent_from` | lines | `tangent_from(point, round)` | line | can succeed | √(275/1296) is not rational |
+| `tangent_point` | points | `tangent_point(point, round)` · `tangent_point(point, conic)` | point | can succeed | √(275/1296) is not rational |
+| `tangent_from` | lines | `tangent_from(point, round)` · `tangent_from(point, conic)` | line | can succeed | √(275/1296) is not rational |
 | `reflect` | transformations | `reflect(linear)` · `reflect(point)` · `reflect(point, linear)` · `reflect(curve, linear)` · `reflect(polygon, linear)` · `reflect(point, point)` · `reflect(curve, point)` · `reflect(polygon, point)` | transform, point, line, circle, polygon | can succeed | — |
 | `rotate` | transformations | `rotate(point, number)` · `rotate(point, point, number)` · `rotate(curve, point, number)` · `rotate(polygon, point, number)` | transform, point, line, circle, polygon | can succeed | sin(60°) is not rational |
 | `homothety` | transformations | `homothety(point, number)` · `homothety(point, point, number)` · `homothety(curve, point, number)` · `homothety(polygon, point, number)` | transform, point, line, circle, polygon | can succeed | — |
@@ -332,7 +333,7 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `spiral` | transformations | `spiral(point, point, point, point)` · `spiral(point, point, point, point, point)` · `spiral(curve, point, point, point, point)` · `spiral(polygon, point, point, point, point)` | transform, point, line, circle, polygon | can succeed | — |
 | `compose` | transformations | `compose(transform, transform)` | transform | can succeed | — |
 | `inverse` | transformations | `inverse(transform)` | transform | can succeed | — |
-| `apply` | transformations | `apply(transform, point)` · `apply(transform, curve)` · `apply(transform, polygon)` · `apply(transform, annotation)` · `apply(transform, ideal)` | point, line, circle, polygon, angle_mark, segment_mark, text, ideal_point | can succeed | — |
+| `apply` | transformations | `apply(transform, point)` · `apply(transform, curve)` · `apply(transform, polygon)` · `apply(transform, annotation)` · `apply(transform, ideal)` · `apply(transform, conic)` | point, line, circle, polygon, angle_mark, segment_mark, text, ideal_point, conic | can succeed | — |
 | `mark_angle` | display | `mark_angle(point, point, point)` · `mark_angle(point, point, point, number)` | angle_mark | can succeed | — |
 | `mark_right` | display | `mark_right(point, point, point)` | angle_mark | can succeed | — |
 | `mark_segment` | display | `mark_segment(point, point)` · `mark_segment(point, point, number)` | segment_mark | can succeed | — |
@@ -341,7 +342,7 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `isogonal` | points | `isogonal(point, point, point, point)` | point | can succeed | — |
 | `symmedian` | lines | `symmedian(point, point, point)` | line | can succeed | — |
 | `symmedian_point` | points | `symmedian_point(point, point, point)` | point | can succeed | — |
-| `pole` | points | `pole(linear, round)` | point | can succeed | — |
+| `pole` | points | `pole(linear, round)` · `pole(linear, conic)` | point, ideal_point | can succeed | — |
 | `radical_center` | points | `radical_center(round, round, round)` | point | can succeed | — |
 | `arc` | circles | `arc(point, point, point)` | circle | can succeed | — |
 | `inversion` | transformations | `inversion(round)` · `inversion(point, number)` | transform | can succeed | — |
@@ -354,6 +355,10 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `projective` | transformations | `projective(ppoint, ppoint, ppoint, ppoint, ppoint, ppoint, ppoint, ppoint)` | transform | can succeed | — |
 | `send_to_infinity` | transformations | `send_to_infinity(linear)` | transform | can succeed | — |
 | `harmonic_conjugate` | points | `harmonic_conjugate(point, point, ppoint)` · `harmonic_conjugate(linear, linear, linear)` | point, ideal_point, line | can succeed | — |
+| `conic` | circles | `conic(point, point, point, point, point)` | conic | can succeed | — |
+| `conic_center` | points | `conic_center(conic)` | point, ideal_point | can succeed | — |
+| `conic_to_circle` | transformations | `conic_to_circle(conic)` | transform | can succeed | — |
+| `circle_to_centre` | transformations | `circle_to_centre(round, point)` | transform | can succeed | √(500) is not rational |
 
 ## Versions
 

@@ -105,6 +105,10 @@ describe('createRegistry', () => {
       'projective',
       'send_to_infinity',
       'harmonic_conjugate',
+      'conic',
+      'conic_center',
+      'conic_to_circle',
+      'circle_to_centre',
     ]);
     for (const t of REGISTRY.tools) {
       expect(t.id).toBe(t.name);

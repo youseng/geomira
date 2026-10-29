@@ -133,6 +133,7 @@ function errorOf(xs: Num, v: Value<number>, scale: number): number | string {
       if (xs.length !== 2 * v.pts.length) return 'a different number of vertices';
       return Math.max(...v.pts.map((p, i) => gap(at(2 * i), p))) / scale;
     case 'ideal_point':
+    case 'conic':
     case 'angle_mark':
     case 'segment_mark':
     case 'text':

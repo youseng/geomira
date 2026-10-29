@@ -25,6 +25,7 @@ export function plain<T>(F: Field<T>, v: Value<T>): unknown {
       return F.toNumber(v.v);
     case 'line':
     case 'circle':
+    case 'conic':
     case 'polygon':
     case 'transform':
     case 'ideal_point':

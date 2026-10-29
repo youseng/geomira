@@ -21,6 +21,7 @@
 import { assertNever } from '@geomira/num/assert';
 import { inexact, isInexact, type Field, type FieldSign, type Inexact } from '@geomira/num/field';
 import { isZeroVec, signNormalized, vCross, vDot, vSub } from './geom';
+import { requireOnConic } from './conic-incidence';
 import { circleGap, requireOnCircle, requireOnLine, rootGap } from './incidence';
 import type { EvaluatedSelector } from './selector';
 import type { EvalContext } from './tool';
@@ -97,7 +98,9 @@ function viaOther<T>(
     const bad =
       c.obj.kind === 'line'
         ? requireOnLine(F, P, c.obj, ctx, what)
-        : requireOnCircle(F, P, c.obj, ctx, what);
+        : c.obj.kind === 'circle'
+          ? requireOnCircle(F, P, c.obj, ctx, what)
+          : requireOnConic(F, P, c.obj, ctx, what);
     if (bad !== undefined) return bad;
   }
   const X = other.point(P);

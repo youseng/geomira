@@ -1,5 +1,192 @@
 # STATUS
 
+## Run 16b: conics: ACCEPTED (2026-10-28)
+
+Decisions: [ADR-0042](adr/0042-conics.md) (and [ADR-0041](adr/0041-add-only-guard-nearest-run-tag.md):
+the add-only guard compares with the previous run's tag, not the highest run number). SPEC §1,
+§3, §4, §10.1 and §18 E8 are updated to match. Base: main = 335803e (tag run-16a), ACCEPTED, and
+`pnpm verify` was green on it before any Run 16b change. Branch: claude/charming-knuth-k8eclp.
+PR: https://github.com/youseng/geomira/pull/27.
+
+Accepted on the criteria and CI (CLAUDE.md: the maintainer's review is the merge). On c83fb2a,
+the PR's head, which includes the scan step fix 00482eb, everything is green:
+
+- CI: https://github.com/youseng/geomira/actions/runs/40743015997 (push) and
+  https://github.com/youseng/geomira/actions/runs/40743025075 (pull_request).
+- tex: https://github.com/youseng/geomira/actions/runs/40743017030 (push) and
+  https://github.com/youseng/geomira/actions/runs/40743025034 (pull_request).
+- deploy (build and e2e): https://github.com/youseng/geomira/actions/runs/40743016164.
+- Nightly: https://github.com/youseng/geomira/actions/runs/40743028098, mutation gate passed.
+
+Before the fix, the slice test (`apps/web/test/host-discovery.test.ts`) failed in CI on 8db5f13
+(https://github.com/youseng/geomira/actions/runs/40717841539, first attempt; the re-run passed)
+and again on 7fa114a (https://github.com/youseng/geomira/actions/runs/40736845921). So it was
+treated as a real failure and fixed (Known bugs). The commit after c83fb2a changes only this
+file.
+
+### Done (each item → the test file that proves it)
+
+1. The Conic value (ADR-0042 decisions 1–5): `{ kind: 'conic', a, b, c, d, e, f, anchor? }` in
+   the normal form det M = a² + 2b² + c²; only non-degenerate real conics (degeneracy decided
+   on the semi-latus rectum as a length, with the band); the type derived; a circle is never a
+   conic and every example and fixture draws and reports as on the base; capability `conic`
+   with E2 dispatch.
+   - `kernel/test/value.test.ts`, `kernel/test/degenerate.test.ts` (with
+     `helpers/degenerate-conics.ts`), `editor/test/figure-baseline-16b.test.ts`,
+     `kernel/test/conic-dispatch.test.ts` (a conic in every argument position of every tool's
+     examples that takes none: Undefined "… is a conic: <tool> does not take one", all fields).
+2. Tools, each with one compute, degenerate cases by name, a property, L3, a theorem, export
+   `numeric`, generated docs, symmetry (ADR-0029) and guarantees (ADR-0035):
+   - `conic(A, B, C, D, E)`: coincident or three collinear points → Undefined, four collinear →
+     Undefined; exact over Q; B…E in any order give equal coefficients ('value'), all five
+     ('figure', the anchor is the first point).
+   - `conic_center`, `tangent(P, k)`, `tangent_point` / `tangent_from(P, k, …)` (both tangents
+     from an external point), `polar(P, k)`, `pole(l, k)`, `intersect(l, k, …)` with along(±),
+     other(P) by Vieta, near(P); continuous until a tangency (L11), `other(l, k, P)`.
+   - `on(k, u, v)` gliders: the pencil through the known point; a hyperbola's two points at
+     infinity and a parabola's one are where the glider is Undefined (ADR-0042 decision 12);
+     drag and Randomize.
+   - `kernel/test/degenerate.test.ts`, `kernel/test/tools.property.test.ts`
+     (`helpers/conic-properties.ts`), `kernel/test/laws/l3-oracle.test.ts`
+     (`helpers/l3-plans-conics.ts`), `kernel/test/laws/l11-conic.test.ts`,
+     `kernel/test/construction-key.test.ts`, `discovery/test/guarantees-hold.test.ts`,
+     `editor/test/conic-glider.test.ts`, docs/tools.md.
+3. Maps: a projective map sends circles and conics to conics (never a circle: decided by the
+   map's type, not numerically); similarities send conics to conics; a Möbius map with a pole
+   sends a conic that is not a circle to Undefined; an arc under a projective map → Undefined.
+   `helpers/degenerate-projective.ts`, `helpers/similarity-gen.ts`, `kernel/test/radical.test.ts`.
+4. `conic_to_circle(k)` (k to its osculating circle at its known point; the identity on a circle)
+   and `circle_to_centre(c, P)` (the Klein model's translation along OP; P on or outside c →
+   Undefined; radical), as derived layers' maps, no separate mode:
+   `kernel/test/theorems-conics.test.ts`, `kernel/test/conic-to-circle-conditioning.test.ts`,
+   `discovery/test/conic-facts.test.ts`.
+5. Claims: on(P, k) and tangent(l, k) with a conic; `conconic(A, …, F, …)` (one determinant
+   condition per point after the fifth; NDG distinct, no three collinear); polynomial kinds with
+   L12 and L17 tests; "What is special?" finds conconic through the registry and a conic layer
+   does not flood it: `claims/test/kinds-conics.test.ts`, `claims/test/laws/l12-conics.test.ts`,
+   `claims/test/laws/l17-conics.test.ts`, `claims/test/claim-key-symmetric.test.ts`,
+   `discovery/test/conic-facts.test.ts`.
+6. Drawing and exports: canvas (one polyline per branch, chords within 1/4 px, clipped), hit
+   testing and snapping, labels; SVG/PNG/TikZ/Asymptote draw the visible part, hyperbola branches
+   separately, numeric paths; the style card treats a conic as a curve; the fixture
+   `tests/fixtures/export/conics.geo` is compiled by tex.yml: `scene/test/conic-display.test.ts`,
+   `export/test/conic-export.test.ts` (golden snapshots), `web/test/style-card-conic.test.ts`;
+   the toolbar's "Conic (5 points)" (key ;) and the Tangent tool on a conic:
+   `editor/test/conic-tools.test.ts`.
+7. Theorem tests (FloatField and exactly over Q, 200 figures each): Pascal on a conic and on a
+   circle, Brianchon, La Hire (pole–polar reciprocity), the conic through A, B, C, H is a
+   rectangular hyperbola centred on the nine-point circle, images under conic_to_circle and
+   circle_to_centre keep incidence and the cross ratio: `kernel/test/theorems-conics.test.ts`.
+8. Run 16a's queue: the GUI intersection of two parallel lines builds their point at infinity
+   with the notice "point at infinity, direction of l" and selects it
+   (`editor/test/intersection-lines.test.ts`); pole(l, c) with l through the centre is the ideal
+   point (`kernel/test/pole-at-infinity.test.ts`).
+
+Bugs found and fixed during the run (each with its reproducing test in the same commit): the
+asymptotic-direction test of line ∩ conic was not scale-free (`helpers/degenerate-conics.ts`,
+"every decision is scale-free"); conic_to_circle's first frame was nearly singular in floats
+(`conic-to-circle-conditioning.test.ts`); a huge conic at a zoom beyond its precision could be
+left out silently instead of listed as not drawable (`scene/test/conic-display.test.ts`);
+claimKey listed 720 arrangements per six-point candidate (four times slower finder); a
+discovery scan step visited 16 candidates, too many for the page's 16 ms slices
+(`discovery/test/scan-steps.test.ts`, Known bugs).
+
+### Not done
+
+- Out of this run's scope (Run 16c): conic ∩ conic, foci, the scoped audit, the two mutation
+  shards under 75 %.
+
+### Known bugs
+
+- conic_to_circle in floats on a very eccentric conic: the image's coefficients can lose
+  accuracy. Reproduction: `theorems-conics.test.ts`, the conic_to_circle theorem in FloatField
+  mode, figure 80 of seed 1617 (osculating radius about 4·10⁴; the image's a and c differ by
+  1 %). That theorem runs exactly over Q only; L3 compares floats with Q on its own figures.
+- The refusal "pick a line or circle" also accepts a conic (the words of a frozen test are
+  kept).
+- Fixed in this run (00482eb): the slice test (`apps/web/test/host-discovery.test.ts`, "without
+  a worker the page finds the Euler line in slices within its budget"). It was listed as a
+  known flake, but it failed in CI on 8db5f13 and on 7fa114a and once in a local full
+  `pnpm verify`. The cause comes from run-16a, not from conics: under CPU load (4 busy loops on
+  4 cores) it failed 9/20 at run-16a and 9/20 at 8db5f13. A discovery scan step visited
+  BATCH = 16 candidates, and a cold visit of an angle kind (dangle, angle_eq, angle_sum) takes
+  up to about 1.5 ms, so a single step made a 16–25 ms slice. BATCH is now 4, and a kind's part
+  batch ends its step (`discovery/test/scan-steps.test.ts`). Under the same load the test now
+  fails 1/30, so it can still fail on a heavily loaded machine.
+
+### Uncertain
+
+- The normalisations are choices, not mathematics: the conic's normal form det M = a² + 2b² + c²;
+  conic_to_circle's image (the osculating circle at the known point); circle_to_centre (the
+  Klein model's translation along OP, so the centre goes to the reflection of P); the glider's
+  pencil through the known point with (u : v) as for circles, and its rounding length
+  2/|∇Q(A)/2|.
+- The degeneracy measure (the semi-latus rectum √(|det M|/(a² + 2b² + c²)^{3/2}) against EPS·scale)
+  and the dimensionless asymptotic-direction test are judgement calls tested on fixtures, not
+  derived from a conditioning analysis.
+- That conconic's pencil form equals the 6×6 determinant up to a constant is checked on random
+  rational points (`kinds-conics.test.ts`), not derived symbolically here.
+
+### Changed frozen tests
+
+All listed with reasons in ADR-0042 decision 30; every commit that changes one cites ADR-0042.
+
+| file                                                    | change                                                                |
+| ------------------------------------------------------- | --------------------------------------------------------------------- |
+| `packages/kernel/test/value.test.ts`                    | 3 lines: the unknown future kind is `locus` (was `conic`)             |
+| `packages/scene/test/shapes.test.ts`                    | 2 lines: the same                                                     |
+| `packages/kernel/test/cline.test.ts`                    | 1 line: on's signatures gain on(conic, number, number)                |
+| `packages/kernel/test/helpers/degenerate-projective.ts` | 4 lines: a circle under a projective map is a conic (was Undefined)   |
+| `packages/kernel/test/helpers/degenerate-v11.ts`        | 4 lines: pole(l, c) with l through the centre is the ideal point      |
+| `packages/kernel/test/construction-key.test.ts`         | 4 lines (400-line limit): the conic samples come from a helper        |
+| `packages/editor/test/intersection-lines.test.ts`       | 4 lines: parallel lines give their point at infinity (was a refusal)  |
+| `packages/claims/test/kinds.test.ts`                    | 2 lines inserted in the pinned kind lists (conconic): no line changed |
+| `packages/editor/test/fixtures/run-16a-baseline.json`   | the new fixture's summary, inserted lines only                        |
+
+Lines added only: kernel `exports.test.ts`, `registry.test.ts`, `image-kinds.test.ts`,
+`radical.test.ts`, `ideal-points.test.ts`, `degenerate.test.ts`, `tools.property.test.ts`,
+`helpers/degenerate.ts`, `helpers/similarity-gen.ts`, `helpers/l3-plans.ts`, `helpers/doc.ts`;
+discovery `guarantees-hold.test.ts`.
+
+### Acceptance command output
+
+Local `pnpm verify` on 00482eb, the scan step fix (4058 tests at 8db5f13 plus the 2 new ones;
+the floor is now 4060):
+
+```text
+✔ no dependency violations found (836 modules, 4825 dependencies cruised)
+ok   tolerance: 1159 files scanned, 0 violation(s)
+ok   file-length: 1159 files scanned, 0 violation(s)
+ok   test-count: 4060 tests, floor 4060, 0 violation(s)
+ok   disabled-tests: 1159 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-16a, 0 violation(s)
+ok   forbidden-words: 1159 files scanned, 0 violation(s)
+ Test Files  440 passed (440)
+      Tests  4060 passed (4060)
+All files          |   96.41 |    90.35 |   99.21 |   98.19 |
+```
+
+Before the fix, on 8db5f13, one full local run failed only the slice test (4057/4058) and the
+next run was green.
+
+CI on GitHub: the URLs at the top of this section. Nightly mutation gate on c83fb2a:
+
+```text
+num mutation gate: 93.47% (730 detected, 51 undetected; threshold 80%): pass
+kernel mutation gate: 89.98% (3071 detected, 342 undetected; threshold 75%): pass
+claims mutation gate: 84.99% (2395 detected, 423 undetected; threshold 75%): pass
+discovery mutation gate: 81.86% (3029 detected, 671 undetected; threshold 75%): pass
+kernel-b mutation score: 66.19% (278 detected, 142 undetected; target 75%, gated from v1.1)
+discovery mutation score: 73.03% (566 detected, 209 undetected; 529 mutants outside the shard not counted; target 75%, gated from v1.1)
+```
+
+Every other shard is at or above 75 %. The two shards above are the ones under the per-shard
+target that the maintainer moved to Run 16c (Not done).
+
+### Requests
+
+- None.
+
 ## Run 16a: ideal points, projective maps, cross ratios: ACCEPTED (2026-10-28)
 
 Decisions: [ADR-0040](adr/0040-ideal-points-and-projective-maps.md). SPEC §1, §4, §6.2, §10.1 and

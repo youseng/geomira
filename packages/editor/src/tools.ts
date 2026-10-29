@@ -15,7 +15,7 @@
  * circle) take them in either order (`anyOrder`), as Geomdraw's did.
  */
 import type { ToolId } from './tool-state';
-import { anyOrder, C, call, L, mapTool, P, type ToolUI } from './tool-ui';
+import { anyOrder, call, L, mapTool, OVAL, P, type ToolUI } from './tool-ui';
 import { CENTER_TOOLS, TRIANGLE_CIRCLE_TOOLS } from './tools-centers';
 import {
   CIRCLE_RADIUS,
@@ -173,6 +173,15 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     [P('first point'), P('second point'), P('third point')],
     'The circle through three points.',
   ),
+  call(
+    'conic5',
+    'Conic (5 points)',
+    ';',
+    'conic',
+    'circle',
+    [P('first point'), P('second point'), P('third point'), P('fourth point'), P('fifth point')],
+    'The conic through five points, no three on a line (ADR-0042).',
+  ),
   DIAMETER_CIRCLE,
   ARC_TOOL,
   ...TRIANGLE_CIRCLE_TOOLS,
@@ -182,8 +191,9 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     id: 'tangent',
     label: 'Tangent',
     key: 't',
-    help: 'The tangent at a point of a circle, or both tangents from an outside point (click the point and the circle in either order).',
-    steps: [P('point'), C('circle')],
+    help: 'The tangent at a point of a circle or a conic, or both tangents from an outside point (click the point and the curve in either order).',
+    // The prompt keeps "circle" (the status bar a frozen e2e test reads); a conic is accepted too.
+    steps: [P('point'), OVAL('circle')],
     anyOrder: true,
     build: { kind: 'tangent' },
   },

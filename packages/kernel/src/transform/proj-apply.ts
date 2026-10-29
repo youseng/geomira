@@ -6,7 +6,9 @@
  *   - ideal point: its direction parallel to ℓ (a sine) → the ideal point of the image direction
  *     (its flag kept); in the band → Undefined; otherwise a point;
  *   - line, segment, ray, two rays: proj-lines.ts;
- *   - circle, arc → Undefined (a conic: not an object until Run 16b), never approximated;
+ *   - circle, conic → a conic (ADR-0042: never a circle, whatever the matrix; the known point
+ *     mapped, dropped when it goes to infinity); an arc → Undefined (an arc of a conic is not
+ *     an object);
  *   - polygon: every vertex strictly on one side of ℓ → the polygon of the images; a side that
  *     would pass through infinity → Undefined; in the band → Undefined; mod p (unless affine)
  *     → Inexact;
@@ -29,6 +31,7 @@ import {
   type Value,
   type Vec,
 } from '../value';
+import { circleCoeffs, coeffsOf, mapConicBy, type Coeffs } from '../conic';
 import { det3, homOf, mulHom, type Mat3 } from './projective';
 import { projLine } from './proj-lines';
 import {
@@ -122,6 +125,21 @@ function projMark<T>(F: Field<T>, m: Mat3<T>, mk: AngleMark<T>, ctx: EvalContext
   return { ...mk, b, from: reverses ? to : from, to: reverses ? from : to, right: false };
 }
 
+/**
+ * The image conic of coefficients q under m (the known point's image kept when it is a finite
+ * point). Degenerate: as mapConicBy.
+ */
+function projConic<T>(
+  F: Field<T>,
+  m: Mat3<T>,
+  q: Coeffs<T>,
+  anchor: Vec<T> | undefined,
+  ctx: EvalContext,
+): Value<T> {
+  const a = anchor === undefined ? undefined : projPosition(F, m, anchor, ctx);
+  return mapConicBy(F, q, m, a === undefined || 'kind' in a ? undefined : a);
+}
+
 /** The image of any value under the projective map p (valid). */
 export function applyProjective<T>(
   F: Field<T>,
@@ -140,9 +158,13 @@ export function applyProjective<T>(
     case 'line':
       return projLine(F, m, v, ctx);
     case 'circle':
-      return undef(
-        'apply: a projective map sends a circle to a conic, which is not an object until Run 16b',
-      );
+      return v.arc === null
+        ? projConic(F, m, circleCoeffs(F, v), v.anchor, ctx)
+        : undef(
+            'apply: a projective map sends an arc to an arc of a conic, which is not an object',
+          );
+    case 'conic':
+      return projConic(F, m, coeffsOf(v), v.anchor, ctx);
     case 'polygon':
       return projPolygon(F, m, v, ctx);
     case 'angle_mark':

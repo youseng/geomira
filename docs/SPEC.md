@@ -17,10 +17,13 @@ ADR-0032), the range `outside` flag. Run 17 (ADR-0035, ADR-0036, ADR-0037; befor
 skipped): discovery: the finder ("what is special?"), special-position hunting, lemma tags,
 branch-fix diagnosis. Run 16a (ADR-0040): points at infinity (`IdealPoint`), projective maps
 (`projective`, `send_to_infinity`), cross ratios and harmonic quadruples (claims and
-`harmonic_conjugate`).
+`harmonic_conjugate`). Run 16b (ADR-0042): conics (`Conic`, `conic(A, B, C, D, E)`,
+`conic_center`, the conic overloads of tangent, polar, pole, the tangents from a point, line ∩
+conic and gliders, maps on conics, `conic_to_circle` and `circle_to_centre` for derived layers,
+the claims on, tangent and `conconic`); conic ∩ conic and foci are Run 16c's.
 Phase 2 (must not be referenced by v1 code; the extension points in §18 are built and
-tested in v1): conics (Run 16b) and the projective tools on them (inversion and Möbius maps
-moved to Run 14 by ADR-0032, projective maps to Run 16a by ADR-0040), the symbolic
+tested in v1): (inversion and Möbius maps moved to Run 14 by ADR-0032, projective maps to
+Run 16a by ADR-0040, conics to Run 16b by ADR-0042), the symbolic
 prover (the finder, special-position hunting and branch-fix diagnosis moved to Run 17 by
 ADR-0035 and ADR-0036), the problem library,
 write-ups, loci, animation, macros, accounts.
@@ -66,6 +69,10 @@ from `createRegistry()`, passed as a parameter, never a singleton; tests may bui
   exact-looking float results.
 - Determinism: bit-identical within one engine; across engines identical up to EPS with
   every discrete decision identical (guaranteed by the bands).
+- Conics (ADR-0042) are decided with the same constants on normalised quantities: incidence on
+  Q(P)/|∇Q(P)| as a length; the degeneracy of a conic on its semi-latus rectum
+  √(|det M|/(a² + 2b² + c²)^{3/2}) as a length; its type and asymptotic directions on
+  dimensionless ratios (ac − b² and dᵀM₂d over a² + 2b² + c², the latter times |d|²).
 
 ### 3.2 Seeded RNG (rng.ts)
 Explicit seed objects, no global state; every random procedure takes and reports a seed.
@@ -117,10 +124,16 @@ Generic over the number type T:
   `t: { type:'composite', maps }` (Möbius and projective factors in order, ADR-0040).
 - `IdealPoint { kind:'ideal_point', d, chiral }` (ADR-0040): the point at infinity of the
   direction d (a representative, not normalised); never drawn; the meet of two parallel lines.
+- `Conic { kind:'conic', a, b, c, d, e, f, anchor? }` (ADR-0042): the points where
+  a·x² + 2b·xy + c·y² + 2d·x + 2e·y + f = 0, in the normal form det M = a² + 2b² + c² (M the
+  symmetric 3×3 matrix), so one point set has one value; only non-degenerate real conics; the
+  type (ellipse, parabola, hyperbola) is derived, never stored; `anchor` a known point (gliders,
+  conic_to_circle). A circle is never a conic: circle tools keep returning circles; a projective
+  map's image of a circle or conic is a conic.
 - `Undefined { kind:'undefined', reason }` and `Inexact { kind:'inexact', reason }`.
-Reserved kinds (documented only): Conic, Locus. Capabilities: point; curve
+Reserved kinds (documented only): Locus. Capabilities: point; curve
 (line | circle); linear; round; number; transform; polygon; and (ADR-0040) ideal, ppoint (a
-point or an ideal point), which only declaring overloads take. A kind a tool does not
+point or an ideal point), and (ADR-0042) conic, which only declaring overloads take. A kind a tool does not
 accept → Undefined("<tool> does not accept <kind>"), so future kinds are safe by default.
 
 ## 5. Document model (packages/kernel/document.ts)
@@ -262,7 +275,9 @@ tangent(curve, curve) · equal points · `AB = k·CD` (k exact) · `AB/CD = EF/G
 (statements like "∠BHC + ∠A = 180°" or "∠A + ∠B = 90°") · (ADR-0040) `cross_ratio(A,B,C,D) = k`
 and `harmonic(A,B;C,D)` for four collinear or concyclic points (the complex cross ratio),
 `cross_ratio_lines`, `harmonic_lines` for four concurrent lines; collinear accepts points at
-infinity.
+infinity · (ADR-0042) on(P, k) and tangent(l, k) with a conic k, and `conconic(A,…,F,…)` (the
+points on one conic: one determinant condition per point after the fifth, NDG distinct and no
+three collinear).
 Each kind defines, generically over Field<T>: `conditions(values)` (must all be 0),
 `ndg(values)` (must all be non-zero: NON-DEGENERACY data), and a float `residual`
 (dimensionless, ≥ 0). Directed angles use the complex form: with
@@ -270,7 +285,7 @@ z₁ = (C − B)·conj(A − B) and z₂ = (F − E)·conj(D − E), the conditi
 Im(z₁ⁿ·conj(z₂)) = 0, NDG z₁ ≠ 0 and z₂ ≠ 0 (for n = 1 this is the cross/dot formula).
 Lengths enter as squares. POLYNOMIAL KINDS (the whitelist for the prime-field rung):
 collinear, concyclic, concurrent, parallel, perpendicular, on, tangent, equal points,
-length and ratio equalities, directed angles, cross ratios and harmonic quadruples. Undirected angles and anything involving
+length and ratio equalities, directed angles, cross ratios and harmonic quadruples, conconic. Undirected angles and anything involving
 order or inequality are NOT polynomial kinds. Kinds also carry their argument symmetries and
 optional finder hints (ADR-0035); the kinds are a registry value (`claimKindRegistry`).
 
@@ -433,6 +448,8 @@ E5 Arcs, cline, chirality flag (guard: tests; inversion maps segments → arcs a
    an `outside` range flag: built in Run 14, ADR-0032).
 E6 Claim conditions/NDG as field-generic data (guard: L12, L17).
 E7 Worker job protocol (guard: job tests).
-E8 Reserved kinds Conic, Locus; IdealPoint built in Run 16a (ADR-0040: parallel lines meet
-in their ideal point; tools that do not declare it give Undefined with a reason, E2).
+E8 Reserved kind Locus; IdealPoint built in Run 16a (ADR-0040: parallel lines meet
+in their ideal point; tools that do not declare it give Undefined with a reason, E2); Conic
+built in Run 16b (ADR-0042: the capability `conic`; a conic where no overload takes one gives
+Undefined "k is a conic: <tool> does not take one", E2, tested in every argument position).
 E9 File versioning and migrations. E10 Registry-driven UI and docs.

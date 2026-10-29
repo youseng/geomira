@@ -1,6 +1,7 @@
 /**
  * The v1 tools of Runs 2, 3a, 3b, 4 and 8a, the v1.1 tools of Run 13 and the inversion tools
- * of Run 14 (ADR-0032) and the projective tools of Run 16a (ADR-0040), in registry order (read only by registry.ts; the generated docs group
+ * of Run 14 (ADR-0032), the projective tools of Run 16a (ADR-0040) and the conic tools of Run 16b
+ * (ADR-0042), in registry order (read only by registry.ts; the generated docs group
  * them by family).
  */
 import { withGuarantees } from '../guarantees';
@@ -10,6 +11,7 @@ import { ARC_TOOLS } from './arc';
 import { ARITHMETIC_TOOLS } from './arithmetic';
 import { CIRCLE_MEASURE_TOOLS } from './circle-measures';
 import { CIRCLE_TOOLS, NINEPOINT_CENTER_TOOL } from './circles';
+import { CONIC_TOOLS } from './conics';
 import { CONJUGATE_TOOLS } from './conjugates';
 import { DISPLAY_TOOLS } from './display';
 import { FUNCTION_TOOLS } from './functions';
@@ -29,6 +31,7 @@ import { TRANSFORM_TOOLS } from './transforms';
 import { TRIANGLE_TOOLS } from './triangle';
 import { INVERSION_TOOLS } from '../transform/inversion-tools';
 import { PROJECTIVE_TOOLS } from '../transform/projective-tools';
+import { CONIC_MAP_TOOLS } from '../transform/conic-maps';
 
 export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze(
   [
@@ -56,6 +59,8 @@ export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze(
     ...INVERSION_TOOLS,
     ...PROJECTIVE_TOOLS,
     ...HARMONIC_TOOLS,
+    ...CONIC_TOOLS,
+    ...CONIC_MAP_TOOLS,
   ]
     .map(withGuarantees)
     .map(withMapFacts),

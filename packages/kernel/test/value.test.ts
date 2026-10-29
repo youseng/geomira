@@ -66,8 +66,8 @@ describe('values and capabilities (SPEC §4)', () => {
       if (v.kind === 'undefined' || v.kind === 'inexact') expect(caps).toEqual([]);
       else expect(caps.length).toBeGreaterThan(0);
     }
-    expect(CAPABILITIES.filter((c) => hasCapability({ kind: 'conic' }, c))).toEqual([]);
-    expect(isKnownKind({ kind: 'conic' })).toBe(false);
+    expect(CAPABILITIES.filter((c) => hasCapability({ kind: 'locus' }, c))).toEqual([]);
+    expect(isKnownKind({ kind: 'locus' })).toBe(false);
     expect(VALUES.every(isKnownKind)).toBe(true);
     expect(new Set(VALUES.map((v) => v.kind))).toEqual(new Set(VALUE_KINDS));
   });
@@ -103,6 +103,6 @@ describe('values and capabilities (SPEC §4)', () => {
       chiral: true,
     };
     expect(numbersOf(full)).toEqual([0, 0, 1, 0, -1, 1]);
-    expect(() => numbersOf({ kind: 'conic' } as never)).toThrow(/unexpected value/);
+    expect(() => numbersOf({ kind: 'locus' } as never)).toThrow(/unexpected value/);
   });
 });

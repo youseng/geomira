@@ -77,6 +77,10 @@ function gliderDefault(st: State, obj: Expr): readonly Expr[] | string {
       return v.anchor === undefined
         ? [lit(fromInteger(90))]
         : [lit(fromInteger(2)), lit(fromInteger(1))];
+    case 'conic':
+      return v.anchor === undefined
+        ? 'on(…) on a conic needs a known point of it (ADR-0042), and this one has none'
+        : [lit(fromInteger(2)), lit(fromInteger(1))];
     case 'undefined':
     case 'inexact':
       return `on(…) without a parameter needs the object's value to choose one, and it is ${v.kind} here (${v.reason})`;

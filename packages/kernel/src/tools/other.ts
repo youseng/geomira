@@ -3,16 +3,35 @@
  * point P, without square roots (exact in every field):
  *   - line and circle (either order): Vieta. The chord's midpoint is the foot F of the
  *     centre on the line, so the other point is 2F − P;
- *   - two circles: the reflection of P in the line of centres.
+ *   - two circles: the reflection of P in the line of centres;
+ *   - line and conic (ADR-0042): Vieta on the line's quadratic.
  * P must lie on both objects (a decision with the band, incidence.ts). Tangency gives the
  * double point P itself, with no special case.
  */
 import type { Field } from '@geomira/num/field';
 import type { EvalContext, ExampleArg, ToolSpec } from '../tool';
 import { vAdd, vDot, vScale, vSub } from '../geom';
+import { requireOnConic } from '../conic-incidence';
 import { requireOnCircle, requireOnLine } from '../incidence';
-import { pointOf, undef, type Circle, type Line, type Point, type Value } from '../value';
-import { badArgs, circleAt, degenerateCircle, degenerateLine, lineAt, pointAt } from './args';
+import {
+  pointOf,
+  undef,
+  type Circle,
+  type Conic,
+  type Line,
+  type Point,
+  type Value,
+} from '../value';
+import {
+  badArgs,
+  circleAt,
+  conicAt,
+  degenerateCircle,
+  degenerateLine,
+  lineAt,
+  pointAt,
+} from './args';
+import { lineConicPair } from './conic-pairs';
 import { offArcs } from './arc-range';
 import { outOfRange } from './range';
 
@@ -76,6 +95,29 @@ function twoCircles<T>(
   return offArcs(F, [c1, c2], q, ctx, 'other intersection') ?? pointOf(q.x, q.y);
 }
 
+/**
+ * Line and conic (ADR-0042): Vieta on the line's quadratic (conic-pairs.ts). Degenerate cases:
+ * P off the carrier line or off k → Undefined (within the band: ambiguous); tangency → P; an
+ * asymptotic direction → Undefined (the other point is at infinity); the other point outside a
+ * segment or ray → Undefined (ambiguous within the band of an end; mod p: Inexact).
+ */
+function lineConic<T>(
+  F: Field<T>,
+  l: Line<T>,
+  k: Conic<T>,
+  P: Point<T>,
+  ctx: EvalContext,
+): Value<T> {
+  const pair = lineConicPair(F, l, k, ctx, true);
+  if ('kind' in pair) return pair;
+  const bad =
+    requireOnLine(F, P, l, ctx, 'other(a, b, P) needs P on the line') ??
+    requireOnConic(F, P, k, ctx, 'other(a, b, P) needs P on the conic');
+  if (bad !== undefined) return bad;
+  const X = pair.other?.point(P) ?? badArgs('other');
+  return 'kind' in X ? X : pointOf(X.x, X.y);
+}
+
 function other<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const P = pointAt(args, 2);
   if (P === undefined || args.length !== 3) return badArgs('other');
@@ -83,6 +125,9 @@ function other<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Val
   if (l0 !== undefined && c1 !== undefined) return lineCircle(F, l0, c1, P, ctx);
   if (c0 !== undefined && l1 !== undefined) return lineCircle(F, l1, c0, P, ctx);
   if (c0 !== undefined && c1 !== undefined) return twoCircles(F, c0, c1, P, ctx);
+  const [k0, k1] = [conicAt(args, 0), conicAt(args, 1)];
+  if (l0 !== undefined && k1 !== undefined) return lineConic(F, l0, k1, P, ctx);
+  if (k0 !== undefined && l1 !== undefined) return lineConic(F, l1, k0, P, ctx);
   return badArgs('other');
 }
 
@@ -98,6 +143,8 @@ export const OTHER_TOOLS: readonly ToolSpec[] = [
       { params: ['linear', 'round', 'point'] },
       { params: ['round', 'linear', 'point'] },
       { params: ['round', 'round', 'point'] },
+      { params: ['linear', 'conic', 'point'] },
+      { params: ['conic', 'linear', 'point'] },
     ],
     outputKinds: ['point'],
     compute: other,
@@ -111,9 +158,10 @@ export const OTHER_TOOLS: readonly ToolSpec[] = [
       'a segment or ray range mod p → Inexact',
       'the other point outside an arc → Undefined',
       'a hand-built arc mod p → Inexact',
+      'line and conic: an asymptotic direction → Undefined (the other point is at infinity)',
     ],
     export: 'numeric',
-    doc: 'other(a, b, P): the second intersection of a line and a circle, or of two circles, given one common point P (Vieta; exact).',
+    doc: 'other(a, b, P): the second intersection of a line and a circle, of two circles, or of a line and a conic, given one common point P (Vieta; exact).',
     examples: [
       { args: [{ through: [P, ['-4', '-3']], as: 'line' }, CIRCLE, P] },
       { args: [CIRCLE, { call: 'circle', args: [['6', '0'], P] }, P] },

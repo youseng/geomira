@@ -20,7 +20,8 @@ import { evaluate, type Evaluation } from '@geomira/kernel/evaluate';
 import { call, lit, type CallExpr, type Expr } from '@geomira/kernel/expr';
 import { dragParameter, type GliderForm } from '@geomira/kernel/glider';
 import { localScale } from '@geomira/kernel/transform/apply-map';
-import type { Value, Vec } from '@geomira/kernel/value';
+import type { Conic, Value, Vec } from '@geomira/kernel/value';
+import { coeffsOf, halfGradient } from '@geomira/kernel/conic';
 import { isInexact } from '@geomira/num/field';
 import { FloatField } from '@geomira/num/float-field';
 import { abs, compare, div, fromNumber, type Rational } from '@geomira/num/rational';
@@ -112,6 +113,7 @@ function argValue(doc: Document, base: DocObject, e: Expr, values: Evaluation<nu
 function formOf(obj: Value<number>, n: number): GliderForm | undefined {
   if (obj.kind === 'line') return 'line';
   if (obj.kind === 'circle') return n === 2 ? 'stereo' : 'angle';
+  if (obj.kind === 'conic') return n === 2 ? 'stereo' : undefined;
   return undefined;
 }
 
@@ -151,7 +153,8 @@ export function dragDefinition(
   const form = obj === undefined ? undefined : formOf(obj, params.length);
   if (obj === undefined || objExpr === undefined || form === undefined)
     return `the object ${b.name} glides on is undefined`;
-  if (obj.kind !== 'line' && obj.kind !== 'circle') return `${b.name} glides on no curve`;
+  if (obj.kind !== 'line' && obj.kind !== 'circle' && obj.kind !== 'conic')
+    return `${b.name} glides on no curve`;
   const p = dragParameter(FloatField, obj, to, form, values.ctx);
   if (isInexact(p) || 'kind' in p) return p.reason;
   const q = (x: number) => lit(fromNumber(x));
@@ -186,10 +189,22 @@ function roundedLit(e: Expr, exp: number): Expr {
   return lit(r, decimalText(r, exp));
 }
 
-/** The size that converts a glider parameter step into a length (|d| or r). */
+/**
+ * A conic's length for its glider steps (ADR-0042): 2/|∇Q(A)/2| at its known point A, which for
+ * a conic that is a circle is its radius (normal form Q = 2 − 2|X − O|²/r²).
+ */
+function conicSize(k: Conic<number>): number {
+  const A = k.anchor;
+  if (A === undefined) return Number.NaN;
+  const g = halfGradient(FloatField, coeffsOf(k), A);
+  return 2 / Math.hypot(g.x, g.y);
+}
+
+/** The size that converts a glider parameter step into a length (|d|, r, or a conic's). */
 function gliderSize(obj: Value<number> | undefined): number {
   if (obj?.kind === 'line') return Math.hypot(obj.d.x, obj.d.y);
   if (obj?.kind === 'circle') return Math.sqrt(obj.r2);
+  if (obj?.kind === 'conic') return conicSize(obj);
   return Number.NaN;
 }
 

@@ -18,6 +18,8 @@ import {
   type Complex,
 } from '@geomira/num/complex';
 import type { Field } from '@geomira/num/field';
+import { coeffsOf, mapConicBy } from './conic';
+import { similarityMatrix } from './transform/projective';
 import {
   undef,
   type AngleMark,
@@ -207,6 +209,13 @@ export function applySimilarity<T>(F: Field<T>, s: Similarity<T>, v: Value<T>): 
       return mapLine(F, s, v);
     case 'circle':
       return mapCircle(F, s, v);
+    case 'conic':
+      return mapConicBy(
+        F,
+        coeffsOf(v),
+        similarityMatrix(F, s),
+        v.anchor === undefined ? undefined : mapPoint(F, s, v.anchor),
+      );
     case 'polygon':
       return { kind: 'polygon', pts: v.pts.map((p) => mapPoint(F, s, p)) };
     case 'angle_mark':

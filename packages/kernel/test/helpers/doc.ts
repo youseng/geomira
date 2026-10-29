@@ -94,3 +94,5 @@ export function evalCall<T>(F: Field<T>, tool: string, args: readonly Expr[]): V
   b.add('x', call(tool, args));
   return valueOf(b.doc, evalDoc(b.doc, F), 'x');
 }
+
+export { CONIC } from './conic-samples';

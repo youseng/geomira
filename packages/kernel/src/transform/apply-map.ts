@@ -6,6 +6,7 @@
  * S₂(w) = a/c + e·w̄, e = (bc − ad)/c²; J is applied per kind:
  *   - point: the pole → Undefined (its image is at infinity); within the band → ambiguous;
  *   - line, segment, ray, two rays: j-lines.ts; circle, arc: j-circles.ts (kinds exchange);
+ *   - conic → Undefined (a curve of degree 3 or 4, not an object; ADR-0042);
  *   - polygon → Undefined (its sides would become arcs); segment mark → Undefined (lengths are
  *     not kept); angle mark → the mark on the tangents of the image arms (angles are kept,
  *     orientation reversed: the arms swap); text → its anchor's image;
@@ -82,6 +83,10 @@ function applyJ<T>(F: Field<T>, v: Value<T>, ctx: EvalContext): Value<T> {
       return jLine(F, v, ctx);
     case 'circle':
       return jCircle(F, v, ctx);
+    case 'conic':
+      return undef(
+        'apply: a Möbius map with a pole sends a conic (that is not a circle) to a curve of degree 3 or 4, which is not an object',
+      );
     case 'ideal_point':
       return undef(
         'apply: a Möbius map with a pole sends every point at infinity to one point, so a direction has no image of its own',

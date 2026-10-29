@@ -119,6 +119,18 @@ export const TANGENT_POINT: readonly Guarantee[] = [
   g('perpendicular', t('line', 0, R), t('line', t('center', 1), R)),
 ];
 
+/** A touch point of a tangent from P to a conic (ADR-0042): on the conic and on P's polar. */
+const CONIC_TANGENT_POINT: readonly Guarantee[] = [g('on', R, 1), g('on', R, t('polar', 0, 1))];
+
+/**
+ * The conic through five points passes through each, and its known point (the glider at
+ * (1 : 0)) is the first (ADR-0042).
+ */
+const THROUGH_FIVE: readonly Guarantee[] = [
+  ...[0, 1, 2, 3, 4].map((i) => g('on', i, R)),
+  g('equal', 0, t('on', R, ONE, { lit: '0' })),
+];
+
 export const POLAR: readonly Guarantee[] = [g('perpendicular', R, t('line', t('center', 1), 0))];
 
 export const POLE: readonly Guarantee[] = [g('perpendicular', t('line', t('center', 1), R), 0)];
@@ -239,6 +251,8 @@ export const GUARANTEE_TABLE: Readonly<
     'linear,round': ON_BOTH,
     'round,linear': ON_BOTH,
     'round,round': ON_BOTH,
+    'linear,conic': ON_BOTH,
+    'conic,linear': ON_BOTH,
   },
   circumcenter: { 'point,point,point': CIRCUMCENTER },
   centroid: { 'point,point,point': CENTROID },
@@ -262,13 +276,20 @@ export const GUARANTEE_TABLE: Readonly<
   cline: { 'point,point,point': THROUGH_THREE },
   diameter_circle: { 'point,point': DIAMETER_CIRCLE },
   ninepoint_circle: { 'point,point,point': NINEPOINT_CIRCLE },
-  on: { 'linear,number': ON_FIRST, 'round,number,number': ON_FIRST, 'round,number': ON_FIRST },
+  on: {
+    'linear,number': ON_FIRST,
+    'round,number,number': ON_FIRST,
+    'round,number': ON_FIRST,
+    'conic,number,number': ON_FIRST,
+  },
   other: {
     'linear,round,point': ON_BOTH,
     'round,linear,point': ON_BOTH,
     'round,round,point': ON_BOTH,
+    'linear,conic,point': ON_BOTH,
+    'conic,linear,point': ON_BOTH,
   },
-  tangent: { 'point,round': TANGENT_AT },
+  tangent: { 'point,round': TANGENT_AT, 'point,conic': TANGENT_FROM },
   polar: { 'point,round': POLAR },
   radical_axis: { 'round,round': RADICAL_AXIS },
   incenter: { 'point,point,point': INCENTER },
@@ -278,8 +299,8 @@ export const GUARANTEE_TABLE: Readonly<
   bisector: { 'point,point,point': BISECTOR },
   ext_bisector: { 'point,point,point': EXT_BISECTOR },
   ninepoint_center: { 'point,point,point': NINEPOINT_CENTER },
-  tangent_point: { 'point,round': TANGENT_POINT },
-  tangent_from: { 'point,round': TANGENT_FROM },
+  tangent_point: { 'point,round': TANGENT_POINT, 'point,conic': CONIC_TANGENT_POINT },
+  tangent_from: { 'point,round': TANGENT_FROM, 'point,conic': TANGENT_FROM },
   reflect: { 'point,linear': REFLECT_IN_LINE, 'point,point': REFLECT_IN_POINT },
   rotate: { 'point,point,number': ROTATE_POINT },
   homothety: { 'point,point,number': HOMOTHETY_POINT },
@@ -289,6 +310,7 @@ export const GUARANTEE_TABLE: Readonly<
   pole: { 'linear,round': POLE },
   radical_center: { 'round,round,round': RADICAL_CENTER },
   arc: { 'point,point,point': THROUGH_THREE },
+  conic: { 'point,point,point,point,point': THROUGH_FIVE },
 };
 
 /** The overload's parameter key in GUARANTEE_TABLE ("point,point"; a rest capability ends in …). */

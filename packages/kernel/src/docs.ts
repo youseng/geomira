@@ -119,6 +119,11 @@ export function formatValue<T>(v: Value<T>, show: (x: T) => string): string {
           : `, arc counter-clockwise from ${pair(v.arc.from)} to ${pair(v.arc.to)}`;
       return `circle center ${pair(v.c)}, r² = ${show(v.r2)}${arc}${anchor}`;
     }
+    case 'conic': {
+      const anchor = v.anchor === undefined ? '' : `, anchor ${pair(v.anchor)}`;
+      const q = [v.a, v.b, v.c, v.d, v.e, v.f].map(show).join(', ');
+      return `conic (a, b, c, d, e, f) = (${q})${anchor}`;
+    }
     case 'number':
       return `number ${show(v.v)}`;
     case 'polygon':

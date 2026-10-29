@@ -144,6 +144,33 @@ const PROJECTIVE: MapFacts = {
   ],
 };
 
+/** k's known point: on(k, 1, 0) (ADR-0042: the glider at (1 : 0) is the known point). */
+const ANCHOR: GuaranteeTerm = t('on', 0, ONE, ZERO);
+
+/**
+ * conic_to_circle(k): a projective map whose image of k is a circle; it fixes k's known point
+ * and the tangent there (ADR-0042).
+ */
+const CONIC_TO_CIRCLE: MapFacts = {
+  type: 'projective',
+  circleImage: 0,
+  fixedPoints: [ANCHOR],
+  invariantCurves: [t('tangent', ANCHOR, 0)],
+};
+
+/**
+ * circle_to_centre(c, P): a projective map keeping c and line OP, sending P to the center O and
+ * O to the reflection of P in O (the Klein model's translation along OP, ADR-0042).
+ */
+const CIRCLE_TO_CENTRE: MapFacts = {
+  type: 'projective',
+  invariantCurves: [0, t('line', t('center', 0), 1)],
+  sends: [
+    [1, t('center', 0)],
+    [t('center', 0), t('reflect', 1, t('center', 0))],
+  ],
+};
+
 /**
  * The map overloads: tool name → the overload's parameter capabilities → its facts. Read only
  * by `withMapFacts`; a kernel test checks that every entry names an existing overload.
@@ -165,6 +192,8 @@ export const MAP_TABLE: Readonly<Record<string, Readonly<Record<string, MapFacts
   projective: {
     'ppoint,ppoint,ppoint,ppoint,ppoint,ppoint,ppoint,ppoint': PROJECTIVE,
   },
+  conic_to_circle: { conic: CONIC_TO_CIRCLE },
+  circle_to_centre: { 'round,point': CIRCLE_TO_CENTRE },
 };
 
 /** `apply(T, X)`: the image of X under T. */

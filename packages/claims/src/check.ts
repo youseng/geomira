@@ -29,7 +29,7 @@ function mayFit(k: ValueKind, p: ClaimParam): boolean {
     case 'circle':
       return k === p;
     case 'curve':
-      return k === 'line' || k === 'circle';
+      return k === 'line' || k === 'circle' || k === 'conic';
     case 'integer':
     case 'number':
       return k === 'number';

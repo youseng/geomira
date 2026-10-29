@@ -9,7 +9,7 @@ import type { Field } from '@geomira/num/field';
 import { gliderPoint } from '../glider';
 import type { EvalContext, ExampleArg, ToolSpec } from '../tool';
 import type { Value } from '../value';
-import { badArgs, circleAt, lineAt, numAt } from './args';
+import { badArgs, circleAt, conicAt, lineAt, numAt } from './args';
 
 /**
  * Degenerate cases: a glider on an Undefined object → Undefined (evaluate propagates);
@@ -17,6 +17,10 @@ import { badArgs, circleAt, lineAt, numAt } from './args';
  */
 function on<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const [l, c, a, b] = [lineAt(args, 0), circleAt(args, 0), numAt(args, 1), numAt(args, 2)];
+  const k = conicAt(args, 0);
+  if (k !== undefined && a !== undefined && b !== undefined && args.length === 3) {
+    return gliderPoint(F, k, { form: 'stereo', u: a.v, v: b.v }, ctx);
+  }
   if (l !== undefined && a !== undefined && args.length === 2) {
     return gliderPoint(F, l, { form: 'line', t: a.v }, ctx);
   }
@@ -53,6 +57,7 @@ export const GLIDER_TOOLS: readonly ToolSpec[] = [
       { params: ['linear', 'number'] },
       { params: ['round', 'number', 'number'] },
       { params: ['round', 'number'], radical: true },
+      { params: ['conic', 'number', 'number'] },
     ],
     outputKinds: ['point'],
     compute: on,
@@ -68,9 +73,11 @@ export const GLIDER_TOOLS: readonly ToolSpec[] = [
       'on an arc, the point is clamped to the nearer end',
       'on an arc, both ends equally far → Undefined (ambiguous)',
       'a hand-built arc mod p → Inexact',
+      'on(k, u, v) on a conic without a known point → Undefined',
+      'on(k, u, v) at a point at infinity of the conic (an asymptotic direction) → Undefined; within the band: ambiguous',
     ],
     export: 'numeric',
-    doc: 'Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range); on(c, u, v): the stereographic parameter (u : v) from the anchor of c (rational; (u : 0) is the anchor); on(c, θ): the point at angle θ (degrees) from the center.',
+    doc: 'Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range); on(c, u, v): the stereographic parameter (u : v) from the anchor of c (rational; (u : 0) is the anchor); on(c, θ): the point at angle θ (degrees) from the center; on(k, u, v) on a conic: the second point of the line through its known point A with direction u·f − v·e (e = −∇Q(A)/2, f = rot90(e)); rational, Undefined at the points at infinity.',
     examples: [
       { args: [SEGMENT, '1/4'] },
       { args: [CIRCLE, '1', '2'] },

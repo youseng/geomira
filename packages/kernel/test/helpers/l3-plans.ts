@@ -20,6 +20,7 @@ import type { Capability } from '../../src/value';
 import type { Builder } from './doc';
 import { FUNCTION_TOOLS, functionPlan } from './l3-plans-functions';
 import { TRANSFORM_TOOLS, transformPlan } from './l3-plans-transforms';
+import { conicPlan } from './l3-plans-conics';
 
 type XY = readonly [Rational, Rational];
 
@@ -125,6 +126,8 @@ export function planArgs(
   tool: string,
   caps: readonly Capability[],
 ): Expr[] | undefined {
+  const conic = conicPlan(b, rng, tool, caps);
+  if (conic !== undefined) return conic;
   if (tool === 'text')
     return [pointAt(b, [dyadic(rng), dyadic(rng)]), { kind: 'str', value: 'P_1' }];
   if (HERONIAN.includes(tool)) return rng.nextFloat() < 0.5 ? heronian(b, rng) : undefined;

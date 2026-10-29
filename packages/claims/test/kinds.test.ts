@@ -45,11 +45,13 @@ describe('the claim kinds as data', () => {
       ...['tangent', 'length', 'ratio', 'ratio_value', 'dangle', 'dangle_lines'],
       ...['angle_eq', 'angle_sum', 'angle_diff'],
       ...['cross_ratio', 'harmonic', 'cross_ratio_lines', 'harmonic_lines'],
+      'conconic',
     ]);
     expect(POLYNOMIAL_KINDS).toEqual([
       ...['collinear', 'concyclic', 'concurrent', 'parallel', 'perpendicular', 'equal', 'on'],
       ...['tangent', 'length', 'ratio', 'ratio_value', 'dangle', 'dangle_lines'],
       ...['cross_ratio', 'harmonic', 'cross_ratio_lines', 'harmonic_lines'],
+      'conconic',
     ]);
     expect(Object.isFrozen(POLYNOMIAL_KINDS)).toBe(true);
     expect(Object.isFrozen(CLAIM_KINDS)).toBe(true);

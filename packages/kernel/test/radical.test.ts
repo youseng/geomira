@@ -86,6 +86,8 @@ function draw<T>(F: Field<T>, cap: Capability, rng: Rng, exact: boolean): Value<
     case 'ideal':
     case 'ppoint':
       return { kind: 'ideal_point', d: { x: lift(F, nonzero(rng)), y: n() }, chiral: false };
+    case 'conic':
+      return randomConic(F, () => ({ kind: 'point', ...v() }));
     default:
       throw new Error(`unknown capability ${String(cap)}`);
   }
@@ -143,6 +145,7 @@ describe('Signature.radical is not set needlessly', () => {
         ...['dist', 'dist'],
         ...['sqrt_bc'],
         ...['sqrt_bc2'],
+        ...['circle_to_centre'],
         ...Array<string>(4).fill('rotate'),
       ].sort(),
     );
@@ -157,3 +160,13 @@ describe('Signature.radical is not set needlessly', () => {
     });
   }
 });
+
+/** A conic through five random points (ADR-0042), drawn until the five give one. */
+function randomConic<T>(F: Field<T>, point: () => Value<T>): Value<T> {
+  const tool = REGISTRY.get('conic');
+  for (let i = 0; i < 100 && tool !== undefined; i++) {
+    const k = tool.compute(F, [point(), point(), point(), point(), point()], { scale: 1 });
+    if (k.kind === 'conic') return k;
+  }
+  throw new Error('no conic through five random points');
+}

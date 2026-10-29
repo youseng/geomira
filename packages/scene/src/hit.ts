@@ -26,7 +26,7 @@ export const HIT_RADIUS = 6;
 const MAX_VIRTUAL_CURVES = 8;
 
 /** Kinds whose strokes are figure curves (marks are signs, not curves to construct on). */
-const CURVE_KINDS: readonly ShapeKind[] = ['line', 'circle', 'polygon'];
+const CURVE_KINDS: readonly ShapeKind[] = ['line', 'circle', 'conic', 'polygon'];
 
 export interface Hit {
   readonly id: number;

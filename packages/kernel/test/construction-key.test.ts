@@ -12,7 +12,7 @@ import { objectKinds } from '../src/derived';
 import { call, lit, type Expr, type Selector } from '../src/expr';
 import type { ArgSymmetry, ToolSpec } from '../src/tool';
 import type { Value, Vec } from '../src/value';
-import { Builder, contextOf, evalDoc, num, pt, REGISTRY, valueOf } from './helpers/doc';
+import { Builder, contextOf, evalDoc, CONIC, num, pt, REGISTRY, valueOf } from './helpers/doc';
 
 type R = Q.Rational;
 
@@ -146,7 +146,7 @@ function sameFigure(a: Value<R>, b: Value<R>): boolean {
       ),
     );
   }
-  return false;
+  return CONIC.sameFigure(a, b);
 }
 
 function symmetricTools(): ToolSpec[] {
@@ -158,13 +158,13 @@ describe('every declared symmetry gives the same key and the same exact value', 
     expect(
       symmetricTools()
         .map((t) => t.name)
-        .filter((n) => SAMPLES[n] === undefined),
+        .filter((n) => (SAMPLES[n] ?? CONIC.samples[n]) === undefined),
     ).toEqual([]);
   });
 
   for (const tool of symmetricTools()) {
     it(tool.name, () => {
-      const names = SAMPLES[tool.name] ?? [];
+      const names = SAMPLES[tool.name] ?? CONIC.samples[tool.name] ?? [];
       const b = fixture();
       const args = names.map((n) => b.ref(n));
       const sels = SAMPLE_SELECTORS[tool.name] ?? [];

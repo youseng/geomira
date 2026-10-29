@@ -36,7 +36,8 @@
     "./transform/apply-map": "./src/transform/apply-map.ts",
     "./ideal": "./src/ideal.ts",
     "./guarantees": "./src/guarantees.ts",
-    "./map-facts": "./src/map-facts.ts"
+    "./map-facts": "./src/map-facts.ts",
+    "./conic": "./src/conic.ts"
   },
   "dependencies": {
     "@geomira/num": "workspace:*"

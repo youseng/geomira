@@ -95,9 +95,9 @@ foot(P, l) or foot(P, A, B): the orthogonal projection of P on the line.
 
 ### intersect
 
-intersect(a, b, selectors): the common point of two lines, a line and a circle, or two circles; a curve pair with two candidates needs selectors (along(±) on line ∩ circle, orient(±) on circle ∩ circle, other(P), near(P), same_side(Q, l), …).
+intersect(a, b, selectors): the common point of two lines, a line and a circle, two circles, or a line and a conic; a curve pair with two candidates needs selectors (along(±) on line ∩ circle and line ∩ conic, orient(±) on circle ∩ circle, other(P), near(P), same_side(Q, l), …).
 
-- Signatures: `intersect(linear, linear)`, `intersect(linear, round)`, `intersect(round, linear)`, `intersect(round, round)`
+- Signatures: `intersect(linear, linear)`, `intersect(linear, round)`, `intersect(round, linear)`, `intersect(round, round)`, `intersect(linear, conic)`, `intersect(conic, linear)`
 - Result: point, ideal_point
 - Exact run (RationalField): can succeed
 - Export: constructive (intersect)
@@ -106,11 +106,15 @@ intersect(a, b, selectors): the common point of two lines, a line and a circle, 
   - `intersect(linear, round)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
   - `intersect(round, linear)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
   - `intersect(round, round)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
+  - `intersect(linear, conic)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
+  - `intersect(conic, linear)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
 - By construction:
   - `intersect(linear, linear)`: on(result, #1); on(result, #2)
   - `intersect(linear, round)`: on(result, #1); on(result, #2)
   - `intersect(round, linear)`: on(result, #1); on(result, #2)
   - `intersect(round, round)`: on(result, #1); on(result, #2)
+  - `intersect(linear, conic)`: on(result, #1); on(result, #2)
+  - `intersect(conic, linear)`: on(result, #1); on(result, #2)
 - Degenerate cases:
   - parallel lines → their ideal point (the first line's direction and flag)
   - parallel segments or rays → Undefined (no point at infinity is on them)
@@ -126,6 +130,13 @@ intersect(a, b, selectors): the common point of two lines, a line and a circle, 
   - circle ∩ circle: tangency (a gap within the band) → the double point
   - circle ∩ circle: the circles nearly coincide (centres and radii within the band) → two candidates by the half chord, or Undefined (ambiguous)
   - concentric circles → Undefined
+  - line ∩ conic: the line misses the conic → Undefined
+  - line ∩ conic: tangency (the gap within the band) → the double point
+  - line ∩ conic: an asymptotic direction (α within EPS) → the one finite common point (both along signs)
+  - line ∩ conic: an asymptote → Undefined (no finite common point)
+  - line ∩ conic: α within the band of an asymptotic direction → Undefined (ambiguous)
+  - line ∩ conic: every decision is scale-free (the ellipse 10⁸ times larger gives the same points)
+  - other(P) on line ∩ conic with an asymptotic direction → Undefined (the other point is at infinity)
   - two candidates and no selector → Undefined (ambiguous: add a selector)
   - a deciding quantity of a selector within the band → Undefined (ambiguous)
   - no candidate satisfies the selectors → Undefined
@@ -211,9 +222,9 @@ The center of a circle.
 
 ### on
 
-Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range); on(c, u, v): the stereographic parameter (u : v) from the anchor of c (rational; (u : 0) is the anchor); on(c, θ): the point at angle θ (degrees) from the center.
+Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range); on(c, u, v): the stereographic parameter (u : v) from the anchor of c (rational; (u : 0) is the anchor); on(c, θ): the point at angle θ (degrees) from the center; on(k, u, v) on a conic: the second point of the line through its known point A with direction u·f − v·e (e = −∇Q(A)/2, f = rot90(e)); rational, Undefined at the points at infinity.
 
-- Signatures: `on(linear, number)`, `on(round, number, number)`, `on(round, number)`
+- Signatures: `on(linear, number)`, `on(round, number, number)`, `on(round, number)`, `on(conic, number, number)`
 - Result: point
 - Exact run (RationalField): can succeed
 - Export: numeric
@@ -222,6 +233,7 @@ Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range);
   - `on(linear, number)`: on(result, #1)
   - `on(round, number, number)`: on(result, #1)
   - `on(round, number)`: on(result, #1)
+  - `on(conic, number, number)`: on(result, #1)
 - Degenerate cases:
   - a glider on an Undefined object → Undefined
   - on(l, t) on a segment or ray clamps t to the range
@@ -233,6 +245,8 @@ Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range);
   - on an arc, the point is clamped to the nearer end
   - on an arc, both ends equally far → Undefined (ambiguous)
   - a hand-built arc mod p → Inexact
+  - on(k, u, v) on a conic without a known point → Undefined
+  - on(k, u, v) at a point at infinity of the conic (an asymptotic direction) → Undefined; within the band: ambiguous
 - Examples:
   - `on(segment((0, 0), (4, 2)), 1/4)` → point (1, 1/2)
   - `on(circle((0, 0), (5, 0)), 1, 2)` → point (-3, 4)
@@ -241,9 +255,9 @@ Gliders: on(l, t) = p + t·d on a line, segment or ray (t clamped to the range);
 
 ### other
 
-other(a, b, P): the second intersection of a line and a circle, or of two circles, given one common point P (Vieta; exact).
+other(a, b, P): the second intersection of a line and a circle, of two circles, or of a line and a conic, given one common point P (Vieta; exact).
 
-- Signatures: `other(linear, round, point)`, `other(round, linear, point)`, `other(round, round, point)`
+- Signatures: `other(linear, round, point)`, `other(round, linear, point)`, `other(round, round, point)`, `other(linear, conic, point)`, `other(conic, linear, point)`
 - Result: point
 - Exact run (RationalField): can succeed
 - Export: numeric
@@ -252,6 +266,8 @@ other(a, b, P): the second intersection of a line and a circle, or of two circle
   - `other(linear, round, point)`: on(result, #1); on(result, #2)
   - `other(round, linear, point)`: on(result, #1); on(result, #2)
   - `other(round, round, point)`: on(result, #1); on(result, #2)
+  - `other(linear, conic, point)`: on(result, #1); on(result, #2)
+  - `other(conic, linear, point)`: on(result, #1); on(result, #2)
 - Degenerate cases:
   - P not on both objects → Undefined
   - P within the band of an object → Undefined (ambiguous)
@@ -262,6 +278,7 @@ other(a, b, P): the second intersection of a line and a circle, or of two circle
   - a segment or ray range mod p → Inexact
   - the other point outside an arc → Undefined
   - a hand-built arc mod p → Inexact
+  - line and conic: an asymptotic direction → Undefined (the other point is at infinity)
 - Examples:
   - `other(line((3, 4), (-4, -3)), circle((0, 0), (3, 4)), (3, 4))` → point (-4, -3)
   - `other(circle((0, 0), (3, 4)), circle((6, 0), (3, 4)), (3, 4))` → point (3, -4)
@@ -326,15 +343,16 @@ The center of the nine-point circle of ABC: the midpoint of the circumcenter and
 
 ### tangent_point
 
-tangent_point(P, c, selectors): a point where a tangent from P touches c; two candidates (orient(+): cross(O − P, T − P) > 0), one double point when P is on c.
+tangent_point(P, c, selectors): a point where a tangent from P touches a circle or a conic; two candidates (orient(+): cross(O − P, T − P) > 0, O the center, or for a conic the midpoint of the chord of contact), one double point when P is on the curve.
 
-- Signatures: `tangent_point(point, round)`
+- Signatures: `tangent_point(point, round)`, `tangent_point(point, conic)`
 - Result: point
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
 - By construction:
   - `tangent_point(point, round)`: on(result, #2); on(result, polar(#1, #2)); perpendicular(line(#1, result), line(center(#2), result))
+  - `tangent_point(point, conic)`: on(result, #2); on(result, polar(#1, #2))
 - Degenerate cases:
   - P inside c (or P = the center) → Undefined
   - P on c (the gap |OP| − r within the band) → the double point
@@ -343,6 +361,8 @@ tangent_point(P, c, selectors): a point where a tangent from P touches c; two ca
   - other(T) with T not a touch point → Undefined
   - square roots not representable → Inexact over Q and mod p (other(T) is exact)
   - a touch point outside an arc is not a candidate
+  - a conic: P its center or no tangent from P (P inside it) → Undefined
+  - a conic: P on an asymptote → Undefined (one touch point is at infinity)
 - Examples:
   - `tangent_point((5, 5), circle((0, 0), (5, 0)), orient(+))` → point (5, 0)
   - `tangent_point((6, 0), circle((0, 0), (5, 0)), orient(+))` → point (4.16666666667, -2.76385399196)
@@ -406,19 +426,21 @@ symmedian_point(A, B, C): the symmedian (Lemoine) point K, where the three symme
 
 ### pole
 
-pole(l, c): the pole of the line l with respect to c, the point whose polar is l (the inverse of polar); exact.
+pole(l, c): the pole of the line l with respect to a circle or a conic, the point whose polar is l (the inverse of polar); exact. A line through the center (a parabola: parallel to its axis) has its pole at infinity.
 
-- Signatures: `pole(linear, round)`
-- Result: point
+- Signatures: `pole(linear, round)`, `pole(linear, conic)`
+- Result: point, ideal_point
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
 - By construction:
   - `pole(linear, round)`: perpendicular(line(center(#2), result), #1)
 - Degenerate cases:
-  - l through the center → Undefined (the pole is at infinity)
+  - l through the center → the point at infinity perpendicular to l
   - l tangent to c → the touch point
   - a segment or ray is extended to its carrier line
+  - a conic: l through its center (a parabola: l parallel to its axis) → the point at infinity of the pole
+  - a conic within the band of a parabola → Undefined (ambiguous)
 - Examples:
   - `pole(line((5, -5), (5, 5)), circle((0, 0), (5, 0)))` → point (5, 0)
   - `pole(line((2, 0), (0, 2)), circle((0, 0), (5, 0)))` → point (25/2, 25/2)
@@ -469,6 +491,23 @@ harmonic_conjugate(A, B, C): the point D of line AB with (A, B; C, D) = −1 (C 
   - `harmonic_conjugate((0, 0), (6, 0), (2, 0))` → point (-6, 0)
   - `harmonic_conjugate((0, 0), (6, 0), (3, 0))` → point at infinity, direction (6, 0)
   - `harmonic_conjugate(line((0, 0), (1, 0)), line((0, 0), (0, 1)), line((0, 0), (1, 1)))` → line (0, 0) + t·(1, -1), t ∈ [−∞, ∞], chiral
+
+### conic_center
+
+conic_center(k): the center of a conic, the pole of the line at infinity; a parabola's center is the point at infinity of its axis; exact.
+
+- Signatures: `conic_center(conic)`
+- Result: point, ideal_point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry: none
+- By construction: nothing
+- Degenerate cases:
+  - a parabola → the point at infinity of its axis
+  - a conic within the band of a parabola → Undefined (ambiguous)
+- Examples:
+  - `conic_center(conic((1, 1), (2, 1/2), (-1, -1), (4, 1/4), (1/2, 2)))` → point (0, 0)
+  - `conic_center(conic((2, 0), (0, 1), (-2, 0), (0, -1), (6/5, 4/5)))` → point (0, 0)
 
 ## Lines
 
@@ -580,26 +619,28 @@ The perpendicular bisector of AB (chiral: a quarter turn of B − A).
 
 ### tangent
 
-tangent(P, c): the tangent to c at P (P on c); chiral (a quarter turn of P − O).
+tangent(P, c): the tangent to c at P (P on c); chiral (a quarter turn of P − O). tangent(P, k) on a conic: the tangent at P, direction a quarter turn of −∇Q(P).
 
-- Signatures: `tangent(point, round)`
+- Signatures: `tangent(point, round)`, `tangent(point, conic)`
 - Result: line
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
 - By construction:
   - `tangent(point, round)`: on(#1, result); tangent(result, #2); perpendicular(result, line(center(#2), #1))
+  - `tangent(point, conic)`: on(#1, result); tangent(result, #2)
 - Degenerate cases:
   - P not on c → Undefined
   - P within the band of c → Undefined (ambiguous)
+  - a conic: P not on k (the gap Q/|∇Q| as a length) → Undefined; within the band → ambiguous
 - Examples:
   - `tangent((3, 4), circle((0, 0), (5, 0)))` → line (3, 4) + t·(-4, 3), t ∈ [−∞, ∞], chiral
 
 ### polar
 
-polar(P, c): the polar of P with respect to c; chiral (a quarter turn of P − O).
+polar(P, c): the polar of P with respect to c; chiral (a quarter turn of P − O). polar(P, k) for a conic: the line g(P)·X + h = 0, (g, h) = M·(P, 1).
 
-- Signatures: `polar(point, round)`
+- Signatures: `polar(point, round)`, `polar(point, conic)`
 - Result: line
 - Exact run (RationalField): can succeed
 - Export: numeric
@@ -609,6 +650,7 @@ polar(P, c): the polar of P with respect to c; chiral (a quarter turn of P − O
 - Degenerate cases:
   - P = the center → Undefined
   - P on c → the tangent at P
+  - a conic: P = its center (g(P) = 0 as a length) → Undefined; P on k → the tangent at P
 - Examples:
   - `polar((10, 5), circle((0, 0), (5, 0)))` → line (2, 1) + t·(-5, 10), t ∈ [−∞, ∞], chiral
 
@@ -676,15 +718,16 @@ ext_bisector(A, B, C): the external bisector of ∠ABC, through B (chiral).
 
 ### tangent_from
 
-tangent_from(P, c, selectors): a tangent from P to c, the line through its touch point T with direction rot90(T − O) (chiral); selectors judge T.
+tangent_from(P, c, selectors): a tangent from P to a circle or a conic, the line through its touch point T with direction rot90(T − O) (a conic: a quarter turn of −∇Q(T)) (chiral); selectors judge T.
 
-- Signatures: `tangent_from(point, round)`
+- Signatures: `tangent_from(point, round)`, `tangent_from(point, conic)`
 - Result: line
 - Exact run (RationalField): can succeed
 - Export: numeric
 - Symmetry: none
 - By construction:
   - `tangent_from(point, round)`: on(#1, result); tangent(result, #2)
+  - `tangent_from(point, conic)`: on(#1, result); tangent(result, #2)
 - Degenerate cases:
   - P inside c (or P = the center) → Undefined
   - P on c (the gap |OP| − r within the band) → the double point
@@ -693,6 +736,8 @@ tangent_from(P, c, selectors): a tangent from P to c, the line through its touch
   - other(T) with T not a touch point → Undefined
   - square roots not representable → Inexact over Q and mod p (other(T) is exact)
   - a touch point outside an arc is not a candidate
+  - a conic: P its center or no tangent from P (P inside it) → Undefined
+  - a conic: P on an asymptote → Undefined (one touch point is at infinity)
 - Examples:
   - `tangent_from((5, 5), circle((0, 0), (5, 0)), orient(-))` → line (0, 5) + t·(-5, 0), t ∈ [−∞, ∞], chiral
   - `tangent_from((6, 0), circle((0, 0), (5, 0)), orient(-))` → line (4.16666666667, 2.76385399196) + t·(-2.76385399196, 4.16666666667), t ∈ [−∞, ∞], chiral
@@ -880,6 +925,28 @@ arc(A, B, C): the arc from A through B to C of the circle through A, B, C (a cir
   - `arc((4, 0), (0, 4), (-4, 0))` → circle center (0, 0), r² = 16, arc counter-clockwise from (4, 0) to (-4, 0), anchor (4, 0)
   - `arc((-4, 0), (0, 4), (4, 0))` → circle center (0, 0), r² = 16, arc counter-clockwise from (4, 0) to (-4, 0), anchor (-4, 0)
 
+### conic
+
+conic(A, B, C, D, E): the conic through five points (no three collinear), in the normal form det M = a² + 2b² + c² of Q = ax² + 2bxy + cy² + 2dx + 2ey + f; its known point (for gliders) is A; exact.
+
+- Signatures: `conic(point, point, point, point, point)`
+- Result: conic
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `conic(point, point, point, point, point)`: arguments 2, 3, 4, 5 in any order (the same value)
+  - `conic(point, point, point, point, point)`: arguments 1, 2, 3, 4, 5 in any order (the same figure; a direction, an anchor or the vertex order may differ)
+- By construction:
+  - `conic(point, point, point, point, point)`: on(#1, result); on(#2, result); on(#3, result); on(#4, result); on(#5, result); equal(#1, on(result, 1, 0))
+- Degenerate cases:
+  - two coincident points → Undefined
+  - four collinear points → Undefined (no unique conic)
+  - three collinear points → Undefined (a pair of lines)
+  - a conic within the band of a pair of lines → Undefined (ambiguous)
+- Examples:
+  - `conic((1, 1), (2, 1/2), (-1, -1), (4, 1/4), (1/2, 2))` → conic (a, b, c, d, e, f) = (0, 1, 0, 0, 0, -2), anchor (1, 1)
+  - `conic((2, 0), (0, 1), (-2, 0), (0, -1), (6/5, 4/5))` → conic (a, b, c, d, e, f) = (-17/16, 0, -17/4, 0, 0, 17/4), anchor (2, 0)
+
 ## Transformations
 
 ### reflect
@@ -1049,8 +1116,8 @@ inverse(T): the inverse map (the preimage of Y is apply(inverse(T), Y)).
 
 apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mark or text. Ranges are kept, an anti-similarity reverses arcs, the chirality flag and the anchor of a circle are mapped with it (gliders on an image circle stay exact). Under an inversion lines and circles exchange kinds, segments become arcs or rays, and the center has no image.
 
-- Signatures: `apply(transform, point)`, `apply(transform, curve)`, `apply(transform, polygon)`, `apply(transform, annotation)`, `apply(transform, ideal)`
-- Result: point, line, circle, polygon, angle_mark, segment_mark, text, ideal_point
+- Signatures: `apply(transform, point)`, `apply(transform, curve)`, `apply(transform, polygon)`, `apply(transform, annotation)`, `apply(transform, ideal)`, `apply(transform, conic)`
+- Result: point, line, circle, polygon, angle_mark, segment_mark, text, ideal_point, conic
 - Exact run (RationalField): can succeed
 - Export: constructive (apply)
 - Symmetry: none
@@ -1061,6 +1128,7 @@ apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mar
   - `apply(transform, polygon)`: the image of #2 under #1
   - `apply(transform, annotation)`: the image of #2 under #1
   - `apply(transform, ideal)`: the image of #2 under #1
+  - `apply(transform, conic)`: the image of #2 under #1
 - Degenerate cases:
   - X a number or a transform → Undefined (not imaged)
   - an Undefined T or X → Undefined
@@ -1085,7 +1153,9 @@ apply(T, X): the image of a point, line, segment, ray, circle, arc, polygon, mar
   - under a projective map: a point at infinity off its direction → a point
   - under a projective map: a segment crossing the line sent to infinity → two rays
   - under a projective map: the line sent to infinity → Undefined
-  - under a projective map: a circle → Undefined (a conic)
+  - under a projective map: a circle → a conic (never a circle); an arc → Undefined
+  - a conic under a similarity or a projective map → a conic (its known point mapped, dropped at infinity)
+  - a conic under a Möbius map with a pole → Undefined (a curve of degree 3 or 4)
   - under a projective map: a polygon with a side through infinity → Undefined
   - under a projective map: a segment mark → Undefined; an angle mark → not right
   - under a projective map: a position within the band of the line sent to infinity → Undefined (ambiguous)
@@ -1271,6 +1341,46 @@ send_to_infinity(l): the projective map that swaps line l and the line at infini
   - applied twice → the identity (an involution)
 - Examples:
   - `send_to_infinity(line((0, 0), (4, 0)))` → projective map [16, 0, 0; 0, 0, 64; 0, 4, 0]
+
+### conic_to_circle
+
+conic_to_circle(k): a projective map sending the conic k to a circle. It fixes the known point A of k and the tangent there; the image is the osculating circle of k at A (its circle of curvature); for a circle it is the identity. Use it as `@layer c = image(f, main)` with f = conic_to_circle(k). Exact.
+
+- Signatures: `conic_to_circle(conic)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry: none
+- By construction: nothing
+- As a map:
+  - `conic_to_circle(conic)`: projective; fixes on(#1, 1, 0); takes tangent(on(#1, 1, 0), #1) onto itself
+- Degenerate cases:
+  - a conic without a known point → Undefined
+  - a circle as a conic → the identity
+- Examples:
+  - `conic_to_circle(conic((2, 0), (0, 1), (-2, 0), (0, -1), (6/5, 4/5)))` → projective map [1/32, 0, -3/16; 0, -1/16, 0; 3/64, 0, -5/32]
+
+### circle_to_centre
+
+circle_to_centre(c, P): the projective map keeping the circle c and sending the point P inside it to its center (the hyperbolic translation along OP of the Klein model). It needs √(r²(r² − |OP|²)): exact over Q only when that is rational.
+
+- Signatures: `circle_to_centre(round, point)`
+- Result: transform
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry: none
+- By construction: nothing
+- As a map:
+  - `circle_to_centre(round, point)`: projective; takes #1 onto itself; takes line(center(#1), #2) onto itself; #2 ↦ center(#1); center(#1) ↦ reflect(#2, center(#1))
+- Degenerate cases:
+  - P on c → Undefined
+  - P within the band of c → Undefined (ambiguous)
+  - P outside c → Undefined
+  - P = the center → the identity
+  - the square root not representable → Inexact over Q and mod p
+- Examples:
+  - `circle_to_centre(circle((0, 0), (5, 0)), (3, 0))` → projective map [25, 0, -75; 0, 20, 0; -3, 0, 25]
+  - `circle_to_centre(circle((0, 0), (5, 0)), (1, 2))` → projective map [22.88854382, 1.05572809, -25; 1.05572809, 24.472135955, -50; -1, -2, 25]
 
 ## Measures
 

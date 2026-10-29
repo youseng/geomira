@@ -45,8 +45,8 @@ interface Env<T> {
 /**
  * Every object's value. Degenerate cases: an invalid ctx → every object Undefined with
  * the reason; an unknown tool, a reference to a missing or later object, arguments no
- * signature accepts (a bare index on a branchable tool: with a hint; a point at infinity:
- * named, ADR-0040), selectors on a tool that takes none → Undefined for that object; an Undefined argument or selector
+ * signature accepts (a bare index on a branchable tool: with a hint; a point at infinity or a
+ * conic: named, ADR-0040, ADR-0042), selectors on a tool that takes none → Undefined for that object; an Undefined argument or selector
  * argument → Undefined ("A is undefined"); an Inexact one → that Inexact; FloatField
  * arguments beyond 2^200 or a non-finite FloatField result → Inexact.
  */
@@ -177,7 +177,12 @@ function evalCall<T>(e: CallExpr, env: Env<T>): Value<T> {
   if (!Array.isArray(args)) return args;
   const r = env.registry.resolve(e.tool, args);
   if (!r.ok)
-    return undef(bareIndexProblem(e, args, env.registry) ?? atInfinity(e, args, env) ?? r.reason);
+    return undef(
+      bareIndexProblem(e, args, env.registry) ??
+        atInfinity(e, args, env) ??
+        conicArgument(e, args, env) ??
+        r.reason,
+    );
   const selectors = evalSelectors(e, env);
   if (!Array.isArray(selectors)) return selectors;
   const inputs = [...args, ...selectors.flatMap((s) => s.args)];
@@ -202,6 +207,19 @@ function atInfinity<T>(e: CallExpr, args: readonly Value<T>[], env: Env<T>): str
   const src = e.args[i];
   const name = src?.kind === 'ref' ? env.names.get(src.id) : undefined;
   return `${name ?? 'an argument'} is a point at infinity: ${e.tool} does not take one`;
+}
+
+/**
+ * E2 for conics (ADR-0042): when no overload takes the arguments and one of them is a conic, the
+ * reason names it ("k is a conic: center does not take one"); a circle is never a conic, so a
+ * tool written for circles does not silently read a conic as one.
+ */
+function conicArgument<T>(e: CallExpr, args: readonly Value<T>[], env: Env<T>): string | undefined {
+  const i = args.findIndex((a) => a.kind === 'conic');
+  if (i < 0) return undefined;
+  const src = e.args[i];
+  const name = src?.kind === 'ref' ? env.names.get(src.id) : undefined;
+  return `${name ?? 'an argument'} is a conic: ${e.tool} does not take one`;
 }
 
 /**

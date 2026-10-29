@@ -7,7 +7,7 @@
  *
  * The draw order is a sort by stable keys, never by an object's index in the object list
  * (an image's index depends on edit history, ADR-0009): the drawing layer's order (then its
- * position), the style's z, a fixed kind order (polygons, circles, lines, segment marks,
+ * position), the style's z, a fixed kind order (polygons, circles and conics, lines, segment marks,
  * angle marks, points, texts; ADR-0010, ADR-0011), the
  * position of the object's origin (the user object its chain of sources starts from), then
  * the positions of the rules along that chain. Permuting the images inside a run of
@@ -20,6 +20,7 @@ import type { ShapeKind } from './types';
 const KIND_RANK: Readonly<Record<ShapeKind, number>> = Object.freeze({
   polygon: 0,
   circle: 1,
+  conic: 1,
   line: 2,
   segment_mark: 3,
   angle_mark: 4,

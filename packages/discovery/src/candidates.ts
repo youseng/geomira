@@ -55,7 +55,9 @@ export function poolsOf(
   const of = (k: string) => ids.filter((id) => values.get(id)?.kind === k);
   const line = of('line');
   const circle = of('circle');
-  const curve = ids.filter((id) => line.includes(id) || circle.includes(id));
+  // A conic is a curve of the claims (ADR-0042): on(P, k) and tangent(l, k).
+  const conic = of('conic');
+  const curve = ids.filter((id) => line.includes(id) || circle.includes(id) || conic.includes(id));
   return { order, point: of('point'), line, circle, curve, values, scale };
 }
 

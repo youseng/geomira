@@ -8,6 +8,7 @@
  *     and X lies on the line through A with direction u·f − v·e;
  *   - any circle, by angle: X = O + r·(cos θ, sin θ) (θ in degrees from the +x axis); the
  *     only form for circle(O, r), which has no rational point to project from.
+ *   - a conic (ADR-0042): (u : v) on the pencil through its known point (conic-glider.ts).
  * `gliderParameter` inverts `gliderPoint` exactly for points on the object (round trip),
  * `dragParameter` maps any cursor position to a parameter (the drag map).
  */
@@ -15,6 +16,7 @@ import { assertNever } from '@geomira/num/assert';
 import { inexact, isInexact, type Field, type Inexact } from '@geomira/num/field';
 import { isZeroVec, two, vAdd, vDot, vRot90, vScale, vSub } from './geom';
 import type { EvalContext } from './tool';
+import { conicDragParameter, conicGliderParameter, conicGliderPoint } from './conic-glider';
 import { clampToArc } from './tools/arc-range';
 import { degenerateCircle, degenerateLine } from './tools/args';
 import {
@@ -144,6 +146,10 @@ export function gliderPoint<T>(
     const x = vAdd(F, obj.p, vScale(F, obj.d, t));
     return pointOf(x.x, x.y);
   }
+  if (obj.kind === 'conic')
+    return p.form === 'stereo'
+      ? conicGliderPoint(F, obj, p.u, p.v, ctx)
+      : undef('a glider on a conic takes (u : v)');
   if (obj.kind !== 'circle') return undef(`a glider needs a line or a circle, not ${obj.kind}`);
   const bad = degenerateCircle(F, obj, ctx);
   if (bad !== undefined) return bad;
@@ -223,6 +229,10 @@ export function gliderParameter<T>(
   form: GliderForm,
   ctx: EvalContext,
 ): Result<T> {
+  if (obj.kind === 'conic')
+    return form === 'stereo'
+      ? conicGliderParameter(F, obj, X, ctx)
+      : undef('a glider on a conic takes (u : v)');
   const o = checked(F, obj, form, ctx);
   if (o.kind === 'undefined') return o;
   if (o.kind === 'line') return { form: 'line', t: along(F, o, X) };
@@ -242,6 +252,10 @@ export function dragParameter<T>(
   form: GliderForm,
   ctx: EvalContext,
 ): Result<T> {
+  if (obj.kind === 'conic')
+    return form === 'stereo'
+      ? conicDragParameter(F, obj, cursor, ctx)
+      : undef('a glider on a conic takes (u : v)');
   const o = checked(F, obj, form, ctx);
   if (o.kind === 'undefined') return o;
   if (o.kind === 'line') {

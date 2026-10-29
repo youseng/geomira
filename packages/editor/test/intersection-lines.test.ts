@@ -1,7 +1,7 @@
 /**
  * The intersection tool on two lines (or segments, rays) checks what it builds, as it does for
- * curves that can meet twice (ADR-0024 item 3): lines that do not meet (parallel, or segments
- * whose ranges miss) are refused instead of adding an Undefined point. (A common point that is
+ * curves that can meet twice (ADR-0024 item 3): segments whose ranges miss are refused instead of
+ * adding an Undefined point; parallel lines make their point at infinity (ADR-0042). (A point that is
  * a point of the figure already is still made: frozen tests in machine.test.ts and
  * geomdraw-tools.test.ts assert intersect(line(A, B), line(A, C)) is built.)
  */
@@ -39,8 +39,11 @@ function refusedWith(a: string, b: string, reason: string): void {
 }
 
 describe('intersection tool on two lines', () => {
-  it('parallel lines: refused, no Undefined point', () => {
-    refusedWith('ab', 'cd', 'the curves do not meet here');
+  it('parallel lines: their point at infinity, selected, with a notice (ADR-0042)', () => {
+    const r = toolInput(picked('ab'), { kind: 'object', id: idOf(picked('ab'), 'cd') }, env);
+    expect(r.ok && r.notice).toBe('point at infinity, direction of ab');
+    expect(r.ok && r.state.values.values.get(r.id ?? -1)?.kind).toBe('ideal_point');
+    expect(r.state.selection).toEqual(r.ok ? [r.id] : []);
   });
 
   it('segments that do not meet: refused, no Undefined point', () => {

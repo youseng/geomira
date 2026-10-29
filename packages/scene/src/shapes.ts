@@ -1,5 +1,5 @@
 /**
- * Values → shapes. A drawable value (point, line, circle, polygon, and the display values of
+ * Values → shapes. A drawable value (point, line, circle, conic (ADR-0042), polygon, and the display values of
  * ADR-0011: angle and segment marks, text) becomes a world Shape; numbers, transforms and
  * strings are not drawn; Undefined and Inexact are reported with their
  * reason, and so is a point at infinity (ADR-0040: never drawn, listed "at infinity, direction
@@ -10,6 +10,7 @@
 import { assertNever } from '@geomira/num/assert';
 import { atInfinityText } from '@geomira/kernel/ideal';
 import { isKnownKind, type Value } from '@geomira/kernel/value';
+import { conicShapeOf } from './conic-shape';
 import type { Vec2 } from './viewport';
 import type { Shape } from './types';
 
@@ -115,6 +116,10 @@ export function shapeOf(v: Value<number>): ShapeResult {
       return lineShape(v);
     case 'circle':
       return circleShape(v);
+    case 'conic': {
+      const shape = conicShapeOf(v);
+      return shape === undefined ? NOT_FINITE : { kind: 'shape', shape };
+    }
     case 'polygon':
       return v.pts.every(finiteVec)
         ? { kind: 'shape', shape: { kind: 'polygon', pts: v.pts.map((p) => ({ x: p.x, y: p.y })) } }

@@ -10,6 +10,7 @@ import { isZeroVec } from '../geom';
 import {
   undef,
   type Circle,
+  type Conic,
   type Line,
   type Num,
   type Point,
@@ -36,6 +37,11 @@ export function lineAt<T>(args: readonly Value<T>[], i: number): Line<T> | undef
 export function circleAt<T>(args: readonly Value<T>[], i: number): Circle<T> | undefined {
   const v = args[i];
   return v?.kind === 'circle' ? v : undefined;
+}
+
+export function conicAt<T>(args: readonly Value<T>[], i: number): Conic<T> | undefined {
+  const v = args[i];
+  return v?.kind === 'conic' ? v : undefined;
 }
 
 export function numAt<T>(args: readonly Value<T>[], i: number): Num<T> | undefined {

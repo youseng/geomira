@@ -85,6 +85,7 @@ export function cardKindOf(v: ValueKind, fixed: ValueKind | null): CardKind {
       return 'point';
     case 'line':
     case 'circle':
+    case 'conic':
     case 'polygon':
     case 'angle_mark':
     case 'segment_mark':
@@ -127,6 +128,7 @@ export function kindName(v: Value<number> | undefined, fixed: ValueKind | null):
       return fixed === null ? 'undefined' : `${fixed}, undefined`;
     case 'point':
     case 'number':
+    case 'conic':
     case 'polygon':
     case 'text':
     case 'string':
