@@ -11,6 +11,9 @@
     "packages/kernel/src/similarity.ts",
     "packages/kernel/src/conic.ts",
     "packages/kernel/src/conic-glider.ts",
+    "packages/kernel/src/conic-pencil.ts",
+    "packages/kernel/src/conic-around.ts",
+    "packages/kernel/src/conic-type.ts",
     "packages/kernel/src/tools/**/*.ts",
     "packages/kernel/src/transform/**/*.ts"
   ],
