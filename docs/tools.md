@@ -147,7 +147,7 @@ intersect(a, b, selectors): the common point of two lines, a line and a circle, 
   - conic ∩ conic: the conics coincide → Undefined (within the band in floats: ambiguous)
   - conic ∩ conic: the conics do not meet → Undefined
   - conic ∩ conic: tangency (a chord gap within the band) → the double point
-  - conic ∩ conic: three common points that merge (osculation, within √EPS) → one triple point
+  - conic ∩ conic: three common points that merge (osculation, within ∛EPS) → one triple point
   - conic ∩ conic: four common points that merge (a four-point contact) → one point
   - conic ∩ conic: a common point at infinity is not a candidate (parallel parabolas, a shared asymptote)
   - conic ∩ conic: a common point near infinity → Undefined (ambiguous)
@@ -531,6 +531,34 @@ conic_center(k): the center of a conic, the pole of the line at infinity; a para
 - Examples:
   - `conic_center(conic((1, 1), (2, 1/2), (-1, -1), (4, 1/4), (1/2, 2)))` → point (0, 0)
   - `conic_center(conic((2, 0), (0, 1), (-2, 0), (0, -1), (6/5, 4/5)))` → point (0, 0)
+
+### foci
+
+foci(k, selectors): a focus of a conic (an ellipse's or a hyperbola's two foci need a selector: other(F), near(P), same_side(Q, l), …; a parabola's one focus is exact); foci(c) is a circle's center. The foci are the points whose isotropic lines touch the conic.
+
+- Signatures: `foci(round)`, `foci(conic)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry: none
+- By construction: nothing
+- Degenerate cases:
+  - a circle → its center (no selector)
+  - an ellipse or a hyperbola: two foci; no selector → Undefined (ambiguous: add a selector)
+  - the two foci within the band of each other (a conic that is nearly a circle) → the center, one double point
+  - a parabola → its one focus, exact over Q and mod p
+  - a conic within the band of a parabola → Undefined (ambiguous)
+  - the square roots of the foci not representable → Inexact over Q and mod p
+  - other(F) with F not a focus → Undefined (within the band: ambiguous); a parabola’s other focus is at infinity → Undefined
+  - along(±) or orient(±) → Undefined (they do not apply)
+  - an invalid conic → Undefined
+- Examples:
+  - `foci(conic((5, 0), (0, 3), (-5, 0), (0, -3), (3, 12/5)), near(point(10, 0)))` → point (4, 0)
+  - `foci(conic((5, 0), (0, 3), (-5, 0), (0, -3), (3, 12/5)), other(point(4, 0)))` → point (-4, 0)
+  - `foci(conic((2, 0), (0, 1), (-2, 0), (0, -1), (6/5, 4/5)), near(point(2, 0)))` → point (1.73205080757, 0)
+  - `foci(conic((1, 1), (2, 1/2), (-1, -1), (4, 1/4), (1/2, 2)), near(point(1, 1)))` → point (1.41421356237, 1.41421356237)
+  - `foci(conic((0, 0), (1, 1), (-1, 1), (2, 4), (-2, 4)), near(point(0, 0)))` → point (0, 1/4)
+  - `foci(circle((1, 2), (4, 6)))` → point (1, 2)
 
 ## Lines
 

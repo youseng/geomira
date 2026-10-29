@@ -71,7 +71,8 @@ export function intersectionAt(
   if (va === undefined || vb === undefined) return 'the curves are gone';
   const r = env.registry.resolve('intersect', [va, vb]);
   if (!r.ok) return r.reason;
-  if (r.signature.branch?.candidates !== 2) return call('intersect', [ref(a), ref(b)]);
+  if (r.signature.branch === undefined || r.signature.branch.candidates === 1)
+    return call('intersect', [ref(a), ref(b)]);
   const ch = chooseSelectors(state.doc, state.values, env.registry, 'intersect', [a, b], at);
   return ch.ok ? call('intersect', [ref(a), ref(b)], ch.selectors) : ch.reason;
 }

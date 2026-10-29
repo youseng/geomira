@@ -75,6 +75,7 @@ describe('E2: a conic where no overload takes one', () => {
         'apply',
         'conic_center',
         'conic_to_circle',
+        'foci',
         'intersect',
         'on',
         'other',

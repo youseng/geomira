@@ -21,6 +21,17 @@ type V = Vec<number>;
 /** At most this many points of a circle are tried as on_arc ends and witnesses. */
 const MAX_ARC_POINTS = 24;
 
+/** The selectors chosen for a clicked candidate, with their tier (choice.ts), or why none. */
+export type Choice =
+  | {
+      readonly ok: true;
+      readonly selectors: readonly Selector[];
+      readonly tier: 1 | 2 | 3 | 4;
+      /** Four candidates: the written selectors are firm only to a few deviations (ADR-0043). */
+      readonly note?: string;
+    }
+  | { readonly ok: false; readonly reason: string };
+
 export interface ChoiceCtx {
   readonly doc: Document;
   readonly values: Evaluation<number>;

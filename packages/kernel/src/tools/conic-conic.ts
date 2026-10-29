@@ -21,7 +21,7 @@ import {
   quadNorm,
   type Coeffs,
 } from '../conic';
-import { pencilCoincidence, pencilPoints, type PencilInput } from '../conic-pencil';
+import { pencilCoincidence, pencilPoints, polish, type PencilInput } from '../conic-pencil';
 import {
   isZeroNormalized,
   signNormalized,
@@ -126,6 +126,21 @@ function floatCandidates<T>(
     out.push({ at: { x, y }, side: 0 });
   }
   return out;
+}
+
+/** A float point polished by Newton steps on both curves (floats only: no rounding of T). */
+function polished<T>(
+  F: Field<T>,
+  a: Round<T>,
+  b: Round<T>,
+  X: Vec<T>,
+  ctx: EvalContext,
+): Vec<T> | Inexact {
+  const inp = pencilInput(F, a, b, ctx);
+  const Y = polish(inp, { x: F.toNumber(X.x), y: F.toNumber(X.y) });
+  const [x, y] = [F.fromRational(fromNumber(Y.x)), F.fromRational(fromNumber(Y.y))];
+  if (isInexact(x)) return x;
+  return isInexact(y) ? y : { x, y };
 }
 
 /** Why P and Q are not two distinct points (a length with the band; exact fields: P = Q). */
@@ -246,7 +261,9 @@ export function conicConicPair<T>(
         if (Q === undefined || R === undefined) return undef('other(P, Q, R) needs three points');
         const same = coincidence(F, a, b, ctx);
         if (same !== undefined) return same;
-        const S = fourthPoint(F, q1, q2, [P, Q, R], ctx);
+        const S0 = fourthPoint(F, q1, q2, [P, Q, R], ctx);
+        if ('kind' in S0) return S0;
+        const S = F.kind === 'float' ? polished(F, a, b, S0, ctx) : S0;
         if ('kind' in S) return S;
         return offArcs(F, circles, S, ctx, 'other intersection') ?? S;
       },
@@ -261,7 +278,7 @@ export const CONIC_CONIC_DEGENERATE: readonly string[] = [
   'conic ∩ conic: the conics coincide → Undefined (within the band in floats: ambiguous)',
   'conic ∩ conic: the conics do not meet → Undefined',
   'conic ∩ conic: tangency (a chord gap within the band) → the double point',
-  'conic ∩ conic: three common points that merge (osculation, within √EPS) → one triple point',
+  'conic ∩ conic: three common points that merge (osculation, within ∛EPS) → one triple point',
   'conic ∩ conic: four common points that merge (a four-point contact) → one point',
   'conic ∩ conic: a common point at infinity is not a candidate (parallel parabolas, a shared asymptote)',
   'conic ∩ conic: a common point near infinity → Undefined (ambiguous)',

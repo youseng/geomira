@@ -63,17 +63,21 @@ how their count is decided with the band, or how `other` names three points in t
    count decides their merge (decision 7). A double root never changes sign, so it is never
    used; the isolated root always does. A switch between equally isolated roots changes only the
    rounding of the same four points.
-6. **A triple root** (three common points that merge: an osculating circle or conic): in the
-   chart at the found root, φ ∝ c₀ + c₁τ + c₂τ² + c₃τ³ (τ = tan(θ − θ₀), c₀ ≈ 0). When the other
-   two roots lie within √EPS of it (|c₁| ≤ EPS·|c| and |c₂| ≤ 2√EPS·|c|), the member is taken at
-   the cluster's centroid τ = −c₂/(3c₃), which is exact for an exact triple root (the found root
-   itself is accurate only to u^{1/3} ≈ 6·10⁻⁶ there), and the cluster is ONE triple point: the
-   vertex of the member (the meet of its two lines: the common tangent and the line to the fourth
-   point), plus the candidate farthest from it when it is farther than √EPS·scale (the fourth
-   point). √EPS is derived from EPS (no new constant): a triple root's computed spread is far
-   below it, and the points of a cluster within it are within √EPS·scale of each other, below
-   ADR-0006's band-edge bound √(2r·BAND·scale) for a tangency. Moving out of the cluster, the
-   result can step by at most the cluster's size (tested in the continuity law).
+6. **A triple root** (three common points that merge: an osculating circle or conic, two
+   hyperbolas sharing an asymptote, two parabolas with parallel axes, whose triple point is at
+   infinity): in the chart at the found root, φ ∝ c₀ + c₁τ + c₂τ² + c₃τ³ (τ = tan(θ − θ₀),
+   c₀ ≈ 0). When the other two roots lie within ∛EPS of it (|c₁| ≤ ∛EPS²·|c| and
+   |c₂| ≤ 2∛EPS·|c|), the member is taken at the cluster's centroid τ = −c₂/(3c₃), and the
+   cluster is ONE triple point: the vertex of the member (the meet of its two lines: the common
+   tangent and the line to the fourth point; none when the vertex is at infinity), plus the
+   candidate farthest from it when it is farther than ∛EPS·scale (the fourth point). Why ∛EPS:
+   coefficients known to EPS (the construction zero test) place a triple root only to within
+   ∛EPS, and the found root itself is accurate only to u^{1/3} ≈ 6·10⁻⁶; with √EPS, the
+   coefficients a conic(…) of five points carries in floats (errors near 10⁻¹⁴) split the triple
+   point at infinity of two hyperbolas sharing an asymptote into two spurious points 3·10⁴·scale
+   away (a test keeps that figure). ∛EPS is derived from EPS (no new constant). Moving out of the
+   cluster, the result can step by at most the cluster's size, about ∛EPS·scale (10⁻³·scale; the
+   continuity law bounds it in an osculation sweep).
 7. **The lines.** The member is split into its two lines through its adjugate (Richter-Gebert's
    splitting of a degenerate conic): a real line pair gives two lines; a conjugate pair (only
    possible with no real common point near it) gives only its real vertex, a candidate when it
@@ -89,10 +93,13 @@ how their count is decided with the band, or how `other` names three points in t
 8. **Merging, infinity, polishing.** Candidates of the two lines within BAND·scale of each other
    are one point (a common point on both lines: the member's vertex). A candidate farther than
    scale/EPS from the frame's origin is at infinity and is not a candidate; one farther than
-   scale/BAND is near infinity → Undefined (ambiguous), as ADR-0042 decides an asymptotic
+   scale/BAND, or on a line inside the band of an asymptotic direction, is near infinity →
+   Undefined ("ambiguous: a common point is near infinity"), as ADR-0042 decides an asymptotic
    direction. Simple candidates are polished by at most three Newton steps on Q₁ = Q₂ = 0, each
    kept only if it lowers the larger of the two incidence lengths Q/|∇Q| (the steps converge to
    the exact common point of the two given curves; double and triple points are not polished).
+   other(P, Q, R)'s point is polished the same way in floats (L3 found a figure where the formula
+   alone was 3·10⁻⁹ of the scale off).
    Candidates off an arc are dropped (ADR-0031 decision 7). They are listed by x, then y; the
    order carries no meaning (no candidate has a label).
 9. **No candidates → Undefined**("no intersection: the conics do not meet"). Over Q and mod p the
@@ -144,31 +151,40 @@ how their count is decided with the band, or how `other` names three points in t
     points at the three other candidates, each staying where the kernel needs it under the local
     responses (ADR-0027 item 5). Tier 2: filters with points and lines of the construction —
     same_side / opposite_side with a line and a point, and on_arc(B, C, [not] A) with points on
-    either intersected curve (for a conic it is the side of line BC that holds A) — first one
-    filter that keeps only the clicked candidate, else a pair of filters whose kept sets meet in
-    it; the score of a pair is its weaker filter's, each filter scored as ADR-0012 decision 13
-    (all its deciding distances, ≥ ROBUST_SIGMAS). The candidates in each local response are
-    computed once and matched to the original ones (the assignment of least total distance).
-    Tier 3 does not apply (no low-level selector); tier 4 near(P) for an incident named point.
+    either intersected curve (for a conic it is the side of line BC that holds A) — and near(P)
+    with points of the construction (its deciding distances are the gaps |X_k − P| − |X_c − P| to
+    every other candidate): one option that keeps only the clicked candidate, else a pair of
+    filters whose kept sets meet in it; the score of a pair is its weaker filter's, each option
+    scored as ADR-0012 decision 13 (all its deciding distances). The candidates in each local
+    response are computed once and matched to the original ones (the assignment of least total
+    distance). The best score wins (one selector before two at equal score) and must reach
+    ROBUST_SIGMAS; there is no tier 3 to fall back on (no continuous low-level label), and a
+    conic through five points moves a lot under the LOCAL noise (2 % of the figure per point:
+    the symmetric test figure's filters reach about 2.4 to 4 deviations), so an option of at least
+    FALLBACK_SIGMAS = 2 deviations is still written, with a note saying how firm it is and that a
+    point near the intersection makes it firmer. Tier 4: near(P) for an incident named point.
     Every choice is verified by the kernel's compute with all its selectors. The intersection
     tool builds every common point it can single out and names the others in its notice; with
-    none it refuses with the reason.
+    none it refuses with the reason. near(P) with a point that is not incident is new in tier 2
+    for four candidates only (SPEC §7's tier list keeps it out for two, where along/orient
+    follows the candidate continuously).
 
 ### foci (packages/kernel/src/tools/foci.ts)
 
 15. **`foci(k, selectors)`**: the foci of a conic, the centre of a circle. With the dual conic
-    C* = adj(M) = [[A, B, D], [B, C, E], [D, E, G]], the isotropic lines through a point z = x + iy
-    are tangent to k exactly when G·z² − 2(D + iE)·z + (A − C + 2iB) = 0, so the foci are the
-    roots of this complex quadratic (the classical characterisation of foci by the circular
-    points). Ellipse and hyperbola (G = ac − b² ≠ 0): the centre (D + iE)/G ± √w/G with
-    w = (D + iE)² − G(A − C + 2iB): two candidates, the half focal distance |√w/G| a length with
-    the band (within it: one double point, the centre: a conic that is nearly a circle, so the
-    foci move continuously into the centre); the complex square root needs two real ones →
-    Inexact over Q unless they are squares, mod p always. Parabola (G = 0 exactly, or the type
-    decision within EPS): the one focus (A − C + 2iB)/(2(D + iE)), rational, exact over Q and
-    mod p. Type inside the band of a parabola → Undefined (ambiguous). A circle: its centre
-    (overload (round), no selector).
-16. BranchShape `{ candidates: 2, low: 'none', other: true, describe: 'foci(k)' }` on (conic):
+        C* = adj(M) = [[A, B, D], [B, C, E], [D, E, G]], the isotropic lines through a point z = x + iy
+        are tangent to k exactly when G·z² − 2(D + iE)·z + (A − C + 2iB) = 0, so the foci are the
+        roots of this complex quadratic (the classical characterisation of foci by the circular
+        points). Ellipse and hyperbola (G = ac − b² ≠ 0): the centre (D + iE)/G ± √w/G with
+        w = (D + iE)² − G(A − C + 2iB): two candidates, the half focal distance |√w/G| a length with
+        the band (within it: one double point, the centre: a conic that is nearly a circle, so the
+        foci move continuously into the centre); the complex square root needs two real ones →
+        Inexact over Q unless they are squares, mod p always. Parabola (G = 0 exactly, or the type
+        decision within EPS): the one focus (A − C + 2iB)/(2(D + iE)), rational, exact over Q and
+        mod p. Type inside the band of a parabola → Undefined (ambiguous). A circle: its centre
+        (overload (round), no selector).
+16. BranchShape `{ candidates: 2, low: 'none', other: true, describe: 'foci(k)' }` on (conic) (a
+    Pair may name its plural, "foci", and replace other's curves by a check: F a focus):
     a selector is required (even for a parabola, as for a line ∩ conic that may meet once).
     other(F): F a focus (the quadratic's residual |q(z)|/|q′(z)| as a length with the band; exact
     fields: q(z) = 0), the other focus 2·centre − F, exact; a parabola's other focus is at
@@ -198,8 +214,10 @@ how their count is decided with the band, or how `other` names three points in t
 - Conics meet conics and circles in the figure, with exact fourth points; the four-candidate
   choice writes only reflection-equivariant selectors.
 - Over Q and mod p, a figure built on a conic ∩ conic point is exact only through other(P, Q, R).
-- A near-osculation within √EPS of the triple root is one point: a step of at most the cluster's
-  size when the figure leaves that region (STATUS: Uncertain, since √EPS is a judgement).
+- A near-osculation within ∛EPS of the triple root is one point: a step of at most the cluster's
+  size when the figure leaves that region (STATUS: Uncertain, since ∛EPS is a judgement).
+- The GUI may write a four-candidate selector that is firm to only two to five deviations of the
+  local noise; it says so in its notice.
 
 ## Alternatives considered
 

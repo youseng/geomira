@@ -71,6 +71,7 @@ selector      = ( "same_side" | "opposite_side" ) , "(" , expr , "," , expr , ")
               | "between" , "(" , expr , "," , expr , ")"
               | ( "inside" | "outside" ) , "(" , expr , ")"
               | ( "other" | "near" | "far_from" ) , "(" , expr , ")"     (* other(P): one argument *)
+              | "other" , "(" , expr , "," , expr , "," , expr , ")"   (* conic ∩ conic, ADR-0043 *)
               | ( "along" | "orient" ) , "(" , ( "+" | "-" ) , ")" ;
 
 (* ---- claims (kinds of ADR-0008) ---- *)

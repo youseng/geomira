@@ -58,7 +58,9 @@ export interface Curve<T> {
 export interface Other<T> {
   /** How many known common points other(…) names: 1 (other(P)), or 3 for conic ∩ conic (ADR-0043). */
   readonly arity?: 1 | 3;
-  readonly curves: readonly [Curve<T>, Curve<T>];
+  readonly curves: readonly Curve<T>[];
+  /** Instead of `curves`: why P is not a point other(P) may name (foci: P a focus), or undefined. */
+  check?(P: Vec<T>): Undefined | undefined;
   /**
    * The other common point given P (and Q, R when the arity is 3) on both curves (exact), or
    * why it is not on the ranges of a segment or ray.
@@ -73,6 +75,8 @@ export interface Pair<T> {
   readonly shape: BranchShape;
   /** What a candidate is called in messages: "intersection", "touch point", "tangent". */
   readonly noun: string;
+  /** Its plural when it is not noun + "s" ("foci"). */
+  readonly plural?: string;
   readonly low: Low<T>;
   /**
    * A segment, ray or arc takes part in a two-candidate pair: list() must run before

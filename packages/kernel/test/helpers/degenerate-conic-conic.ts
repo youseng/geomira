@@ -5,6 +5,7 @@
  * x²/4 + y² = 1 (degenerate-conics.ts); C32 the circle of radius 3/2 about the origin, which meets
  * ELL at (±√(5/3), ±√(7/12)).
  */
+import type { Field } from '@geomira/num/field';
 import { FloatField } from '@geomira/num/float-field';
 import { ModPField } from '@geomira/num/modp';
 import { RationalField } from '@geomira/num/rational-field';
@@ -93,7 +94,7 @@ export const CONIC_CONIC_CASES: Record<string, () => void> = {
     const two = choose(FloatField, 'intersect', [ELL, near1(0.99)], [near(pt(1, 1))]);
     expect(off(two, 0, 1)).toBeGreaterThan(1e-3);
   },
-  'conic ∩ conic: three common points that merge (osculation, within √EPS) → one triple point':
+  'conic ∩ conic: three common points that merge (osculation, within ∛EPS) → one triple point':
     () => {
       // The image of ELL_A under conic_to_circle(ELL_A) is its osculating circle at (6/5, 4/5).
       const g = call('conic_to_circle', [ELL_A]);
@@ -135,7 +136,7 @@ export const CONIC_CONIC_CASES: Record<string, () => void> = {
   },
   'conic ∩ conic: over Q and mod p the candidates are roots of a quartic → Inexact (other(P, Q, R) is exact)':
     () => {
-      for (const F of [RationalField, ModPField])
+      for (const F of [RationalField, ModPField] as Field<unknown>[])
         expect(reason(choose(F, 'intersect', [K1, K2], [near(pt(3, 4))]))).toBe(
           `inexact: the common points of two conics are roots of a quartic, not representable in ${F.name}: other(P, Q, R) gives the fourth point exactly`,
         );

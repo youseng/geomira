@@ -32,16 +32,18 @@ import { undef, type Undefined, type Value, type Vec } from './value';
 type List<T> = readonly Cand<T>[];
 type Result<T> = List<T> | Undefined | Inexact;
 
+const plural = <T>(pair: Pair<T>): string => pair.plural ?? `${pair.noun}s`;
+
 /** The message of a call with two (or up to four) candidates and no selector that singles one out. */
 function addSelector<T>(pair: Pair<T>): string {
   if (pair.shape.candidates === 4)
     return (
-      `ambiguous: add a selector: ${pair.shape.describe} has up to four ${pair.noun}s ` +
+      `ambiguous: add a selector: ${pair.shape.describe} has up to four ${plural(pair)} ` +
       '(for example other(P, Q, R), near(P), same_side(Q, l))'
     );
   const low = pair.shape.low === 'none' ? '' : ` or ${pair.shape.low}(±)`;
   return (
-    `ambiguous: add a selector: ${pair.shape.describe} has two ${pair.noun}s ` +
+    `ambiguous: add a selector: ${pair.shape.describe} has two ${plural(pair)} ` +
     `(for example other(P), near(P), same_side(Q, l)${low})`
   );
 }
@@ -115,6 +117,10 @@ function viaOther<T>(
   if (other === undefined) return undef(`${s.text} does not apply to ${pair.shape.describe}`);
   const n = other.arity === 3 ? 4 : pair.count();
   if (typeof n !== 'number') return n;
+  for (const X of pts) {
+    const no = other.check?.(X);
+    if (no !== undefined) return no;
+  }
   for (const X of pts)
     for (const c of other.curves) {
       const what = `${s.text} needs the point on ${c.name}`;
@@ -166,8 +172,8 @@ export function choose<T>(
       sels.length === 0
         ? addSelector(pair)
         : list.length > 2
-          ? `ambiguous: add a selector: ${String(list.length)} ${pair.noun}s satisfy ${texts}`
-          : `ambiguous: add a selector: both ${pair.noun}s satisfy ${texts}`,
+          ? `ambiguous: add a selector: ${String(list.length)} ${plural(pair)} satisfy ${texts}`
+          : `ambiguous: add a selector: both ${plural(pair)} satisfy ${texts}`,
     );
   }
   return pair.output(only.at);

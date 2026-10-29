@@ -11,6 +11,7 @@ import type { GuaranteeTerm } from '@geomira/kernel/tool';
 import { evalClaim } from '@geomira/claims/eval-claim';
 import { testClaim } from '@geomira/claims/job';
 import { along, c, n, orient, type Arg } from '../../claims/test/helpers/build';
+import type { Sel } from '../../claims/test/helpers/build';
 import { baseFigure } from '../../claims/test/helpers/corpus';
 import { REGISTRY } from './helpers';
 
@@ -19,6 +20,12 @@ const AD = () => c('line', 'A', 'D');
 /** The conic through A, B, C, D, E (ADR-0042) and the pole of its chord AB (tangents touch A, B). */
 const K = () => c('conic', 'A', 'B', 'C', 'D', 'E');
 const T = () => c('pole', AB(), K());
+/** A second conic through A, B, C, D (Run 16c, ADR-0043): it meets K again nowhere else. */
+const K2 = () => c('conic', 'A', 'B', 'C', 'D', 'F');
+/** other(P, Q, R): the fourth common point of two conics (or a conic and a circle). */
+const other3 = (p: Arg, q: Arg, r: Arg): Sel => ({
+  sel: (f) => ({ kind: 'other', p: f.expr(p), rest: [f.expr(q), f.expr(r)] }),
+});
 
 /** Arguments of each declared overload, in the base figure (A, B, C, D, E, F, G; ω = w). */
 const FIGURES: Readonly<Record<string, () => Arg[]>> = {
@@ -86,6 +93,9 @@ const FIGURES: Readonly<Record<string, () => Arg[]>> = {
   'tangent_point(point,conic)': () => [T(), K(), orient(1)],
   'tangent_from(point,conic)': () => [T(), K(), orient(-1)],
   'conic(point,point,point,point,point)': () => ['A', 'B', 'C', 'D', 'E'],
+  'intersect(conic,conic)': () => [K(), K2(), other3('A', 'B', 'C')],
+  'intersect(conic,round)': () => [K(), 'w', other3('A', 'B', 'C')],
+  'intersect(round,conic)': () => ['w', K(), other3('B', 'C', 'A')],
 };
 
 function term(t: GuaranteeTerm, args: readonly Arg[]): Arg {

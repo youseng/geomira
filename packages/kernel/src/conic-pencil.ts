@@ -254,7 +254,7 @@ function tripleOf(inp: PencilInput, vertex: Hom3, pts: readonly PencilPoint[]): 
 }
 
 /** At most NEWTON_STEPS Newton steps on Q₁ = Q₂ = 0, each kept only if it lowers the gap. */
-function polish(inp: PencilInput, X0: Vec<N>): Vec<N> {
+export function polish(inp: Pick<PencilInput, 'q1' | 'q2'>, X0: Vec<N>): Vec<N> {
   const gap = (X: Vec<N>) => Math.max(gapTo(inp.q1, X), gapTo(inp.q2, X));
   let [X, g] = [X0, gap(X0)];
   for (let k = 0; k < NEWTON_STEPS; k++) {

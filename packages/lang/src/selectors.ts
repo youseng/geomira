@@ -47,8 +47,8 @@ const SYNTAX: Readonly<Record<SelectorKind, Omit<SelectorSyntax, 'kind'>>> = {
   other: {
     form: 'exprs',
     arity: 1,
-    usage: 'other(P)',
-    doc: 'ranker: the intersection other than P (exact: no square root)',
+    usage: 'other(P), or other(P, Q, R) on conic ∩ conic',
+    doc: 'ranker: the intersection other than P (exact: no square root); on conic ∩ conic other(P, Q, R), the fourth common point',
   },
   near: { form: 'exprs', arity: 1, usage: 'near(P)', doc: 'ranker: the candidate nearer to P' },
   far_from: {
@@ -118,6 +118,9 @@ export function makeSelector(
     case 'outside':
       return a === undefined ? undefined : { kind, c: a };
     case 'other':
+      if (a !== undefined && b !== undefined && c !== undefined && args.length === 3)
+        return { kind: 'other', p: a, rest: [b, c] };
+      return a === undefined || args.length !== 1 ? undefined : { kind: 'other', p: a };
     case 'near':
     case 'far_from':
       return a === undefined ? undefined : { kind, p: a };

@@ -75,6 +75,7 @@ selector      = ( "same_side" | "opposite_side" ) , "(" , expr , "," , expr , ")
               | "between" , "(" , expr , "," , expr , ")"
               | ( "inside" | "outside" ) , "(" , expr , ")"
               | ( "other" | "near" | "far_from" ) , "(" , expr , ")"     (* other(P): one argument *)
+              | "other" , "(" , expr , "," , expr , "," , expr , ")"   (* conic ∩ conic, ADR-0043 *)
               | ( "along" | "orient" ) , "(" , ( "+" | "-" ) , ")" ;
 
 (* ---- claims (kinds of ADR-0008) ---- *)
@@ -152,7 +153,7 @@ Selectors are the trailing arguments of a branchable call (`intersect`, `tangent
 | `between(A, B)` | filter: strictly between the perpendiculars to AB at A and at B |
 | `inside(c)` | filter: inside circle c |
 | `outside(c)` | filter: outside circle c |
-| `other(P)` | ranker: the intersection other than P (exact: no square root) |
+| `other(P), or other(P, Q, R) on conic ∩ conic` | ranker: the intersection other than P (exact: no square root); on conic ∩ conic other(P, Q, R), the fourth common point |
 | `near(P)` | ranker: the candidate nearer to P |
 | `far_from(P)` | ranker: the candidate farther from P |
 | `along(+) or along(-)` | low-level, line ∩ circle: further (+) or less far (-) along the line's direction |
@@ -357,6 +358,7 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `harmonic_conjugate` | points | `harmonic_conjugate(point, point, ppoint)` · `harmonic_conjugate(linear, linear, linear)` | point, ideal_point, line | can succeed | — |
 | `conic` | circles | `conic(point, point, point, point, point)` | conic | can succeed | — |
 | `conic_center` | points | `conic_center(conic)` | point, ideal_point | can succeed | — |
+| `foci` | points | `foci(round)` · `foci(conic)` | point | can succeed | √(250563/4096) is not rational; √(2) is not rational |
 | `conic_to_circle` | transformations | `conic_to_circle(conic)` | transform | can succeed | — |
 | `circle_to_centre` | transformations | `circle_to_centre(round, point)` | transform | can succeed | √(500) is not rational |
 

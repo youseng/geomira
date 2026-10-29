@@ -195,6 +195,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'conicProblem',
       'conicType',
       'delta',
+      'finite',
       'halfGradient',
       'homCentre',
       'makeConic',
