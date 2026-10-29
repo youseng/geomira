@@ -94,7 +94,7 @@ function gliderDefault(st: State, obj: Expr): readonly Expr[] | string {
     case 'text':
     case 'string':
     case undefined:
-      return 'on(…) takes a line or a circle';
+      return 'on(…) takes a line, a circle or a conic';
     default:
       return assertNever(v, 'value');
   }
