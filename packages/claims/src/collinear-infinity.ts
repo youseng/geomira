@@ -73,7 +73,7 @@ function sine(u: f.V, v: f.V): number {
 
 /** How far P_k is from the line P₁P₂, as a sine (one of the three is at infinity). */
 function residual3(a: PPoint<number>, b: PPoint<number>, p: PPoint<number>): number {
-  if (a.finite && b.finite) return sine(f.sub(b.at, a.at), p.at);
+  if (a.finite && b.finite) return sine(f.sub(b.at, a.at), p.finite ? f.sub(p.at, a.at) : p.at);
   if (a.finite !== b.finite) {
     const [o, d] = a.finite ? [a.at, b.at] : [b.at, a.at];
     return p.finite ? sine(d, f.sub(p.at, o)) : sine(d, p.at);
