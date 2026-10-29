@@ -175,18 +175,18 @@ how their count is decided with the band, or how `other` names three points in t
 
 ### foci (packages/kernel/src/tools/foci.ts)
 
-15. **`foci(k, selectors)`**: the foci of a conic, the centre of a circle. With the dual conic
-            C* = adj(M) = [[A, B, D], [B, C, E], [D, E, G]], the isotropic lines through a point z = x + iy
-            are tangent to k exactly when G·z² − 2(D + iE)·z + (A − C + 2iB) = 0, so the foci are the
-            roots of this complex quadratic (the classical characterisation of foci by the circular
-            points). Ellipse and hyperbola (G = ac − b² ≠ 0): the centre (D + iE)/G ± √w/G with
-            w = (D + iE)² − G(A − C + 2iB): two candidates, the half focal distance |√w/G| a length with
-            the band (within it: one double point, the centre: a conic that is nearly a circle, so the
-            foci move continuously into the centre); the complex square root needs two real ones →
-            Inexact over Q unless they are squares, mod p always. Parabola (G = 0 exactly, or the type
-            decision within EPS): the one focus (A − C + 2iB)/(2(D + iE)), rational, exact over Q and
-            mod p. Type inside the band of a parabola → Undefined (ambiguous). A circle: its centre
-            (overload (round), no selector).
+15. **`foci(k, selectors)`**: the foci of a conic, the centre of a circle. With the dual conic,
+    the matrix `adj(M) = [[A, B, D], [B, C, E], [D, E, G]]`, the isotropic lines through a point
+    z = x + iy are tangent to k exactly when G·z² − 2(D + iE)·z + (A − C + 2iB) = 0, so the foci
+    are the roots of this complex quadratic (the classical characterisation of foci by the
+    circular points). Ellipse and hyperbola (G = ac − b² ≠ 0): the centre (D + iE)/G ± √w/G with
+    w = (D + iE)² − G(A − C + 2iB): two candidates, the half focal distance |√w/G| a length with
+    the band (within it: one double point, the centre: a conic that is nearly a circle, so the
+    foci move continuously into the centre); the complex square root needs two real ones →
+    Inexact over Q unless they are squares, mod p always. Parabola (G = 0 exactly, or the type
+    decision says parabola: conic-type.ts, ADR-0044): the one focus (A − C + 2iB)/(2(D + iE)),
+    rational, exact over Q and mod p. Type inside the band of a parabola → Undefined
+    (ambiguous). A circle: its centre (overload (round), no selector).
 16. BranchShape `{ candidates: 2, low: 'none', other: true, describe: 'foci(k)' }` on (conic) (a
     Pair may name its plural, "foci", and replace other's curves by a check: F a focus):
     a selector is required (even for a parabola, as for a line ∩ conic that may meet once).
