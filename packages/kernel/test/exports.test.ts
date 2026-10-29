@@ -203,6 +203,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'mapConicBy',
       'matrixOf',
       'onConicSign',
+      'parabolaSign',
       'pencilCoeffs',
       'polarCovector',
       'poleOf',

@@ -19,13 +19,13 @@ const conic = (...ps: Expr[]): Expr => call('conic', ps);
 export const E53 = conic(pt(5, 0), pt(0, 3), pt(-5, 0), pt(0, -3), pt(3, '12/5'));
 const near = (p: Expr): Selector => ({ kind: 'near', p });
 
-/** x² + 1e-8·y² − y = 0 (FloatField): ac − b² within the band of a parabola. */
+/** x² + 1e-9·y² − y = 0 (FloatField): its centre 5·10⁸ away, within the band of a parabola. */
 const NEAR_PAR_EXPR = conic(
   pt(0, 0),
-  pt(Math.sqrt(1 - 1e-8), 1),
-  pt(-Math.sqrt(1 - 1e-8), 1),
-  pt(Math.sqrt(4 - 16e-8), 4),
-  pt(-Math.sqrt(4 - 16e-8), 4),
+  pt(Math.sqrt(1 - 1e-9), 1),
+  pt(-Math.sqrt(1 - 1e-9), 1),
+  pt(Math.sqrt(4 - 16e-9), 4),
+  pt(-Math.sqrt(4 - 16e-9), 4),
 );
 
 /** The value as [x, y], exactly over Q and rounded to 12 places in floats (-0 as 0). */

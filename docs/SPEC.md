@@ -72,8 +72,10 @@ from `createRegistry()`, passed as a parameter, never a singleton; tests may bui
   every discrete decision identical (guaranteed by the bands).
 - Conics (ADR-0042) are decided with the same constants on normalised quantities: incidence on
   Q(P)/|∇Q(P)| as a length; the degeneracy of a conic on its semi-latus rectum
-  √(|det M|/(a² + 2b² + c²)^{3/2}) as a length; its type and asymptotic directions on
-  dimensionless ratios (ac − b² and dᵀM₂d over a² + 2b² + c², the latter times |d|²).
+  √(|det M|/(a² + 2b² + c²)^{3/2}) as a length; its type on the sign of ac − b², a parabola
+  when its centre is at infinity for the figure (the scale over its largest real semi-axis as a
+  dimensionless number, ADR-0044); its asymptotic directions on dᵀM₂d over a² + 2b² + c², times
+  |d|² (dimensionless).
 
 ### 3.2 Seeded RNG (rng.ts)
 Explicit seed objects, no global state; every random procedure takes and reports a seed.

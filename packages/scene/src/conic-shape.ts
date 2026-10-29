@@ -6,14 +6,16 @@
  *   - hyperbola: c + σ·a·cosh τ·u + b·sinh τ·v, τ real, one branch for each σ = ±1 (u the
  *     transverse axis);
  *   - parabola:  c + a·τ²·u + τ·v, τ real (u along the axis, toward the opening);
- * with v = rot90(u). The type is decided as the kernel's (ac − b² over a² + 2b² + c², EPS): a
- * conic that close to a parabola is drawn as one; anything else from its centre and axes.
+ * with v = rot90(u). The type is decided as the kernel's (parabolaSign: its centre at infinity
+ * for the figure): such a conic is drawn as a parabola; anything else from its centre and axes.
  * Degenerate cases: a non-finite number, an ellipse or hyperbola whose squared semi-axes are
  * not positive (no real point), or a parabola without linear part along its axis → unavailable.
  */
 import type { Conic } from '@geomira/kernel/value';
 import { assertNever } from '@geomira/num/assert';
-import { EPS } from '@geomira/num/tolerance';
+import { coeffsOf, parabolaSign } from '@geomira/kernel/conic';
+import { FloatField } from '@geomira/num/float-field';
+import type { ToleranceContext } from '@geomira/num/tolerance';
 import type { Shape } from './types';
 import type { Vec2 } from './viewport';
 
@@ -71,14 +73,18 @@ function parabola(k: Conic<number>): ConicShape | undefined {
   return { kind: 'conic', type: 'parabola', c, u, a: Math.abs(curv), b: 0 };
 }
 
-/** The shape of a conic value, or undefined when it cannot be drawn (see the module comment). */
-export function conicShapeOf(k: Conic<number>): ConicShape | undefined {
+/**
+ * The shape of a conic value, or undefined when it cannot be drawn (see the module comment).
+ * The type is the kernel's decision at the figure's scale (parabolaSign, ADR-0044): a parabola
+ * when its centre is at infinity for the figure; within the band, drawn as the central conic.
+ */
+export function conicShapeOf(k: Conic<number>, ctx: ToleranceContext): ConicShape | undefined {
   const xs = [k.a, k.b, k.c, k.d, k.e, k.f];
   if (!finite(xs)) return undefined;
   const n = k.a * k.a + 2 * k.b * k.b + k.c * k.c;
   if (!(n > 0) || !Number.isFinite(n)) return undefined;
   const delta = k.a * k.c - k.b * k.b;
-  return Math.abs(delta) / n <= EPS ? parabola(k) : central(k, delta);
+  return parabolaSign(FloatField, coeffsOf(k), ctx) === 0 ? parabola(k) : central(k, delta);
 }
 
 /** The coordinates along u and v of parameter τ on branch σ. */
