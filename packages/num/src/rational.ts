@@ -152,12 +152,25 @@ export function sqrtExact(a: Rational): Rational | undefined {
   return n * n === a.num && d * d === a.den ? { num: n, den: d } : undefined;
 }
 
-/** 2^e as a double, exactly, for e in [-1074, 1023]. */
-function pow2(e: number): number {
-  if (e < -1022) return pow2(e + 64) * pow2(-64);
+/** 2^e as a double built from its bits, exactly, for e in [-1074, 1023]. */
+function pow2Bits(e: number): number {
+  if (e < -1022) return pow2Bits(e + 64) * pow2Bits(-64);
   const view = new DataView(new ArrayBuffer(8));
   view.setUint32(0, (e + 1023) * 2 ** 20);
   return view.getFloat64(0);
+}
+
+/**
+ * 2^e for e in [-1074, 1023], built once (frozen): tryToNumber is on the claims sampler's hot
+ * path, and a DataView per call was a sixth of its time (Run 16c audit).
+ */
+const POW2: readonly number[] = Object.freeze(
+  Array.from({ length: 2098 }, (_, i) => pow2Bits(i - 1074)),
+);
+
+/** 2^e as a double, exactly, for e in [-1074, 1023]. */
+function pow2(e: number): number {
+  return POW2[e + 1074] ?? pow2Bits(e);
 }
 
 /**

@@ -32,6 +32,15 @@ of SPEC; it records why frozen test lines change in this run, as CLAUDE.md requi
    Lists that grow by an inserted line (`registry.test.ts`, `conic-dispatch.test.ts`,
    `guarantees-hold.test.ts`) need no ADR: their changes are additions.
 
+3. The slice test (`apps/web/test/host-discovery.test.ts`, "without a worker the page finds the
+   Euler line in slices within its budget") still failed about 1 in 30 under CPU load after Run
+   16b's fix. Measured in this run (a copy of the test that also records each task's thread CPU
+   time, 30 runs under four busy loops on four cores): of 71 tasks over 16 ms by wall time, 69
+   used less than 16 ms of CPU on their thread (wall time 2–4 times the CPU time); two were over
+   by CPU too. One run had 5 late tasks against its allowance of 5. So the late tasks are the
+   machine giving the cores to other processes, which no slicer can prevent, not slices that do
+   too much work.
+
 ## Decision
 
 1. The words name every kind the pick takes: "line, circle or conic" (editor pick), "click a
@@ -43,11 +52,19 @@ of SPEC; it records why frozen test lines change in this run, as CLAUDE.md requi
 2. The selector hint and the exactness counts change to what the registry now holds ("only
    intersect, tangent_point, tangent_from, foci choose among candidates"; 5 exact examples of
    7). The assertions keep their strength: an exact string and exact counts.
+3. The slice test counts each task as the shorter of its wall time and its thread's CPU time
+   (`process.threadCpuUsage`, Node ≥ 22.19; CI runs the latest Node 22). Its frozen line
+   `this.durations.push(performance.now() - t0)` changes to push that minimum; the threshold
+   (16 ms), the allowance (one in fifty) and every other assertion stay. A slice that does too
+   much work is over in both measures and still fails the test; time the machine gave to other
+   processes is no longer counted against the slicer.
 
 ## Consequences
 
-- Six frozen lines in five files change, each listed in STATUS (Changed frozen tests), in
+- Eight frozen lines in six files change, each listed in STATUS (Changed frozen tests), in
   commits citing ADR-0044.
+- The slice test needs Node ≥ 22.19 (`process.threadCpuUsage`); the repository's engines field
+  says ≥ 22.12, so on 22.12–22.18 this test throws. CI and the dev container run later versions.
 - The next tool with selectors changes the hint line again; that is its run's ADR.
 
 ## Alternatives
@@ -55,5 +72,9 @@ of SPEC; it records why frozen test lines change in this run, as CLAUDE.md requi
 - Keep the old words: rejected, they are wrong (Context 1).
 - Make the selector hint not list the tools ("only tools with candidates choose among them"):
   rejected; it changes the frozen line all the same and tells the user less.
+- Raise the slice test's threshold or allowance: rejected, it would also let through slices that
+  really do too much work.
+- Measure CPU time only: rejected; wall time is the page's real budget, and the minimum never
+  exceeds it, so a task is late only when both measures say so.
 - Leave the two conic examples out of `intersect`: rejected; the exact other(P, Q, R) example is
   the documented evidence that the fourth point is exact over Q (ADR-0043 acceptance).
