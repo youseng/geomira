@@ -21,8 +21,8 @@ export type ToolFamily =
  * evaluator and the static check (selector-check.ts) read it.
  */
 export interface BranchShape {
-  /** The most candidates the overload can have (line ∩ line: 1, line ∩ circle: 2). */
-  readonly candidates: 1 | 2;
+  /** The most candidates the overload can have (line ∩ line: 1, line ∩ circle: 2, conic ∩ conic: 4, ADR-0043). */
+  readonly candidates: 1 | 2 | 4;
   /** The low-level selector it accepts: along(±) on line ∩ circle, orient(±) on circle ∩ circle and tangent choices. */
   readonly low: 'along' | 'orient' | 'none';
   /** Whether other(P) applies (two objects that can meet twice). */
@@ -247,7 +247,12 @@ export type ExampleArg =
 /** A selector of an example call (the kinds the examples use). */
 export type ExampleSelector =
   | { readonly kind: 'along' | 'orient'; readonly sign: 1 | -1 }
-  | { readonly kind: 'other' | 'near' | 'far_from'; readonly p: ExampleArg };
+  | { readonly kind: 'other' | 'near' | 'far_from'; readonly p: ExampleArg }
+  | {
+      readonly kind: 'other';
+      readonly p: ExampleArg;
+      readonly rest: readonly [ExampleArg, ExampleArg];
+    };
 
 export interface ToolExample {
   readonly args: readonly ExampleArg[];

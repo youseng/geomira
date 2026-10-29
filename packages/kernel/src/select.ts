@@ -19,31 +19,31 @@
  * a sign-based decision mod p (no order) → Inexact.
  */
 import { assertNever } from '@geomira/num/assert';
-import { inexact, isInexact, type Field, type FieldSign, type Inexact } from '@geomira/num/field';
+import { isInexact, type Field, type FieldSign, type Inexact } from '@geomira/num/field';
 import { isZeroVec, signNormalized, vCross, vDot, vSub } from './geom';
 import { requireOnConic } from './conic-incidence';
-import { circleGap, requireOnCircle, requireOnLine, rootGap } from './incidence';
+import { arcFilter, betweenFilter, discFilter, noOrder, sideFilter } from './select-filters';
+import { requireOnCircle, requireOnLine, rootGap } from './incidence';
 import type { EvaluatedSelector } from './selector';
 import type { EvalContext } from './tool';
-import { degenerateCircle, degenerateLine } from './tools/args';
-import type { Cand, Pair, Side } from './tools/pairs';
-import { undef, type Line, type Undefined, type Value, type Vec } from './value';
+import type { Cand, Curve, Pair, Side } from './tools/pairs';
+import { undef, type Undefined, type Value, type Vec } from './value';
 
 type List<T> = readonly Cand<T>[];
 type Result<T> = List<T> | Undefined | Inexact;
-type Verdict = boolean | Undefined | Inexact;
 
-/** The message of a call with two candidates and no selector that singles one out. */
+/** The message of a call with two (or up to four) candidates and no selector that singles one out. */
 function addSelector<T>(pair: Pair<T>): string {
+  if (pair.shape.candidates === 4)
+    return (
+      `ambiguous: add a selector: ${pair.shape.describe} has up to four ${pair.noun}s ` +
+      '(for example other(P, Q, R), near(P), same_side(Q, l))'
+    );
   const low = pair.shape.low === 'none' ? '' : ` or ${pair.shape.low}(±)`;
   return (
     `ambiguous: add a selector: ${pair.shape.describe} has two ${pair.noun}s ` +
     `(for example other(P), near(P), same_side(Q, l)${low})`
   );
-}
-
-function noOrder<T>(F: Field<T>, s: EvaluatedSelector<T>): Inexact {
-  return inexact(`${s.text} needs an order, which ${F.name} lacks`);
 }
 
 /**
@@ -61,6 +61,16 @@ function misused<T>(pair: Pair<T>, sels: readonly EvaluatedSelector<T>[]): Undef
     if (k === 'other' && (!shape.other || pair.other === undefined)) {
       return undef(`${s.text} does not apply to ${shape.describe}: they meet only once`);
     }
+    if (s.selector.kind === 'other') {
+      const named = 1 + (s.selector.rest?.length ?? 0);
+      const arity = pair.other?.arity ?? 1;
+      if (named !== arity)
+        return undef(
+          arity === 3
+            ? `${s.text} does not apply to ${shape.describe}: name its three other common points, other(P, Q, R)`
+            : `${s.text} does not apply to ${shape.describe}: name its other common point, other(P)`,
+        );
+    }
   }
   if (sels.filter((s) => s.selector.kind === 'other').length > 1) {
     return undef('other(·) may appear only once in a call');
@@ -77,10 +87,20 @@ function coincide<T>(F: Field<T>, X: Vec<T>, P: Vec<T>, ctx: EvalContext): boole
   return s === 0 || s === 'ambiguous';
 }
 
+/** Undefined unless P lies on the curve (the banded incidence of its kind). */
+function onCurve<T>(F: Field<T>, P: Vec<T>, c: Curve<T>, what: string, ctx: EvalContext) {
+  return c.obj.kind === 'line'
+    ? requireOnLine(F, P, c.obj, ctx, what)
+    : c.obj.kind === 'circle'
+      ? requireOnCircle(F, P, c.obj, ctx, what)
+      : requireOnConic(F, P, c.obj, ctx, what);
+}
+
 /**
- * The candidates other than P (first other(P) of the call): P on both curves, the other
- * point by the pair's Vieta map, range-checked; the double point when it is within the band of P or the
- * pair counts one candidate.
+ * The candidates other than the named points (first other(…) of the call): each on both curves,
+ * the other point by the pair's Vieta map, range-checked. other(P): the double point when it is
+ * within the band of P or the pair counts one candidate. other(P, Q, R) (conic ∩ conic): the
+ * fourth common point alone (ADR-0043).
  */
 function viaOther<T>(
   F: Field<T>,
@@ -88,23 +108,22 @@ function viaOther<T>(
   s: EvaluatedSelector<T>,
   ctx: EvalContext,
 ): Result<T> {
-  const [P, other] = [s.args[0], pair.other];
-  if (P?.kind !== 'point') return undef(`${s.text} needs a point`);
+  const other = pair.other;
+  const pts = s.args.filter((a) => a.kind === 'point');
+  const [P, Q, R] = pts;
+  if (P === undefined || pts.length !== s.args.length) return undef(`${s.text} needs a point`);
   if (other === undefined) return undef(`${s.text} does not apply to ${pair.shape.describe}`);
-  const n = pair.count();
+  const n = other.arity === 3 ? 4 : pair.count();
   if (typeof n !== 'number') return n;
-  for (const c of other.curves) {
-    const what = `${s.text} needs the point on ${c.name}`;
-    const bad =
-      c.obj.kind === 'line'
-        ? requireOnLine(F, P, c.obj, ctx, what)
-        : c.obj.kind === 'circle'
-          ? requireOnCircle(F, P, c.obj, ctx, what)
-          : requireOnConic(F, P, c.obj, ctx, what);
-    if (bad !== undefined) return bad;
-  }
-  const X = other.point(P);
+  for (const X of pts)
+    for (const c of other.curves) {
+      const what = `${s.text} needs the point on ${c.name}`;
+      const bad = onCurve(F, X, c, what, ctx);
+      if (bad !== undefined) return bad;
+    }
+  const X = other.point(P, Q, R);
   if ('kind' in X) return X;
+  if (other.arity === 3) return [{ at: X, side: 0 }];
   return [
     n === 1 || coincide(F, X, P, ctx) ? { at: X, side: 0 } : { at: X, side: 'measure', from: P },
   ];
@@ -112,6 +131,8 @@ function viaOther<T>(
 
 /** The candidates by the discriminant; two and no selector → ambiguous before any root. */
 function bySquareRoots<T>(pair: Pair<T>, selectors: number): Result<T> {
+  // Up to four candidates (ADR-0043): a selector is needed in every field, whatever the count.
+  if (pair.shape.candidates === 4 && selectors === 0) return undef(addSelector(pair));
   const n = pair.count();
   if (typeof n !== 'number') return n;
   if (n === 2 && selectors === 0 && pair.ranged !== true) return undef(addSelector(pair));
@@ -144,7 +165,9 @@ export function choose<T>(
     return undef(
       sels.length === 0
         ? addSelector(pair)
-        : `ambiguous: add a selector: both ${pair.noun}s satisfy ${texts}`,
+        : list.length > 2
+          ? `ambiguous: add a selector: ${String(list.length)} ${pair.noun}s satisfy ${texts}`
+          : `ambiguous: add a selector: both ${pair.noun}s satisfy ${texts}`,
     );
   }
   return pair.output(only.at);
@@ -155,7 +178,7 @@ export function candidateValues<T>(pair: Pair<T>): readonly Value<T>[] {
   const n = pair.count();
   if (typeof n !== 'number') return [];
   const list = pair.list(n);
-  if (isInexact(list)) return n === 1 ? [list] : [list, list];
+  if (isInexact(list)) return Array.from({ length: n }, () => list);
   return 'kind' in list ? [] : list.map((c) => pair.output(c.at));
 }
 
@@ -191,129 +214,10 @@ function apply<T>(
   }
 }
 
-function keepIf<T>(list: List<T>, keep: (X: Vec<T>) => Verdict): Result<T> {
-  const out: Cand<T>[] = [];
-  for (const c of list) {
-    const k = keep(c.at);
-    if (typeof k !== 'boolean') return k;
-    if (k) out.push(c);
-  }
-  return out;
-}
-
-/** The side of X with respect to l: the signed distance cross(X − p, d)/|d|, banded. */
-function sideOf<T>(F: Field<T>, X: Vec<T>, l: Line<T>, ctx: EvalContext): FieldSign {
-  return signNormalized(F, vCross(F, vSub(F, X, l.p), l.d), vDot(F, l.d, l.d), 'length', ctx);
-}
-
 /**
- * Keeps the candidates on Q's side of l (`same`) or on the other side. Degenerate cases: Q
- * on l → Undefined, within the band → ambiguous; a candidate on l or within its band →
- * ambiguous; mod p → Inexact.
+ * near(P) / far_from(P): the nearest (farthest) of the candidates, decided against the runner-up
+ * (with two candidates, the other one: ADR-0006). Degenerate: a tie within the band.
  */
-function sides<T>(
-  F: Field<T>,
-  s: EvaluatedSelector<T>,
-  list: List<T>,
-  ctx: EvalContext,
-  Q: Vec<T>,
-  l: Line<T>,
-  same: boolean,
-): Result<T> {
-  const sq = sideOf(F, Q, l, ctx);
-  if (sq === 'none') return noOrder(F, s);
-  if (sq === 0) return undef(`${s.text}: the reference point lies on the line`);
-  if (sq === 'ambiguous') {
-    return undef(`ambiguous: ${s.text}: the reference point is within the band of the line`);
-  }
-  return keepIf(list, (X) => {
-    const sx = sideOf(F, X, l, ctx);
-    if (sx === 'none') return noOrder(F, s);
-    if (sx === 0 || sx === 'ambiguous') {
-      return undef(`ambiguous: ${s.text}: a candidate is within the band of the line`);
-    }
-    return same === (sx === sq);
-  });
-}
-
-function sideFilter<T>(
-  F: Field<T>,
-  s: EvaluatedSelector<T>,
-  list: List<T>,
-  ctx: EvalContext,
-  same: boolean,
-): Result<T> {
-  const [Q, l] = s.args;
-  if (Q?.kind !== 'point' || l?.kind !== 'line') return undef(`${s.text} needs a point and a line`);
-  return degenerateLine(F, l, ctx) ?? sides(F, s, list, ctx, Q, l, same);
-}
-
-/** on_arc(B, C, [not] A): A's side of line BC (`not`: the other side). Degenerate: B = C. */
-function arcFilter<T>(
-  F: Field<T>,
-  s: EvaluatedSelector<T>,
-  list: List<T>,
-  ctx: EvalContext,
-): Result<T> {
-  const [B, C, A] = s.args;
-  if (B?.kind !== 'point' || C?.kind !== 'point' || A?.kind !== 'point') {
-    return undef(`${s.text} needs three points`);
-  }
-  const d = vSub(F, C, B);
-  if (isZeroVec(F, d, ctx)) return undef(`${s.text} needs two distinct ends B ≠ C`);
-  const bc: Line<T> = { kind: 'line', p: B, d, lo: null, hi: null, chiral: false };
-  return sides(F, s, list, ctx, A, bc, !(s.selector.kind === 'on_arc' && s.selector.not));
-}
-
-/**
- * between(A, B): strictly between the perpendiculars to AB at A and at B (on segment AB
- * for a candidate on line AB). Degenerate cases: A = B → Undefined; a candidate within
- * the band of an end → ambiguous; mod p → Inexact.
- */
-function betweenFilter<T>(
-  F: Field<T>,
-  s: EvaluatedSelector<T>,
-  list: List<T>,
-  ctx: EvalContext,
-): Result<T> {
-  const [A, B] = s.args;
-  if (A?.kind !== 'point' || B?.kind !== 'point') return undef(`${s.text} needs two points`);
-  const u = vSub(F, B, A);
-  if (isZeroVec(F, u, ctx)) return undef(`${s.text} needs two distinct points`);
-  const uu = vDot(F, u, u);
-  return keepIf(list, (X) => {
-    const a = signNormalized(F, vDot(F, vSub(F, X, A), u), uu, 'length', ctx);
-    const b = signNormalized(F, vDot(F, vSub(F, B, X), u), uu, 'length', ctx);
-    if (a === 'none' || b === 'none') return noOrder(F, s);
-    if (a === -1 || b === -1) return false;
-    if (a === 1 && b === 1) return true;
-    return undef(`ambiguous: ${s.text}: a candidate is within the band of an end`);
-  });
-}
-
-/** inside(c) / outside(c). Degenerate: a candidate on c or within its band → ambiguous. */
-function discFilter<T>(
-  F: Field<T>,
-  s: EvaluatedSelector<T>,
-  list: List<T>,
-  ctx: EvalContext,
-  inside: boolean,
-): Result<T> {
-  const c = s.args[0];
-  if (c?.kind !== 'circle') return undef(`${s.text} needs a circle`);
-  const bad = degenerateCircle(F, c, ctx);
-  if (bad !== undefined) return bad;
-  return keepIf(list, (X) => {
-    const g = F.sign(circleGap(F, X, c), 'length', ctx);
-    if (g === 'none') return noOrder(F, s);
-    if (g === 0 || g === 'ambiguous') {
-      return undef(`ambiguous: ${s.text}: a candidate is within the band of the circle`);
-    }
-    return inside === (g === -1);
-  });
-}
-
-/** near(P) / far_from(P) between two candidates. Degenerate: a tie within the band. */
 function rank<T>(
   F: Field<T>,
   s: EvaluatedSelector<T>,
@@ -323,15 +227,30 @@ function rank<T>(
 ): Result<T> {
   const P = s.args[0];
   if (P?.kind !== 'point') return undef(`${s.text} needs a point`);
-  const [a, b] = list;
-  if (a === undefined || b === undefined) return list;
-  const [wa, wb] = [vSub(F, a.at, P), vSub(F, b.at, P)];
-  const g = F.sign(rootGap(F, vDot(F, wa, wa), vDot(F, wb, wb)), 'length', ctx);
-  if (g === 'none') return noOrder(F, s);
-  if (g === 0 || g === 'ambiguous') {
-    return undef(`ambiguous: ${s.text}: the candidates are equally far from the point`);
+  if (list.length < 2) return list;
+  const d2 = (c: Cand<T>) => {
+    const w = vSub(F, c.at, P);
+    return vDot(F, w, w);
+  };
+  let best = 0;
+  for (let i = 1; i < list.length; i++) {
+    const [ci, cb] = [list[i], list[best]];
+    if (ci === undefined || cb === undefined) continue;
+    const g = F.sign(rootGap(F, d2(ci), d2(cb)), 'length', ctx);
+    if (g === 'none') return noOrder(F, s);
+    if (near ? g === -1 : g === 1) best = i;
   }
-  return [near === (g === -1) ? a : b];
+  const b = list[best];
+  if (b === undefined) return list;
+  for (const [i, c] of list.entries()) {
+    if (i === best) continue;
+    const g = F.sign(rootGap(F, d2(c), d2(b)), 'length', ctx);
+    if (g === 'none') return noOrder(F, s);
+    if (g === 0 || g === 'ambiguous') {
+      return undef(`ambiguous: ${s.text}: the candidates are equally far from the point`);
+    }
+  }
+  return [b];
 }
 
 /** The low-level label of a candidate whose label is measured (the other point of other(P)). */

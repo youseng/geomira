@@ -279,3 +279,27 @@ export function conicTangentPair<T>(
     output: (X): Value<T> => (tool === 'tangent_point' ? asPoint(X) : conicTangentAt(F, k, X)),
   };
 }
+
+/**
+ * The finite common points of the full line p + t·d with the conic q, by decision 7 of ADR-0042
+ * (for conic ∩ conic, ADR-0043 decision 7): two points; one double point (`double`: the gap
+ * within the band); one point (an asymptotic direction); none (the line misses the conic, or is
+ * an asymptote). Degenerate cases: a decision inside the band of an asymptotic direction →
+ * Undefined (ambiguous); square roots not representable → Inexact.
+ */
+export function lineConicMeet<T>(
+  F: Field<T>,
+  q: Coeffs<T>,
+  p: Vec<T>,
+  d: Vec<T>,
+  ctx: EvalContext,
+): { readonly points: readonly Vec<T>[]; readonly double: boolean } | Undefined | Inexact {
+  const m = meet(F, q, p, d, ctx);
+  if (m.kind === 'undefined')
+    return m.reason.startsWith('ambiguous') ? m : { points: [], double: false };
+  if (m.kind === 'one') return { points: [m.at], double: false };
+  const n = countTwo(F, q, m, ctx, 'misses');
+  if (typeof n !== 'number') return { points: [], double: false };
+  const list = midOff(F, n, m.mid, m.rad, d, false);
+  return isInexact(list) ? list : { points: list.map((c) => c.at), double: n === 1 };
+}

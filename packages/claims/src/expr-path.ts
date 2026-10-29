@@ -35,6 +35,9 @@ function withExprs(s: Selector, xs: readonly Expr[]): Selector {
     case 'outside':
       return { kind: s.kind, c: at(0) };
     case 'other':
+      return s.rest === undefined
+        ? { kind: 'other', p: at(0) }
+        : { kind: 'other', p: at(0), rest: [at(1), at(2)] };
     case 'near':
     case 'far_from':
       return { kind: s.kind, p: at(0) };

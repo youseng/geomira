@@ -8,6 +8,9 @@
  *     (select.ts): along(±) on line ∩ circle, orient(±) on circle ∩ circle, other(P) exact.
  *   - line ∩ conic (ADR-0042, tools/conic-pairs.ts): as line ∩ circle, along(±); a line with an
  *     asymptotic direction meets the conic once.
+ *   - conic ∩ conic and conic ∩ circle (ADR-0043, tools/conic-conic.ts): up to four candidates
+ *     from the pencil of the two curves (floats only; Inexact over Q and mod p), no low-level
+ *     selector; other(P, Q, R) gives the fourth common point exactly.
  */
 import type { Field } from '@geomira/num/field';
 import { choose, candidateValues } from '../select';
@@ -15,6 +18,7 @@ import type { EvaluatedSelector } from '../selector';
 import type { ArgSymmetry, EvalContext, ExampleArg, ToolSpec } from '../tool';
 import type { Undefined, Value } from '../value';
 import { badArgs, circleAt, conicAt, lineAt } from './args';
+import { CONIC_CONIC, CONIC_CONIC_DEGENERATE, conicConicPair } from './conic-conic';
 import { LINE_CONIC, lineConicPair } from './conic-pairs';
 import {
   CIRCLE_CIRCLE,
@@ -41,6 +45,8 @@ function pairOf<T>(
   if (l0 !== undefined && c1 !== undefined) return lineCirclePair(F, l0, c1, ctx, true);
   if (c0 !== undefined && l1 !== undefined) return lineCirclePair(F, l1, c0, ctx, false);
   if (c0 !== undefined && c1 !== undefined) return circleCirclePair(F, c0, c1, ctx);
+  const [r0, r1] = [k0 ?? c0, k1 ?? c1];
+  if (r0 !== undefined && r1 !== undefined) return conicConicPair(F, r0, r1, ctx);
   return 'bad';
 }
 
@@ -109,6 +115,9 @@ export const INTERSECT_TOOLS: readonly ToolSpec[] = [
       { params: ['round', 'round'], branch: CIRCLE_CIRCLE, symmetry: EITHER },
       { params: ['linear', 'conic'], branch: LINE_CONIC, symmetry: EITHER },
       { params: ['conic', 'linear'], branch: LINE_CONIC, symmetry: EITHER },
+      { params: ['conic', 'conic'], branch: CONIC_CONIC, symmetry: EITHER, output: ['point'] },
+      { params: ['conic', 'round'], branch: CONIC_CONIC, symmetry: EITHER, output: ['point'] },
+      { params: ['round', 'conic'], branch: CONIC_CONIC, symmetry: EITHER, output: ['point'] },
     ],
     outputKinds: ['point', 'ideal_point'],
     compute: intersect,
@@ -135,6 +144,7 @@ export const INTERSECT_TOOLS: readonly ToolSpec[] = [
       'line ∩ conic: α within the band of an asymptotic direction → Undefined (ambiguous)',
       'line ∩ conic: every decision is scale-free (the ellipse 10⁸ times larger gives the same points)',
       'other(P) on line ∩ conic with an asymptotic direction → Undefined (the other point is at infinity)',
+      ...CONIC_CONIC_DEGENERATE,
       'two candidates and no selector → Undefined (ambiguous: add a selector)',
       'a deciding quantity of a selector within the band → Undefined (ambiguous)',
       'no candidate satisfies the selectors → Undefined',
@@ -146,7 +156,7 @@ export const INTERSECT_TOOLS: readonly ToolSpec[] = [
       'a sign-based selector mod p → Inexact',
     ],
     export: { constructive: 'intersect' },
-    doc: 'intersect(a, b, selectors): the common point of two lines, a line and a circle, two circles, or a line and a conic; a curve pair with two candidates needs selectors (along(±) on line ∩ circle and line ∩ conic, orient(±) on circle ∩ circle, other(P), near(P), same_side(Q, l), …).',
+    doc: 'intersect(a, b, selectors): the common point of two lines, a line and a circle, two circles, a line and a conic, or two conics (a conic and a circle); a curve pair with two candidates needs selectors (along(±) on line ∩ circle and line ∩ conic, orient(±) on circle ∩ circle, other(P), near(P), same_side(Q, l), …); conic ∩ conic has up to four (other(P, Q, R) gives the fourth exactly; filters and near(P) choose otherwise).',
     examples: [
       {
         args: [
@@ -223,6 +233,62 @@ export const INTERSECT_TOOLS: readonly ToolSpec[] = [
           },
         ],
         selectors: [{ kind: 'along', sign: 1 }],
+      },
+      {
+        args: [
+          {
+            call: 'conic',
+            args: [
+              ['0', '0'],
+              ['4', '0'],
+              ['0', '3'],
+              ['3', '5'],
+              ['-1', '2'],
+            ],
+          },
+          {
+            call: 'conic',
+            args: [
+              ['0', '0'],
+              ['4', '0'],
+              ['0', '3'],
+              ['3', '5'],
+              ['2', '-2'],
+            ],
+          },
+        ],
+        selectors: [
+          {
+            kind: 'other',
+            p: ['0', '0'],
+            rest: [
+              ['4', '0'],
+              ['0', '3'],
+            ],
+          },
+        ],
+      },
+      {
+        args: [
+          {
+            call: 'conic',
+            args: [
+              ['2', '0'],
+              ['0', '1'],
+              ['-2', '0'],
+              ['0', '-1'],
+              ['6/5', '4/5'],
+            ],
+          },
+          {
+            call: 'circle',
+            args: [
+              ['0', '0'],
+              ['3/2', '0'],
+            ],
+          },
+        ],
+        selectors: [{ kind: 'near', p: ['2', '1'] }],
       },
     ],
   },

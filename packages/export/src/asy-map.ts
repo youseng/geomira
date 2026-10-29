@@ -189,6 +189,7 @@ function intersect(
   // call is written numerically.
   if (sel === undefined) return undefined;
   if (sel.kind === 'other') {
+    if (sel.rest !== undefined) return undefined;
     const p = arg(sel.p);
     return p?.type === 'pair' ? call(`${prefix}_other`, 'pair', [helper], [...pair, p]) : undefined;
   }

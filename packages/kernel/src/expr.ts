@@ -59,7 +59,12 @@ export type Selector =
   | { readonly kind: 'between'; readonly a: Expr; readonly b: Expr }
   | { readonly kind: 'inside'; readonly c: Expr }
   | { readonly kind: 'outside'; readonly c: Expr }
-  | { readonly kind: 'other'; readonly p: Expr }
+  | {
+      readonly kind: 'other';
+      readonly p: Expr;
+      /** other(P, Q, R) on conic ∩ conic (ADR-0043): the two more known common points. */
+      readonly rest?: readonly [Expr, Expr];
+    }
   | { readonly kind: 'near'; readonly p: Expr }
   | { readonly kind: 'far_from'; readonly p: Expr }
   | { readonly kind: 'along'; readonly sign: 1 | -1 }
@@ -98,6 +103,7 @@ export function selectorExprs(s: Selector): readonly Expr[] {
     case 'outside':
       return [s.c];
     case 'other':
+      return s.rest === undefined ? [s.p] : [s.p, ...s.rest];
     case 'near':
     case 'far_from':
       return [s.p];

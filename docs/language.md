@@ -279,7 +279,7 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `midpoint` | points | `midpoint(point, point)` | point | can succeed | — |
 | `divide` | points | `divide(point, point, number)` | point | can succeed | — |
 | `foot` | points | `foot(point, linear)` · `foot(point, point, point)` | point | can succeed | — |
-| `intersect` | points | `intersect(linear, linear)` · `intersect(linear, round)` · `intersect(round, linear)` · `intersect(round, round)` · `intersect(linear, conic)` · `intersect(conic, linear)` | point, ideal_point | can succeed | √(2) is not rational |
+| `intersect` | points | `intersect(linear, linear)` · `intersect(linear, round)` · `intersect(round, linear)` · `intersect(round, round)` · `intersect(linear, conic)` · `intersect(conic, linear)` · `intersect(conic, conic)` · `intersect(conic, round)` · `intersect(round, conic)` | point, ideal_point | can succeed | √(2) is not rational; the common points of two conics are roots of a quartic, not representable in RationalField: other(P, Q, R) gives the fourth point exactly |
 | `circumcenter` | points | `circumcenter(point, point, point)` | point | can succeed | — |
 | `centroid` | points | `centroid(point, point, point)` | point | can succeed | — |
 | `orthocenter` | points | `orthocenter(point, point, point)` | point | can succeed | — |

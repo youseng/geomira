@@ -58,7 +58,9 @@ function selectorOf(s: ExampleSelector): Selector {
     case 'other':
     case 'near':
     case 'far_from':
-      return { kind: s.kind, p: argExpr(s.p) };
+      return 'rest' in s
+        ? { kind: 'other', p: argExpr(s.p), rest: [argExpr(s.rest[0]), argExpr(s.rest[1])] }
+        : { kind: s.kind, p: argExpr(s.p) };
     default:
       return assertNever(s, 'example selector');
   }
