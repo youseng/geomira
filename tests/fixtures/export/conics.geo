@@ -19,8 +19,8 @@ H5 = (1/2, 2)
 h = conic(H1, H2, H3, H4, H5) [color=darkorange, width=2]
 G = on(h, 3, 2)
 P = (3, 2)
-t_1 = tangent_from(P, e, orient(+))
-t_2 = tangent_from(P, e, orient(-)) [dash=dashed]
+t_1 = tangent_from(P, e, orient(-))
+t_2 = tangent_from(P, e, orient(+)) [dash=dashed]
 p = polar(P, e) [dash=dotted]
 T = pole(line(H1, H2), h)
 X = intersect(line(C, B), h, along(+))

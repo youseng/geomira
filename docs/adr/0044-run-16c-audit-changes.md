@@ -50,6 +50,12 @@ of SPEC; it records why frozen test lines change in this run, as CLAUDE.md requi
    "not finite"). A parabola is a conic whose centre is at infinity; ADR-0040 decides "at
    infinity" for the meeting point of two lines at the figure's scale (an angle within EPS: a
    point beyond about scale/EPS).
+5. ADR-0042 decision 8 says orient(+) on the tangents from P to a conic is the touch point T with
+   cross(mid − P, T − P) > 0, so that a conic that is a circle has the circle tools' labels. The
+   code read the side from the sign of Q(P), and every label was the opposite one (the audit
+   compared `tangent_point(P, k, orient(±))` for k a circle given as a conic with the circle
+   tool: all six cases differed). The 16b export fixture `tests/fixtures/export/conics.geo`
+   uses `tangent_from(P, e, orient(±))` for t_1 and t_2.
 
 ## Decision
 
@@ -81,14 +87,21 @@ of SPEC; it records why frozen test lines change in this run, as CLAUDE.md requi
    assertions; five frozen lines (the comment and the four points) change.
    `packages/kernel/test/conic-type-scale.test.ts` and `packages/scene/test/conic-type-draw.test.ts`
    failed before the change.
+5. The label follows its definition: the sign of cross(mid − P, d) for the candidate mid + k·d
+   (`packages/kernel/test/conic-tangent-orient.test.ts`, failing before). A saved file keeps
+   its figure only if it swaps its signs, so the fixture's two lines swap orient(+) and
+   orient(−) (frozen lines; the figure, its export tests and tex.yml's points are unchanged).
 
 ## Consequences
 
-- Thirteen frozen lines in seven files change, each listed in STATUS (Changed frozen tests), in
+- Fifteen frozen lines in eight files change, each listed in STATUS (Changed frozen tests), in
   commits citing ADR-0044.
 - The slice test needs Node ≥ 22.19 (`process.threadCpuUsage`); the repository's engines field
   says ≥ 22.12, so on 22.12–22.18 this test throws. CI and the dev container run later versions.
 - The next tool with selectors changes the hint line again; that is its run's ADR.
+- A document written with Run 16b that labels the tangents from a point to a conic by orient(±)
+  now picks the other tangent. Conics were merged in Run 16b and no example or library entry
+  uses these labels; the one fixture is migrated.
 - The scene's `shapeOf` takes the document's tolerance context (optional, scale 1 by default for
   callers without one, as before for every value but a conic near a parabola).
 - A conic with a real semi-axis beyond scale/EPS (an ellipse 10⁹ figure sizes long) is a
