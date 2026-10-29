@@ -4,7 +4,8 @@
  * when the figure moves as the claim tester's LOCAL regime moves it (noise of LOCAL_SIGMA ×
  * the figure's size on every free input: its diameter, as the sampler measures it, so the
  * choice does not depend on the size of the figure, ADR-0017). Each free input is moved by one such deviation, one at a time
- * (a free point's x and y; a glider's parameter by the same arc or length), and the figure
+ * (a free point's x and y; a glider's parameter by the same arc or length, on a conic to first
+ * order), and the figure
  * re-evaluated; a distance's deviation is the root sum of squares of its responses. The
  * score of a selector is the smallest |distance| / deviation of its deciding distances (a
  * margin counted in standard deviations of the local noise, to first order); a distance
@@ -17,7 +18,8 @@ import { evaluate } from '@geomira/kernel/evaluate';
 import { call, lit, type Expr } from '@geomira/kernel/expr';
 import type { Registry } from '@geomira/kernel/registry';
 import type { EvalContext } from '@geomira/kernel/tool';
-import type { Value, Vec } from '@geomira/kernel/value';
+import { gliderPoint } from '@geomira/kernel/glider';
+import type { Conic, Value, Vec } from '@geomira/kernel/value';
 import { FloatField } from '@geomira/num/float-field';
 import { fromNumber, toNumber } from '@geomira/num/rational';
 
@@ -33,7 +35,7 @@ function litOf(x: number): Expr | undefined {
 }
 
 /** The definitions one local deviation away from `d` (none for a constructed object). */
-function moved(d: Expr, values: Values, h: number): Expr[] {
+function moved(d: Expr, values: Values, h: number, ctx: EvalContext): Expr[] {
   if (d.kind !== 'call' || d.selectors.length > 0) return [];
   const [p, ...params] = d.args;
   const [x, y] = [num(d.args[0]), num(d.args[1])];
@@ -57,6 +59,7 @@ function moved(d: Expr, values: Values, h: number): Expr[] {
     const e = litOf(a + h / Math.hypot(obj.d.x, obj.d.y));
     return e === undefined ? [] : [call('on', [p, e])];
   }
+  if (obj?.kind === 'conic' && ps.length === 2) return conicMoved(p, obj, a, b, h, ctx);
   if (obj?.kind !== 'circle') return [];
   const r = Math.sqrt(obj.r2);
   if (ps.length === 1) {
@@ -70,6 +73,40 @@ function moved(d: Expr, values: Values, h: number): Expr[] {
     litOf(a * Math.sin(beta) + b * Math.cos(beta)),
   ];
   return u === undefined || v === undefined ? [] : [call('on', [p, u, v])];
+}
+
+/** (u, v) turned by β. */
+function turned(u: number, v: number, beta: number): readonly [number, number] {
+  return [u * Math.cos(beta) - v * Math.sin(beta), u * Math.sin(beta) + v * Math.cos(beta)];
+}
+
+/**
+ * on(k, u, v) on a conic with (u, v) turned so the point moves by about h along k (Run 16c
+ * audit): a first turn by the circle's rule for the distance to the known point, then scaled
+ * by the move it made (first order). None when a point is not defined.
+ */
+function conicMoved(
+  k: Expr,
+  obj: Conic<number>,
+  u: number,
+  v: number,
+  h: number,
+  ctx: EvalContext,
+): Expr[] {
+  const at = (uu: number, vv: number) => {
+    const X = gliderPoint(FloatField, obj, { form: 'stereo', u: uu, v: vv }, ctx);
+    return X.kind === 'point' ? X : undefined;
+  };
+  const P = at(u, v);
+  const A = obj.anchor;
+  if (P === undefined || A === undefined) return [];
+  const b0 = h / (2 * Math.max(Math.hypot(P.x - A.x, P.y - A.y), h));
+  const Q = at(...turned(u, v, b0));
+  if (Q === undefined) return [];
+  const m = Math.hypot(Q.x - P.x, Q.y - P.y);
+  if (!(m > 0)) return [];
+  const [eu, ev] = turned(u, v, (b0 * h) / m).map(litOf);
+  return eu === undefined || ev === undefined ? [] : [call('on', [k, eu, ev])];
 }
 
 /**
@@ -86,7 +123,7 @@ export function localResponses(
   const h = LOCAL_SIGMA * (d !== undefined && Number.isFinite(d) && d > 0 ? d : ctx.scale);
   const out: Values[] = [];
   for (const o of doc.objects)
-    for (const def of moved(o.def, values, h)) {
+    for (const def of moved(o.def, values, h, ctx)) {
       const objects = doc.objects.map((x) => (x.id === o.id ? { ...x, def } : x));
       out.push(evaluate({ ...doc, objects }, registry, FloatField, ctx).values);
     }
