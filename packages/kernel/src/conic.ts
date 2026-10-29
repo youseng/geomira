@@ -94,7 +94,7 @@ export function poleOf<T>(F: Field<T>, q: Coeffs<T>, u: Hom<T>): Hom<T> {
 }
 
 /** Whether every number is a finite double (always true outside FloatField). */
-function finite<T>(F: Field<T>, xs: readonly T[]): boolean {
+export function finite<T>(F: Field<T>, xs: readonly T[]): boolean {
   return F.kind !== 'float' || xs.every((x) => Number.isFinite(F.toNumber(x)));
 }
 
