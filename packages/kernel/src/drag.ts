@@ -137,9 +137,11 @@ function redefinition(
   if (params.some((a) => a.kind !== 'lit'))
     return `${base.name} is not draggable: its parameter is computed`;
   const obj = argValue(doc, base, objExpr, values);
-  if (obj === undefined || (obj.kind !== 'line' && obj.kind !== 'circle'))
+  if (obj === undefined || (obj.kind !== 'line' && obj.kind !== 'circle' && obj.kind !== 'conic'))
     return `the object ${base.name} glides on is undefined`;
-  const form: GliderForm = obj.kind === 'line' ? 'line' : params.length === 2 ? 'stereo' : 'angle';
+  // A glider on a conic takes (u : v) only (ADR-0042).
+  const form: GliderForm =
+    obj.kind === 'line' ? 'line' : obj.kind === 'conic' || params.length === 2 ? 'stereo' : 'angle';
   const p = dragParameter(FloatField, obj, at, form, values.ctx);
   if (isInexact(p) || 'kind' in p) return p.reason;
   return call('on', [objExpr, ...paramExprs(p)]);
