@@ -15,7 +15,6 @@ import {
   coeffsOf,
   conicProblem,
   halfGradient,
-  homCentre,
   qDirection,
   qValue,
   quadNorm,
@@ -69,25 +68,62 @@ function proportional<T>(F: Field<T>, a: Coeffs<T>, b: Coeffs<T>): boolean {
   return true;
 }
 
-/** A curve's reference point for the pencil's frame (ADR-0043 decision 3), as numbers. */
-function referenceOf<T>(F: Field<T>, k: Round<T>): Vec<number> {
+/** A known point of the curve: a conic's anchor or a circle's centre, as numbers. */
+function knownRef<T>(F: Field<T>, k: Round<T>): Vec<number> | undefined {
   const num = (v: Vec<T>) => ({ x: F.toNumber(v.x), y: F.toNumber(v.y) });
   if (k.kind === 'circle') return num(k.c);
-  if (k.anchor !== undefined) return num(k.anchor);
-  const [x, y, w] = homCentre(F, coeffsOf(k)).map((v) => F.toNumber(v));
-  const c = { x: (x ?? 0) / (w ?? 0), y: (y ?? 0) / (w ?? 0) };
-  return Number.isFinite(c.x) && Number.isFinite(c.y) ? c : { x: 0, y: 0 };
+  return k.anchor === undefined ? undefined : num(k.anchor);
 }
 
-/** The pencil's input: both curves as float coefficients and the frame's origin. */
+const dist2 = (p: Vec<number>, q: Vec<number>) => (p.x - q.x) ** 2 + (p.y - q.y) ** 2;
+
+/**
+ * The vertex of a central conic nearest to `toward` (floats), or undefined (no finite centre).
+ * At the centre C, Q(C + v) = Q(C) + vᵀA·v and Q(C) = d·Cx + e·Cy + f: a vertex is C + t·u for
+ * an eigenvector u of A with λ·t²|u|² = −Q(C).
+ */
+function vertexNear(q: Coeffs<number>, toward: Vec<number>): Vec<number> | undefined {
+  const [a, b, c, d, e, f] = q;
+  const w = a * c - b * b;
+  const C = { x: (b * e - c * d) / w, y: (b * d - a * e) / w };
+  if (!Number.isFinite(C.x) || !Number.isFinite(C.y)) return undefined;
+  const qc = d * C.x + e * C.y + f;
+  const h = Math.hypot((a - c) / 2, b);
+  let best: Vec<number> | undefined;
+  for (const lam of [(a + c) / 2 + h, (a + c) / 2 - h]) {
+    const [u1, u2] = [
+      { x: b, y: lam - a },
+      { x: lam - c, y: b },
+    ];
+    const u = Math.hypot(u1.x, u1.y) >= Math.hypot(u2.x, u2.y) ? u1 : u2;
+    const t = Math.sqrt(-qc / lam) / Math.hypot(u.x, u.y);
+    if (!Number.isFinite(t)) continue;
+    for (const sg of [1, -1]) {
+      const V = { x: C.x + sg * t * u.x, y: C.y + sg * t * u.y };
+      if (best === undefined || dist2(V, toward) < dist2(best, toward)) best = V;
+    }
+  }
+  return best;
+}
+
+/**
+ * The pencil's input: both curves as float coefficients and the frame's origin, the midpoint
+ * of a point at each curve (ADR-0043 decision 3): its known point (anchor, circle centre), or
+ * for an anchorless conic its vertex nearest to the other curve's point (never its centre, which
+ * can be far from the curve: Run 16c audit), or the other curve's point when it has no vertex.
+ */
 function pencilInput<T>(F: Field<T>, a: Round<T>, b: Round<T>, ctx: EvalContext): PencilInput {
   const num = (q: Coeffs<T>): Coeffs<number> => {
     const [c0, c1, c2, c3, c4, c5] = q.map((v) => F.toNumber(v));
     return [c0 ?? 0, c1 ?? 0, c2 ?? 0, c3 ?? 0, c4 ?? 0, c5 ?? 0];
   };
-  const [r1, r2] = [referenceOf(F, a), referenceOf(F, b)];
+  const [q1, q2] = [num(coeffs(F, a)), num(coeffs(F, b))];
+  const [k1, k2] = [knownRef(F, a), knownRef(F, b)];
+  const origin = { x: 0, y: 0 };
+  const r1 = k1 ?? vertexNear(q1, k2 ?? origin) ?? k2 ?? origin;
+  const r2 = k2 ?? vertexNear(q2, r1) ?? r1;
   const o = { x: (r1.x + r2.x) / 2, y: (r1.y + r2.y) / 2 };
-  return { q1: num(coeffs(F, a)), q2: num(coeffs(F, b)), o, ctx };
+  return { q1, q2, o, ctx };
 }
 
 /**
