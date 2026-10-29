@@ -76,14 +76,15 @@ describe('the GUI choice among four candidates', () => {
   it('writes reflection-equivariant selectors that pick each candidate, robust under the local noise', () => {
     const s = editorOf(FIG);
     const [a, b] = [idOf(s, 'k'), idOf(s, 'm')];
+    // The copies, each followed once, serve all four candidates.
+    const copies = Array.from({ length: 60 }, (_, k) => follow(s.doc, a, b, deriveSeed(1630, k)));
     for (const [i, t] of TARGETS.entries()) {
       const ch = chooseSelectors(s.doc, s.values, registry, 'intersect', [a, b], t);
       expect(ch.ok, `candidate ${String(i)}: ${ch.ok ? '' : ch.reason}`).toBe(true);
       if (!ch.ok) continue;
       expect(ch.selectors.every((x) => x.kind !== 'along' && x.kind !== 'orient')).toBe(true);
       let [checked, wrong] = [0, 0];
-      for (let k = 0; k < 60; k++) {
-        const f = follow(s.doc, a, b, deriveSeed(1630 + i, k));
+      for (const [k, f] of copies.entries()) {
         if (f === undefined) continue;
         const idx = (candidatesOf(s.doc, a, b) ?? []).findIndex((x) => near(x, t));
         const want = f.cands[idx];
