@@ -257,10 +257,10 @@ describe('the drag map: cursor → parameter', () => {
     );
     const P: Value<number> = { kind: 'point', x: 1, y: 1 };
     expect(why(gliderPoint(FloatField, P, { form: 'line', t: 1 }, CTX))).toBe(
-      'a glider needs a line or a circle, not point',
+      'a glider needs a line, a circle or a conic, not point',
     );
     expect(why(dragParameter(FloatField, P, O, 'line', CTX))).toBe(
-      'a glider needs a line or a circle, not point',
+      'a glider needs a line, a circle or a conic, not point',
     );
     const bare: Value<number> = { kind: 'circle', c: O, r2: 4, arc: null };
     expect(why(gliderParameter(FloatField, bare, { x: 2, y: 0 }, 'stereo', CTX))).toMatch(

@@ -95,9 +95,9 @@ foot(P, l) or foot(P, A, B): the orthogonal projection of P on the line.
 
 ### intersect
 
-intersect(a, b, selectors): the common point of two lines, a line and a circle, two circles, or a line and a conic; a curve pair with two candidates needs selectors (along(±) on line ∩ circle and line ∩ conic, orient(±) on circle ∩ circle, other(P), near(P), same_side(Q, l), …).
+intersect(a, b, selectors): the common point of two lines, a line and a circle, two circles, a line and a conic, or two conics (a conic and a circle); a curve pair with two candidates needs selectors (along(±) on line ∩ circle and line ∩ conic, orient(±) on circle ∩ circle, other(P), near(P), same_side(Q, l), …); conic ∩ conic has up to four (other(P, Q, R) gives the fourth exactly; filters and near(P) choose otherwise).
 
-- Signatures: `intersect(linear, linear)`, `intersect(linear, round)`, `intersect(round, linear)`, `intersect(round, round)`, `intersect(linear, conic)`, `intersect(conic, linear)`
+- Signatures: `intersect(linear, linear)`, `intersect(linear, round)`, `intersect(round, linear)`, `intersect(round, round)`, `intersect(linear, conic)`, `intersect(conic, linear)`, `intersect(conic, conic)`, `intersect(conic, round)`, `intersect(round, conic)`
 - Result: point, ideal_point
 - Exact run (RationalField): can succeed
 - Export: constructive (intersect)
@@ -108,6 +108,9 @@ intersect(a, b, selectors): the common point of two lines, a line and a circle, 
   - `intersect(round, round)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
   - `intersect(linear, conic)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
   - `intersect(conic, linear)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
+  - `intersect(conic, conic)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
+  - `intersect(conic, round)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
+  - `intersect(round, conic)`: arguments 1, 2 in any order (the same value), and swapping them flips orient(±)
 - By construction:
   - `intersect(linear, linear)`: on(result, #1); on(result, #2)
   - `intersect(linear, round)`: on(result, #1); on(result, #2)
@@ -115,6 +118,9 @@ intersect(a, b, selectors): the common point of two lines, a line and a circle, 
   - `intersect(round, round)`: on(result, #1); on(result, #2)
   - `intersect(linear, conic)`: on(result, #1); on(result, #2)
   - `intersect(conic, linear)`: on(result, #1); on(result, #2)
+  - `intersect(conic, conic)`: on(result, #1); on(result, #2)
+  - `intersect(conic, round)`: on(result, #1); on(result, #2)
+  - `intersect(round, conic)`: on(result, #1); on(result, #2)
 - Degenerate cases:
   - parallel lines → their ideal point (the first line's direction and flag)
   - parallel segments or rays → Undefined (no point at infinity is on them)
@@ -137,6 +143,21 @@ intersect(a, b, selectors): the common point of two lines, a line and a circle, 
   - line ∩ conic: α within the band of an asymptotic direction → Undefined (ambiguous)
   - line ∩ conic: every decision is scale-free (the ellipse 10⁸ times larger gives the same points)
   - other(P) on line ∩ conic with an asymptotic direction → Undefined (the other point is at infinity)
+  - conic ∩ conic: no selector → Undefined (ambiguous: add a selector), in every field and whatever the count
+  - conic ∩ conic: the conics coincide → Undefined (within the band in floats: ambiguous)
+  - conic ∩ conic: the conics do not meet → Undefined
+  - conic ∩ conic: tangency (a chord gap within the band) → the double point
+  - conic ∩ conic: three common points that merge (osculation, within ∛EPS) → one triple point
+  - conic ∩ conic: four common points that merge (a four-point contact) → one point
+  - conic ∩ conic: a common point at infinity is not a candidate (parallel parabolas, a shared asymptote)
+  - conic ∩ conic: a common point near infinity → Undefined (ambiguous)
+  - conic ∩ conic: over Q and mod p the candidates are roots of a quartic → Inexact (other(P, Q, R) is exact)
+  - conic ∩ conic: other(P, Q, R) → the fourth common point, exact in every field
+  - conic ∩ conic: other(P, Q, R) with two points coincident, collinear points, or a point off a curve → Undefined
+  - conic ∩ conic: other(P, Q, R) with the fourth point at infinity → Undefined
+  - conic ∩ conic: other(P) with one point, along(±) or orient(±) → Undefined (they do not apply)
+  - conic ∩ conic: near(P) with the nearest candidates equally far (within the band) → Undefined (ambiguous)
+  - conic ∩ circle: a candidate off an arc is not a candidate
   - two candidates and no selector → Undefined (ambiguous: add a selector)
   - a deciding quantity of a selector within the band → Undefined (ambiguous)
   - no candidate satisfies the selectors → Undefined
@@ -152,6 +173,8 @@ intersect(a, b, selectors): the common point of two lines, a line and a circle, 
   - `intersect(circle((0, 0), (5, 0)), circle((6, 0), (3, 4)), orient(+))` → point (3, 4)
   - `intersect(line((3, 4), (0, 0)), circle((0, 0), (5, 0)), other(point(3, 4)))` → point (-3, -4)
   - `intersect(line((0, 0), (1, 0)), circle((0, 0), (1, 1)), along(+))` → point (1.41421356237, 0)
+  - `intersect(conic((0, 0), (4, 0), (0, 3), (3, 5), (-1, 2)), conic((0, 0), (4, 0), (0, 3), (3, 5), (2, -2)), other(point(0, 0), point(4, 0), point(0, 3)))` → point (3, 5)
+  - `intersect(conic((2, 0), (0, 1), (-2, 0), (0, -1), (6/5, 4/5)), circle((0, 0), (3/2, 0)), near(point(2, 1)))` → point (1.29099444874, 0.763762615826)
 
 ### circumcenter
 
@@ -508,6 +531,34 @@ conic_center(k): the center of a conic, the pole of the line at infinity; a para
 - Examples:
   - `conic_center(conic((1, 1), (2, 1/2), (-1, -1), (4, 1/4), (1/2, 2)))` → point (0, 0)
   - `conic_center(conic((2, 0), (0, 1), (-2, 0), (0, -1), (6/5, 4/5)))` → point (0, 0)
+
+### foci
+
+foci(k, selectors): a focus of a conic (an ellipse's or a hyperbola's two foci need a selector: other(F), near(P), same_side(Q, l), …; a parabola's one focus is exact); foci(c) is a circle's center. The foci are the points whose isotropic lines touch the conic.
+
+- Signatures: `foci(round)`, `foci(conic)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry: none
+- By construction: nothing
+- Degenerate cases:
+  - a circle → its center (no selector)
+  - an ellipse or a hyperbola: two foci; no selector → Undefined (ambiguous: add a selector)
+  - the two foci within the band of each other (a conic that is nearly a circle) → the center, one double point
+  - a parabola → its one focus, exact over Q and mod p
+  - a conic within the band of a parabola → Undefined (ambiguous)
+  - the square roots of the foci not representable → Inexact over Q and mod p
+  - other(F) with F not a focus → Undefined (within the band: ambiguous); a parabola’s other focus is at infinity → Undefined
+  - along(±) or orient(±) → Undefined (they do not apply)
+  - an invalid conic → Undefined
+- Examples:
+  - `foci(conic((5, 0), (0, 3), (-5, 0), (0, -3), (3, 12/5)), near(point(10, 0)))` → point (4, 0)
+  - `foci(conic((5, 0), (0, 3), (-5, 0), (0, -3), (3, 12/5)), other(point(4, 0)))` → point (-4, 0)
+  - `foci(conic((2, 0), (0, 1), (-2, 0), (0, -1), (6/5, 4/5)), near(point(2, 0)))` → point (1.73205080757, 0)
+  - `foci(conic((1, 1), (2, 1/2), (-1, -1), (4, 1/4), (1/2, 2)), near(point(1, 1)))` → point (1.41421356237, 1.41421356237)
+  - `foci(conic((0, 0), (1, 1), (-1, 1), (2, 4), (-2, 4)), near(point(0, 0)))` → point (0, 1/4)
+  - `foci(circle((1, 2), (4, 6)))` → point (1, 2)
 
 ## Lines
 

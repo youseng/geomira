@@ -134,6 +134,36 @@ function diag(message: string, hint: string): SelectorDiagnostic {
 }
 
 /**
+ * other(…) names one known common point, or three on conic ∩ conic (ADR-0043): a form no shape
+ * of the call takes is reported with the form that applies.
+ */
+function otherChecks(
+  e: CallExpr,
+  show: () => string,
+  shapes: readonly BranchShape[],
+): SelectorDiagnostic[] {
+  const out: SelectorDiagnostic[] = [];
+  for (const sel of e.selectors) {
+    if (sel.kind !== 'other' || !shapes.some((s) => s.other)) continue;
+    const named = sel.rest === undefined ? 1 : 3;
+    const fits = shapes.some((s) => s.other && (s.candidates === 4 ? 3 : 1) === named);
+    if (fits) continue;
+    out.push(
+      named === 1
+        ? diag(
+            `${show()}: other(P) does not apply to conic ∩ conic`,
+            'name its three other common points, other(P, Q, R)',
+          )
+        : diag(
+            `${show()}: other(P, Q, R) applies only to conic ∩ conic`,
+            'name the other common point, other(P)',
+          ),
+    );
+  }
+  return out;
+}
+
+/**
  * The checks of a branchable call whose argument kinds are known. `show` gives the call's
  * text, formatted only when a diagnostic is reported (formatting every nested call eagerly
  * made the language's checks cubic in the nesting depth, Run 10 audit).
@@ -145,15 +175,17 @@ function branchChecks(
 ): SelectorDiagnostic[] {
   const out: SelectorDiagnostic[] = [];
   const kinds = e.selectors.map((s) => s.kind);
-  if (shapes.some((s) => s.candidates === 2) && kinds.length === 0) {
-    const two = shapes.filter((s) => s.candidates === 2).map((s) => s.describe);
+  if (shapes.some((s) => s.candidates > 1) && kinds.length === 0) {
+    const many = shapes.filter((s) => s.candidates > 1);
+    const four = many.some((s) => s.candidates === 4);
     out.push(
       diag(
-        `${show()}: ${[...new Set(two)].join(' or ')} can have two candidates and the call has no selector`,
-        `add a selector, e.g. other(P), near(P), same_side(Q, l)${lowHint(shapes)}`,
+        `${show()}: ${[...new Set(many.map((s) => s.describe))].join(' or ')} can have ${four ? 'up to four' : 'two'} candidates and the call has no selector`,
+        `add a selector, e.g. ${four ? 'other(P, Q, R)' : 'other(P)'}, near(P), same_side(Q, l)${lowHint(shapes)}`,
       ),
     );
   }
+  out.push(...otherChecks(e, show, shapes));
   for (const low of ['along', 'orient'] as const) {
     if (kinds.includes(low) && !shapes.some((s) => s.low === low)) {
       const use = lowHint(shapes);

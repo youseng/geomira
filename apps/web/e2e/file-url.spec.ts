@@ -212,3 +212,45 @@ test('What is special? from the file: the Euler line, and Add as claim', async (
   await expect(await textArea(page)).toHaveValue(/^claim collinear\([OHG], [OHG], [OHG]\)$/mu);
   expect(errors).toEqual([]);
 });
+
+test('conics and a projective image from the file, without Web Workers (Run 16c audit)', async ({
+  page,
+}) => {
+  // Run 16c's audit: the single file and the no-worker fallback with Run 16's kinds. Conic ∩
+  // circle, the foci, a conic's projective image, an SVG of them all, and a claim on the
+  // intersection tested on the page itself.
+  test.setTimeout(240_000);
+  await page.addInitScript(() => {
+    Reflect.deleteProperty(window, 'Worker');
+  });
+  const { errors } = await openSingle(page);
+  for (const line of [
+    'A = (2, 0)',
+    'B = (0, 1)',
+    'C = (-2, 0)',
+    'D = (0, -1)',
+    'E = (6/5, 4/5)',
+    'k = conic(A, B, C, D, E)',
+    'w = circle((0, 0), 3/2)',
+    'X = intersect(k, w, near((2, 1)))',
+    'F = foci(k, near((2, 0)))',
+    'f = projective((0, 0), (1, 0), (0, 1), (1, 1), (0, 0), (1, 0), (0, 1), (3/2, 3/2))',
+    'k_1 = apply(f, k)',
+    'claim on(X, k)',
+  ])
+    await command(page, line);
+  await page.getByRole('button', { name: 'Export', exact: true }).click();
+  await page.getByRole('button', { name: 'SVG', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Export' });
+  const svg = await dialog.getByLabel('Export content').inputValue();
+  for (const name of ['k', 'w', 'X', 'F', 'k_1']) expect(svg).toContain(`data-name="${name}"`);
+  await page.keyboard.press('Escape');
+  await tab(page, 'Claims');
+  await claimItem(page, 'claim').getByRole('button', { name: 'Test', exact: true }).click();
+  await expect(page.locator('.verdict[data-regime="local"] .verdict-line')).toHaveText(
+    /^Holds in this configuration \(local test, n = 200/u,
+    { timeout: 120_000 },
+  );
+  expect(await runner(page)).toBe('page');
+  expect(errors).toEqual([]);
+});

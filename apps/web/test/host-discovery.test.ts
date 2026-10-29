@@ -33,6 +33,13 @@ class FakeWorker implements WorkerLike {
 }
 
 /** Real time: each task's duration is measured (the page's budget is about wall time). */
+// A task counts the shorter of its wall time and its thread's CPU time (ADR-0044): under CPU load
+// the wall time also counts the time the machine gave other processes, which no slicer controls.
+const threadMs = (): number => {
+  const u = process.threadCpuUsage();
+  return (u.user + u.system) / 1000;
+};
+
 class TaskClock implements SliceClock {
   readonly tasks: (() => void)[] = [];
   readonly durations: number[] = [];
@@ -44,8 +51,10 @@ class TaskClock implements SliceClock {
     for (let i = 0; i < 1_000_000 && this.tasks.length > 0; i++) {
       const f = this.tasks.shift();
       const t0 = performance.now();
+      const c0 = threadMs();
       f?.();
-      this.durations.push(performance.now() - t0);
+      const wall = performance.now() - t0;
+      this.durations.push(Math.min(wall, threadMs() - c0));
     }
   }
 }

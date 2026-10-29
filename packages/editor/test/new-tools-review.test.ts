@@ -38,6 +38,6 @@ describe('the new tools, reviewed', () => {
       env,
     );
     expect(u.ok).toBe(false);
-    if (!u.ok) expect(u.reason).toBe('first curve: pick a line or circle');
+    if (!u.ok) expect(u.reason).toBe('first curve: pick a line, circle or conic');
   });
 });

@@ -46,12 +46,13 @@ function candidate(
   o: DocObject,
   values: ReadonlyMap<number, Value<number>>,
   unavailable: Unavailable[],
+  ctx: ToleranceContext,
 ): Candidate | undefined {
   const layer = drawingLayer(index, o);
   const style = effectiveStyle(index, o);
   if (layer === undefined || style.hidden === true) return undefined;
   const value = values.get(o.id) ?? NOT_EVALUATED;
-  const s = shapeOf(value);
+  const s = shapeOf(value, ctx);
   if (s.kind === 'none') return undefined;
   if (s.kind === 'unavailable') {
     const base = { id: o.id, name: o.name, reason: s.reason };
@@ -97,7 +98,7 @@ export function buildScene(doc: Document, values: ReadonlyMap<number, Value<numb
   const unavailable: Unavailable[] = [];
   const candidates: Candidate[] = [];
   for (const o of doc.objects) {
-    const c = candidate(index, o, values, unavailable);
+    const c = candidate(index, o, values, unavailable, ctx);
     if (c !== undefined) candidates.push(c);
   }
   const coincident = coincidentImages(index, candidates, ctx);

@@ -74,7 +74,7 @@ function callExclusion(
     );
     if (!r.ok) continue;
     if (r.signature.radical === true) return `${show(e)} needs a square root or trigonometry`;
-    if (r.signature.branch?.candidates === 2 && !hasOther)
+    if (r.signature.branch !== undefined && r.signature.branch.candidates > 1 && !hasOther)
       return `${show(e)} chooses between square-root candidates`;
   }
   return undefined;

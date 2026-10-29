@@ -63,7 +63,7 @@ describe('point creation', () => {
     let s = useTool(editorOf(FIG), 'glider');
     s = input(s, click(s, -3, 0));
     expect(defText(s, 'D')).toBe('on(l, -3/4)');
-    refused(s, click(s, 6, 5), 'click a line or a circle');
+    refused(s, click(s, 6, 5), 'click a line, a circle or a conic');
   });
 });
 

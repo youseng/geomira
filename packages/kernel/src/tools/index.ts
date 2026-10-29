@@ -12,6 +12,7 @@ import { ARITHMETIC_TOOLS } from './arithmetic';
 import { CIRCLE_MEASURE_TOOLS } from './circle-measures';
 import { CIRCLE_TOOLS, NINEPOINT_CENTER_TOOL } from './circles';
 import { CONIC_TOOLS } from './conics';
+import { FOCI_TOOLS } from './foci';
 import { CONJUGATE_TOOLS } from './conjugates';
 import { DISPLAY_TOOLS } from './display';
 import { FUNCTION_TOOLS } from './functions';
@@ -60,6 +61,7 @@ export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze(
     ...PROJECTIVE_TOOLS,
     ...HARMONIC_TOOLS,
     ...CONIC_TOOLS,
+    ...FOCI_TOOLS,
     ...CONIC_MAP_TOOLS,
   ]
     .map(withGuarantees)

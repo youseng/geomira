@@ -27,13 +27,13 @@ export const HYP = conic(pt(1, 1), pt(2, '1/2'), pt(-1, -1), pt(4, '1/4'), pt('1
 export const ELL = conic(pt(2, 0), pt(0, 1), pt(-2, 0), pt(0, -1), pt('6/5', '4/5'));
 export const PAR = conic(pt(0, 0), pt(1, 1), pt(-1, 1), pt(2, 4), pt(-2, 4));
 
-/** x² + 1e-8·y² − y = 0 (FloatField): ac − b² within the band of a parabola. */
+/** x² + 1e-9·y² − y = 0 (FloatField): its centre 5·10⁸ away, within the band of a parabola. */
 const NEAR_PAR = conic(
   pt(0, 0),
-  pt(Math.sqrt(1 - 1e-8), 1),
-  pt(-Math.sqrt(1 - 1e-8), 1),
-  pt(Math.sqrt(4 - 16e-8), 4),
-  pt(-Math.sqrt(4 - 16e-8), 4),
+  pt(Math.sqrt(1 - 1e-9), 1),
+  pt(-Math.sqrt(1 - 1e-9), 1),
+  pt(Math.sqrt(4 - 16e-9), 4),
+  pt(-Math.sqrt(4 - 16e-9), 4),
 );
 
 /** A circle given as a conic (the identity map's image of C5). */

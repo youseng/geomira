@@ -8,6 +8,7 @@
  * but checked so a hand-made value cannot slip through) is reported as unavailable.
  */
 import { assertNever } from '@geomira/num/assert';
+import type { ToleranceContext } from '@geomira/num/tolerance';
 import { atInfinityText } from '@geomira/kernel/ideal';
 import { isKnownKind, type Value } from '@geomira/kernel/value';
 import { conicShapeOf } from './conic-shape';
@@ -101,10 +102,11 @@ function segmentMarkShape(v: Extract<Value<number>, { kind: 'segment_mark' }>): 
 }
 
 /**
- * The shape of a value. Degenerate cases: see the module comment; a kind outside the Value
- * union → unavailable ("a … cannot be drawn").
+ * The shape of a value; `ctx` the document's tolerance context (a conic's type is decided at
+ * its scale; scale 1 when the caller has none). Degenerate cases: see the module comment; a
+ * kind outside the Value union → unavailable ("a … cannot be drawn").
  */
-export function shapeOf(v: Value<number>): ShapeResult {
+export function shapeOf(v: Value<number>, ctx: ToleranceContext = { scale: 1 }): ShapeResult {
   // A kind outside the Value union (a future or test-only kind, SPEC §18 E2) is not drawn.
   if (!isKnownKind(v)) return { kind: 'unavailable', reason: `a ${v.kind} cannot be drawn` };
   switch (v.kind) {
@@ -117,7 +119,7 @@ export function shapeOf(v: Value<number>): ShapeResult {
     case 'circle':
       return circleShape(v);
     case 'conic': {
-      const shape = conicShapeOf(v);
+      const shape = conicShapeOf(v, ctx);
       return shape === undefined ? NOT_FINITE : { kind: 'shape', shape };
     }
     case 'polygon':

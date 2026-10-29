@@ -190,12 +190,30 @@ function branches(
   if (fresh.length === 0)
     return refuse(state, 'every intersection of these curves is a point already');
   const defs: Expr[] = [];
+  const missed: string[] = [];
+  const notes: string[] = [];
   for (const at of fresh) {
     const ch = chooseSelectors(state.doc, state.values, env.registry, tool, args, at);
-    if (!ch.ok) return refuse(state, ch.reason);
-    defs.push(call(tool, args.map(ref), ch.selectors));
+    // Two candidates: every one must be singled out (as before); more (conic ∩ conic,
+    // ADR-0043): those that can be are built and the others named in the notice.
+    if (!ch.ok && cands.length <= 2) return refuse(state, ch.reason);
+    if (ch.ok) defs.push(call(tool, args.map(ref), ch.selectors));
+    else missed.push(ch.reason);
+    if (ch.ok && ch.note !== undefined) notes.push(ch.note);
   }
-  return addAll(state, defs, kind, env);
+  if (defs.length === 0) return refuse(state, missed[0] ?? 'nothing to build');
+  const r = addAll(state, defs, kind, env);
+  const said = [
+    ...(missed.length === 0
+      ? []
+      : [
+          `${String(defs.length)} of ${String(fresh.length)} intersections built; the others: ${missed[0] ?? ''}`,
+        ]),
+    ...notes.slice(0, 1),
+  ];
+  if (!r.ok || said.length === 0) return r;
+  const notice = said.join('; ');
+  return { ...r, notice: r.notice === undefined ? notice : `${notice}; ${r.notice}` };
 }
 
 function intersections(state: EditorState, picks: readonly number[], env: EditorEnv) {
@@ -205,7 +223,7 @@ function intersections(state: EditorState, picks: readonly number[], env: Editor
     return refuse(state, 'pick two curves');
   const r = env.registry.resolve('intersect', [va, vb]);
   if (!r.ok) return refuse(state, r.reason);
-  if (r.signature.branch?.candidates === 2)
+  if (r.signature.branch !== undefined && r.signature.branch.candidates > 1)
     return branches(state, 'intersect', [a, b], 'point', env);
   // One common point at most (two lines): parallel lines meet at their point at infinity
   // (ADR-0042, Run 16a's queue); lines that do not meet here (segments whose ranges miss) are

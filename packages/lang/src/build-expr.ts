@@ -36,6 +36,8 @@ export interface ExprEnv {
   gliderDefault(obj: Expr): readonly Expr[] | string;
   /** Names of objects (for "k is an object, not a tool"). */
   isObjectName(name: string): boolean;
+  /** The static kinds of an expression over the objects so far (undefined: unknown). */
+  kindsOf?(e: Expr): readonly string[] | undefined;
   readonly diags: Diagnostic[];
 }
 
@@ -190,6 +192,13 @@ function callExpr(
     return undefined;
   }
   let argExprs = args.filter((x): x is Expr => x !== undefined);
+  const lifted = liftOther(tool, argExprs, env);
+  if (lifted.args.length !== argExprs.length) {
+    const gone = argExprs[argExprs.length - 1];
+    const at = calls.findIndex((x) => x.call === gone);
+    if (at >= 0) calls.splice(at, 1);
+  }
+  argExprs = [...lifted.args];
   const first = argExprs[0];
   if (tool === 'on' && argExprs.length === 1 && sels.length === 0 && first !== undefined) {
     const d = env.gliderDefault(first);
@@ -199,13 +208,35 @@ function callExpr(
     }
     argExprs = [first, ...d];
   }
-  const c = call(
-    tool,
-    argExprs,
-    sels.filter((x): x is Selector => x !== undefined),
-  );
+  const c = call(tool, argExprs, [
+    ...lifted.selectors,
+    ...sels.filter((x): x is Selector => x !== undefined),
+  ]);
   calls.splice(site, 0, siteOf(c, n.span, spread));
   return c;
+}
+
+/**
+ * `other(P, Q, R)` written first among a branchable call's selectors reads as a call to the
+ * other TOOL (three arguments, parse-expr.ts); the tool takes a curve first, so a trailing such
+ * call whose first argument is statically a point is the selector (ADR-0043).
+ */
+function liftOther(
+  tool: string,
+  args: readonly Expr[],
+  env: ExprEnv,
+): { readonly args: readonly Expr[]; readonly selectors: readonly Selector[] } {
+  const last = args[args.length - 1];
+  if (env.registry.get(tool)?.candidates === undefined || last?.kind !== 'call')
+    return { args, selectors: [] };
+  const [p, q, r] = last.args;
+  if (last.tool !== 'other' || last.args.length !== 3 || last.selectors.length > 0)
+    return { args, selectors: [] };
+  if (p === undefined || q === undefined || r === undefined) return { args, selectors: [] };
+  const kinds = env.kindsOf?.(p);
+  if (kinds === undefined || kinds.length === 0 || kinds.some((k) => k !== 'point'))
+    return { args, selectors: [] };
+  return { args: args.slice(0, -1), selectors: [{ kind: 'other', p, rest: [q, r] }] };
 }
 
 /**

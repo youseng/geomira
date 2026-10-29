@@ -12,6 +12,8 @@
  *   3. along(±) (line ∩ circle) / orient(±) (two circles, tangent choices), which follow the
  *      candidate continuously until a tangency;
  *   4. near(P) only for a named point P incident (within BAND) with the clicked candidate.
+ * With more than two candidates (conic ∩ conic, ADR-0043) choice-many.ts applies the tiers for
+ * four: other(P, Q, R), one filter or two, near(P).
  * Every choice is verified by the kernel itself (the tool's compute with that selector must
  * give the clicked candidate), so no float shortcut here can write a wrong selector. Built on
  * the kernel's `candidates` (ADR-0006 item 2); orientation-dependent selectors (step 3) are
@@ -26,7 +28,8 @@ import { formatExpr, formatSelector, type EvaluatedSelector } from '@geomira/ker
 import type { Value, Vec } from '@geomira/kernel/value';
 import { FloatField } from '@geomira/num/float-field';
 import { pointsCoincide } from '@geomira/scene/coincide';
-import { arcOptions, side, sideOptions, type ChoiceCtx } from './options';
+import { arcOptions, side, sideOptions, type Choice, type ChoiceCtx } from './options';
+import { chooseAmong } from './choice-many';
 import { firmness, localResponses, type Values } from './robust';
 
 /**
@@ -37,9 +40,7 @@ export const ROBUST_SIGMAS = 5;
 
 type V = Vec<number>;
 
-export type Choice =
-  | { readonly ok: true; readonly selectors: readonly Selector[]; readonly tier: 1 | 2 | 3 | 4 }
-  | { readonly ok: false; readonly reason: string };
+export type { Choice };
 
 /** The object ids a selector built here refers to (all its expressions are references). */
 function selectorIds(s: Selector): number[] {
@@ -153,8 +154,12 @@ function clickedIndex(cands: readonly V[], click: V, from: V | undefined): numbe
     from === undefined
       ? Math.hypot(t.x - click.x, t.y - click.y)
       : Math.abs(side(from, { x: t.x - from.x, y: t.y - from.y }, click));
-  const [a, b] = cands;
-  return a !== undefined && b !== undefined && dist(b) < dist(a) ? 1 : 0;
+  let best = 0;
+  for (const [i, t] of cands.entries()) {
+    const b = cands[best];
+    if (b !== undefined && dist(t) < dist(b)) best = i;
+  }
+  return best;
 }
 
 /**
@@ -197,6 +202,8 @@ export function chooseSelectors(
     clicked,
   };
   const pts = pointIds(c);
+  // Up to four candidates (conic ∩ conic, ADR-0043): its own tiers (choice-many.ts).
+  if (cands.length > 2) return chooseAmong(c, pts, ROBUST_SIGMAS);
   const t1 = tier1(c, pts);
   if (t1 !== undefined) return { ok: true, selectors: [t1], tier: 1 };
   const t2 = tier2(c, pts);

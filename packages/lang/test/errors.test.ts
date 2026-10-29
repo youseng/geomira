@@ -68,7 +68,9 @@ describe('error paths of the builder (each statement with an error is left out)'
   });
 
   it('on(obj) without a parameter needs a line or a circle with a value', () => {
-    expect(firstError('A = (0, 0)\nP = on(A)').message).toBe('on(…) takes a line or a circle');
+    expect(firstError('A = (0, 0)\nP = on(A)').message).toBe(
+      'on(…) takes a line, a circle or a conic',
+    );
     expect(firstError('A = (0, 0)\nl = line(A, A)\nP = on(l)').message).toContain(
       "needs the object's value to choose one",
     );

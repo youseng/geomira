@@ -138,6 +138,16 @@ export const CONIC_B: readonly string[] = [
   `${K}/tools/conic-lines.ts`,
 ];
 
+/**
+ * Run 16c (ADR-0043): conic ∩ conic joins light shards (the frozen test keeps eleven kernel
+ * shards; the last nightly's times were kernel-f 3 and kernel-j 2 minutes): the pencil (the
+ * float candidates, most of its tests the conic ∩ conic laws) kernel-j; the type decision and
+ * the images computed around a known point (Run 16c's audit) kernel-f. The tools conic-conic.ts
+ * and foci.ts fall to the catch-all kernel-h with every other tool file.
+ */
+export const CONIC_J: readonly string[] = [`${K}/conic-pencil.ts`];
+export const CONIC_F: readonly string[] = [`${K}/conic-type.ts`, `${K}/conic-around.ts`];
+
 /** The entries whose file exists at this commit (a `file:a-b` entry by its file). */
 function present(files: readonly string[]): string[] {
   return files.filter((f) => existsSync(join(import.meta.dirname, '..', fileOf(f))));
@@ -200,7 +210,10 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     files: [`${K}/tools/points.ts`, `${K}/tools/triangle.ts`, ...present(SPREAD_E)],
     parent: 'kernel-3',
   },
-  { files: [`${K}/tools/circles.ts`, `${K}/tools/incircle.ts`], parent: 'kernel-3' },
+  {
+    files: [`${K}/tools/circles.ts`, `${K}/tools/incircle.ts`, ...present(CONIC_F)],
+    parent: 'kernel-3',
+  },
   {
     files: [
       `${K}/tools/measures.ts`,
@@ -214,7 +227,7 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     files: [`${K}/tools/lines.ts`, ...present(MOBIUS_I), ...present(PROJECTIVE_I)],
     parent: 'kernel-h',
   },
-  { files: [`${K}/tools/transforms.ts:133-265`], parent: 'kernel-b' },
+  { files: [`${K}/tools/transforms.ts:133-265`, ...present(CONIC_J)], parent: 'kernel-b' },
   {
     files: [`${K}/tools/transforms.ts:266-${String(OPEN_END)}`, ...present(MOBIUS_K)],
     parent: 'kernel-b',

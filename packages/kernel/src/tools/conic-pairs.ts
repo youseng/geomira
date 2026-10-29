@@ -17,11 +17,12 @@
  *   - other(P) by Vieta: t₁ = −β/α − t₀ (exact; α within EPS → the other point is at infinity).
  * Tangents from P: the touch points are the polar of P (g(P)·X + h = 0) ∩ the conic, the polar
  * taken through P − Q(P)/|g|²·g (the foot of P on it) with direction rot90(g); orient(+) is
- * cross(mid − P, T − P) > 0 (as for circles, where mid − P points to O), which for mid + s·u is
- * the sign of −Q(P); other(T): the other point of the polar by Vieta.
+ * cross(mid − P, T − P) > 0 (as for circles, where mid − P points to O), decided on the sign of
+ * cross(mid − P, d) (Run 16c audit: the sign of Q(P) was used, which gave the opposite labels);
+ * other(T): the other point of the polar by Vieta.
  */
 import { isInexact, type Field, type FieldSign, type Inexact } from '@geomira/num/field';
-import { signNormalized, two, vAdd, vDot, vRot90, vScale, vSub } from '../geom';
+import { signNormalized, two, vAdd, vCross, vDot, vRot90, vScale, vSub } from '../geom';
 import {
   coeffsOf,
   conicProblem,
@@ -258,8 +259,9 @@ export function conicTangentPair<T>(
     return m.reason.startsWith('ambiguous')
       ? m
       : undef(`${tool}(P, k): P lies on an asymptote, so one touch point is at infinity`);
-  const qp = qValue(F, q, P);
-  const flip = F.kind !== 'modp' && F.toNumber(qp) > 0;
+  // orient(+) is the touch point T with cross(mid − P, T − P) > 0 (ADR-0042 decision 8): mid + k·d
+  // gets side +1, so the sides flip when cross(mid − P, d) < 0 (never 0: P is off the polar).
+  const flip = F.kind !== 'modp' && F.toNumber(vCross(F, vSub(F, m.mid, P), polar.d)) < 0;
   return {
     shape,
     noun: tool === 'tangent_point' ? 'touch point' : 'tangent',
@@ -278,4 +280,28 @@ export function conicTangentPair<T>(
     },
     output: (X): Value<T> => (tool === 'tangent_point' ? asPoint(X) : conicTangentAt(F, k, X)),
   };
+}
+
+/**
+ * The finite common points of the full line p + t·d with the conic q, by decision 7 of ADR-0042
+ * (for conic ∩ conic, ADR-0043 decision 7): two points; one double point (`double`: the gap
+ * within the band); one point (an asymptotic direction); none (the line misses the conic, or is
+ * an asymptote). Degenerate cases: a decision inside the band of an asymptotic direction →
+ * Undefined (ambiguous); square roots not representable → Inexact.
+ */
+export function lineConicMeet<T>(
+  F: Field<T>,
+  q: Coeffs<T>,
+  p: Vec<T>,
+  d: Vec<T>,
+  ctx: EvalContext,
+): { readonly points: readonly Vec<T>[]; readonly double: boolean } | Undefined | Inexact {
+  const m = meet(F, q, p, d, ctx);
+  if (m.kind === 'undefined')
+    return m.reason.startsWith('ambiguous') ? m : { points: [], double: false };
+  if (m.kind === 'one') return { points: [m.at], double: false };
+  const n = countTwo(F, q, m, ctx, 'misses');
+  if (typeof n !== 'number') return { points: [], double: false };
+  const list = midOff(F, n, m.mid, m.rad, d, false);
+  return isInexact(list) ? list : { points: list.map((c) => c.at), double: n === 1 };
 }

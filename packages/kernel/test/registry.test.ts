@@ -107,6 +107,7 @@ describe('createRegistry', () => {
       'harmonic_conjugate',
       'conic',
       'conic_center',
+      'foci',
       'conic_to_circle',
       'circle_to_centre',
     ]);

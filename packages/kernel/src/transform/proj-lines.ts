@@ -16,7 +16,8 @@
  *   - an intermediate beyond the double range (floats) → Inexact.
  * Chirality: kept (N is the image of d by the derivative).
  */
-import type { Field, Inexact } from '@geomira/num/field';
+import { isInexact, type Field, type Inexact } from '@geomira/num/field';
+import { fromNumber } from '@geomira/num/rational';
 import { vAdd, vDot, vScale } from '../geom';
 import type { EvalContext } from '../tool';
 import { undef, type Line, type Undefined, type Value, type Vec } from '../value';
@@ -41,6 +42,25 @@ interface Frame<T> {
   readonly D: Hom<T>;
   readonly N: Vec<T>;
   readonly NN: T;
+}
+
+/**
+ * The frame with N scaled by a power of two k (NN by k²) so that |N| is within a factor √2 of
+ * the figure's scale, as line(A, B)'s direction is: the range is decided on σ as a
+ * dimensionless number (range.ts), and P × D has an arbitrary length (Run 16c audit: about 10⁴
+ * at figure size 5). Every image point base + σ·N is unchanged (σ scales by 1/k); exact in
+ * floats and over Q. Mod p (no order, no range decisions) and a length that is not a finite
+ * positive double: unchanged. Only a range is scaled: a full line has no range decision, and
+ * its mod p value must reduce the exact one coefficient by coefficient (L3).
+ */
+function atScale<T>(F: Field<T>, f: Frame<T>, ctx: EvalContext): Frame<T> {
+  if (F.kind === 'modp') return f;
+  const n = Math.sqrt(F.toNumber(f.NN));
+  const k2 = 2 ** Math.round(Math.log2(ctx.scale / n));
+  if (!(n > 0) || !Number.isFinite(k2) || !(k2 > 0)) return f;
+  const k = F.fromRational(fromNumber(k2));
+  if (isInexact(k)) return f;
+  return { ...f, N: vScale(F, f.N, k), NN: F.mul(f.NN, F.mul(k, k)) };
 }
 
 /** σ(t) for a finite t off ℓ. */
@@ -128,9 +148,11 @@ export function projLine<T>(
   const c = F.sub(F.mul(P[0], D[1]), F.mul(P[1], D[0]));
   const NN = F.add(F.mul(a, a), F.mul(b, b));
   if (!finiteIn(F, [a, b, c, NN]) || F.eq(NN, F.zero)) return BEYOND;
-  const N = { x: b, y: F.neg(a) };
   const base = vScale(F, { x: a, y: b }, F.div(F.neg(c), NN));
-  const r = rangeImage(F, m, l, { P, D, N, NN }, ctx);
+  const raw = { P, D, N: { x: b, y: F.neg(a) }, NN };
+  const frame = projRange(l) === 'full' ? raw : atScale(F, raw, ctx);
+  const N = frame.N;
+  const r = rangeImage(F, m, l, frame, ctx);
   if ('kind' in r) return r;
   const line: Line<T> = { kind: 'line', p: base, d: N, lo: null, hi: null, chiral: l.chiral };
   return { ...line, ...r };

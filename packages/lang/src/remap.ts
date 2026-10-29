@@ -48,6 +48,9 @@ function mapSelector(s: Selector, f: (id: number) => number): Selector {
     case 'outside':
       return { kind: s.kind, c: m(s.c) };
     case 'other':
+      return s.rest === undefined
+        ? { kind: 'other', p: m(s.p) }
+        : { kind: 'other', p: m(s.p), rest: [m(s.rest[0]), m(s.rest[1])] };
     case 'near':
     case 'far_from':
       return { kind: s.kind, p: m(s.p) };

@@ -8,6 +8,9 @@
  */
 import { assertNever } from '@geomira/num/assert';
 import { inexact, isInexact, type Field, type FieldSign, type Inexact } from '@geomira/num/field';
+import { parabolaSign } from './conic-type';
+
+export { parabolaSign };
 import { signNormalized, two, vDot } from './geom';
 import type { EvalContext } from './tool';
 import { adj3, det3, mul3, mulHom, type Hom, type Mat3 } from './transform/projective';
@@ -94,7 +97,7 @@ export function poleOf<T>(F: Field<T>, q: Coeffs<T>, u: Hom<T>): Hom<T> {
 }
 
 /** Whether every number is a finite double (always true outside FloatField). */
-function finite<T>(F: Field<T>, xs: readonly T[]): boolean {
+export function finite<T>(F: Field<T>, xs: readonly T[]): boolean {
   return F.kind !== 'float' || xs.every((x) => Number.isFinite(F.toNumber(x)));
 }
 
@@ -216,16 +219,16 @@ export function conicProblem<T>(
 export type ConicType = 'ellipse' | 'parabola' | 'hyperbola';
 
 /**
- * The type, derived from ac − b² over a² + 2b² + c² (dimensionless) with the band: a parabola
- * within EPS; within the band → Undefined (ambiguous); mod p → Inexact (no order).
+ * The type, derived from the sign of ac − b² (conic-type.ts: in floats a parabola when the
+ * centre is at infinity for the figure, ADR-0044); within the band → Undefined (ambiguous);
+ * mod p → Inexact (no order).
  */
 export function conicType<T>(
   F: Field<T>,
   k: Conic<T>,
   ctx: EvalContext,
 ): ConicType | Undefined | Inexact {
-  const q = coeffsOf(k);
-  const s = F.sign(F.div(delta(F, q), quadNorm(F, q)), 'dimensionless', ctx);
+  const s = parabolaSign(F, coeffsOf(k), ctx);
   switch (s) {
     case 1:
       return 'ellipse';

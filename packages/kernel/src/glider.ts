@@ -150,7 +150,8 @@ export function gliderPoint<T>(
     return p.form === 'stereo'
       ? conicGliderPoint(F, obj, p.u, p.v, ctx)
       : undef('a glider on a conic takes (u : v)');
-  if (obj.kind !== 'circle') return undef(`a glider needs a line or a circle, not ${obj.kind}`);
+  if (obj.kind !== 'circle')
+    return undef(`a glider needs a line, a circle or a conic, not ${obj.kind}`);
   const bad = degenerateCircle(F, obj, ctx);
   if (bad !== undefined) return bad;
   const X = circlePoint(F, obj, p, ctx);
@@ -210,7 +211,8 @@ function checked<T>(
       ? (degenerateLine(F, obj, ctx) ?? obj)
       : undef('a glider on a line takes one parameter t');
   }
-  if (obj.kind !== 'circle') return undef(`a glider needs a line or a circle, not ${obj.kind}`);
+  if (obj.kind !== 'circle')
+    return undef(`a glider needs a line, a circle or a conic, not ${obj.kind}`);
   if (form === 'line') return undef('a glider on a circle takes (u : v) or an angle');
   return degenerateCircle(F, obj, ctx) ?? obj;
 }

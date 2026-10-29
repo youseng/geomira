@@ -23,6 +23,7 @@ import { MOBIUS_PROPERTIES } from './helpers/mobius-properties';
 import { SYMMEDIAN_POINT_PROPERTIES } from './helpers/symmedian-point-properties';
 import { PROJECTIVE_PROPERTIES } from './helpers/projective-properties';
 import { CONIC_PROPERTIES } from './helpers/conic-properties';
+import { CONIC_CONIC_PROPERTIES } from './helpers/conic-conic-properties';
 
 interface Property {
   readonly tools: readonly string[];
@@ -290,6 +291,7 @@ const PROPERTIES: readonly Property[] = [
   ...SYMMEDIAN_POINT_PROPERTIES,
   ...PROJECTIVE_PROPERTIES,
   ...CONIC_PROPERTIES,
+  ...CONIC_CONIC_PROPERTIES,
   {
     tools: ['add', 'sub', 'mul', 'div', 'neg'],
     name: 'arithmetic: a − b = a + (−b), (a·b)/b = a, exact values carried',

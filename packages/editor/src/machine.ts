@@ -37,7 +37,7 @@ const HIT_KINDS: Readonly<Record<PickKind, readonly string[]>> = Object.freeze({
   line: ['line'],
   circle: ['circle'],
   oval: ['circle', 'conic'],
-  // A conic is a curve too (ADR-0042); the words stay "line or circle".
+  // A conic is a curve too (ADR-0042); the words name it (ADR-0044).
   curve: ['line', 'circle', 'conic'],
   figure: ['point', 'line', 'circle', 'polygon'],
   mirror: ['point', 'line'],
@@ -50,7 +50,7 @@ const PICK_WORDS: Readonly<Record<PickKind, string>> = Object.freeze({
   line: 'line',
   circle: 'circle',
   oval: 'circle or conic',
-  curve: 'line or circle',
+  curve: 'line, circle or conic',
   figure: 'point, line, circle or polygon',
   mirror: 'line or point',
   transform: 'transform',
@@ -106,7 +106,7 @@ function addGlider(state: EditorState, curve: number, at: Vec<number>, env: Edit
 }
 
 /**
- * The glider tool: a point on the line or circle under the click (never on a point that is
+ * The glider tool: a point on the line, circle or conic under the click (never on a point that is
  * there already), or on a polygon's side, its segment(A, B) (an existing one, or a new one
  * as its own edit, ADR-0024 item 8).
  */
@@ -126,7 +126,7 @@ function gliderClick(
   const at = v.kind === 'on' ? v.world : input.world;
   if (curve !== undefined) return withTool(addGlider(state, curve, at, env), reset(state));
   const side = polygonSide(state, input.hit, input.world);
-  if (side === undefined) return refuse(state, 'click a line or a circle');
+  if (side === undefined) return refuse(state, 'click a line, a circle or a conic');
   const made = sideObject(state, side, env);
   if (!made.ok || made.id === undefined) return refuse(state, 'the side could not be made');
   const r = addGlider(made.state, made.id, at, env);

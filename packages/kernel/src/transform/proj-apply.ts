@@ -32,6 +32,7 @@ import {
   type Vec,
 } from '../value';
 import { circleCoeffs, coeffsOf, mapConicBy, type Coeffs } from '../conic';
+import { mapConicAround } from '../conic-around';
 import { det3, homOf, mulHom, type Mat3 } from './projective';
 import { projLine } from './proj-lines';
 import {
@@ -137,7 +138,8 @@ function projConic<T>(
   ctx: EvalContext,
 ): Value<T> {
   const a = anchor === undefined ? undefined : projPosition(F, m, anchor, ctx);
-  return mapConicBy(F, q, m, a === undefined || 'kind' in a ? undefined : a);
+  if (anchor === undefined || a === undefined || 'kind' in a) return mapConicBy(F, q, m, undefined);
+  return mapConicAround(F, q, m, anchor, a);
 }
 
 /** The image of any value under the projective map p (valid). */

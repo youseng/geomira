@@ -12,6 +12,7 @@ import { FloatField } from '@geomira/num/float-field';
 import { fromInteger, rational } from '@geomira/num/rational';
 import { evalContextFor } from '@geomira/kernel/context';
 import { evaluate } from '@geomira/kernel/evaluate';
+import { exprKinds, objectKinds } from '@geomira/kernel/derived';
 import { error, type Span } from './diagnostic';
 import type { ExprEnv } from './build-expr';
 import type { State } from './build-state';
@@ -94,7 +95,7 @@ function gliderDefault(st: State, obj: Expr): readonly Expr[] | string {
     case 'text':
     case 'string':
     case undefined:
-      return 'on(…) takes a line or a circle';
+      return 'on(…) takes a line, a circle or a conic';
     default:
       return assertNever(v, 'value');
   }
@@ -110,6 +111,7 @@ export function exprEnv(st: State): ExprEnv {
     },
     gliderDefault: (obj) => gliderDefault(st, obj),
     isObjectName: (name) => st.ids.has(name) || st.defLines.has(name),
+    kindsOf: (e) => exprKinds(e, objectKinds(st.doc, st.registry), st.registry),
     diags: st.diags,
   };
 }

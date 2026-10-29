@@ -200,7 +200,7 @@ function parseCall(c: Cursor): ExprNode | undefined {
   const selectors: SelectorNode[] = [];
   if (!isPunct(c, ')')) {
     for (;;) {
-      const sel = selectorAhead(c);
+      const sel = selectorAhead(c, selectors.length > 0);
       if (sel) {
         const s = parseSelector(c);
         if (s === undefined) return undefined;
@@ -239,13 +239,16 @@ function parseArg(c: Cursor): ExprNode | undefined {
 /**
  * Whether a selector starts here: a selector name followed by "(". `other(P)` (one
  * argument) is the ranker; `other(a, b, P)` is the tool, so `other` counts as a selector
- * only when its parentheses hold exactly one argument.
+ * only when its parentheses hold exactly one argument, or when it follows a selector (no
+ * argument may follow one): `other(P, Q, R)` on conic ∩ conic (ADR-0043). Written first among
+ * the selectors, three-point `other` reads as a call here and becomes the selector when the
+ * call is built (build-expr.ts), where the kinds of its arguments are known.
  */
-function selectorAhead(c: Cursor): boolean {
+function selectorAhead(c: Cursor, afterSelector: boolean): boolean {
   const t = peek(c);
   if (t?.kind !== 'name' || !isPunct(c, '(', 1) || selectorSyntax(t.value) === undefined)
     return false;
-  if (t.value !== 'other') return true;
+  if (t.value !== 'other' || afterSelector) return true;
   let depth = 0;
   for (let k = c.i + 1; k < c.tokens.length; k++) {
     const u = c.tokens[k];
@@ -257,6 +260,21 @@ function selectorAhead(c: Cursor): boolean {
     } else if (u.value === ',' && depth === 1) return false;
   }
   return true;
+}
+
+/** The number of tokens of the first argument of a selector (up to its comma or ")"). */
+function otherWidth(c: Cursor): number {
+  let depth = 0;
+  for (let k = c.i; k < c.tokens.length; k++) {
+    const u = c.tokens[k];
+    if (u?.kind !== 'punct') continue;
+    if (u.value === '(' || u.value === '[') depth += 1;
+    else if (u.value === ')' || u.value === ']') {
+      if (depth === 0) return k - c.i;
+      depth -= 1;
+    } else if (u.value === ',' && depth === 0) return k - c.i;
+  }
+  return 0;
 }
 
 function parseSelector(c: Cursor): SelectorNode | undefined {
@@ -282,7 +300,9 @@ function parseSelector(c: Cursor): SelectorNode | undefined {
   }
   const args: ExprNode[] = [];
   let not = false;
-  for (let k = 0; k < syntax.arity; k++) {
+  // other(P) or, on conic ∩ conic, other(P, Q, R) (ADR-0043).
+  const arity = syntax.kind === 'other' && isPunct(c, ',', otherWidth(c)) ? 3 : syntax.arity;
+  for (let k = 0; k < arity; k++) {
     if (k > 0 && expect(c, ',', syntax.usage) === undefined) return undefined;
     if (
       syntax.kind === 'on_arc' &&
@@ -299,7 +319,7 @@ function parseSelector(c: Cursor): SelectorNode | undefined {
     args.push(a);
   }
   if (
-    expect(c, ')', `${head.value} takes ${String(syntax.arity)} argument(s): ${syntax.usage}`) ===
+    expect(c, ')', `${head.value} takes ${String(arity)} argument(s): ${syntax.usage}`) ===
     undefined
   )
     return undefined;

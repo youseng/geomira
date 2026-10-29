@@ -20,7 +20,8 @@ branch-fix diagnosis. Run 16a (ADR-0040): points at infinity (`IdealPoint`), pro
 `harmonic_conjugate`). Run 16b (ADR-0042): conics (`Conic`, `conic(A, B, C, D, E)`,
 `conic_center`, the conic overloads of tangent, polar, pole, the tangents from a point, line ∩
 conic and gliders, maps on conics, `conic_to_circle` and `circle_to_centre` for derived layers,
-the claims on, tangent and `conconic`); conic ∩ conic and foci are Run 16c's.
+the claims on, tangent and `conconic`). Run 16c (ADR-0043): conic ∩ conic and conic ∩ circle
+(up to four candidates, `other(P, Q, R)`), `foci(k)`.
 Phase 2 (must not be referenced by v1 code; the extension points in §18 are built and
 tested in v1): (inversion and Möbius maps moved to Run 14 by ADR-0032, projective maps to
 Run 16a by ADR-0040, conics to Run 16b by ADR-0042), the symbolic
@@ -71,8 +72,10 @@ from `createRegistry()`, passed as a parameter, never a singleton; tests may bui
   every discrete decision identical (guaranteed by the bands).
 - Conics (ADR-0042) are decided with the same constants on normalised quantities: incidence on
   Q(P)/|∇Q(P)| as a length; the degeneracy of a conic on its semi-latus rectum
-  √(|det M|/(a² + 2b² + c²)^{3/2}) as a length; its type and asymptotic directions on
-  dimensionless ratios (ac − b² and dᵀM₂d over a² + 2b² + c², the latter times |d|²).
+  √(|det M|/(a² + 2b² + c²)^{3/2}) as a length; its type on the sign of ac − b², a parabola
+  when its centre is at infinity for the figure (the scale over its largest real semi-axis as a
+  dimensionless number, ADR-0044); its asymptotic directions on dᵀM₂d over a² + 2b² + c², times
+  |d|² (dimensionless).
 
 ### 3.2 Seeded RNG (rng.ts)
 Explicit seed objects, no global state; every random procedure takes and reports a seed.
@@ -194,7 +197,9 @@ v1.1 tools (Run 13): `spiral_center`, `isogonal`, `symmedian`, `pole`,
 `sqrt_bc2` (compositions of the tools above). Run 16a (ADR-0040): `projective(A,B,C,D,A′,B′,C′,D′)`,
 `send_to_infinity(l)` (the stated chart of ADR-0040 decision 12), `harmonic_conjugate(A,B,C)` and
 `harmonic_conjugate(a,b,c)`; `intersect` of two parallel full lines is their ideal point, and
-`line(P, X∞)` is the parallel through P.
+`line(P, X∞)` is the parallel through P. Run 16c (ADR-0043): `intersect(k1, k2, selectors)` of two
+conics or a conic and a circle (up to four candidates; `other(P, Q, R)` gives the fourth exactly),
+`foci(k, selectors)` (an ellipse's or hyperbola's two foci, a parabola's focus, a circle's centre).
 
 ### 6.3 Degenerate behaviour (each item is a test)
 Parallel / coincident lines → Undefined; coincident defining points → Undefined;
@@ -204,12 +209,15 @@ Undefined; transform of Undefined → Undefined. Bisector of a straight angle �
 perpendicular at B; of a zero angle → that line; ext_bisector correspondingly.
 
 ## 7. Branch selection
-Branchable tools produce a candidate list (0–2 values). Selectors (applied in order):
+Branchable tools produce a candidate list (0–2 values; 0–4 for conic ∩ conic and conic ∩ circle,
+ADR-0043). Selectors (applied in order):
 - Filters: `same_side(Q, l)`, `opposite_side(Q, l)`, `on_arc(B, C, [not] A)`,
   `between(A, B)`, `inside(c)`, `outside(c)`.
 - Rankers: `other(P)` (P must lie on both objects within BAND; picks the candidate
   farther from P; both candidates within BAND of P → the double point), `near(P)`,
-  `far_from(P)`.
+  `far_from(P)` (the nearest / farthest of any number of candidates; a tie with the runner-up
+  within BAND → ambiguous). On conic ∩ conic `other(P, Q, R)` (three distinct common points)
+  gives the fourth common point without square roots (ADR-0043).
 - Low-level: `along(+)` / `along(−)` (line ∩ curve: the candidate further / less far
   along the line's direction d); `orient(+)` / `orient(−)` (circle ∩ circle: sign of
   cross(c2 − c1, P − c1); tangent choices: sign of cross(O − P, T − P)). Shown with a
@@ -227,7 +235,9 @@ GUI choice (packages/editor) when the user clicks a candidate, in this order, ta
 first kind that singles it out (within a kind, the largest decision margin):
 `other(P)` for an existing P at the other candidate → `same_side`/`opposite_side`/
 `on_arc` with points from the construction → `along(±)` / `orient(±)` → `near(P)` only
-for a named point incident (within BAND) with the clicked candidate.
+for a named point incident (within BAND) with the clicked candidate. With four candidates
+(ADR-0043): `other(P, Q, R)` with points at the three others → one filter, else two filters whose
+kept candidates meet in the clicked one → `near(P)`; conic ∩ conic has no low-level selector.
 
 ## 8. Transformations, layers, views
 ### 8.1 Transformations

@@ -3,7 +3,9 @@
  * rounding is refused when any of them changes kind (a selector flipped, an object became
  * undefined) or moves by more than DEPENDENT_PX on screen.
  */
-import type { Value, Vec } from '@geomira/kernel/value';
+import { coeffsOf, halfGradient, qDirection, qValue } from '@geomira/kernel/conic';
+import type { Conic, Line, Value, Vec } from '@geomira/kernel/value';
+import { FloatField } from '@geomira/num/float-field';
 import { positionOf } from './drag';
 
 /**
@@ -17,7 +19,60 @@ function lineDistance(p: Vec<number>, d: Vec<number>, q: Vec<number>): number {
   return Math.abs((q.x - p.x) * d.y - (q.y - p.y) * d.x) / Math.hypot(d.x, d.y);
 }
 
-/** Whether `b` is `a` moved by at most `px` on screen (lines: 100 px of `a` stay on b). */
+/** A range's ends as points (null: unbounded on that side). */
+function ends(l: Line<number>): readonly (Vec<number> | null)[] {
+  const at = (t: number | null) =>
+    t === null ? null : { x: l.p.x + t * l.d.x, y: l.p.y + t * l.d.y };
+  return [at(l.lo), at(l.hi)];
+}
+
+/** Whether the two ranges have the same kind of ends, each moved by at most tol. */
+function sameRange(a: Line<number>, b: Line<number>, tol: number): boolean {
+  if ((a.outside === true) !== (b.outside === true)) return false;
+  const eb = ends(b);
+  return ends(a).every((p, i) => {
+    const q = eb[i] ?? null;
+    if (p === null || q === null) return p === null && q === null;
+    return Math.hypot(p.x - q.x, p.y - q.y) <= tol;
+  });
+}
+
+const DIRECTIONS: readonly Vec<number>[] = [
+  { x: 1, y: 0 },
+  { x: 0, y: 1 },
+  { x: 1, y: 1 },
+  { x: 1, y: -1 },
+];
+
+/** k's known point and the second points of the lines through it in DIRECTIONS (Vieta). */
+function samples(k: Conic<number>): Vec<number>[] {
+  const A = k.anchor;
+  if (A === undefined) return [];
+  const q = coeffsOf(k);
+  const g = halfGradient(FloatField, q, A);
+  const out = [A];
+  for (const w of DIRECTIONS) {
+    const t = (-2 * (g.x * w.x + g.y * w.y)) / qDirection(FloatField, q, w);
+    const X = { x: A.x + t * w.x, y: A.y + t * w.y };
+    if (Number.isFinite(X.x) && Number.isFinite(X.y)) out.push(X);
+  }
+  return out;
+}
+
+/** Every sample of `from` within tol of `to` (to first order, |Q|/|∇Q|). */
+function samplesOn(from: Conic<number>, to: Conic<number>, tol: number): boolean {
+  const q = coeffsOf(to);
+  return samples(from).every((X) => {
+    const g = halfGradient(FloatField, q, X);
+    return Math.abs(qValue(FloatField, q, X)) <= 2 * Math.hypot(g.x, g.y) * tol;
+  });
+}
+
+/**
+ * Whether `b` is `a` moved by at most `px` on screen (lines: 100 px of `a` stay on b, and a
+ * range's ends move by at most px; conics: sample points of each stay on the other, Run 16c
+ * audit; a conic without a known point: its kind only).
+ */
 function staysPut(a: Value<number>, b: Value<number>, zoom: number, px: number): boolean {
   const tol = px / zoom;
   if (a.kind === 'point' || a.kind === 'text') {
@@ -31,8 +86,13 @@ function staysPut(a: Value<number>, b: Value<number>, zoom: number, px: number):
   if (a.kind === 'line' && b.kind === 'line') {
     const n = Math.hypot(a.d.x, a.d.y);
     const far = { x: a.p.x + (a.d.x / n) * 100 * tol, y: a.p.y + (a.d.y / n) * 100 * tol };
-    return lineDistance(b.p, b.d, a.p) <= tol && lineDistance(b.p, b.d, far) <= tol;
+    return (
+      lineDistance(b.p, b.d, a.p) <= tol &&
+      lineDistance(b.p, b.d, far) <= tol &&
+      sameRange(a, b, tol)
+    );
   }
+  if (a.kind === 'conic' && b.kind === 'conic') return samplesOn(a, b, tol) && samplesOn(b, a, tol);
   return a.kind === b.kind;
 }
 

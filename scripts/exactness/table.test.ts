@@ -46,8 +46,8 @@ describe('the generated exactness table', () => {
     const row = (name: string) => exactnessRows(registry).find((r) => r.tool === name);
     expect(row('intersect')).toMatchObject({
       exactRun: 'can succeed',
-      exactExamples: 4,
-      examples: 5,
+      exactExamples: 5,
+      examples: 7,
     });
     expect(row('intersect')?.otherwise).toBe('inexact: √(2) is not rational');
     for (const t of ['tangent_point', 'tangent_from']) {

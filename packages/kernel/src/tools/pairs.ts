@@ -56,26 +56,35 @@ export interface Curve<T> {
 }
 
 export interface Other<T> {
-  readonly curves: readonly [Curve<T>, Curve<T>];
+  /** How many known common points other(…) names: 1 (other(P)), or 3 for conic ∩ conic (ADR-0043). */
+  readonly arity?: 1 | 3;
+  readonly curves: readonly Curve<T>[];
+  /** Instead of `curves`: why P is not a point other(P) may name (foci: P a focus), or undefined. */
+  check?(P: Vec<T>): Undefined | undefined;
   /**
-   * The other common point given P on both curves (exact), or why it is not on the ranges
-   * of a segment or ray.
+   * The other common point given P (and Q, R when the arity is 3) on both curves (exact), or
+   * why it is not on the ranges of a segment or ray.
    */
-  point(P: Vec<T>): Vec<T> | Undefined | Inexact;
+  point(P: Vec<T>, Q?: Vec<T>, R?: Vec<T>): Vec<T> | Undefined | Inexact;
 }
+
+/** How many candidates a pair has (four for conic ∩ conic, ADR-0043). */
+export type Count = 1 | 2 | 3 | 4;
 
 export interface Pair<T> {
   readonly shape: BranchShape;
   /** What a candidate is called in messages: "intersection", "touch point", "tangent". */
   readonly noun: string;
+  /** Its plural when it is not noun + "s" ("foci"). */
+  readonly plural?: string;
   readonly low: Low<T>;
   /**
    * A segment, ray or arc takes part in a two-candidate pair: list() must run before
    * counting.
    */
   readonly ranged?: boolean;
-  count(): 1 | 2 | Undefined | Inexact;
-  list(n: 1 | 2): readonly Cand<T>[] | Undefined | Inexact;
+  count(): Count | Undefined | Inexact;
+  list(n: Count): readonly Cand<T>[] | Undefined | Inexact;
   /** other(P): the curves P must lie on, in the call's order, and the other point. */
   readonly other?: Other<T>;
   output(X: Vec<T>): Value<T>;
@@ -116,7 +125,7 @@ function plusMinus<T>(F: Field<T>, mid: Vec<T>, off: Vec<T>, flip: boolean): Can
  */
 export function midOff<T>(
   F: Field<T>,
-  n: 1 | 2,
+  n: Count,
   mid: Vec<T>,
   rad: T,
   dir: Vec<T>,

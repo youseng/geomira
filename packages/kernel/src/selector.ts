@@ -109,6 +109,9 @@ export function formatSelector(s: Selector, show: (e: Expr) => string): string {
     case 'outside':
       return `${s.kind}(${show(s.c)})`;
     case 'other':
+      return s.rest === undefined
+        ? `other(${show(s.p)})`
+        : `other(${[s.p, ...s.rest].map(show).join(', ')})`;
     case 'near':
     case 'far_from':
       return `${s.kind}(${show(s.p)})`;
