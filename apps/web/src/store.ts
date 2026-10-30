@@ -9,6 +9,7 @@
 import { useSyncExternalStore } from 'react';
 import type { Origin } from '@geomira/editor/autosave';
 import { runCommand, type CommandResult } from '@geomira/editor/command';
+import { runClaimText } from '@geomira/editor/claim-bar';
 import { applyEdit, type Edit } from '@geomira/editor/edit';
 import { toolInput, type ToolInput } from '@geomira/editor/machine';
 import type { EditResult } from '@geomira/editor/result';
@@ -151,6 +152,19 @@ export class EditorStore {
     const s = this.current();
     try {
       const r = runCommand(s, line, this.env);
+      if (r.kind === 'edit') this.commit(r.result, s);
+      return r;
+    } catch (e) {
+      this.onInternal(errorText(e));
+      return undefined;
+    }
+  }
+
+  /** Runs the claim box's text (ADR-0051); its errors are returned, with columns of the box. */
+  claim(text: string): CommandResult | undefined {
+    const s = this.current();
+    try {
+      const r = runClaimText(s, text, this.env);
       if (r.kind === 'edit') this.commit(r.result, s);
       return r;
     } catch (e) {

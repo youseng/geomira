@@ -26,7 +26,8 @@ import { done, refuse, type EditResult } from './result';
 import { localResponses } from './robust';
 import type { EditorEnv, EditorState } from './state';
 import { idleTool, type ToolState } from './tool-state';
-import type { ToolUI } from './tool-ui';
+import { claimArgs } from './claim-tool';
+import type { ToolUI, ToolValue } from './tool-ui';
 
 /** The idle tool after a build: no picks; the claim kind and the typed number stay. */
 export function reset(state: EditorState): ToolState {
@@ -294,11 +295,10 @@ function tangentStays(state: EditorState, p: number, c: number, env: EditorEnv):
 }
 
 /** The tool's typed number as an exact literal, or why it is not one. */
-function typedValue(tool: ToolUI, text: string): Expr | string {
+function typedValue(value: ToolValue, text: string): Expr | string {
   const t = text.trim().replace(/°$/u, '');
   const r = parseRational(t);
-  if (tool.value === undefined) return 'this tool takes no number';
-  return r.ok ? lit(r.value, t) : `${tool.value.label}: ${r.reason}`;
+  return r.ok ? lit(r.value, t) : `${value.label}: ${r.reason}`;
 }
 
 function callBuild(
@@ -310,7 +310,8 @@ function callBuild(
 ): EditResult {
   const first = state.doc.objects.find((o) => o.id === picks[0])?.name;
   const wanted = conventionalName(b.prefer, first);
-  const value = tool.value === undefined ? undefined : typedValue(tool, state.toolState.value);
+  const value =
+    tool.value === undefined ? undefined : typedValue(tool.value, state.toolState.value);
   if (typeof value === 'string') return refuse(state, value);
   const args = [...picks.map(ref), ...(value === undefined ? [] : [value])];
   // A map tool that builds the map alone (reflect(l)) names it as a transformation.
@@ -324,6 +325,7 @@ export function build(
   tool: ToolUI,
   picks: readonly number[],
   env: EditorEnv,
+  groups: readonly (readonly number[])[] = picks.map((id) => [id]),
 ): EditResult {
   const b = tool.build;
   switch (b.kind) {
@@ -332,7 +334,10 @@ export function build(
     case 'call':
       return withTool(callBuild(state, tool, b, picks, env), reset(state));
     case 'claim': {
-      const claim = { kind: state.toolState.claimKind, args: picks.map(ref) };
+      const ts = state.toolState;
+      const args = claimArgs(ts.claimKind, groups, ts.value);
+      if (typeof args === 'string') return refuse(state, args);
+      const claim = { kind: ts.claimKind, args };
       return withTool(applyEdit(state, { kind: 'addClaim', claim }, env), reset(state));
     }
     case 'derivedLayer': {

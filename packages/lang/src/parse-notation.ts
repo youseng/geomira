@@ -25,7 +25,7 @@ import {
   type Cursor,
 } from './cursor';
 import { parseExpr, parseUnary } from './parse-expr';
-import { geomdrawClaim } from './parse-geomdraw';
+import { geomdrawClaim, geomdrawProblem } from './parse-geomdraw';
 import { crossRatioClaim } from './parse-cross-ratio';
 import { TOOL_ALIASES } from './geomdraw';
 
@@ -299,6 +299,7 @@ export function parseClaim(c: Cursor): Condition | undefined {
   if (call !== undefined || c.diags.length > 0) return call;
   const infix = geomdrawClaim(c);
   if (infix !== undefined) return infix;
+  if (geomdrawProblem(c)) return undefined;
   const l = parseSide(c);
   if (l === undefined) return undefined;
   const eq = peek(c);

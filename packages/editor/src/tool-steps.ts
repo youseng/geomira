@@ -1,39 +1,20 @@
 /**
  * The steps of a GUI tool (tools.ts) and which of them the next pick may fill: the claim
- * tool's come from its claim kind; an order-free tool (ToolUI.anyOrder, ADR-0024, and the
- * claim tool for a kind whose steps differ in kind) may fill any step it has not filled yet.
+ * tool's come from its claim kind (claim-tool.ts); an order-free tool (ToolUI.anyOrder,
+ * ADR-0024, and the claim tool for a kind whose steps differ in kind) may fill any step it has
+ * not filled yet. A claim tool's line step may be filled by two points (ADR-0051): the slot is
+ * then in ToolState.pairs, and after its first point the next pick is its second point.
  */
-import { CLAIM_KINDS } from '@geomira/claims/kinds';
-import type { ClaimParam } from '@geomira/claims/kind';
+import { claimSteps, REPEATING_CLAIM_KINDS, secondPointStep } from './claim-tool';
 import type { ToolState } from './tool-state';
-import type { PickKind, ToolStep, ToolUI } from './tool-ui';
+import type { ToolStep, ToolUI } from './tool-ui';
 
-const OBJECT_PARAMS: readonly ClaimParam[] = ['point', 'line', 'circle', 'curve'];
-
-/** Claim kinds the claim tool offers: those whose parameters are all objects. */
-export function claimToolKinds(): string[] {
-  const objects = (p: ClaimParam) => OBJECT_PARAMS.includes(p);
-  return CLAIM_KINDS.filter(
-    (k) => k.params.every(objects) && (k.rest === undefined || objects(k.rest)),
-  ).map((k) => k.name);
-}
-
-/**
- * Claim kinds whose points come in groups that may share points (two angles, four segments):
- * the claim tool may pick a point twice for them, angle_eq(B, A, I, I, A, C) or
- * ratio(A, B, A, C, …), as the ratio and spiral tools may (ToolUI.repeats). Every other kind
- * refuses a repeated pick: its arguments must differ (collinear(A, A, B) is degenerate).
- */
-export const REPEATING_CLAIM_KINDS: readonly string[] = Object.freeze(['angle_eq', 'ratio']);
+export { claimToolKinds, REPEATING_CLAIM_KINDS, toolValue, typedKey } from './claim-tool';
 
 /** Whether the next pick may name an object picked before. */
 export function mayRepeat(tool: ToolUI, ts: ToolState): boolean {
   if (tool.build.kind === 'claim') return REPEATING_CLAIM_KINDS.includes(ts.claimKind);
   return tool.repeats === true;
-}
-
-function pickOfParam(p: ClaimParam): PickKind {
-  return p === 'point' || p === 'line' || p === 'circle' ? p : 'curve';
 }
 
 /**
@@ -46,11 +27,36 @@ export function stepsOf(
 ): { steps: readonly ToolStep[]; rest?: ToolStep } {
   if (tool.map === true && ts.mapOnly === true) return { steps: tool.steps.slice(1) };
   if (tool.build.kind !== 'claim') return tool;
-  const k = CLAIM_KINDS.find((x) => x.name === ts.claimKind);
-  if (k === undefined || !claimToolKinds().includes(k.name)) return { steps: [] };
-  const step = (p: ClaimParam): ToolStep => ({ pick: pickOfParam(p), prompt: `${k.name}: ${p}` });
-  const steps = k.params.map(step);
-  return k.rest === undefined ? { steps } : { steps, rest: step(k.rest) };
+  return claimSteps(ts.claimKind);
+}
+
+/** The number of picks in slot `slot`. */
+function fill(ts: ToolState, slot: number): number {
+  return ts.slots.filter((s) => s === slot).length;
+}
+
+/** The slot of a line given by two points that has its first point only, or undefined. */
+export function pendingPair(ts: ToolState): number | undefined {
+  return (ts.pairs ?? []).find((slot) => fill(ts, slot) === 1);
+}
+
+/** The number of steps filled completely (a slot of two points counts once). */
+export function filledSteps(ts: ToolState): number {
+  const pending = pendingPair(ts);
+  return new Set(ts.slots.filter((s) => s !== pending)).size;
+}
+
+/** The picks grouped by step, in the order of the steps (a two-point line is one group). */
+export function pickGroups(
+  picks: readonly number[],
+  slots: readonly number[],
+): (readonly number[])[] {
+  const bySlot = new Map<number, number[]>();
+  picks.forEach((id, i) => {
+    const slot = slots[i] ?? i;
+    bySlot.set(slot, [...(bySlot.get(slot) ?? []), id]);
+  });
+  return [...bySlot.entries()].sort((a, b) => a[0] - b[0]).map(([, ids]) => ids);
 }
 
 /**
@@ -70,14 +76,17 @@ export interface OpenStep {
 }
 
 /**
- * The steps the next pick may fill: for an order-free tool every step not filled yet, in the
- * tool's order; otherwise the next step (or the rest step), alone.
+ * The steps the next pick may fill: the second point of a line given by two points, alone;
+ * for an order-free tool every step not filled yet, in the tool's order; otherwise the next
+ * step (or the rest step), alone.
  */
 export function openSteps(tool: ToolUI, ts: ToolState): OpenStep[] {
+  const pending = pendingPair(ts);
+  if (pending !== undefined) return [{ index: pending, step: secondPointStep(ts.claimKind) }];
   const { steps, rest } = stepsOf(tool, ts);
   if (orderFree(tool, steps, rest))
     return steps.flatMap((step, index) => (ts.slots.includes(index) ? [] : [{ index, step }]));
-  const index = ts.picks.length;
+  const index = filledSteps(ts);
   const step = steps[index] ?? rest;
   return step === undefined ? [] : [{ index, step }];
 }

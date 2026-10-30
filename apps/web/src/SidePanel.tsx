@@ -1,3 +1,4 @@
+import type { ClaimBoxHost } from './ClaimBox';
 import { memo, useRef, type RefObject } from 'react';
 import type { EditorState } from '@geomira/editor/state';
 import { assertNever } from '@geomira/num/assert';
@@ -32,14 +33,14 @@ export interface SidePanelProps {
   /** On a phone: whether the drawer is open. */
   readonly open: boolean;
   readonly onClose: () => void;
-  readonly onTestClaim: (text: string) => boolean;
+  readonly claimBox: ClaimBoxHost;
   /** Opens an object's style card (a right-click on its row; ADR-0029). Stable. */
   readonly onStyle: (id: number, anchor: Box) => void;
 }
 
 type BodyProps = Pick<
   SidePanelProps,
-  'tab' | 'store' | 'state' | 'runs' | 'discovery' | 'onTestClaim' | 'undrawable' | 'onStyle'
+  'tab' | 'store' | 'state' | 'runs' | 'discovery' | 'claimBox' | 'undrawable' | 'onStyle'
 > & {
   readonly coincident: number;
   readonly kept: RefObject<TextDraft | null>;
@@ -52,7 +53,7 @@ const Body = memo(function Body({
   state,
   runs,
   discovery,
-  onTestClaim,
+  claimBox,
   coincident,
   kept,
   undrawable,
@@ -72,7 +73,7 @@ const Body = memo(function Body({
           state={state}
           runs={runs}
           discovery={discovery}
-          onTestClaim={onTestClaim}
+          claimBox={claimBox}
         />
       );
     case 'Help':
@@ -91,7 +92,7 @@ const Body = memo(function Body({
  */
 export function SidePanel(props: SidePanelProps) {
   const { store, scene, runs, discovery, tab, onTab, open, onClose } = props;
-  const { onTestClaim, undrawable, onStyle } = props;
+  const { claimBox, undrawable, onStyle } = props;
   const state = useSettled(props.state);
   const kept = useRef<TextDraft>(null);
   return (
@@ -122,7 +123,7 @@ export function SidePanel(props: SidePanelProps) {
           state={state}
           runs={runs}
           discovery={discovery}
-          onTestClaim={onTestClaim}
+          claimBox={claimBox}
           coincident={scene.coincident.length}
           kept={kept}
           undrawable={undrawable}

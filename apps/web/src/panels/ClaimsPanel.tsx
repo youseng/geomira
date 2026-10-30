@@ -7,7 +7,7 @@ import {
   type HypothesisRow,
 } from '@geomira/editor/panels';
 import type { EditorState } from '@geomira/editor/state';
-import { ClaimBox } from '../Header';
+import { ClaimBox, type ClaimBoxHost } from '../ClaimBox';
 import { MathText } from '../MathText';
 import { claimStatement } from '../Stage';
 import type { EditorStore } from '../store';
@@ -22,7 +22,7 @@ export interface ClaimsPanelProps {
   readonly state: EditorState;
   readonly runs: TestRuns;
   readonly discovery: DiscoveryRuns;
-  readonly onTestClaim: (text: string) => boolean;
+  readonly claimBox: ClaimBoxHost;
 }
 
 /** The pill of a claim in the current figure (three-valued, SPEC §10.2). */
@@ -171,7 +171,7 @@ function Claim(props: ClaimProps) {
  * Test and Test globally, and the verdict lines (SPEC §10.5 wording) with their monospace
  * detail; results for an earlier figure are greyed and offer Re-test.
  */
-export function ClaimsPanel({ store, state, runs, discovery, onTestClaim }: ClaimsPanelProps) {
+export function ClaimsPanel({ store, state, runs, discovery, claimBox }: ClaimsPanelProps) {
   const deferred = useDeferredValue(state);
   const claims = useMemo(() => claimRows(deferred, store.env), [deferred, store]);
   const hyps = useMemo(() => hypothesisRows(deferred, store.env), [deferred, store]);
@@ -179,7 +179,7 @@ export function ClaimsPanel({ store, state, runs, discovery, onTestClaim }: Clai
   const explains = hyps.some((h) => h.status !== 'holds');
   return (
     <div className="claims">
-      <ClaimBox label="New claim" className="claimbox" onTestClaim={onTestClaim} />
+      <ClaimBox label="New claim" className="claimbox" host={claimBox} />
       {claims.length === 0 && hyps.length === 0 && (
         <p className="empty">
           No claims yet. Type one above, use the Claim tool, or a line such as “claim collinear(A,

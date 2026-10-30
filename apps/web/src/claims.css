@@ -219,3 +219,50 @@
   color: var(--muted);
   margin: 4px 0;
 }
+
+/* The claim box's forms, suggestions and what it could not read, under the box (ADR-0051). */
+.claim-box {
+  position: relative;
+}
+
+.claim-suggestions,
+.claim-feedback {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  z-index: 60;
+  margin: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  min-width: min(340px, calc(100vw - 40px));
+  max-width: min(560px, 92vw);
+  max-height: 300px;
+  overflow: auto;
+  padding: 4px;
+  list-style: none;
+}
+
+.claim-suggestions li {
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.claim-suggestions li[aria-selected='true'] {
+  background: var(--accent-soft);
+}
+
+.claim-feedback {
+  color: var(--bad);
+  padding: 6px 10px;
+  font-size: 12.5px;
+}
+
+.claim-feedback p {
+  margin: 0;
+}
