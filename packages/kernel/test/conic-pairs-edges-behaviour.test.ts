@@ -7,6 +7,7 @@
  * is; lineConicMeet reports a single point in an asymptotic direction as simple, and two
  * points in the carrier's direction.
  */
+import type { Field } from '@geomira/num/field';
 import { FloatField } from '@geomira/num/float-field';
 import { RationalField } from '@geomira/num/rational-field';
 import { describe, expect, it } from 'vitest';
@@ -26,7 +27,7 @@ const BAD = call('conic', [pt(0, 0), pt(1, 0), pt(2, 0), pt(0, 1), pt(0, 2)]);
 
 describe('line ∩ conic: decisions on the normalized coefficients', () => {
   it('a line through two points 10⁻⁵ apart meets the ellipse twice (α is tiny, not zero)', () => {
-    for (const Fd of [F, RationalField] as const)
+    for (const Fd of [F, RationalField] as Field<unknown>[])
       expect(
         plain(
           Fd,
@@ -38,7 +39,7 @@ describe('line ∩ conic: decisions on the normalized coefficients', () => {
   it('parallel to an asymptote, a short direction: one point (β is tiny, not zero)', () => {
     // x = 1/10000 is parallel to the asymptote x = 0 of xy = 1: one point, (1/10000, 10000).
     const l = line(pt('1/10000', 0), pt('1/10000', '1/1000000'));
-    for (const Fd of [F, RationalField] as const)
+    for (const Fd of [F, RationalField] as Field<unknown>[])
       expect(plain(Fd, choose(Fd, 'intersect', [l, HYP]))).toEqual([
         expect.closeTo(0.0001, 12),
         expect.closeTo(10000, 6),
@@ -48,7 +49,7 @@ describe('line ∩ conic: decisions on the normalized coefficients', () => {
 
 describe('line ∩ conic: ranges and refusals', () => {
   it('a ray or a segment holding one candidate needs no selector; a full line does', () => {
-    for (const Fd of [F, RationalField] as const) {
+    for (const Fd of [F, RationalField] as Field<unknown>[]) {
       expect(plain(Fd, choose(Fd, 'intersect', [call('ray', [pt(0, 0), pt(1, 0)]), ELL]))).toEqual([
         2, 0,
       ]);
@@ -65,7 +66,7 @@ describe('line ∩ conic: ranges and refusals', () => {
   });
 
   it('an invalid conic with a valid line is refused, in either order', () => {
-    for (const Fd of [F, RationalField] as const) {
+    for (const Fd of [F, RationalField] as Field<unknown>[]) {
       const r = reason(choose(Fd, 'intersect', [line(pt(0, 0), pt(1, 1)), BAD], [near(pt(0, 0))]));
       expect(r).toMatch(/^undefined: /u);
       expect(r).not.toMatch(/intersection/u);
@@ -77,7 +78,7 @@ describe('line ∩ conic: ranges and refusals', () => {
 
   it('other(P) names the curve P is not on', () => {
     const l = line(pt(-2, 0), pt(2, 0));
-    const sel: Selector = { kind: 'other', p: pt(1, 0), rest: [] };
+    const sel: Selector = { kind: 'other', p: pt(1, 0) };
     expect(reason(choose(F, 'intersect', [l, ELL], [sel]))).toBe(
       'undefined: other(point(1, 0)) needs the point on the conic',
     );
@@ -110,10 +111,10 @@ describe('the tangents from P to a conic', () => {
   it('other(X) names the curve X is not on: the conic, or the chord of contact', () => {
     const P = pt(0, 3);
     // (2, 0) is on the ellipse but not on the polar of (0, 3) (y = 1/3); (1, 1/3) the reverse.
-    expect(reason(tp(P, [{ kind: 'other', p: pt(2, 0), rest: [] }]))).toBe(
+    expect(reason(tp(P, [{ kind: 'other', p: pt(2, 0) }]))).toBe(
       'undefined: other(point(2, 0)) needs the point on the polar of P (the chord of contact)',
     );
-    expect(reason(tp(P, [{ kind: 'other', p: pt(1, '1/3'), rest: [] }]))).toBe(
+    expect(reason(tp(P, [{ kind: 'other', p: pt(1, '1/3') }]))).toBe(
       'undefined: other(point(1, 1/3)) needs the point on the conic',
     );
   });
