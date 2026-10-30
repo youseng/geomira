@@ -5,6 +5,7 @@
  */
 import type { ToolId } from './tool-state';
 import type { NamePreference } from './conventional-names';
+import type { Description } from './descriptive-names';
 import type { NameKind } from './names';
 
 export type PickKind =
@@ -34,6 +35,8 @@ export type Build =
       readonly name: NameKind;
       /** The conventional name, used when free (conventional-names.ts). */
       readonly prefer?: NamePreference;
+      /** The name from the picked points (descriptive-names.ts, ADR-0050), after `prefer`. */
+      readonly describe?: Description;
     }
   /** intersect(a, b, …): every intersection not yet a point, each with the GUI selector choice. */
   | { readonly kind: 'intersection' }
@@ -110,6 +113,11 @@ export function anyOrder(t: ToolUI): ToolUI {
 /** A map tool (ToolUI.map): its first step is the object to map. */
 export function mapTool(t: ToolUI): ToolUI {
   return { ...t, map: true };
+}
+
+/** `call` named from its picked points (ADR-0050: line(A, C) is l_AC). */
+export function described(t: ToolUI, describe: Description): ToolUI {
+  return t.build.kind === 'call' ? { ...t, build: { ...t.build, describe } } : t;
 }
 
 /** `call` with a number typed in the tool's field, written last (rotate(X, O, 60)). */

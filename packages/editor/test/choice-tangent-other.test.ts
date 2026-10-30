@@ -13,7 +13,7 @@ describe('tier 1 (other(P)) for tangent_from', () => {
     s = useTool(s, 'tangent');
     s = input(s, { kind: 'object', id: idOf(s, 'P') });
     s = input(s, { kind: 'object', id: idOf(s, 'c') });
-    const tangents = s.doc.objects.filter((o) => o.name.startsWith('l')).map((o) => o.name);
+    const tangents = s.doc.objects.filter((o) => o.name.startsWith('t')).map((o) => o.name);
     expect(tangents).toHaveLength(2);
     for (const n of tangents) expect(defText(s, n)).not.toContain('other(Q)');
     s = edit(s, { kind: 'dragStart', id: idOf(s, 'P') });

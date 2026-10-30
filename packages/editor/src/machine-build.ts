@@ -8,7 +8,7 @@
 import type { DocumentEdit } from './edit';
 import { sameConstruction } from '@geomira/kernel/construction-key';
 import { exprKinds, objectKinds } from '@geomira/kernel/derived';
-import type { DocObject } from '@geomira/kernel/document';
+import type { DocObject, Document } from '@geomira/kernel/document';
 import { call, lit, ref, type Expr } from '@geomira/kernel/expr';
 import { onConicSign } from '@geomira/kernel/conic';
 import { requireOnCircle } from '@geomira/kernel/incidence';
@@ -21,6 +21,7 @@ import { pointsCoincide } from '@geomira/scene/coincide';
 import { chooseSelectors } from './choice';
 import { applyEdit } from './edit';
 import { conventionalName, preferredName } from './conventional-names';
+import { descriptiveName, wantedName, type Description } from './descriptive-names';
 import { freshName, type NameKind } from './names';
 import { done, refuse, type EditResult } from './result';
 import { localResponses } from './robust';
@@ -123,6 +124,7 @@ function addAll(
   defs: readonly Expr[],
   kind: NameKind,
   env: EditorEnv,
+  want: (doc: Document) => string | undefined = () => undefined,
 ): EditResult {
   const edits: DocumentEdit[] = [];
   const reused: DocObject[] = [];
@@ -134,7 +136,7 @@ function addAll(
       if (old && !reused.includes(same)) reused.push(same);
       continue;
     }
-    const e = addEdit(probe, def, kind, env);
+    const e = addEdit(probe, def, kind, env, want(probe.doc));
     const r = applyEdit(probe, e, env);
     if (!r.ok) return refuse(state, r.reason);
     probe = r.state;
@@ -202,7 +204,9 @@ function branches(
     if (ch.ok && ch.note !== undefined) notes.push(ch.note);
   }
   if (defs.length === 0) return refuse(state, missed[0] ?? 'nothing to build');
-  const r = addAll(state, defs, kind, env);
+  const r = addAll(state, defs, kind, env, (doc) =>
+    tool === 'tangent_from' ? descriptiveName(doc, TANGENT, [nameOf(state, args[0])]) : undefined,
+  );
   const said = [
     ...(missed.length === 0
       ? []
@@ -252,6 +256,13 @@ function atInfinity(state: EditorState, a: number, b: number, env: EditorEnv): E
   };
 }
 
+/** The tangent at A, and the tangents from A, are t_A (ADR-0050). */
+const TANGENT: Description = { prefix: 't', picks: 'first' };
+
+function nameOf(state: EditorState, id: number | undefined): string | undefined {
+  return state.doc.objects.find((o) => o.id === id)?.name;
+}
+
 function tangent(state: EditorState, picks: readonly number[], env: EditorEnv): EditResult {
   const [p, c] = picks;
   const [P, C] = [state.values.values.get(p ?? -1), state.values.values.get(c ?? -1)];
@@ -273,7 +284,8 @@ function tangent(state: EditorState, picks: readonly number[], env: EditorEnv): 
         `the figure moves (put the point on the ${C.kind} with "Point on object" first)`,
     );
   }
-  return add(state, call('tangent', [ref(p), ref(c)]), 'line', env);
+  const wanted = descriptiveName(state.doc, TANGENT, [nameOf(state, p)]);
+  return add(state, call('tangent', [ref(p), ref(c)]), 'line', env, wanted);
 }
 
 /**
@@ -308,8 +320,9 @@ function callBuild(
   picks: readonly number[],
   env: EditorEnv,
 ): EditResult {
-  const first = state.doc.objects.find((o) => o.id === picks[0])?.name;
-  const wanted = conventionalName(b.prefer, first);
+  const names = picks.map((id) => nameOf(state, id));
+  const conventional = conventionalName(b.prefer, names[0]);
+  const wanted = wantedName(state.doc, conventional, b.describe, names);
   const value = tool.value === undefined ? undefined : typedValue(tool, state.toolState.value);
   if (typeof value === 'string') return refuse(state, value);
   const args = [...picks.map(ref), ...(value === undefined ? [] : [value])];

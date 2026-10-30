@@ -50,7 +50,7 @@ test('a perpendicular from a vertex to a side: the side clicked first, then the 
   );
   await clickWorld(page, 2, 0);
   await clickWorld(page, 1, 3);
-  await expectLines(page, 'l = segment(A, B)', 'l_1 = perp(C, l)');
+  await expectLines(page, 's_AB = segment(A, B)', 'l_C = perp(C, s_AB)');
 });
 
 test('rotate takes the angle typed in its field', async ({ page }) => {
