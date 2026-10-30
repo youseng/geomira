@@ -13,7 +13,8 @@ import { RationalField } from '@geomira/num/rational-field';
 import { describe, expect, it } from 'vitest';
 import type { Coeffs } from '../src/conic';
 import { call, type Expr, type Selector } from '../src/expr';
-import { lineConicMeet } from '../src/tools/conic-pairs';
+import { lineConicMeet, lineConicPair } from '../src/tools/conic-pairs';
+import type { Conic, Line } from '../src/value';
 import { plain, reason } from './helpers/degenerate';
 import { choose } from './helpers/degenerate-branch';
 import { ELL, HYP } from './helpers/degenerate-conics';
@@ -74,6 +75,22 @@ describe('line ∩ conic: ranges and refusals', () => {
         reason(choose(Fd, 'intersect', [BAD, line(pt(0, 0), pt(1, 1))], [near(pt(0, 0))])),
       ).toBe(r);
     }
+    // A hand-built conic value that is a pair of lines (xy = 0), with a valid line.
+    const lines: Conic<number> = { kind: 'conic', a: 0, b: 0.5, c: 0, d: 0, e: 0, f: 0 };
+    const l: Line<number> = {
+      kind: 'line',
+      p: { x: 0, y: 1 },
+      d: { x: 1, y: 1 },
+      lo: null,
+      hi: null,
+      chiral: false,
+    };
+    for (const first of [true, false]) {
+      const pair = lineConicPair(F, l, lines, { scale: 4 }, first);
+      expect('kind' in pair ? pair.reason : 'a pair').toBe(
+        'degenerate conic: a pair of lines, a double line or a point',
+      );
+    }
   });
 
   it('other(P) names the curve P is not on', () => {
@@ -89,18 +106,25 @@ describe('line ∩ conic: ranges and refusals', () => {
 });
 
 describe('the tangents from P to a conic', () => {
-  const tp = (P: Expr, sels: Selector[]) => choose(F, 'tangent_point', [P, ELL], sels);
+  const tp = (P: Expr, sels: Selector[], k: Expr = ELL) => choose(F, 'tangent_point', [P, k], sels);
 
   it('orient(+) is the touch point on the left of P → mid, from every side', () => {
-    for (const [x, y] of [
-      [0, 3],
-      [0, -3],
-      [5, 0],
-      [-5, 0],
-      [3, 2],
-      [-3, -2],
+    for (const [x, y, k] of [
+      [0, 3, ELL],
+      [0, -3, ELL],
+      [5, 0, ELL],
+      [-5, 0, ELL],
+      [3, 2, ELL],
+      [-3, -2, ELL],
+      // xy = 1 from points between its branches and beyond them.
+      [1, -1, HYP],
+      [-1, 1, HYP],
+      [2, -3, HYP],
+      [0.5, 0.5, HYP],
+      [-0.5, -0.5, HYP],
     ] as const) {
-      const [plus, minus] = [tp(pt(x, y), [orient(1)]), tp(pt(x, y), [orient(-1)])];
+      const P = pt(x, y);
+      const [plus, minus] = [tp(P, [orient(1)], k), tp(P, [orient(-1)], k)];
       if (plus.kind !== 'point' || minus.kind !== 'point') throw new Error(reason(plus));
       const mid = { x: (plus.x + minus.x) / 2, y: (plus.y + minus.y) / 2 };
       const cross = (mid.x - x) * (plus.y - y) - (mid.y - y) * (plus.x - x);

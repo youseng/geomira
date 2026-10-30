@@ -84,6 +84,14 @@ describe('values with no image', () => {
       expect(why(applyProjective(F, proj(F, M), poly, CTX))).toBe(
         'undefined: apply: a side of the polygon passes through infinity, so it has no image',
       );
+      // Every vertex on ℓ (a flat polygon on y = 1): the same.
+      const flat: Value<unknown> = {
+        kind: 'polygon',
+        pts: [vec(F, 0, 1), vec(F, 2, 1), vec(F, -1, 1)],
+      };
+      expect(why(applyProjective(F, proj(F, M), flat, CTX))).toBe(
+        'undefined: apply: a side of the polygon passes through infinity, so it has no image',
+      );
     }
   });
 });
@@ -139,6 +147,10 @@ describe('affine maps', () => {
       // W is −1 everywhere: every position is on its negative side.
       expect(positionSide(F, mat(F, NEG), vec(F, 5, -7), CTX)).toBe(-1);
       expect(positionSide(F, mat(F, SHIFT), vec(F, 5, -7), CTX)).toBe(1);
+      // The same map scaled by 10⁻¹²: W is tiny but exactly non-zero, never "on ℓ".
+      const tiny = NEG.map((x) => x * 1e-12);
+      expect(positionSide(F, mat(F, tiny), vec(F, 5, -7), CTX)).toBe(-1);
+      expect(applyProjective(F, proj(F, tiny), mark, CTX).kind).toBe('angle_mark');
     }
   });
 
