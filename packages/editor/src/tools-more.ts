@@ -6,7 +6,17 @@
  * follow Geomdraw's where it has one (E second intersection, D circle on a diameter, R
  * rotate, Z homothety); the others take a Shift letter (shown ⇧X).
  */
-import { anyOrder, C, call, mapTool, P, withValue, type ToolStep, type ToolUI } from './tool-ui';
+import {
+  anyOrder,
+  C,
+  call,
+  described,
+  mapTool,
+  P,
+  withValue,
+  type ToolStep,
+  type ToolUI,
+} from './tool-ui';
 
 const FIGURE = (prompt: string): ToolStep => ({ pick: 'figure', prompt });
 
@@ -59,14 +69,17 @@ export const RADICAL_AXIS: ToolUI = call(
 );
 
 export const CIRCLE_RADIUS: ToolUI = withValue(
-  call(
-    'circle_radius',
-    'Circle (center, radius)',
-    'C',
-    'circle',
-    'circle',
-    [P('center')],
-    'The circle with a center and the radius typed in the tool’s field.',
+  described(
+    call(
+      'circle_radius',
+      'Circle (center, radius)',
+      'C',
+      'circle',
+      'circle',
+      [P('center')],
+      'The circle with a center and the radius typed in the tool’s field.',
+    ),
+    { prefix: 'c', picks: 'first' },
   ),
   'Radius',
   '1',

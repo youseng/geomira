@@ -15,7 +15,7 @@
  * circle) take them in either order (`anyOrder`), as Geomdraw's did.
  */
 import type { ToolId } from './tool-state';
-import { anyOrder, call, L, mapTool, OVAL, P, type ToolUI } from './tool-ui';
+import { anyOrder, call, described, L, mapTool, OVAL, P, type ToolUI } from './tool-ui';
 import { CENTER_TOOLS, TRIANGLE_CIRCLE_TOOLS } from './tools-centers';
 import {
   CIRCLE_RADIUS,
@@ -84,53 +84,68 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     [P('first point'), P('second point')],
     'The midpoint of two points.',
   ),
-  call(
-    'line',
-    'Line',
-    'l',
-    'line',
-    'line',
-    [P('first point'), P('second point')],
-    'The line through two points.',
+  described(
+    call(
+      'line',
+      'Line',
+      'l',
+      'line',
+      'line',
+      [P('first point'), P('second point')],
+      'The line through two points.',
+    ),
+    { prefix: 'l', picks: 'all' },
   ),
-  call(
-    'segment',
-    'Segment',
-    's',
-    'segment',
-    'line',
-    [P('first end'), P('second end')],
-    'The segment between two points.',
+  described(
+    call(
+      'segment',
+      'Segment',
+      's',
+      'segment',
+      'line',
+      [P('first end'), P('second end')],
+      'The segment between two points.',
+    ),
+    { prefix: 's', picks: 'all' },
   ),
-  call(
-    'ray',
-    'Ray',
-    'L',
-    'ray',
-    'line',
-    [P('start'), P('a point it passes through')],
-    'The ray from a point through another.',
+  described(
+    call(
+      'ray',
+      'Ray',
+      'L',
+      'ray',
+      'line',
+      [P('start'), P('a point it passes through')],
+      'The ray from a point through another.',
+    ),
+    { prefix: 'r', picks: 'all' },
   ),
   anyOrder(
-    call(
-      'parallel',
-      'Parallel',
-      'h',
-      'parallel',
-      'line',
-      [P('point'), L('line')],
-      'The parallel to a line through a point (click them in either order).',
+    described(
+      call(
+        'parallel',
+        'Parallel',
+        'h',
+        'parallel',
+        'line',
+        [P('point'), L('line')],
+        'The parallel to a line through a point (click them in either order).',
+      ),
+      { prefix: 'l', picks: 'first' },
     ),
   ),
   anyOrder(
-    call(
-      'perpendicular',
-      'Perpendicular',
-      'j',
-      'perp',
-      'line',
-      [P('point'), L('line')],
-      'The perpendicular to a line through a point (click them in either order).',
+    described(
+      call(
+        'perpendicular',
+        'Perpendicular',
+        'j',
+        'perp',
+        'line',
+        [P('point'), L('line')],
+        'The perpendicular to a line through a point (click them in either order).',
+      ),
+      { prefix: 'l', picks: 'first' },
     ),
   ),
   call(
@@ -154,24 +169,30 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
   EXT_BISECTOR,
   SYMMEDIAN_TOOL,
   SYMMEDIAN_POINT_TOOL,
-  call(
-    'circle',
-    'Circle (center, point)',
-    'c',
-    'circle',
-    'circle',
-    [P('center'), P('point on the circle')],
-    'The circle with a center through a point.',
+  described(
+    call(
+      'circle',
+      'Circle (center, point)',
+      'c',
+      'circle',
+      'circle',
+      [P('center'), P('point on the circle')],
+      'The circle with a center through a point.',
+    ),
+    { prefix: 'c', picks: 'first' },
   ),
   CIRCLE_RADIUS,
-  call(
-    'circle3',
-    'Circle (3 points)',
-    'k',
-    'circle',
-    'circle',
-    [P('first point'), P('second point'), P('third point')],
-    'The circle through three points.',
+  described(
+    call(
+      'circle3',
+      'Circle (3 points)',
+      'k',
+      'circle',
+      'circle',
+      [P('first point'), P('second point'), P('third point')],
+      'The circle through three points.',
+    ),
+    { prefix: 'c', picks: 'all' },
   ),
   call(
     'conic5',
