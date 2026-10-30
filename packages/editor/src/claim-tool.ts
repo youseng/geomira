@@ -33,6 +33,14 @@ export const REPEATING_CLAIM_KINDS: readonly string[] = Object.freeze([
   'dangle',
   'angle_sum',
   'angle_diff',
+  'length_product',
+  'length_sum',
+  'similar',
+  'similar_direct',
+  'similar_opposite',
+  'congruent',
+  'congruent_direct',
+  'congruent_opposite',
 ]);
 
 /** The number each kind with a literal parameter asks for (label and the field's first text). */

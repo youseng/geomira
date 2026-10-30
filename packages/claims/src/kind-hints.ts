@@ -211,19 +211,69 @@ const PROJECTIVE_HINTS: Readonly<Record<string, Pick<ClaimKindSpec, 'symmetry' |
   harmonic_lines: HARMONIC,
 };
 
+/**
+ * Triangles (ADR-0051): the same permutation of both triangles' vertices (A ↔ B with D ↔ E; the
+ * cycle A → B → C with D → E → F) and the swap of the two triangles keep every similarity and
+ * congruence of either orientation. Not searched: similar triangles that hold by construction
+ * (a homothety, the medial triangle, a map's image) would flood "What is special?" while the
+ * closure knows no rule that hides them.
+ */
+const TRIANGLE: Pick<ClaimKindSpec, 'symmetry' | 'finder'> = {
+  symmetry: [
+    { perm: [1, 0, 2, 4, 3, 5] },
+    { perm: [1, 2, 0, 4, 5, 3] },
+    { perm: [3, 4, 5, 0, 1, 2] },
+  ],
+  finder: {
+    notSearched:
+      'triangles: those similar by construction would flood the result (no rule hides them yet)',
+  },
+};
+
+/** The kinds of ADR-0051: triangles, AB·CD = EF·GH, AB + CD = EF. */
+const LENGTH_HINTS: Readonly<Record<string, Pick<ClaimKindSpec, 'symmetry' | 'finder'>>> = {
+  similar: TRIANGLE,
+  similar_direct: TRIANGLE,
+  similar_opposite: TRIANGLE,
+  congruent: TRIANGLE,
+  congruent_direct: TRIANGLE,
+  congruent_opposite: TRIANGLE,
+  length_product: {
+    symmetry: [
+      { perm: [1, 0, 2, 3, 4, 5, 6, 7] },
+      { perm: [2, 3, 0, 1, 4, 5, 6, 7] },
+      { perm: [4, 5, 6, 7, 0, 1, 2, 3] },
+    ],
+    finder: { notSearched: 'eight points: too many tuples to search (as ratio)' },
+  },
+  length_sum: {
+    symmetry: [
+      { perm: [1, 0, 2, 3, 4, 5] },
+      { perm: [2, 3, 0, 1, 4, 5] },
+      { perm: [0, 1, 2, 3, 5, 4] },
+    ],
+    finder: { notSearched: 'a sum of lengths is not a measure the finder pairs (numeric facts)' },
+  },
+};
+
 /** The names the hints table covers (a test checks it against the kinds). */
 export const HINTED_KINDS: readonly string[] = Object.freeze([
   ...Object.keys(HINTS),
   ...Object.keys(PROJECTIVE_HINTS),
+  ...Object.keys(LENGTH_HINTS),
 ]);
+
+function hintOf(name: string): Pick<ClaimKindSpec, 'symmetry' | 'finder'> | undefined {
+  return HINTS[name] ?? PROJECTIVE_HINTS[name] ?? LENGTH_HINTS[name];
+}
 
 /** The kind with its symmetries and finder hints attached (unchanged when the table has none). */
 export function withHints(spec: ClaimKindSpec): ClaimKindSpec {
-  const h = HINTS[spec.name] ?? PROJECTIVE_HINTS[spec.name];
+  const h = hintOf(spec.name);
   return h === undefined ? spec : { ...spec, ...h };
 }
 
 /** For tests: a hint's finder data, or undefined. */
 export function hintsOf(name: string): FinderHints | undefined {
-  return (HINTS[name] ?? PROJECTIVE_HINTS[name])?.finder;
+  return hintOf(name)?.finder;
 }

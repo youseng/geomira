@@ -2,7 +2,7 @@
 
 Status: accepted (Run 6; decision 22 revised before merge at the maintainer's request; the
 style keys z, label_angle and label_dist were added by ADR-0010 in Run 7; string arguments by
-ADR-0011 in Run 8a; the cross-ratio claim notation by ADR-0040 in Run 16a). Extends SPEC §11 (statements, names, laws, versioning), ADR-0003
+ADR-0011 in Run 8a; the cross-ratio claim notation by ADR-0040 in Run 16a; AB·CD = EF·GH and AB + CD = EF by ADR-0051). Extends SPEC §11 (statements, names, laws, versioning), ADR-0003
 (items 2 and 5: literals and claims as data), ADR-0004 (item 9: `on(obj)`), ADR-0006 (item 14:
 parse-level selector checks), ADR-0007 (items 9 and 10: managed names, placement of images) and
 ADR-0008 (decision 2 and its consequences: the notation of the claim kinds, `assumptionProblem`).
@@ -102,6 +102,10 @@ claim         = kind , "(" , expr , { "," , expr } , ")"    (* every kind by nam
               | segment , "=" , [ number , ( "·" | "*" ) ] , segment          (* length *)
               | segment , "/" , segment , "=" , segment , "/" , segment      (* ratio *)
               | segment , "/" , segment , "=" , number                       (* ratio_value *)
+              | segment , ( "·" | "*" ) , segment , "=" , segment , ( "·" | "*" ) , segment
+                                    (* length_product (ADR-0051) *)
+              | segment , "+" , segment , "=" , segment
+              | segment , "=" , segment , "+" , segment                       (* length_sum *)
               | [ number , [ "·" | "*" ] ] , dangle , "=" , dangle           (* dangle *)
               | "∡" , "(" , expr , "," , expr , ")" , "=" , number           (* dangle_lines *)
               | angle , "=" , angle                                          (* angle_eq *)

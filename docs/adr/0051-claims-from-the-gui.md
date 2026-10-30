@@ -64,6 +64,69 @@ text, and a frozen test pinned that (`expect(claimToolKinds()).not.toContain('le
    first object again finishes a claim with a rest step (as a polygon closes), unless that
    first step was a two-point line.
 
+### The claim box (packages/editor claim-bar.ts; apps/web ClaimBox.tsx draws it)
+
+6. **The box's logic is the editor's.** `runClaimText` writes `claim ` in front when the user
+   did not, runs the line as a command (the text's parser, one edit), and returns its
+   diagnostics with the columns of the box's own text. `claimForms()` lists every form it reads:
+   Geomdraw's short forms (ADR-0025; a test parses each) and every form of the notation table of
+   packages/lang (one per kind at least; a test checks every registry kind has one).
+   `claimCompletions` completes the word at the cursor: at the start the claim kinds (with their
+   forms as the detail) and the objects; after objects and a space, outside a call, the words of
+   the short forms (`collinear`, `concurrent`, `cyclic`, `⟂`, …); inside a call the objects. The
+   box shows the forms while empty and focused, the completions while typing (Tab or a click),
+   and what it could not read in the box (as well as the notice, as before).
+7. **What a claim line could not read** (packages/lang, parse-geomdraw.ts `geomdrawProblem`):
+   after a list of objects, a word that is not a list word (`AP, BQ, CR are concurrent`): `could
+not read "are": after a list of objects write collinear, concyclic, cyclic or concurrent`, at
+   the word, with the form as the hint; objects without commas before a list word (`AP BQ CR
+concurrent`): `could not read "BQ": separate the objects of a list with commas`; one object
+   and an unknown word before a relation word (`AP is perpendicular to BC`). Every other text
+   reads, or is refused, as before (`O, G, H are collinear`, which a frozen e2e test types, is
+   still refused at line 1, now naming "are").
+
+### New claim kinds (packages/claims kinds-triangles.ts, kinds-lengths.ts)
+
+8. **Triangles.** Vertices correspond in order, A ↔ D, B ↔ E, C ↔ F. NDG for every kind: both
+   triangles proper (A, B, C not collinear; D, E, F not collinear), so a flat triangle is never
+   similar or not. Field-generic conditions:
+   - `similar` = directly OR oppositely similar (the olympiad △ABC ∼ △DEF): proportional sides,
+     |AB|²|EF|² = |DE|²|BC|² and |CA|²|EF|² = |FD|²|BC|² (with proper triangles the third ratio
+     follows; SSS is exactly "similar in some orientation");
+   - `similar_direct`: (B − A)(F − D) − (C − A)(E − D) = 0 as complex numbers (two conditions);
+   - `similar_opposite`: (B − A)·conj(F − D) − (C − A)·conj(E − D) = 0;
+   - `congruent` = directly or oppositely congruent: |BC|² = |EF|², |CA|² = |FD|², |AB|² = |DE|²;
+   - `congruent_direct` / `congruent_opposite`: that orientation's similarity and |AB|² = |DE|².
+     All are POLYNOMIAL KINDS. A reflection of the whole figure keeps each (it reverses both
+     triangles), so the global sampler's mirrored half never makes them orientation-dependent
+     (L16). Residuals: the worst relative mismatch (lengths, or |z₁w₂ − w₁z₂| over
+     |z₁||w₂| + |w₁||z₂|). Symmetries: the same permutation of both triangles (A ↔ B with D ↔ E;
+     A → B → C with D → E → F) and the swap of the triangles. Notation: `similar(ABC, DEF)` (two
+     glued runs, spread into six points by ADR-0025 decision 4), printed glued when all six are
+     point names, else as the call.
+9. **`length_product`: AB·CD = EF·GH**, a POLYNOMIAL KIND: lengths are ≥ 0, so the claim is
+   |AB|²|CD|² − |EF|²|GH|² = 0 with no sign lost. NDG: the four segments proper (a zero length
+   makes it 0 = 0, or says only that another segment is null). Symmetries: A ↔ B, the two
+   segments of a side, the two sides. Notation `AB·CD = EF·GH` (also `AB * CD` with spaces, and
+   dist(…) segments).
+10. **`length_sum`: AB + CD = EF, NOT a polynomial kind.** With a = AB, c = CD, e = EF, the
+    condition (e² − a² − c²)² − 4a²c² = 0 also holds when e = |a − c|; the ORDER item
+    e² − a² − c² ≥ 0 keeps exactly a + c = e (if e = |a − c| then e² − a² − c² = −2ac, negative
+    unless ac = 0, where |a − c| = a + c). An order item is not evaluable mod p and the kind is
+    off the whitelist, so the mod-p rung never applies (L17, tested with a budget that makes
+    every eligible sample fall through to mod p). The request said "numeric rung only"; the exact
+    rung over Q applies as for the undirected angle sums (Q has an order, and the condition and
+    order item are exactly the claim), else the numeric rung. NDG: the three segments proper.
+    Notation `AB + CD = EF`, also read as `EF = AB + CD`.
+11. **Discovery** picks the kinds up through the claim-kind registry (ADR-0035) and does not
+    search them, saying why in its caps: triangles similar or congruent by construction (a map's
+    images, the medial triangle) would flood "What is special?" and no closure rule hides them
+    yet; length_product has eight points (as ratio); length_sum is not a measure the finder
+    pairs. A test in ADR-0039's style checks that the facts reported are exactly those of the
+    registry without these kinds, on figures full of similar and congruent triangles.
+12. **The claim tool** offers every new kind (decision 1); their points may repeat (PA·PB =
+    PC·PD, ABD ∼ ACE share points).
+
 ## Frozen tests changed
 
 - `packages/editor/test/machine.test.ts:283`: `expect(claimToolKinds()).not.toContain('length')`
@@ -71,10 +134,20 @@ text, and a frozen test pinned that (`expect(claimToolKinds()).not.toContain('le
   (decision 1); the line pinned exactly the gap this ADR closes. The test's other lines are
   unchanged.
 
+Lines only added (no frozen line modified or deleted): `packages/claims/test/kinds.test.ts` (the
+kind list and the whitelist gain the new kinds), `packages/discovery/test/find.test.ts` (the
+not-searched list gains them), `packages/editor/test/exports.test.ts` (the subpaths
+`./claim-tool` and `./claim-bar`).
+
 ## Consequences
 
 - The claim tool's steps differ by kind (lines take two points); the number field shows for the
   kinds with a number. Every claim made in the GUI is a statement of the text (CLAUDE.md).
+- SPEC §10.1 lists the new kinds and the whitelist; §15 the claim tool and the claim box.
+- The grammar (ADR-0009's block, GRAMMAR) gains `AB·CD = EF·GH` and `AB + CD = EF`;
+  docs/language.md is regenerated.
+- Similar triangles are not found by "What is special?" yet: a closure rule for triangles similar
+  by construction would be needed first (ADR-0039's rule: hide only what is derived).
 
 ## Alternatives considered
 
@@ -84,3 +157,10 @@ text, and a frozen test pinned that (`expect(claimToolKinds()).not.toContain('le
   rotate, homothety and the radius (ADR-0024 decision 5); one mechanism.
 - **Print two-point lines glued (`AP`)**: changes the canonical text pinned by frozen tests and
   saved files; ADR-0025 keeps the glued forms read-only.
+- **One `similar` kind with an orientation flag literal**: a literal that is not a number in the
+  claim's arguments, and a field in the claim tool for it; separate kinds keep the claim
+  language's literals numeric and each kind's algebra plain.
+- **`similar` as directly similar only**: an oppositely similar pair (the common case of
+  antiparallels, AEF ∼ ABC) would be reported FALSE: silently wrong for the olympiad meaning.
+- **Search similar triangles** with an angle measure hint: candidates by the thousand on the
+  request's figures, each by construction; reported, they would undo ADR-0039.

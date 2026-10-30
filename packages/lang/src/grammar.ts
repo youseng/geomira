@@ -79,6 +79,10 @@ claim         = kind , "(" , expr , { "," , expr } , ")"    (* every kind by nam
               | segment , "=" , [ number , ( "·" | "*" ) ] , segment          (* length *)
               | segment , "/" , segment , "=" , segment , "/" , segment      (* ratio *)
               | segment , "/" , segment , "=" , number                       (* ratio_value *)
+              | segment , ( "·" | "*" ) , segment , "=" , segment , ( "·" | "*" ) , segment
+                                    (* length_product (ADR-0051) *)
+              | segment , "+" , segment , "=" , segment
+              | segment , "=" , segment , "+" , segment                       (* length_sum *)
               | [ number , [ "·" | "*" ] ] , dangle , "=" , dangle           (* dangle *)
               | "∡" , "(" , expr , "," , expr , ")" , "=" , number           (* dangle_lines *)
               | angle , "=" , angle                                          (* angle_eq *)
