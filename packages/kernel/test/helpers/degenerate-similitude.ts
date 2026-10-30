@@ -35,9 +35,11 @@ const common = (tool: string): Record<string, () => void> => ({
     expect(at(ModPField, tool, U, V).kind).toBe('inexact');
     // Rational radii: exact over Q.
     expect(at(RationalField, tool, U, V).kind).toBe('point');
-    // r² = 2 for both: no root is needed.
+    // r² = 2 for both: no root is needed (over Q; mod p the insimilicenter, while the
+    // exsimilicenter's point at infinity needs an order to choose its representative).
     const W2 = circ(pt(4, 0), pt(5, 1));
-    for (const F of FIELDS) expect(at(F, tool, W, W2).kind).not.toBe('inexact');
+    for (const F of ORDERED) expect(at(F, tool, W, W2).kind).not.toBe('inexact');
+    expect(at(ModPField, tool, W, W2).kind).toBe(tool === 'exsimilicenter' ? 'inexact' : 'point');
   },
   'a circle with no positive radius → Undefined': () => {
     for (const F of FIELDS)
@@ -50,10 +52,9 @@ export const SIMILITUDE_CASES: Record<string, Record<string, () => void>> = {
     ...common('exsimilicenter'),
     'equal radii → the point at infinity of the direction O₁O₂ (ADR-0040)': () => {
       const U2 = circ(pt(3, 4), num(1));
-      for (const F of FIELDS) {
-        const v = at(F, 'exsimilicenter', U, U2);
-        expect(v.kind).toBe('ideal_point');
-      }
+      for (const F of ORDERED) expect(at(F, 'exsimilicenter', U, U2).kind).toBe('ideal_point');
+      // Either order: the same representative (the first non-zero coordinate positive).
+      for (const F of ORDERED) expect(direction(F, at(F, 'exsimilicenter', U2, U))).toEqual([3, 4]);
       for (const F of ORDERED) expect(direction(F, at(F, 'exsimilicenter', U, U2))).toEqual([3, 4]);
       for (const F of ORDERED) expect(plain(F, at(F, 'exsimilicenter', U, V))).toEqual([-6, 0]);
     },

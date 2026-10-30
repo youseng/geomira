@@ -11,7 +11,7 @@
  * circle), as radical_axis does. Concentric circles → Undefined (both), as the maintainer's
  * request decides (ADR-0045, Uncertain: the limit would be the common centre).
  */
-import { isInexact, type Field, type Inexact } from '@geomira/num/field';
+import { inexact, isInexact, type Field, type Inexact } from '@geomira/num/field';
 import { half, isZeroVec, vAdd, vScale, vSub } from '../geom';
 import { rootGap } from '../incidence';
 import type { EvalContext, ExampleArg, ToolSpec } from '../tool';
@@ -46,16 +46,30 @@ function weighted<T>(F: Field<T>, c1: Circle<T>, c2: Circle<T>, sign: 1 | -1): V
 }
 
 /**
+ * The direction w or −w, whichever has its first non-zero coordinate positive (exact comparisons:
+ * both represent the same point at infinity, so this is a choice of representative, not a
+ * decision), so exsimilicenter(c1, c2) and exsimilicenter(c2, c1) are the same value. Mod p (no
+ * order, so no representative both orders agree on) → Inexact.
+ */
+function canonical<T>(F: Field<T>, w: Vec<T>): Vec<T> | Inexact {
+  if (F.kind === 'modp')
+    return inexact('the point at infinity of O₁O₂: choosing its representative needs an order');
+  const [x, y] = [F.toNumber(w.x), F.toNumber(w.y)];
+  return x < 0 || (x === 0 && y < 0) ? { x: F.neg(w.x), y: F.neg(w.y) } : w;
+}
+
+/**
  * The exsimilicenter. Degenerate cases: concentric circles (equal ones included) → Undefined;
  * equal radii (r₁ − r₂ zero as a length; exact fields: r₁² = r₂²) → the point at infinity of the
- * direction O₁O₂; radii within the band of equal → Undefined (ambiguous: near infinity); radii
+ * direction O₁O₂ (mod p Inexact: canonical); radii within the band of equal → Undefined (ambiguous: near infinity); radii
  * not rational → Inexact over Q, always mod p; a circle with no positive radius → Undefined.
  */
 function exsimilicenter<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
   const cs = circlesOf(F, args, ctx, 'exsimilicenter');
   if ('kind' in cs) return cs;
   const [c1, c2] = cs;
-  const ideal: Value<T> = { kind: 'ideal_point', d: vSub(F, c2.c, c1.c), chiral: false };
+  const d = canonical(F, vSub(F, c2.c, c1.c));
+  const ideal: Value<T> = isInexact(d) ? d : { kind: 'ideal_point', d, chiral: false };
   if (F.eq(c1.r2, c2.r2)) return ideal;
   const s = F.sign(rootGap(F, c1.r2, c2.r2), 'length', ctx);
   if (s === 0) return ideal;

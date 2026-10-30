@@ -137,7 +137,7 @@ function notation(): string[] {
   return [
     '## Selectors',
     '',
-    'Selectors are the trailing arguments of a branchable call (`intersect`, `tangent_point`, `tangent_from`). A bare index (`intersect(a, b, 2)`) and a call with two candidates and no selector are errors with a hint.',
+    'Selectors are the trailing arguments of a branchable call (`intersect`, `tangent_point`, `tangent_from`, `foci`, and `tangent` of two curves). A bare index (`intersect(a, b, 2)`) and a call with two candidates and no selector are errors with a hint.',
     '',
     ...table(
       ['selector', 'meaning'],

@@ -22,6 +22,13 @@ const K = () => c('conic', 'A', 'B', 'C', 'D', 'E');
 const T = () => c('pole', AB(), K());
 /** A second conic through A, B, C, D (Run 16c, ADR-0043): it meets K again nowhere else. */
 const K2 = () => c('conic', 'A', 'B', 'C', 'D', 'F');
+/**
+ * ADR-0045: a small circle about A (a point of K: they cross, so they have two common tangents
+ * under every local noise), and the conic through A, B, D, E, F (four common tangents with K).
+ */
+const SMALL = () => c('circle', 'A', n('1/2'));
+const K4 = () => c('conic', 'A', 'B', 'D', 'E', 'F');
+const near = (p: Arg): Sel => ({ sel: (f) => ({ kind: 'near', p: f.expr(p) }) });
 /** other(P, Q, R): the fourth common point of two conics (or a conic and a circle). */
 const other3 = (p: Arg, q: Arg, r: Arg): Sel => ({
   sel: (f) => ({ kind: 'other', p: f.expr(p), rest: [f.expr(q), f.expr(r)] }),
@@ -98,6 +105,14 @@ const FIGURES: Readonly<Record<string, () => Arg[]>> = {
   'intersect(round,conic)': () => ['w', K(), other3('B', 'C', 'A')],
   'exsimilicenter(round,round)': () => ['w', c('circle', 'D', n(3))],
   'insimilicenter(round,round)': () => ['w', c('circle', 'D', n(3))],
+  'tangent(round,round)': () => ['w', SMALL(), near('B')],
+  'tangent(conic,conic)': () => [K(), K4(), near('C')],
+  'tangent(round,conic)': () => [SMALL(), K(), near('B')],
+  'tangent(conic,round)': () => [K(), SMALL(), near('B')],
+  'tangent_point(round,round)': () => ['w', SMALL(), near('B')],
+  'tangent_point(conic,conic)': () => [K(), K4(), near('C')],
+  'tangent_point(round,conic)': () => [SMALL(), K(), near('B')],
+  'tangent_point(conic,round)': () => [K(), SMALL(), near('B')],
 };
 
 function term(t: GuaranteeTerm, args: readonly Arg[]): Arg {

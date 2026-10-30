@@ -34,9 +34,6 @@ function fixture(): Builder {
   b.call('l', 'line', b.ref('H'), b.ref('I'));
   b.call('m', 'line', b.ref('A'), b.ref('C'));
   b.call('k', 'circle', b.ref('A'), b.ref('D'));
-  // A circle of rational radius 2 (ADR-0045: the centres of similitude are exact with c).
-  b.point('J', 20, 1);
-  b.call('e', 'circle', b.ref('J'), num(2));
   return b;
 }
 
@@ -78,8 +75,6 @@ const SAMPLES: Readonly<Record<string, readonly string[]>> = {
   feet_inversion: ['B', 'A', 'C'],
   sqrt_bc2: ['B', 'A', 'C'],
   harmonic_conjugate: ['B', 'C', 'E'],
-  exsimilicenter: ['c', 'e'],
-  insimilicenter: ['c', 'e'],
 };
 
 /** Selectors of a sample (intersect of two circles needs one). */

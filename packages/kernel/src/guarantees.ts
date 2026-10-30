@@ -135,6 +135,19 @@ export const POLAR: readonly Guarantee[] = [g('perpendicular', R, t('line', t('c
 
 export const POLE: readonly Guarantee[] = [g('perpendicular', t('line', t('center', 1), R), 0)];
 
+/** tangent(c1, c2, …) (ADR-0045): a common tangent touches both curves. */
+const COMMON_TANGENT: readonly Guarantee[] = [g('tangent', R, 0), g('tangent', R, 1)];
+
+/** tangent_point(c1, c2, …): on c1, where the tangent of c1 touches c2 too. */
+const COMMON_TOUCH: readonly Guarantee[] = [g('on', R, 0), g('tangent', t('tangent', R, 0), 1)];
+
+const TWO_CURVES = (facts: readonly Guarantee[]) => ({
+  'round,round': facts,
+  'conic,conic': facts,
+  'round,conic': facts,
+  'conic,round': facts,
+});
+
 /** exsimilicenter / insimilicenter (ADR-0045): on the line of centres. */
 const SIMILITUDE: readonly Guarantee[] = [g('collinear', R, t('center', 0), t('center', 1))];
 
@@ -295,7 +308,11 @@ export const GUARANTEE_TABLE: Readonly<
     'linear,conic,point': ON_BOTH,
     'conic,linear,point': ON_BOTH,
   },
-  tangent: { 'point,round': TANGENT_AT, 'point,conic': TANGENT_FROM },
+  tangent: {
+    'point,round': TANGENT_AT,
+    'point,conic': TANGENT_FROM,
+    ...TWO_CURVES(COMMON_TANGENT),
+  },
   polar: { 'point,round': POLAR },
   radical_axis: { 'round,round': RADICAL_AXIS },
   incenter: { 'point,point,point': INCENTER },
@@ -305,7 +322,11 @@ export const GUARANTEE_TABLE: Readonly<
   bisector: { 'point,point,point': BISECTOR },
   ext_bisector: { 'point,point,point': EXT_BISECTOR },
   ninepoint_center: { 'point,point,point': NINEPOINT_CENTER },
-  tangent_point: { 'point,round': TANGENT_POINT, 'point,conic': CONIC_TANGENT_POINT },
+  tangent_point: {
+    'point,round': TANGENT_POINT,
+    'point,conic': CONIC_TANGENT_POINT,
+    ...TWO_CURVES(COMMON_TOUCH),
+  },
   tangent_from: { 'point,round': TANGENT_FROM, 'point,conic': TANGENT_FROM },
   reflect: { 'point,linear': REFLECT_IN_LINE, 'point,point': REFLECT_IN_POINT },
   rotate: { 'point,point,number': ROTATE_POINT },

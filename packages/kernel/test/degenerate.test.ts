@@ -40,6 +40,7 @@ import { CONIC_CONIC_CASES } from './helpers/degenerate-conic-conic';
 import { FOCI_CASES } from './helpers/degenerate-foci';
 import { SYMMEDIAN_POINT_CASES } from './helpers/degenerate-symmedian-point';
 import { SIMILITUDE_CASES } from './helpers/degenerate-similitude';
+import { COMMON_TANGENT_CASES } from './helpers/degenerate-common-tangents';
 import {
   ARC_INTERSECT_CASES,
   ARC_ON_CASES,
@@ -295,6 +296,7 @@ const CASES: Record<string, Record<string, () => void>> = {
   ...CONIC_CASES,
   ...FOCI_CASES,
   ...SIMILITUDE_CASES,
+  ...COMMON_TANGENT_CASES,
 };
 
 describe('degenerate cases (ToolSpec.degenerate), each a test', () => {

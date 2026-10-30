@@ -4,6 +4,8 @@
  * chiral (SPEC §4). All three are exact: no square root is needed.
  */
 import type { Field } from '@geomira/num/field';
+import { candidateValues, choose } from '../select';
+import type { EvaluatedSelector } from '../selector';
 import type { EvalContext, ExampleArg, ToolSpec } from '../tool';
 import { two, vAdd, vDot, vRot90, vScale, vSub } from '../geom';
 import { requireOnCircle } from '../incidence';
@@ -12,6 +14,8 @@ import { conicProblem } from '../conic';
 import { requireOnConic } from '../conic-incidence';
 import { badArgs, circleAt, conicAt, degenerateCircle, pointAt } from './args';
 import { conicPolarLine, conicTangentAt, isConicCentre } from './conic-pairs';
+import { COMMON_TANGENT_DEGENERATE, commonSignatures } from './common-tangents';
+import { commonTangentPair } from './dual-tangents';
 
 function chiralLine<T>(p: Vec<T>, d: Vec<T>): Line<T> {
   return { kind: 'line', p: { x: p.x, y: p.y }, d, lo: null, hi: null, chiral: true };
@@ -19,9 +23,19 @@ function chiralLine<T>(p: Vec<T>, d: Vec<T>): Line<T> {
 
 /**
  * The tangent at P: through P, direction rot90(P − O). Degenerate cases: P not on c →
- * Undefined; P within the band of c → Undefined (ambiguous).
+ * Undefined; P within the band of c → Undefined (ambiguous); a selector → Undefined (the tangent
+ * at P is unique). Two curves: their common tangents (ADR-0045, common-tangents.ts).
  */
-function tangent<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {
+function tangent<T>(
+  F: Field<T>,
+  args: readonly Value<T>[],
+  ctx: EvalContext,
+  selectors: readonly EvaluatedSelector<T>[] = [],
+): Value<T> {
+  const common = commonTangentPair(F, args, ctx, 'line');
+  if (common !== 'bad') return 'kind' in common ? common : choose(F, common, selectors, ctx);
+  if (selectors.length > 0)
+    return undef('tangent(P, c): the tangent at P is unique: it takes no selector');
   const k = conicAt(args, 1);
   if (k !== undefined) return conicTangent(F, args, k, ctx);
   const [P, c] = [pointAt(args, 0), circleAt(args, 1)];
@@ -109,6 +123,20 @@ function radicalAxis<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext
   return chiralLine(vAdd(F, c1.c, vScale(F, w, t)), vRot90(F, w));
 }
 
+/** The common tangents' candidates (two curves); none for the tangent at a point. */
+function candidates<T>(
+  F: Field<T>,
+  args: readonly Value<T>[],
+  ctx: EvalContext,
+): readonly Value<T>[] {
+  const p = commonTangentPair(F, args, ctx, 'line');
+  return p === 'bad' || 'kind' in p ? [] : candidateValues(p);
+}
+
+/** Two circles whose four common tangents are rational: touch points (4.2, ±5.6), (5.6, ±4.2). */
+const C7: ExampleArg = { call: 'circle', args: [['0', '0'], '7'] };
+const C1: ExampleArg = { call: 'circle', args: [['10', '0'], '1'] };
+
 const C: ExampleArg = {
   call: 'circle',
   args: [
@@ -122,17 +150,34 @@ export const TANGENT_TOOLS: readonly ToolSpec[] = [
     id: 'tangent',
     name: 'tangent',
     family: 'lines',
-    signatures: [{ params: ['point', 'round'] }, { params: ['point', 'conic'] }],
+    signatures: [
+      { params: ['point', 'round'] },
+      { params: ['point', 'conic'] },
+      ...commonSignatures('line'),
+    ],
     outputKinds: ['line'],
     compute: tangent,
+    candidates,
     degenerate: [
       'P not on c → Undefined',
       'P within the band of c → Undefined (ambiguous)',
       'a conic: P not on k (the gap Q/|∇Q| as a length) → Undefined; within the band → ambiguous',
+      'tangent(P, c) with a selector → Undefined (the tangent at P is unique)',
+      ...COMMON_TANGENT_DEGENERATE,
     ],
     export: 'numeric',
-    doc: 'tangent(P, c): the tangent to c at P (P on c); chiral (a quarter turn of P − O). tangent(P, k) on a conic: the tangent at P, direction a quarter turn of −∇Q(P).',
-    examples: [{ args: [['3', '4'], C] }],
+    doc: 'tangent(P, c): the tangent to c at P (P on c); chiral (a quarter turn of P − O). tangent(P, k) on a conic: the tangent at P, direction a quarter turn of −∇Q(P). tangent(c1, c2, selectors): a common tangent of two curves (circles or conics, up to four: two external and two internal for two circles), the tangent of c1 at its touch point T; selectors judge T; two circles: along(−) the external pair, along(+) the internal pair, orient(±) the side of O₁O₂ where T lies.',
+    examples: [
+      { args: [['3', '4'], C] },
+      { args: [C7, C1], selectors: [{ kind: 'near', p: ['0', '10'] }] },
+      {
+        args: [C7, C1],
+        selectors: [
+          { kind: 'along', sign: 1 },
+          { kind: 'orient', sign: -1 },
+        ],
+      },
+    ],
   },
   {
     id: 'polar',

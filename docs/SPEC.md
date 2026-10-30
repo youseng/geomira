@@ -200,6 +200,9 @@ v1.1 tools (Run 13): `spiral_center`, `isogonal`, `symmedian`, `pole`,
 `line(P, X∞)` is the parallel through P. Run 16c (ADR-0043): `intersect(k1, k2, selectors)` of two
 conics or a conic and a circle (up to four candidates; `other(P, Q, R)` gives the fourth exactly),
 `foci(k, selectors)` (an ellipse's or hyperbola's two foci, a parabola's focus, a circle's centre).
+ADR-0045: `tangent(c1, c2, selectors)` and `tangent_point(c1, c2, selectors)`, the common tangents
+of two circles, two conics or a circle and a conic (up to four; the line is the tangent of c1 at
+its touch point, which selectors judge), and `exsimilicenter(c1, c2)`, `insimilicenter(c1, c2)`.
 
 ### 6.3 Degenerate behaviour (each item is a test)
 Parallel / coincident lines → Undefined; coincident defining points → Undefined;
@@ -210,7 +213,7 @@ perpendicular at B; of a zero angle → that line; ext_bisector correspondingly.
 
 ## 7. Branch selection
 Branchable tools produce a candidate list (0–2 values; 0–4 for conic ∩ conic and conic ∩ circle,
-ADR-0043). Selectors (applied in order):
+ADR-0043, and for common tangents, ADR-0045). Selectors (applied in order):
 - Filters: `same_side(Q, l)`, `opposite_side(Q, l)`, `on_arc(B, C, [not] A)`,
   `between(A, B)`, `inside(c)`, `outside(c)`.
 - Rankers: `other(P)` (P must lie on both objects within BAND; picks the candidate
@@ -221,7 +224,9 @@ ADR-0043). Selectors (applied in order):
 - Low-level: `along(+)` / `along(−)` (line ∩ curve: the candidate further / less far
   along the line's direction d); `orient(+)` / `orient(−)` (circle ∩ circle: sign of
   cross(c2 − c1, P − c1); tangent choices: sign of cross(O − P, T − P)). Shown with a
-  neutral note, never a warning.
+  neutral note, never a warning. Common tangents of two circles (ADR-0045) carry both labels:
+  `along(−)` the external pair, `along(+)` the internal pair (measured along O₁→O₂, achiral, no
+  line argument: reflection-equivariant), `orient(±)` the side of O₁O₂ where the touch point lies.
 ORIENTATION DEPENDENCE (exact definition): a selector is orientation-dependent iff it is
 `orient(±)`, or `along(±)` on a line with `chiral = true`. All other selectors are
 reflection-equivariant. Invariant (law L16): a script with no orientation-dependent
@@ -238,6 +243,8 @@ first kind that singles it out (within a kind, the largest decision margin):
 for a named point incident (within BAND) with the clicked candidate. With four candidates
 (ADR-0043): `other(P, Q, R)` with points at the three others → one filter, else two filters whose
 kept candidates meet in the clicked one → `near(P)`; conic ∩ conic has no low-level selector.
+Common tangents of two circles (ADR-0045): the tiers for four, then `along(±)` with a
+reflection-equivariant selector that separates the pair, then `along(±), orient(±)`.
 
 ## 8. Transformations, layers, views
 ### 8.1 Transformations
