@@ -102,6 +102,14 @@ describe('line ∩ conic: ranges and refusals', () => {
     expect(reason(choose(F, 'intersect', [ELL, l], [sel]))).toBe(
       'undefined: other(point(1, 0)) needs the point on the conic',
     );
+    // Off both: the first curve of the call is named.
+    const off: Selector = { kind: 'other', p: pt(0, 3) };
+    expect(reason(choose(F, 'intersect', [l, ELL], [off]))).toBe(
+      'undefined: other(point(0, 3)) needs the point on the line',
+    );
+    expect(reason(choose(F, 'intersect', [ELL, l], [off]))).toBe(
+      'undefined: other(point(0, 3)) needs the point on the conic',
+    );
   });
 });
 

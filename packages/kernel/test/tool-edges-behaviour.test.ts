@@ -121,3 +121,19 @@ describe('the harmonic conjugate of three lines', () => {
       );
   });
 });
+
+describe('a line and a conic: which curve P is not on', () => {
+  const l = line(-2, 0, 1, 0);
+  const point = (x: number, y: number): Value<number> => ({ kind: 'point', x, y });
+
+  it('other(a, b, P): off the line, or on it but off the conic', () => {
+    expect(why(run('other', [l, ELL, point(0, 1)]))).toBe(
+      'undefined: other(a, b, P) needs P on the line',
+    );
+    expect(why(run('other', [l, ELL, point(1, 0)]))).toBe(
+      'undefined: other(a, b, P) needs P on the conic',
+    );
+    const X = run('other', [l, ELL, point(2, 0)]);
+    expect(X.kind === 'point' ? [X.x, X.y] : why(X)).toEqual([-2, 0]);
+  });
+});
