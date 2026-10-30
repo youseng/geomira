@@ -104,7 +104,7 @@ describe('the harmonic conjugate of three lines', () => {
             line(0, 0, 1, 1, cc),
           ]);
           const odd = [ca, cb, cc].filter(Boolean).length % 2 === 1;
-          expect(v.kind === 'line' ? v.chiral : why(v), `${String([ca, cb, cc])}`).toBe(!odd);
+          expect(v.kind === 'line' ? v.chiral : why(v), String([ca, cb, cc])).toBe(!odd);
         }
   });
 
