@@ -8,8 +8,10 @@
  * line (any pair) is refused; extra arguments are refused.
  */
 import { FloatField } from '@geomira/num/float-field';
+import { ModPField } from '@geomira/num/modp';
 import { describe, expect, it } from 'vitest';
 import { conicCentre, conicPole } from '../src/tools/conic-lines';
+import { poleTest } from '../src/transform/j-core';
 import type { Circle, Conic, Line, Value } from '../src/value';
 import { REGISTRY, must } from './helpers/doc';
 
@@ -135,5 +137,21 @@ describe('a line and a conic: which curve P is not on', () => {
     );
     const X = run('other', [l, ELL, point(2, 0)]);
     expect(X.kind === 'point' ? [X.x, X.y] : why(X)).toEqual([-2, 0]);
+  });
+});
+
+describe('small refusals', () => {
+  it('mark_angle with a fourth argument that is not a number', () => {
+    const p = (x: number, y: number): Value<number> => ({ kind: 'point', x, y });
+    expect(why(run('mark_angle', [p(1, 0), p(0, 0), p(0, 1), p(1, 1)]))).toBe(
+      'undefined: mark_angle received arguments it does not accept',
+    );
+  });
+
+  it('the pole of an inversion mod p: the exact zero test', () => {
+    const P = ModPField;
+    expect(poleTest(P, { x: P.zero, y: P.zero }, CTX)).toBe('pole');
+    expect(poleTest(P, { x: P.one, y: P.zero }, CTX)).toBe('off');
+    expect(poleTest(P, { x: P.zero, y: P.one }, CTX)).toBe('off');
   });
 });
