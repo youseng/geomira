@@ -96,6 +96,8 @@ const FIGURES: Readonly<Record<string, () => Arg[]>> = {
   'intersect(conic,conic)': () => [K(), K2(), other3('A', 'B', 'C')],
   'intersect(conic,round)': () => [K(), 'w', other3('A', 'B', 'C')],
   'intersect(round,conic)': () => ['w', K(), other3('B', 'C', 'A')],
+  'exsimilicenter(round,round)': () => ['w', c('circle', 'D', n(3))],
+  'insimilicenter(round,round)': () => ['w', c('circle', 'D', n(3))],
 };
 
 function term(t: GuaranteeTerm, args: readonly Arg[]): Arg {

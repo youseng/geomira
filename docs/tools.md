@@ -560,6 +560,49 @@ foci(k, selectors): a focus of a conic (an ellipse's or a hyperbola's two foci n
   - `foci(conic((0, 0), (1, 1), (-1, 1), (2, 4), (-2, 4)), near(point(0, 0)))` → point (0, 1/4)
   - `foci(circle((1, 2), (4, 6)))` → point (1, 2)
 
+### exsimilicenter
+
+exsimilicenter(c1, c2): the external centre of similitude (r₂·O₁ − r₁·O₂)/(r₂ − r₁), the centre of the homothety of ratio r₂/r₁ taking c1 to c2; the external common tangents pass through it. Equal radii: the point at infinity of O₁O₂. Exact over Q when the radii are rational.
+
+- Signatures: `exsimilicenter(round, round)`
+- Result: point, ideal_point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `exsimilicenter(round, round)`: arguments 1, 2 in any order (the same value)
+- By construction:
+  - `exsimilicenter(round, round)`: collinear(result, center(#1), center(#2))
+- Degenerate cases:
+  - concentric circles (equal ones included) → Undefined
+  - radii not rational → Inexact over Q; always Inexact mod p (equal radii need no root)
+  - a circle with no positive radius → Undefined
+  - equal radii → the point at infinity of the direction O₁O₂ (ADR-0040)
+  - radii within the band of equal → Undefined (ambiguous: near infinity)
+- Examples:
+  - `exsimilicenter(circle((0, 0), 1), circle((6, 0), 2))` → point (-6, 0)
+  - `exsimilicenter(circle((0, 0), 1), circle((5, 0), 1))` → point at infinity, direction (5, 0)
+
+### insimilicenter
+
+insimilicenter(c1, c2): the internal centre of similitude (r₂·O₁ + r₁·O₂)/(r₂ + r₁), the centre of the homothety of ratio −r₂/r₁ taking c1 to c2; the internal common tangents pass through it. Exact over Q when the radii are rational.
+
+- Signatures: `insimilicenter(round, round)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `insimilicenter(round, round)`: arguments 1, 2 in any order (the same value)
+- By construction:
+  - `insimilicenter(round, round)`: collinear(result, center(#1), center(#2))
+- Degenerate cases:
+  - concentric circles (equal ones included) → Undefined
+  - radii not rational → Inexact over Q; always Inexact mod p (equal radii need no root)
+  - a circle with no positive radius → Undefined
+  - equal radii → the midpoint of O₁O₂, exact in every field
+- Examples:
+  - `insimilicenter(circle((0, 0), 1), circle((6, 0), 2))` → point (2, 0)
+  - `insimilicenter(circle((0, 0), 1), circle((6, 0), (7, 1)))` → point (2.48528137424, 0)
+
 ## Lines
 
 ### line

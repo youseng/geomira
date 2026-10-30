@@ -135,6 +135,9 @@ export const POLAR: readonly Guarantee[] = [g('perpendicular', R, t('line', t('c
 
 export const POLE: readonly Guarantee[] = [g('perpendicular', t('line', t('center', 1), R), 0)];
 
+/** exsimilicenter / insimilicenter (ADR-0045): on the line of centres. */
+const SIMILITUDE: readonly Guarantee[] = [g('collinear', R, t('center', 0), t('center', 1))];
+
 export const RADICAL_AXIS: readonly Guarantee[] = [
   g('perpendicular', R, t('line', t('center', 0), t('center', 1))),
 ];
@@ -314,6 +317,8 @@ export const GUARANTEE_TABLE: Readonly<
   radical_center: { 'round,round,round': RADICAL_CENTER },
   arc: { 'point,point,point': THROUGH_THREE },
   conic: { 'point,point,point,point,point': THROUGH_FIVE },
+  exsimilicenter: { 'round,round': SIMILITUDE },
+  insimilicenter: { 'round,round': SIMILITUDE },
 };
 
 /** The overload's parameter key in GUARANTEE_TABLE ("point,point"; a rest capability ends in …). */

@@ -361,6 +361,8 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `foci` | points | `foci(round)` · `foci(conic)` | point | can succeed | √(250563/4096) is not rational; √(2) is not rational |
 | `conic_to_circle` | transformations | `conic_to_circle(conic)` | transform | can succeed | — |
 | `circle_to_centre` | transformations | `circle_to_centre(round, point)` | transform | can succeed | √(500) is not rational |
+| `exsimilicenter` | points | `exsimilicenter(round, round)` | point, ideal_point | can succeed | — |
+| `insimilicenter` | points | `insimilicenter(round, round)` | point | can succeed | √(2) is not rational |
 
 ## Versions
 
