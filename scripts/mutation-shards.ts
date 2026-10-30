@@ -263,9 +263,17 @@ export const DISCOVERY_GROUPS: readonly {
   },
   {
     id: 'discovery-b',
-    files: ['candidates', 'scan', 'ticking', 'solve', 'job', 'lattice', 'consequences'].map(
-      (f) => `${D}/${f}.ts`,
-    ),
+    // ADR-0052: the find job's schedule of the screen joins the scan it schedules.
+    files: [
+      'candidates',
+      'scan',
+      'scan-rounds',
+      'ticking',
+      'solve',
+      'job',
+      'lattice',
+      'consequences',
+    ].map((f) => `${D}/${f}.ts`),
   },
   {
     id: 'discovery-c',
