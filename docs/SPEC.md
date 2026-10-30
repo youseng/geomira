@@ -385,7 +385,11 @@ style, layers, derived layers, views, drag, replaceText, claims, assumptions; vi
 outside history). Drag is coalesced; at drag end values are rounded to the FINER of the
 power-of-ten grid 10^(⌊log10 scale⌋ − 4) and the power of ten just below 0.1 px at the
 current zoom, and stored as exact decimals. GUI tools are data; one state machine runs
-them; the GUI selector choice follows §7. Autosave: a document opened from a link is not
+them; the GUI selector choice follows §7. Names of what a GUI tool builds: a free
+conventional name (ADR-0016), else, for lines, segments, rays, circles and tangents built
+from named points, a name from those points (l_AC, s_AC, r_AC, c_ABC, c_O, t_A, l_P; next
+free variant `_2`, `_3`, …; grammatical and at most 12 characters), else l, l_1, … / c, c_1,
+… (ADR-0050); existing objects are never renamed automatically. Autosave: a document opened from a link is not
 saved until the first edit; the previous autosave is kept with "Restore previous
 figure". Share link `#s=` + lz-string(text). Debug report: text, app version, last 50
 edits, user agent.
