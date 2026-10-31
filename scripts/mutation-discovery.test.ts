@@ -23,16 +23,20 @@ function selected(patterns: readonly string[], universe: readonly string[]): str
 describe('the discovery mutation gate', () => {
   const shards = SHARDS.filter((s) => s.pkg === 'discovery');
 
-  it('four shards (three file groups and every other file), gated at 75 %', () => {
+  it('ten shards (nine file groups and every other file), gated at 75 %', () => {
     expect(shards.map((s) => s.id)).toEqual([
       'discovery-a',
       'discovery-b',
       'discovery-c',
       'discovery-d',
       'discovery-e',
+      'discovery-f',
+      'discovery-g',
+      'discovery-h',
+      'discovery-i',
       'discovery',
     ]);
-    expect(shards.map((s) => s.parent)).toEqual(['', '', '', '', '', '']);
+    expect(shards.map((s) => s.parent)).toEqual(['', '', '', '', '', '', '', '', '', '']);
     expect(shards[0]?.mutate).toContain(`${D}/closure.ts`);
     expect(shards[1]?.mutate).toContain(`${D}/candidates.ts`);
     expect(shards[2]?.mutate).toContain(`${D}/lemmas.ts`);

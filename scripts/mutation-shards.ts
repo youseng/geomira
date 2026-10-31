@@ -2,8 +2,8 @@
  * The nightly mutation matrix (nightly.yml, SPEC §17 L15). Each shard is one job with its own
  * incremental file and cache key, so a shard that finishes saves its progress even when
  * another times out. The kernel is split into eleven shards by file group (its full run takes
- * about four hours on a GitHub runner); num and claims finish within an hour and run whole;
- * discovery is split into six shards (DISCOVERY_GROUPS; ADR-0038, ADR-0039).
+ * about four hours on a GitHub runner); num runs whole; claims is split into three shards
+ * (CLAIMS_GROUPS, ADR-0057) and discovery into ten (DISCOVERY_GROUPS; ADR-0038, ADR-0039, ADR-0057).
  * The last kernel shard is "every other tool file" (negated globs), so a new file under
  * tools/ is always mutated by some shard. scripts/mutation-shards.test.ts checks that the
  * kernel shards partition the files of stryker.kernel.json's `mutate`.
@@ -13,6 +13,9 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { C, CLAIMS_GROUPS, D, DISCOVERY_GROUPS } from './mutation-groups';
+
+export { CLAIMS_GROUPS, DISCOVERY_GROUPS } from './mutation-groups';
 
 export interface Shard {
   /** Job and cache name: the incremental file is cached under `stryker-<id>-…`. */
@@ -172,7 +175,6 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
       ...present(V11_A),
       ...present(MOBIUS_A),
       ...present(PROJECTIVE_A),
-      ...present(CONIC_A),
     ],
     parent: 'kernel-1',
   },
@@ -207,7 +209,13 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     parent: 'kernel-2',
   },
   {
-    files: [`${K}/tools/points.ts`, `${K}/tools/triangle.ts`, ...present(SPREAD_E)],
+    // ADR-0057: the conic core moved here from kernel-a (95 minutes cold on a0d505b).
+    files: [
+      `${K}/tools/points.ts`,
+      `${K}/tools/triangle.ts`,
+      ...present(SPREAD_E),
+      ...present(CONIC_A),
+    ],
     parent: 'kernel-3',
   },
   {
@@ -224,10 +232,14 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     parent: 'kernel-4',
   },
   {
-    files: [`${K}/tools/lines.ts`, ...present(MOBIUS_I), ...present(PROJECTIVE_I)],
+    files: [`${K}/tools/lines.ts`, ...present(MOBIUS_I)],
     parent: 'kernel-h',
   },
-  { files: [`${K}/tools/transforms.ts:133-265`, ...present(CONIC_J)], parent: 'kernel-b' },
+  // ADR-0057: the projective constructors moved here from kernel-i (86 minutes cold on a0d505b).
+  {
+    files: [`${K}/tools/transforms.ts:133-265`, ...present(CONIC_J), ...present(PROJECTIVE_I)],
+    parent: 'kernel-b',
+  },
   {
     files: [`${K}/tools/transforms.ts:266-${String(OPEN_END)}`, ...present(MOBIUS_K)],
     parent: 'kernel-b',
@@ -240,67 +252,6 @@ const toolsInGroups = [
       .map(fileOf)
       .filter((f) => f.startsWith(`${K}/tools/`)),
   ),
-];
-
-const D = 'packages/discovery/src';
-
-/**
- * Run 17 (ADR-0035): packages/discovery as one shard (3,589 mutants) was 63 % done after 70
- * minutes on a GitHub runner, on course to pass Stryker's 100-minute limit; it is split by file
- * group. The first grouping (about 850 source lines each) took 80, 55, 18 and 17 minutes;
- * most of discovery-a's mutants were timeouts (391 of 542: closure.ts 180, rules.ts 94, rank.ts
- * 78), so rules.ts moved to discovery-c and rank.ts to the last shard. That shard, `discovery`,
- * is "every other file" (negated globs, as kernel-h), so a new file is always mutated by some
- * shard.
- */
-export const DISCOVERY_GROUPS: readonly {
-  readonly id: string;
-  readonly files: readonly string[];
-}[] = [
-  {
-    id: 'discovery-a',
-    files: ['closure', 'closure-view', 'terms', 'uf'].map((f) => `${D}/${f}.ts`),
-  },
-  {
-    id: 'discovery-b',
-    // ADR-0052: the find job's schedule of the screen joins the scan it schedules.
-    files: [
-      'candidates',
-      'scan',
-      'scan-rounds',
-      'ticking',
-      'solve',
-      'job',
-      'lattice',
-      'consequences',
-    ].map((f) => `${D}/${f}.ts`),
-  },
-  {
-    id: 'discovery-c',
-    files: [
-      'lemmas',
-      'hunt',
-      'position',
-      'text',
-      'rules',
-      'angles',
-      'angle-rules',
-      'angle-maps',
-      'angle-lattice',
-    ].map((f) => `${D}/${f}.ts`),
-  },
-  // ADR-0039: the closure's rules (moved out of closure.ts), and the knowledge with the groups.
-  {
-    id: 'discovery-d',
-    // ADR-0042: the conic rules of the closure.
-    files: ['closure-merge', 'closure-maps', 'closure-mid', 'closure-conics'].map(
-      (f) => `${D}/${f}.ts`,
-    ),
-  },
-  {
-    id: 'discovery-e',
-    files: ['derive', 'group', 'confirm', 'find-units'].map((f) => `${D}/${f}.ts`),
-  },
 ];
 
 const LETTERS = 'abcdefghijk';
@@ -320,7 +271,22 @@ export const SHARDS: readonly Shard[] = [
     mutate: [`${K}/tools/**/*.ts`, ...toolsInGroups.map((f) => `!${f}`)],
     parent: 'kernel-4',
   },
-  { id: 'claims', pkg: 'claims', mutate: [], parent: '' },
+  ...CLAIMS_GROUPS.map((g) => ({
+    id: g.id,
+    pkg: 'claims' as const,
+    mutate: present(g.files),
+    parent: 'claims',
+  })),
+  {
+    id: 'claims',
+    pkg: 'claims',
+    mutate: [
+      `${C}/**/*.ts`,
+      `!${C}/index.ts`,
+      ...CLAIMS_GROUPS.flatMap((g) => present(g.files)).map((f) => `!${f}`),
+    ],
+    parent: '',
+  },
   // Run 17 (ADR-0035): the finder's package, gated at 75 % like claims, in six shards (ADR-0039).
   ...DISCOVERY_GROUPS.map((g) => ({
     id: g.id,

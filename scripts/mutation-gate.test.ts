@@ -96,7 +96,8 @@ describe('the nightly mutation gate', () => {
       ['claims', 74, 26],
     ] as const) {
       writeAll(9, 1);
-      write(pkg, report(fileOfShard(pkg), killed, survived));
+      for (const s of SHARDS.filter((x) => x.pkg === pkg))
+        write(s.id, report(fileOfShard(s.id), killed, survived, lineOfShard(s.id)));
       const { lines, pass } = runGate(dir);
       expect(pass, pkg).toBe(false);
       expect(line(lines, pkg)).toMatch(/: FAIL$/u);
