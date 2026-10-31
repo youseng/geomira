@@ -1,0 +1,36 @@
+\documentclass{article}
+\usepackage{tikz}
+\usepackage{amssymb}
+\pagestyle{empty}
+\begin{document}
+% GEOMIRA export: TikZ. One unit is 2.642473bp (352329.758806 px on screen).
+% Needs \usepackage{tikz} and \usepackage{amssymb}.
+% Coordinates are world coordinates × 100000 (TeX's numbers stay in range).
+\begin{tikzpicture}[x=2.642473bp, y=2.642473bp, line cap=round, line join=round]
+\definecolor{gmc0}{HTML}{1B1F24}
+\definecolor{gmc1}{HTML}{FBFBF8}
+\clip (-40.824,-41.243) rectangle (140.824,94.993);
+% t
+\draw[gmc0, line width=1.125bp] (0,0) -- (100,0);
+\draw[gmc0, line width=1.125bp] (100,0) -- (30,80);
+\draw[gmc0, line width=1.125bp] (30,80) -- (0,0);
+% w
+\draw[gmc0, line width=1.125bp] (106.765,26.875) arc[start angle=0, end angle=360, radius=56.765];
+% A
+\filldraw[fill=gmc0, draw=gmc1, line width=0.75bp] (0,0) circle[radius=2.625bp];
+% B
+\filldraw[fill=gmc0, draw=gmc1, line width=0.75bp] (100,0) circle[radius=2.625bp];
+% C
+\filldraw[fill=gmc0, draw=gmc1, line width=0.75bp] (30,80) circle[radius=2.625bp];
+% M
+\filldraw[fill=gmc0, draw=gmc1, line width=0.75bp] (50,0) circle[radius=2.625bp];
+% H
+\filldraw[fill=gmc0, draw=gmc1, line width=0.75bp] (30,26.25) circle[radius=2.625bp];
+\node[anchor=north east, inner sep=0pt, text=gmc0] at (-1.806,-1.806) {$A$}; % label of A
+\node[anchor=north west, inner sep=0pt, text=gmc0] at (101.806,-1.806) {$B$}; % label of B
+\node[anchor=south east, inner sep=0pt, text=gmc0] at (28.194,81.806) {$C$}; % label of C
+\node[anchor=south west, inner sep=0pt, text=gmc0] at (51.806,1.806) {$M$}; % label of M
+\node[anchor=south west, inner sep=0pt, text=gmc0] at (31.806,28.056) {$H$}; % label of H
+\end{tikzpicture}
+
+\end{document}

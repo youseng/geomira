@@ -1,0 +1,36 @@
+\documentclass{article}
+\usepackage{tikz}
+\usepackage{amssymb}
+\pagestyle{empty}
+\begin{document}
+% GEOMIRA export: TikZ. One unit is 12.426407bp (16.568542 px on screen).
+% Needs \usepackage{tikz} and \usepackage{amssymb}.
+\begin{tikzpicture}[x=12.426407bp, y=12.426407bp, line cap=round, line join=round]
+\definecolor{gmc0}{HTML}{1B1F24}
+\definecolor{gmc1}{HTML}{1F6FD1}
+\definecolor{gmc2}{HTML}{FBFBF8}
+\clip (-16.6066,-17.7279) rectangle (22.0208,11.2426);
+% abc
+\draw[gmc0, line width=1.125bp] (1,4) -- (-2,0);
+\draw[gmc0, line width=1.125bp] (-2,0) -- (5,0);
+\draw[gmc0, line width=1.125bp] (5,0) -- (1,4);
+% ν
+\draw[gmc1, line width=1.125bp] (3.0178,1.75) arc[start angle=0, end angle=360, radius=1.76777];
+% i
+\draw[gmc0, line width=1.125bp] (2.7574,1.5858) arc[start angle=0, end angle=360, radius=1.58579];
+% x_a
+\draw[gmc0, line width=1.125bp] (9.4853,-7.6569) arc[start angle=0, end angle=360, radius=7.65685];
+% x_b
+\draw[gmc0, line width=1.125bp] (11.2426,4.4142) arc[start angle=0, end angle=360, radius=4.41421];
+% A
+\filldraw[fill=gmc0, draw=gmc2, line width=0.75bp] (1,4) circle[radius=2.625bp];
+% B
+\filldraw[fill=gmc0, draw=gmc2, line width=0.75bp] (-2,0) circle[radius=2.625bp];
+% C
+\filldraw[fill=gmc0, draw=gmc2, line width=0.75bp] (5,0) circle[radius=2.625bp];
+\node[anchor=south west, inner sep=0pt, text=gmc0] at (1.3841,4.3841) {$A$}; % label of A
+\node[anchor=south east, inner sep=0pt, text=gmc0] at (-2.3841,0.3841) {$B$}; % label of B
+\node[anchor=south west, inner sep=0pt, text=gmc0] at (5.3841,0.3841) {$C$}; % label of C
+\end{tikzpicture}
+
+\end{document}
