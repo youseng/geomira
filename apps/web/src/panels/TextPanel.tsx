@@ -6,11 +6,9 @@ import type { Registry } from '@geomira/kernel/registry';
 import type { Diagnostic } from '@geomira/lang/diagnostic';
 import { parseText } from '@geomira/lang/parse-text';
 import { lineColumnOf, offsetOf, type LineColumn } from '../caret';
-import type { EditorStore } from '../store';
 import type { TextApplier } from '../text-apply';
 
 export interface TextPanelProps {
-  readonly store: EditorStore;
   readonly state: EditorState;
   /** The draft and its applies (kept by the side panel while another tab is shown). */
   readonly applier: TextApplier;

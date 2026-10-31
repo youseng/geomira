@@ -62,7 +62,7 @@ const Body = memo(function Body({
 }: BodyProps) {
   switch (tab) {
     case 'Text':
-      return <TextPanel store={store} state={state} applier={applier} />;
+      return <TextPanel state={state} applier={applier} />;
     case 'Objects':
       return <ObjectsPanel store={store} state={state} undrawable={undrawable} onStyle={onStyle} />;
     case 'Layers':
