@@ -25,6 +25,8 @@ import * as autosaveMod from '../src/autosave';
 import * as shareMod from '../src/share';
 import * as reportMod from '../src/report';
 import * as commandMod from '../src/command';
+import * as claimToolMod from '../src/claim-tool';
+import * as claimBarMod from '../src/claim-bar';
 import * as keymapMod from '../src/keymap';
 import * as panelsMod from '../src/panels';
 import * as restoreMod from '../src/restore';
@@ -104,6 +106,31 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './randomize': { module: randomizeMod, names: ['randomizeEdit'] },
   './tool-groups': { module: toolGroupsMod, names: ['TOOL_GROUPS', 'keyCap', 'toolGroup'] },
   './prompt': { module: promptMod, names: ['toolPrompt'] },
+  './claim-tool': {
+    module: claimToolMod,
+    names: [
+      'CLAIM_VALUE_KINDS',
+      'REPEATING_CLAIM_KINDS',
+      'claimArgs',
+      'claimSteps',
+      'claimToolKinds',
+      'claimValue',
+      'secondPointStep',
+      'toolValue',
+      'typedKey',
+    ],
+  },
+  './claim-bar': {
+    module: claimBarMod,
+    names: [
+      'MAX_CLAIM_COMPLETIONS',
+      'SHORT_CLAIM_FORMS',
+      'claimCompletions',
+      'claimForms',
+      'claimLine',
+      'runClaimText',
+    ],
+  },
   './preview': { module: previewMod, names: ['toolPreview'] },
   './discovery': {
     module: discoveryMod,

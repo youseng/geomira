@@ -19,7 +19,8 @@ import { applyEdit } from './edit';
 import { add, build, reset, withTool } from './machine-build';
 import { done, refuse, type EditResult } from './result';
 import type { EditorEnv, EditorState } from './state';
-import { mayRepeat, openSteps, stepsOf } from './tool-steps';
+import type { ToolState } from './tool-state';
+import { filledSteps, mayRepeat, openSteps, pendingPair, pickGroups, stepsOf } from './tool-steps';
 import { toolUI, type PickKind, type ToolUI } from './tools';
 
 export { claimToolKinds, stepsOf } from './tool-steps';
@@ -35,6 +36,7 @@ export type ToolInput =
 const HIT_KINDS: Readonly<Record<PickKind, readonly string[]>> = Object.freeze({
   point: ['point'],
   line: ['line'],
+  line_or_points: ['line', 'point'],
   circle: ['circle'],
   oval: ['circle', 'conic'],
   // A conic is a curve too (ADR-0042); the words name it (ADR-0044).
@@ -48,6 +50,7 @@ const HIT_KINDS: Readonly<Record<PickKind, readonly string[]>> = Object.freeze({
 const PICK_WORDS: Readonly<Record<PickKind, string>> = Object.freeze({
   point: 'point',
   line: 'line',
+  line_or_points: 'line, or a point',
   circle: 'circle',
   oval: 'circle or conic',
   curve: 'line, circle or conic',
@@ -64,10 +67,52 @@ function fits(v: Value<number> | undefined, pick: PickKind): boolean {
 
 /** The picks in the order of the tool's steps (an order-free tool may have filled them out of order). */
 function inStepOrder(picks: readonly number[], slots: readonly number[]): number[] {
-  return picks
-    .map((id, i) => ({ id, slot: slots[i] ?? i }))
-    .sort((a, b) => a.slot - b.slot)
-    .map((p) => p.id);
+  return pickGroups(picks, slots).flat();
+}
+
+function buildPicks(
+  state: EditorState,
+  tool: ToolUI,
+  picks: readonly number[],
+  slots: readonly number[],
+  env: EditorEnv,
+): EditResult {
+  return build(state, tool, inStepOrder(picks, slots), env, pickGroups(picks, slots));
+}
+
+/**
+ * A point picked for a claim tool's line step (ADR-0051): the first point of a line given by
+ * two points, or its second point. Returns the tool state with the pick, the reason it is
+ * refused, or undefined when the pick is not such a point.
+ */
+function pairPick(
+  state: EditorState,
+  tool: ToolUI,
+  id: number,
+  slot: number,
+): ToolState | string | undefined {
+  const ts = state.toolState;
+  const pending = pendingPair(ts);
+  const picks = [...ts.picks, id];
+  const slots = [...ts.slots, slot];
+  if (pending !== undefined) {
+    const first = ts.picks[ts.slots.indexOf(pending)];
+    if (first === id) return 'pick a second point: a line needs two points';
+    return { ...ts, picks, slots };
+  }
+  const { steps, rest } = stepsOf(tool, ts);
+  const step = steps[slot] ?? rest;
+  if (step?.pick !== 'line_or_points' || state.values.values.get(id)?.kind !== 'point')
+    return undefined;
+  return { ...ts, picks, slots, pairs: [...(ts.pairs ?? []), slot] };
+}
+
+/** Whether picking `id` again ends the tool (a polygon closes; a claim's list of lines ends). */
+function closes(tool: ToolUI, ts: ToolState, id: number): boolean {
+  const { steps, rest } = stepsOf(tool, ts);
+  const again = rest?.pick === 'point' || (tool.build.kind === 'claim' && rest !== undefined);
+  const first = ts.picks[0] === id && ts.pairs?.includes(0) !== true;
+  return again && first && pendingPair(ts) === undefined && filledSteps(ts) >= steps.length;
 }
 
 /** Adds a pick for step `slot`; builds when the tool has all it needs. */
@@ -80,15 +125,15 @@ function pushPick(
 ): EditResult {
   const ts = state.toolState;
   const { steps, rest } = stepsOf(tool, ts);
-  const closes = rest?.pick === 'point' && ts.picks.length >= steps.length && id === ts.picks[0];
-  if (closes) return build(state, tool, inStepOrder(ts.picks, ts.slots), env);
-  if (ts.picks.includes(id) && !mayRepeat(tool, ts))
+  if (closes(tool, ts, id)) return buildPicks(state, tool, ts.picks, ts.slots, env);
+  const pair = pairPick(state, tool, id, slot);
+  if (typeof pair === 'string') return refuse(state, pair);
+  if (pair === undefined && ts.picks.includes(id) && !mayRepeat(tool, ts))
     return refuse(state, 'this object is already picked');
-  const picks = [...ts.picks, id];
-  const slots = [...ts.slots, slot];
-  if (picks.length >= steps.length && rest === undefined)
-    return build(state, tool, inStepOrder(picks, slots), env);
-  return done({ ...state, toolState: { ...ts, picks, slots } });
+  const next: ToolState = pair ?? { ...ts, picks: [...ts.picks, id], slots: [...ts.slots, slot] };
+  if (filledSteps(next) >= steps.length && rest === undefined && pendingPair(next) === undefined)
+    return buildPicks(state, tool, next.picks, next.slots, env);
+  return done({ ...state, toolState: next });
 }
 
 function moveClick(state: EditorState, hit: HitResult, env: EditorEnv): EditResult {
@@ -139,7 +184,7 @@ function gliderClick(
  * pick of the same kind that is not the first object, with neither the first object nor a point
  * under the click (those keep their meaning: a glider on the first curve, the point).
  */
-function pairPick(
+function secondCurvePick(
   state: EditorState,
   tool: ToolUI,
   candidates: readonly { readonly id: number; readonly kind: string }[],
@@ -169,7 +214,7 @@ function click(
   const [first] = open;
   if (first === undefined)
     return refuse(state, tool.build.kind === 'text' ? 'type the text' : 'nothing to pick');
-  const pair = pairPick(state, tool, input.hit.hits);
+  const pair = secondCurvePick(state, tool, input.hit.hits);
   if (pair !== undefined) return build(state, tool, pair, env);
   for (const h of input.hit.hits) {
     const o = open.find((x) => HIT_KINDS[x.step.pick].includes(h.kind));
@@ -215,7 +260,7 @@ function objectInput(state: EditorState, tool: ToolUI, id: number, env: EditorEn
   const [first] = open;
   if (first === undefined) return refuse(state, 'nothing to pick');
   const v = state.values.values.get(id);
-  const pair = v === undefined ? undefined : pairPick(state, tool, [{ id, kind: v.kind }]);
+  const pair = v === undefined ? undefined : secondCurvePick(state, tool, [{ id, kind: v.kind }]);
   if (pair !== undefined) return build(state, tool, pair, env);
   const o = open.find((x) => fits(v, x.step.pick));
   if (o === undefined)
@@ -246,9 +291,11 @@ export function toolInput(state: EditorState, input: ToolInput, env: EditorEnv):
       return objectInput(state, tool, input.id, env);
     case 'finish': {
       const { steps, rest } = stepsOf(tool, ts);
-      if (rest === undefined || ts.picks.length < steps.length)
+      if (pendingPair(ts) !== undefined)
+        return refuse(state, 'pick the second point of the line first');
+      if (rest === undefined || filledSteps(ts) < steps.length)
         return refuse(state, 'not enough picks to finish');
-      return build(state, tool, inStepOrder(ts.picks, ts.slots), env);
+      return buildPicks(state, tool, ts.picks, ts.slots, env);
     }
     case 'text':
       return textInput(state, tool, input.value, env);

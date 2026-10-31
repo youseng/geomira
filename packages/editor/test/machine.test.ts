@@ -280,7 +280,7 @@ describe('construction tools', () => {
         'equal',
       ]),
     );
-    expect(claimToolKinds()).not.toContain('length');
+    expect(claimToolKinds()).toContain('length');
     let s = useTool(editorOf(FIG), 'claim', 'collinear');
     s = run(s, click(s, 0, 0), click(s, 4, 0), click(s, 2, 0), { kind: 'finish' });
     expect(print(s.doc)).toContain('claim collinear(A, B, D)');

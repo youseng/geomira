@@ -83,6 +83,10 @@ claim         = kind , "(" , expr , { "," , expr } , ")"    (* every kind by nam
               | segment , "=" , [ number , ( "·" | "*" ) ] , segment          (* length *)
               | segment , "/" , segment , "=" , segment , "/" , segment      (* ratio *)
               | segment , "/" , segment , "=" , number                       (* ratio_value *)
+              | segment , ( "·" | "*" ) , segment , "=" , segment , ( "·" | "*" ) , segment
+                                    (* length_product (ADR-0051) *)
+              | segment , "+" , segment , "=" , segment
+              | segment , "=" , segment , "+" , segment                       (* length_sum *)
               | [ number , [ "·" | "*" ] ] , dangle , "=" , dangle           (* dangle *)
               | "∡" , "(" , expr , "," , expr , ")" , "=" , number           (* dangle_lines *)
               | angle , "=" , angle                                          (* angle_eq *)
@@ -200,6 +204,14 @@ P = on(ω, 2, 1)
 | `cross_ratio_lines` | `cross_ratio(a, b, c, d) = k (four concurrent lines)`, `cross_ratio_lines(a, b, c, d, k)` | `claim cross_ratio_lines(line(A, B), line(A, C), line(A, M_a), line(A, H), -1)` | yes |
 | `harmonic_lines` | `harmonic(a, b; c, d) (four concurrent lines)`, `harmonic_lines(a, b, c, d)` | `claim harmonic_lines(line(A, B), line(A, C), line(A, M_a), line(A, H))` | yes |
 | `conconic` | `conconic(A, B, C, D, E, F, …) (no three collinear)` | `claim conconic(A, B, C, H, M_a, P)` | yes |
+| `similar` | `similar(ABC, DEF) (A ↔ D, B ↔ E, C ↔ F; directly or oppositely)` | `claim similar(ABC, M_aM_bM_c)` | yes |
+| `similar_direct` | `similar_direct(ABC, DEF) (the same orientation)` | `claim similar_direct(ABC, M_aM_bM_c)` | yes |
+| `similar_opposite` | `similar_opposite(ABC, DEF) (opposite orientations)` | `claim similar_opposite(A, foot(B, line(C, A)), foot(C, line(A, B)), A, B, C)` | yes |
+| `congruent` | `congruent(ABC, DEF) (A ↔ D, B ↔ E, C ↔ F; directly or oppositely)` | `claim congruent(AM_cM_b, M_aM_bM_c)` | yes |
+| `congruent_direct` | `congruent_direct(ABC, DEF) (the same orientation)` | `claim congruent_direct(AM_cM_b, M_aM_bM_c)` | yes |
+| `congruent_opposite` | `congruent_opposite(ABC, DEF) (opposite orientations)` | `claim congruent_opposite(A, B, C, reflect(A, line(B, C)), B, C)` | yes |
+| `length_product` | `AB·CD = EF·GH` | `claim AB·M_bM_c = BC·AM_c` | yes |
+| `length_sum` | `AB + CD = EF` | `claim BM_a + M_aC = BC` | no |
 
 ## Assumptions
 

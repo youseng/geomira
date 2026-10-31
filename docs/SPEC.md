@@ -294,7 +294,11 @@ and `harmonic(A,B;C,D)` for four collinear or concyclic points (the complex cros
 `cross_ratio_lines`, `harmonic_lines` for four concurrent lines; collinear accepts points at
 infinity · (ADR-0042) on(P, k) and tangent(l, k) with a conic k, and `conconic(A,…,F,…)` (the
 points on one conic: one determinant condition per point after the fifth, NDG distinct and no
-three collinear).
+three collinear). · (ADR-0051) `similar(ABC, DEF)` and `congruent(ABC, DEF)` (A ↔ D, B ↔ E, C ↔ F;
+directly or oppositely, by proportional or equal sides) and their orientation forms
+`similar_direct`, `similar_opposite`, `congruent_direct`, `congruent_opposite` (NDG: both
+triangles proper), `AB·CD = EF·GH` (`length_product`) and `AB + CD = EF` (`length_sum`: the
+squared condition with an order item; not polynomial).
 Each kind defines, generically over Field<T>: `conditions(values)` (must all be 0),
 `ndg(values)` (must all be non-zero: NON-DEGENERACY data), and a float `residual`
 (dimensionless, ≥ 0). Directed angles use the complex form: with
@@ -302,8 +306,9 @@ z₁ = (C − B)·conj(A − B) and z₂ = (F − E)·conj(D − E), the conditi
 Im(z₁ⁿ·conj(z₂)) = 0, NDG z₁ ≠ 0 and z₂ ≠ 0 (for n = 1 this is the cross/dot formula).
 Lengths enter as squares. POLYNOMIAL KINDS (the whitelist for the prime-field rung):
 collinear, concyclic, concurrent, parallel, perpendicular, on, tangent, equal points,
-length and ratio equalities, directed angles, cross ratios and harmonic quadruples, conconic. Undirected angles and anything involving
-order or inequality are NOT polynomial kinds. Kinds also carry their argument symmetries and
+length and ratio equalities, directed angles, cross ratios and harmonic quadruples, conconic,
+similar and congruent triangles (every orientation form), length products (ADR-0051). Undirected
+angles, sums of lengths and anything involving order or inequality are NOT polynomial kinds. Kinds also carry their argument symmetries and
 optional finder hints (ADR-0035); the kinds are a registry value (`claimKindRegistry`).
 
 ### 10.2 Three-valued evaluation
@@ -427,6 +432,11 @@ Panels: Text (two-way, per-line diagnostics), Objects (by layer, Undefined/Inexa
 reasons), Layers, Claims (live badges; local verdict line; global verdict line;
 "open counterexample"), Style. Command bar with registry autocomplete; shortcuts and help
 generated from data; mobile (390×664) pan, pinch, drag and panels work. Views UI: v1.1.
+(ADR-0051) Every claim kind is reachable from the Claim tool (a line parameter takes a line,
+segment or ray, or two points: `line(A, P)`; a kind's number comes from the tool's field) and
+from the header's claim box, which lists the forms it reads, completes the word at the cursor,
+and says what it could not read (the word, its column, the form to write); the logic is in
+packages/editor (claim-tool.ts, claim-bar.ts).
 
 ## 16. Worker job protocol
 `runJob(job)` is a pure generator in packages/claims yielding progress after each sample

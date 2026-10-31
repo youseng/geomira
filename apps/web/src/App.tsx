@@ -3,6 +3,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -174,7 +175,12 @@ function useApp() {
     showTab: panels.showTab,
     fitAfterEdit,
   });
-  const onTestClaim = useStable(header.props.onTestClaim);
+  const testClaim = useStable(header.props.claimBox.test);
+  const completeClaim = useStable(header.props.claimBox.complete);
+  const claimBox = useMemo(
+    () => ({ test: testClaim, complete: completeClaim }),
+    [testClaim, completeClaim],
+  );
   const openClaims = useStable(() => {
     panels.showTab('Claims');
   });
@@ -187,7 +193,7 @@ function useApp() {
   return {
     ...{ page, canvasRef, commandRef, setSize, panels, dialog, setDialog, header, size },
     ...useUndrawable(),
-    ...{ onTestClaim, openClaims, style, shown: found.scene, highlight: found.highlight },
+    ...{ claimBox, openClaims, style, shown: found.scene, highlight: found.highlight },
   };
 }
 
@@ -305,7 +311,7 @@ export function App() {
             onTab={panels.showTab}
             open={panels.open}
             onClose={panels.close}
-            onTestClaim={app.onTestClaim}
+            claimBox={app.claimBox}
             onStyle={app.style.open}
           />
         </Boundary>

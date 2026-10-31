@@ -25,7 +25,7 @@ import {
   type Cursor,
 } from './cursor';
 import { parseExpr, parseUnary } from './parse-expr';
-import { geomdrawClaim } from './parse-geomdraw';
+import { geomdrawClaim, geomdrawProblem } from './parse-geomdraw';
 import { crossRatioClaim } from './parse-cross-ratio';
 import { TOOL_ALIASES } from './geomdraw';
 
@@ -38,6 +38,10 @@ export type Side =
       readonly span: Span;
     }
   | { readonly t: 'ratio'; readonly pts: readonly ExprNode[]; readonly span: Span }
+  /** AB·CD (ADR-0051). */
+  | { readonly t: 'prod'; readonly pts: readonly ExprNode[]; readonly span: Span }
+  /** AB + CD (ADR-0051). */
+  | { readonly t: 'sum'; readonly pts: readonly ExprNode[]; readonly span: Span }
   | {
       readonly t: 'dangle';
       readonly n?: ExprNode;
@@ -56,7 +60,7 @@ export type Side =
   | { readonly t: 'expr'; readonly e: ExprNode; readonly span: Span };
 
 const FORMS =
-  'AB = k·CD, AB/CD = EF/GH, AB/CD = k, n∡ABC = ∡DEF, ∡(l, m) = θ, ∠ABC = ∠DEF, ∠ABC ± ∠DEF = θ, P = Q, or a call such as collinear(A, B, C)';
+  'AB = k·CD, AB/CD = EF/GH, AB/CD = k, AB·CD = EF·GH, AB + CD = EF, n∡ABC = ∡DEF, ∡(l, m) = θ, ∠ABC = ∠DEF, ∠ABC ± ∠DEF = θ, P = Q, or a call such as collinear(A, B, C)';
 
 /** `name(…)` that spans the rest of the tokens (a kind call), or undefined. */
 export function kindCall(c: Cursor, stopAtBracket: boolean): Condition | undefined {
@@ -148,7 +152,21 @@ function anglePoints(c: Cursor, sym: string, lines: boolean): ExprNode[] | undef
   return undefined;
 }
 
+/** `·` or `*` between two segments (AB·CD), `+` after one (AB + CD): ADR-0051. */
+function segOperator(c: Cursor): 'prod' | 'sum' | undefined {
+  if (isPunct(c, '+')) return 'sum';
+  return isPunct(c, '·') || isPunct(c, '*') ? 'prod' : undefined;
+}
+
 function segOrRatio(c: Cursor, pts: readonly ExprNode[], start: Span): Side | undefined {
+  const op = segOperator(c);
+  if (op !== undefined) {
+    next(c);
+    const other = parseSegment(c);
+    return other === undefined
+      ? undefined
+      : { t: op, pts: [...pts, ...other], span: since(c, start) };
+  }
   if (!isPunct(c, '/')) return { t: 'seg', pts, span: since(c, start) };
   next(c);
   const den = parseSegment(c);
@@ -272,6 +290,12 @@ function relation(c: Cursor, l: Side, r: Side, eq: Span): Condition | undefined 
     return { kind: 'length', args: [...l.pts, ...r.pts, one('1', eq)], span };
   if (l.t === 'seg' && r.t === 'scaled')
     return { kind: 'length', args: [...l.pts, ...r.pts, r.k], span };
+  if (l.t === 'prod' && r.t === 'prod')
+    return { kind: 'length_product', args: [...l.pts, ...r.pts], span };
+  if (l.t === 'sum' && r.t === 'seg')
+    return { kind: 'length_sum', args: [...l.pts, ...r.pts], span };
+  if (l.t === 'seg' && r.t === 'sum')
+    return { kind: 'length_sum', args: [...r.pts, ...l.pts], span };
   if (l.t === 'ratio' && r.t === 'ratio')
     return { kind: 'ratio', args: [...l.pts, ...r.pts], span };
   if (l.t === 'ratio' && r.t === 'num') return { kind: 'ratio_value', args: [...l.pts, r.e], span };
@@ -299,6 +323,7 @@ export function parseClaim(c: Cursor): Condition | undefined {
   if (call !== undefined || c.diags.length > 0) return call;
   const infix = geomdrawClaim(c);
   if (infix !== undefined) return infix;
+  if (geomdrawProblem(c)) return undefined;
   const l = parseSide(c);
   if (l === undefined) return undefined;
   const eq = peek(c);

@@ -11,6 +11,11 @@ import type { NameKind } from './names';
 export type PickKind =
   | 'point'
   | 'line'
+  /**
+   * A line, segment or ray, or two points that give the line through them (the claim tool's
+   * line parameters, ADR-0051: `concurrent(line(A, P), …)` by picking A, then P).
+   */
+  | 'line_or_points'
   | 'circle'
   /** A circle or a conic (ADR-0042: the Tangent tool). */
   | 'oval'
