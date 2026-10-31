@@ -70,7 +70,7 @@ test('touch: a moving press drags the label; a still press opens the card', asyn
   await figure(page);
   const p = await onLabel(page);
   const cdp = await page.context().newCDPSession(page);
-  const touch = async (type: string, x: number, y: number) =>
+  const touch = async (type: 'touchStart' | 'touchMove' | 'touchEnd', x: number, y: number) =>
     cdp.send('Input.dispatchTouchEvent', {
       type,
       touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }],
