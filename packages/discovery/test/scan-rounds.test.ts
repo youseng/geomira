@@ -97,8 +97,17 @@ describe('the first look (ADR-0052)', () => {
       'ratio_value',
       'cross_ratio',
       'cross_ratio_lines',
+      // ADR-0051's kinds, not searched until the closure knows similar triangles.
+      'similar',
+      'similar_direct',
+      'similar_opposite',
+      'congruent',
+      'congruent_direct',
+      'congruent_opposite',
+      'length_product',
+      'length_sum',
     ]);
-    expect(l.looks).toHaveLength(KINDS.kinds.length - 4);
+    expect(l.looks).toHaveLength(KINDS.kinds.length - 12);
     for (const x of l.looks) {
       expect(x.report.checked, x.kind.name).toBeLessThanOrEqual(10);
       const covered = x.report.checked < 10;
