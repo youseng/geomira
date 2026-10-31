@@ -33,7 +33,8 @@
     "./prompt": "./src/prompt.ts",
     "./preview": "./src/preview.ts",
     "./views": "./src/views.ts",
-    "./discovery": "./src/discovery.ts"
+    "./discovery": "./src/discovery.ts",
+    "./style-card": "./src/style-card.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
