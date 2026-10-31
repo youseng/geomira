@@ -2,8 +2,8 @@
  * The nightly mutation matrix (nightly.yml, SPEC §17 L15). Each shard is one job with its own
  * incremental file and cache key, so a shard that finishes saves its progress even when
  * another times out. The kernel is split into eleven shards by file group (its full run takes
- * about four hours on a GitHub runner); num runs whole; claims is split into three shards
- * (CLAIMS_GROUPS, ADR-0057) and discovery into ten (DISCOVERY_GROUPS; ADR-0038, ADR-0039, ADR-0057).
+ * about four hours on a GitHub runner); num runs whole; claims is split into four shards
+ * (CLAIMS_GROUPS, ADR-0057) and discovery into fourteen (DISCOVERY_GROUPS; ADR-0038, ADR-0039, ADR-0057).
  * The last kernel shard is "every other tool file" (negated globs), so a new file under
  * tools/ is always mutated by some shard. scripts/mutation-shards.test.ts checks that the
  * kernel shards partition the files of stryker.kernel.json's `mutate`.
@@ -149,6 +149,19 @@ export const CONIC_B: readonly string[] = [
  * and foci.ts fall to the catch-all kernel-h with every other tool file.
  */
 export const CONIC_J: readonly string[] = [`${K}/conic-pencil.ts`];
+
+/**
+ * ADR-0057 (third cold run, d08200e: kernel-h, the catch-all, past 100 minutes with 2,386 mutants):
+ * the tool files of ADR-0045 and Run 16c's conic tools join light shards (kernel-c 19, kernel-i
+ * 20, kernel-k 23, kernel-b 22 minutes on that run).
+ */
+export const HEAVY_C: readonly string[] = [
+  `${K}/tools/common-tangents.ts`,
+  `${K}/tools/similitude.ts`,
+];
+export const HEAVY_I: readonly string[] = [`${K}/tools/conic-conic.ts`];
+export const HEAVY_K: readonly string[] = [`${K}/tools/dual-tangents.ts`];
+export const HEAVY_B: readonly string[] = [`${K}/tools/foci.ts`];
 export const CONIC_F: readonly string[] = [`${K}/conic-type.ts`, `${K}/conic-around.ts`];
 
 /** The entries whose file exists at this commit (a `file:a-b` entry by its file). */
@@ -187,6 +200,7 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
       ...present(MOBIUS_B),
       ...present(PROJECTIVE_B),
       ...present(CONIC_B),
+      ...present(HEAVY_B),
     ],
     parent: 'kernel-b',
   },
@@ -196,6 +210,7 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
       `${K}/tools/intersect.ts`,
       `${K}/tools/range.ts`,
       ...present(PROJECTIVE_C),
+      ...present(HEAVY_C),
     ],
     parent: 'kernel-2',
   },
@@ -232,7 +247,7 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     parent: 'kernel-4',
   },
   {
-    files: [`${K}/tools/lines.ts`, ...present(MOBIUS_I)],
+    files: [`${K}/tools/lines.ts`, ...present(MOBIUS_I), ...present(HEAVY_I)],
     parent: 'kernel-h',
   },
   // ADR-0057: the projective constructors moved here from kernel-i (86 minutes cold on a0d505b).
@@ -241,7 +256,11 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     parent: 'kernel-b',
   },
   {
-    files: [`${K}/tools/transforms.ts:266-${String(OPEN_END)}`, ...present(MOBIUS_K)],
+    files: [
+      `${K}/tools/transforms.ts:266-${String(OPEN_END)}`,
+      ...present(MOBIUS_K),
+      ...present(HEAVY_K),
+    ],
     parent: 'kernel-b',
   },
 ];

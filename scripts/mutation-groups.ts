@@ -21,7 +21,7 @@ export const DISCOVERY_GROUPS: readonly {
 }[] = [
   {
     id: 'discovery-a',
-    files: ['closure', 'closure-view', 'terms', 'uf'].map((f) => `${D}/${f}.ts`),
+    files: ['closure'].map((f) => `${D}/${f}.ts`),
   },
   // ADR-0057: discovery-b, -c, -d and -e each ran past 100 minutes cold on a0d505b (77–82 %
   // done; discovery-d at run-16c's rate, measured side by side): each is halved by source lines,
@@ -29,7 +29,7 @@ export const DISCOVERY_GROUPS: readonly {
   {
     id: 'discovery-b',
     // ADR-0052: the find job's schedule of the screen joins the scan it schedules.
-    files: ['candidates', 'scan', 'ticking', 'job'].map((f) => `${D}/${f}.ts`),
+    files: ['candidates'].map((f) => `${D}/${f}.ts`),
   },
   {
     id: 'discovery-c',
@@ -39,11 +39,11 @@ export const DISCOVERY_GROUPS: readonly {
   {
     id: 'discovery-d',
     // ADR-0042: the conic rules of the closure.
-    files: ['closure-merge', 'closure-conics'].map((f) => `${D}/${f}.ts`),
+    files: ['closure-merge'].map((f) => `${D}/${f}.ts`),
   },
   {
     id: 'discovery-e',
-    files: ['derive', 'group'].map((f) => `${D}/${f}.ts`),
+    files: ['derive'].map((f) => `${D}/${f}.ts`),
   },
   {
     id: 'discovery-f',
@@ -63,6 +63,12 @@ export const DISCOVERY_GROUPS: readonly {
     id: 'discovery-i',
     files: ['confirm', 'find-units'].map((f) => `${D}/${f}.ts`),
   },
+  // ADR-0057, the third cold run (d08200e): discovery-b and -d past 100 minutes (discovery-d 225
+  // of its 587 mutants timed out), discovery-a and -e at 70 and 71: each is halved again.
+  { id: 'discovery-j', files: ['closure-view', 'terms', 'uf'].map((f) => `${D}/${f}.ts`) },
+  { id: 'discovery-k', files: ['scan', 'ticking', 'job'].map((f) => `${D}/${f}.ts`) },
+  { id: 'discovery-l', files: ['closure-conics'].map((f) => `${D}/${f}.ts`) },
+  { id: 'discovery-m', files: ['group'].map((f) => `${D}/${f}.ts`) },
 ];
 
 export const C = 'packages/claims/src';
@@ -84,16 +90,9 @@ export const CLAIMS_GROUPS: readonly {
       'kinds-incidence',
       'kinds-curves',
       'kinds-projective',
-      'kinds-triangles',
-      'kinds-conics',
-      'kinds-metric',
-      'kinds-lengths',
       'kind',
       'kind-hints',
       'kind-registry',
-      'ndg',
-      'symmetry',
-      'collinear-infinity',
     ].map((f) => `${C}/${f}.ts`),
   },
   {
@@ -108,6 +107,19 @@ export const CLAIMS_GROUPS: readonly {
       'decide',
       'screen',
       'analysis',
+    ].map((f) => `${C}/${f}.ts`),
+  },
+  // ADR-0057, the third cold run (d08200e): claims-a took 87 minutes; its second half.
+  {
+    id: 'claims-c',
+    files: [
+      'kinds-triangles',
+      'kinds-conics',
+      'kinds-metric',
+      'kinds-lengths',
+      'ndg',
+      'symmetry',
+      'collinear-infinity',
     ].map((f) => `${C}/${f}.ts`),
   },
 ];

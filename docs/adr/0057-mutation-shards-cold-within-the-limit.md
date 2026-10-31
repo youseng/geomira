@@ -73,3 +73,25 @@ its own.
   but more slow mutants would count as detected. That weakens the measurement.
 - **Splitting only what this branch slowed** (the kernel): leaves the nightly red on the five older
   overruns.
+
+## Amendment: the third cold run (d08200e, run 41242777649)
+
+Twenty-two of twenty-five shards finished; the times of one shard vary widely between runs (kernel-h
+73 minutes on a0d505b, past 100 on d08200e with the same files). Three shards still ran out of time:
+kernel-h (90 % of 2,386 mutants), discovery-d (98 %; 225 of its 587 mutants timed out, mutants that
+stop the closure's fixpoint loops from ending) and discovery-b. claims-a took 87 minutes, discovery-a
+70, discovery-e 71. Every shard therefore gets a wide margin (the slowest about 60 minutes on that
+run's rates):
+
+- kernel-h's heavy tool files join light kernel shards (eleven kernel shards stay): common-tangents.ts
+  and similitude.ts kernel-c (19 minutes), conic-conic.ts kernel-i (20), dual-tangents.ts kernel-k
+  (23), foci.ts kernel-b (22). conics.ts and the small tool files stay in kernel-h.
+- discovery-a keeps closure.ts, discovery-j takes closure-view, terms and uf; discovery-b keeps
+  candidates.ts, discovery-k takes scan, ticking and job; discovery-d keeps closure-merge.ts,
+  discovery-l takes closure-conics.ts; discovery-e keeps derive.ts, discovery-m takes group.ts.
+- claims-a keeps the angle, incidence, curve and projective kinds with kind.ts, kind-hints.ts and
+  kind-registry.ts; claims-c takes the triangle, conic, metric and length kinds, ndg.ts, symmetry.ts
+  and collinear-infinity.ts.
+
+Thirty mutation jobs in all. The same frozen line of `scripts/mutation-discovery.test.ts` (the id
+list and its parents) changes again, under this ADR.

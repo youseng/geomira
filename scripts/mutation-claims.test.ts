@@ -1,5 +1,5 @@
 /**
- * ADR-0057: packages/claims in three mutation shards (the kinds, the tester, every other file),
+ * ADR-0057: packages/claims in four mutation shards (the kinds in two, the tester, every other file),
  * gated at 75 % on their sum, as discovery's shards (ADR-0038).
  */
 import { readdirSync, readFileSync } from 'node:fs';
@@ -23,15 +23,17 @@ function selected(patterns: readonly string[], universe: readonly string[]): str
 describe('the claims mutation shards (ADR-0057)', () => {
   const shards = SHARDS.filter((s) => s.pkg === 'claims');
 
-  it('three shards: the kinds, the tester, and every other file under the old id', () => {
+  it('four shards: the kinds in two, the tester, and every other file under the old id', () => {
     expect(shards.map((s) => [s.id, s.parent])).toEqual([
       ['claims-a', 'claims'],
       ['claims-b', 'claims'],
+      ['claims-c', 'claims'],
       ['claims', ''],
     ]);
     expect(shards[0]?.mutate).toContain(`${C}/kinds-angles.ts`);
     expect(shards[1]?.mutate).toContain(`${C}/verdict.ts`);
-    expect(shards[2]?.mutate.slice(0, 2)).toEqual([`${C}/**/*.ts`, `!${C}/index.ts`]);
+    expect(shards[2]?.mutate).toContain(`${C}/kinds-triangles.ts`);
+    expect(shards[3]?.mutate.slice(0, 2)).toEqual([`${C}/**/*.ts`, `!${C}/index.ts`]);
     expect(threshold('claims')).toBe(75);
   });
 
