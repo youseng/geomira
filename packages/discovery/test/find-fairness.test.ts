@@ -125,16 +125,17 @@ describe('the two rounds (ADR-0052)', SLOW, () => {
   // firstLook = candidatesPerKind: the first look settles every kind, one round as before.
   const one = run(doc, { ...BUDGET, firstLook: 400 });
 
-  it('screen the same candidates as one scan to the full budget, with the same reports', () => {
-    expect(two.result.kinds).toEqual(one.result.kinds);
+  it('screen as many candidates of each kind as one scan to the full budget, same reports', () => {
+    // A measure kind cut at its budget says so after a long scan; one scan's list ends there
+    // silently (its count of matches is not over the count limit).
+    const measured = (k: string) => KINDS.get(k)?.finder?.measure !== undefined;
+    const without = (r: FindResult) =>
+      r.kinds.map(({ stop, ...k }) => (measured(k.kind) ? k : { ...k, stop }));
+    expect(without(two.result)).toEqual(without(one.result));
+    for (const k of two.result.kinds)
+      if (measured(k.kind) && k.stop === 'budget') expect(k.checked).toBe(400);
     expect(two.result.notSearched).toEqual(one.result.notSearched);
     expect(two.result.stopped).toBe(false);
-    // The construction facts are counted once (the groups of the last grouping only); the
-    // first ones listed follow the screening order, which differs.
-    expect(two.result.construction.count).toBe(one.result.construction.count);
-    expect(two.result.caps.filter((c) => c.includes('candidates'))).toEqual(
-      one.result.caps.filter((c) => c.includes('candidates')),
-    );
   });
 
   it('a kind the first look covers has no long scan; a larger one goes on from its first look', () => {
@@ -192,16 +193,19 @@ describe('the two rounds (ADR-0052)', SLOW, () => {
       [3, 3],
     ].entries())
       f.point(`P_${String(i)}`, x ?? 0, y ?? 0);
-    const r = run(f.doc, { ...BUDGET, candidatesPerKind: 100 });
+    // Every kind's candidates fit the budget: both runs screen the same candidates.
+    const r = run(f.doc, { ...BUDGET, candidatesPerKind: 100_000 });
     expect(r.phases.some(isLong)).toBe(true);
     const shown = r.result.construction.shown.map((x) => x.key);
     const four = shown.filter((k) => k.startsWith('collinear(') && k.split('|').length === 4);
     expect(four).toHaveLength(1);
     // No more repeats than one round lists (BM = CM is listed as a fact and as a class there).
-    const one = run(f.doc, { ...BUDGET, candidatesPerKind: 100, firstLook: 100 });
+    const one = run(f.doc, { ...BUDGET, candidatesPerKind: 100_000, firstLook: 100_000 });
+    expect(r.result.kinds).toEqual(one.result.kinds);
     const keys = one.result.construction.shown.map((x) => x.key);
     const repeats = (ks: readonly string[]) => ks.filter((k, i) => ks.indexOf(k) !== i);
     expect(repeats(shown)).toEqual(repeats(keys));
+    // The construction facts are counted once (the groups of the last grouping only).
     expect(r.result.construction.count).toBe(one.result.construction.count);
   });
 
@@ -209,6 +213,30 @@ describe('the two rounds (ADR-0052)', SLOW, () => {
     const again = run(doc, BUDGET);
     expect(again.result.facts.map((f) => f.key)).toEqual(two.result.facts.map((f) => f.key));
     expect(again.phases).toEqual(two.phases);
+  });
+});
+
+describe('the first look covers the oldest and the newest objects (ADR-0052)', SLOW, () => {
+  const f = conicsFigure();
+
+  it('X = D (the newest point) is found and tested before any long scan', () => {
+    // Two conics through A, B, C, D: their fourth common point other(A, B, C) is D. The pair
+    // (D, X) is among the last of equal's 91 candidates in construction order.
+    const { result, phases } = run(f.doc, BUDGET, (p) => isLong(p));
+    expect(phases.some(isLong)).toBe(true);
+    expect(result.stopped).toBe(true);
+    const dx = result.facts.find(
+      (x) => x.kind === 'equal' && [f.id('D'), f.id('X')].every((id) => x.objects.includes(id)),
+    );
+    expect(dx?.verdict.kind).toBe('holds');
+  });
+
+  it('half the first look from each end: the first screens of a kind name early objects', () => {
+    const { phases } = run(f.doc, BUDGET);
+    expect(phases.some((p) => p.phase === 'screening equal from the newest objects')).toBe(true);
+    const first = phases.findIndex(isTesting);
+    expect(first).toBeGreaterThan(0);
+    for (const p of phases.slice(0, first)) expect(isLong(p)).toBe(false);
   });
 });
 

@@ -1,7 +1,8 @@
 /**
- * The find job's fair schedule of the screen (ADR-0052). The FIRST LOOK screens the first
- * `firstLook` candidates of every searched kind, in registry order, each from a source whose
- * count stops at FIRST_COUNT; the job tests what it found before any LONG SCAN, which then
+ * The find job's fair schedule of the screen (ADR-0052). The FIRST LOOK screens `firstLook`
+ * candidates of every searched kind, in registry order (half of them the first in construction
+ * order, half those of the newest objects), each from a source whose count stops at
+ * FIRST_COUNT; the job tests what it found before any LONG SCAN, which then
  * screens every kind the first look did not settle up to its full budget, skipping what the
  * first look screened. So no kind's long scan (counting millions of six-point tuples, measuring
  * every angle) can use the host's whole time budget before the other kinds' first candidates
@@ -63,6 +64,49 @@ function settled(report: KindReport, look: ScanBudget, budget: RoundsBudget): bo
   );
 }
 
+/**
+ * The pools enumerated newest first: the same candidates (the same claim keys), those whose
+ * last objects are the newest first (candidates.ts).
+ */
+export function newestFirst(p: Pools): Pools {
+  return { ...p, newestFirst: true };
+}
+
+/**
+ * One kind's first look: the first ⌈L/2⌉ candidates in construction order, then up to L in all
+ * from the newest objects (the test order and the ranking put the newest objects first,
+ * ADR-0039), L = min(firstLook, candidatesPerKind). When L is the kind's whole budget the look
+ * is the single scan's (construction order only).
+ */
+function* lookAt(
+  kind: ClaimKindSpec,
+  pools: Pools,
+  newest: Pools,
+  budget: RoundsBudget,
+  visit: (c: Candidate) => void,
+): Generator<DiscoveryProgress, Look & { readonly cmd?: 'cancel' | 'stop' }, DiscoveryCommand> {
+  const countLimit = Math.min(FIRST_COUNT, budget.countLimit);
+  const L = Math.min(budget.firstLook, budget.candidatesPerKind);
+  const half = L === budget.candidatesPerKind ? L : Math.ceil(L / 2);
+  const seen = new Set<string>();
+  const note = (c: Candidate) => {
+    seen.add(c.key);
+    visit(c);
+  };
+  const oldest = { candidatesPerKind: half, countLimit };
+  const scan = { source: oldest, limit: half, phase: `screening ${kind.name}` };
+  const r = yield* scanKind('find', kind, pools, scan, note);
+  if (r.cmd !== undefined) return { kind, report: r.report, cmd: r.cmd };
+  if (settled(r.report, oldest, budget)) return { kind, report: r.report };
+  const source = { candidatesPerKind: L, countLimit };
+  const phase = `screening ${kind.name} from the newest objects`;
+  const y = yield* scanKind('find', kind, newest, { source, limit: L, seen, phase }, note);
+  if (y.cmd !== undefined) return { kind, report: y.report, cmd: y.cmd };
+  return settled(y.report, source, budget)
+    ? { kind, report: y.report }
+    : { kind, report: y.report, seen };
+}
+
 /** The first look (see the module comment), with progress between bounded steps. */
 export function* firstLook(
   kinds: ClaimKinds,
@@ -72,27 +116,15 @@ export function* firstLook(
 ): Generator<DiscoveryProgress, FirstLook, DiscoveryCommand> {
   const looks: Look[] = [];
   const notSearched: { kind: string; reason: string }[] = [];
-  const source = {
-    candidatesPerKind: Math.min(budget.firstLook, budget.candidatesPerKind),
-    countLimit: Math.min(FIRST_COUNT, budget.countLimit),
-  };
+  const newest = newestFirst(pools);
   for (const kind of kinds.kinds) {
     if (kind.finder?.notSearched !== undefined) {
       notSearched.push({ kind: kind.name, reason: kind.finder.notSearched });
       continue;
     }
-    const seen = new Set<string>();
-    const scan = { source, limit: source.candidatesPerKind, phase: `screening ${kind.name}` };
-    const r = yield* scanKind('find', kind, pools, scan, (c) => {
-      seen.add(c.key);
-      visit(c);
-    });
-    if (r.cmd !== undefined) {
-      looks.push({ kind, report: r.report });
-      return { looks, notSearched, cmd: r.cmd };
-    }
-    const done = settled(r.report, source, budget);
-    looks.push(done ? { kind, report: r.report } : { kind, report: r.report, seen });
+    const { cmd, ...look } = yield* lookAt(kind, pools, newest, budget, visit);
+    looks.push(cmd === undefined ? look : { kind, report: look.report });
+    if (cmd !== undefined) return { looks, notSearched, cmd };
   }
   return { looks, notSearched };
 }

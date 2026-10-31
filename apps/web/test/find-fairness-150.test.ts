@@ -15,7 +15,7 @@ import { parse } from '@geomira/lang/parse';
 import { registry } from './helpers';
 
 /** The host's `stop` comes after this many job steps (a sample of a local test is one step). */
-const STEPS = 10_000;
+const STEPS = 15_000;
 
 /** The figure of e2e/fallback-discovery.spec.ts (the same fixed MINSTD sequence). */
 function figure(): string[] {
@@ -59,14 +59,15 @@ const CONICS = [
 ];
 
 /** The find job with the default budget but n = 40, stopped after `steps` steps. */
-function findStopped(text: string, steps: number): FindResult {
+function findStopped(text: string, steps: number): { r: FindResult; id: (n: string) => number } {
   const p = parse(text, registry);
+  const id = (n: string) => p.doc.objects.find((o) => o.name === n)?.id ?? -1;
   expect(p.diagnostics).toEqual([]);
   const it = runFind({ kind: 'find', doc: p.doc, seed: 7, budget: { n: 40 } }, { registry });
   for (let k = 0, r = it.next(); ; k++) {
     if (r.done === true) {
       if (r.value.kind !== 'found') throw new Error(JSON.stringify(r.value));
-      return r.value;
+      return { r: r.value, id };
     }
     r = it.next(k === steps ? 'stop' : undefined);
   }
@@ -79,10 +80,14 @@ describe('"What is special?" on 150 objects with conics (ADR-0052)', () => {
     () => {
       const lines = [...figure(), ...CONICS];
       expect(lines).toHaveLength(156);
-      const r = findStopped(`@version 1\n${lines.join('\n')}\n`, STEPS);
+      const { r, id } = findStopped(`@version 1\n${lines.join('\n')}\n`, STEPS);
       expect(r.stopped).toBe(true);
       expect(r.facts.length).toBeGreaterThanOrEqual(3);
       for (const f of r.facts) expect(f.verdict.kind).toBe('holds');
+      // X = D (two conics through A, B, C, D meet a fourth time at D): the newest point's fact,
+      // in the first look's newest half.
+      const dx = r.facts.find((f) => f.kind === 'equal' && f.objects.includes(id('X')));
+      expect(dx?.objects).toEqual(expect.arrayContaining([id('D'), id('X')]));
       // Every searched kind with candidates got its first look; the long scans were cut.
       expect(r.kinds.map((k) => k.kind)).toContain('conconic');
       for (const k of r.kinds) if (k.total > 0) expect(k.checked, k.kind).toBeGreaterThan(0);

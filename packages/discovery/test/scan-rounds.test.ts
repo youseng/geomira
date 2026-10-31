@@ -10,7 +10,7 @@ import type { ClaimKindSpec } from '@geomira/claims/kind';
 import { screenSteps } from '@geomira/claims/screen';
 import type { Document } from '@geomira/kernel/document';
 import { Figure } from '../../claims/test/helpers/build';
-import { poolsOf, type Candidate, type Pools } from '../src/candidates';
+import { plainCandidates, poolsOf, type Candidate, type Pools } from '../src/candidates';
 import { joined, type Confirmed } from '../src/confirm';
 import { BATCH, scanKind } from '../src/scan';
 import {
@@ -20,6 +20,7 @@ import {
   firstTests,
   longScan,
   lookReports,
+  newestFirst,
   type FirstLook,
   type RoundsBudget,
 } from '../src/scan-rounds';
@@ -97,11 +98,7 @@ describe('the first look (ADR-0052)', () => {
       const covered = x.report.checked < 10;
       expect(x.seen === undefined, x.kind.name).toBe(covered);
       if (x.seen !== undefined) expect(x.seen.size).toBe(10);
-      // A plain kind stops at the look's limit; a measure kind's list ends there.
-      if (x.seen !== undefined)
-        expect(x.report.stop, x.kind.name).toBe(
-          x.kind.finder?.measure === undefined ? 'budget' : undefined,
-        );
+      expect(x.report.stop, x.kind.name).not.toBe('time');
     }
     expect(visited.length).toBe(l.looks.reduce((n, x) => n + x.report.checked, 0));
     expect(allSettled(l.looks)).toBe(false);
@@ -136,11 +133,41 @@ describe('the first look (ADR-0052)', () => {
     const more: Candidate[] = [];
     const long = steps(longScan(l.looks, pools, budget, (c) => more.push(c))).value;
     expect(long.cmd).toBeUndefined();
-    const keys = [...visited, ...more].map((c) => c.key);
-    expect(new Set(keys).size).toBe(keys.length);
+    const all = [...visited, ...more];
+    expect(new Set(all.map((c) => c.key)).size).toBe(all.length);
     const single = look(KINDS, pools, { ...budget, firstLook: 200 });
-    expect(long.reports).toEqual(single.look.looks.map((x) => x.report));
-    expect(new Set(keys)).toEqual(new Set(single.visited.map((c) => c.key)));
+    // A measure kind cut at its budget says so after a long scan (one scan's list just ends).
+    const strip = (r: KindReport) =>
+      KINDS.get(r.kind)?.finder?.measure === undefined ? r : { ...r, stop: undefined };
+    expect(long.reports.map(strip)).toEqual(single.look.looks.map((x) => strip(x.report)));
+    const keysOf = (cs: readonly Candidate[], kind: string) =>
+      new Set(cs.filter((c) => c.kind.name === kind).map((c) => c.key));
+    for (const r of long.reports) {
+      const mine = keysOf(all, r.kind);
+      expect(mine.size, r.kind).toBe(r.checked);
+      // A kind within its budget: the same candidates; a larger one: its newest ones too.
+      if (r.checked < 200) expect(mine, r.kind).toEqual(keysOf(single.visited, r.kind));
+    }
+  });
+
+  it('newest first: the same candidates, by their last object, newest first', () => {
+    const newest = newestFirst(pools);
+    expect(newest.newestFirst).toBe(true);
+    for (const name of ['collinear', 'concyclic', 'equal', 'on', 'conconic']) {
+      const kind = KINDS.get(name);
+      if (kind === undefined) throw new Error(name);
+      const fwd = [...plainCandidates(kind, pools)];
+      const back = [...plainCandidates(kind, newest)];
+      expect(back.map((c) => c.key).sort(), name).toEqual(fwd.map((c) => c.key).sort());
+      expect(back.length, name).toBeGreaterThan(1);
+      const last = back.map((c) => {
+        const a = c.args.at(-1);
+        return a !== undefined && 'id' in a ? (pools.order.get(a.id) ?? -1) : -1;
+      });
+      for (let i = 1; i < last.length; i++)
+        expect(last[i], name).toBeLessThanOrEqual(last[i - 1] ?? 0);
+      expect(last[0]).toBe(Math.max(...last));
+    }
   });
 
   it('a stop in the long scan: the kinds after it keep their first look, stopped at the time', () => {

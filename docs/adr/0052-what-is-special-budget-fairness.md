@@ -36,23 +36,38 @@ the last kind, so the time budget ran out there. Four more points made the scree
 just longer than the page's 20 s, and nothing was tested. It is a scheduling shape, not a wrong
 result: no fact was reported falsely, but every fact the cheap kinds had already found was lost.
 
+Whether the job starves depends on the machine's speed. On the development container with no
+other load (2026-10-31), run-16c's single file found 11 facts on this figure in its 20 s, among
+them D = X: two conics through A, B, C, D meet a fourth time at D, so X = other(A, B, C) is D.
+Under load, and on the maintainer's machine, the scan did not end within the budget and the
+job found 0. A schedule whose result depends on whether the whole scan fits the time budget is
+the defect. The tests here pin it with step budgets, not the wall clock.
+
 ## Decision
 
 1. **The first look** (`packages/discovery/src/scan-rounds.ts`). Before any long scan, every
-   searched kind, in registry order, screens its first `firstLook` candidates:
-   - `FindBudget.firstLook` (optional, default 1,000 in `DEFAULT_FIND_BUDGET`, so it is in every
-     result's budget);
-   - the look screens at most L = min(firstLook, candidatesPerKind) candidates of a kind;
-   - its candidate source counts at most FIRST_COUNT = 20,000 tuples (or measured groups and
+   searched kind, in registry order, screens up to L = min(firstLook, candidatesPerKind) of its
+   candidates:
+   - `FindBudget.firstLook` is optional, default 1,000 in `DEFAULT_FIND_BUDGET`, so it is in
+     every result's budget.
+   - The OLDEST half: the first ⌈L/2⌉ candidates in the single scan's order (ADR-0035 decisions
+     8–9: tuples in construction order).
+   - The NEWEST half: then, up to L in all, the candidates whose last objects are the newest.
+     These are the same tuples enumerated with the positions filled from the last and each pool
+     newest first (`Pools.newestFirst`, `candidates.ts`; the same claim keys). The test order
+     and the ranking put the newest objects first (ADR-0039 decisions 6–7), so the first look
+     must reach them. On the reported figure D = X is the last of `equal`'s candidates in
+     construction order; without the newest half, round 1 tested several consequences of it
+     (P_kX = P_kD) and not D = X itself.
+   - When L is the kind's whole budget the look is the single scan (the oldest order only).
+   - Each half's source counts at most FIRST_COUNT = 20,000 tuples (or measured groups and
      matches) instead of countLimit: the count that states the total is itself one of the long
-     scans;
-   - the candidates are the same as the single scan's, in the same order (ADR-0035 decisions
-     8–9). One exception: a measure kind whose first-look count was cut takes its first L
-     candidates from the groups of the first FIRST_COUNT tuples of points, in construction order.
+     scans. A measure kind whose count was cut takes its candidates from the groups of the first
+     FIRST_COUNT tuples of points in that half's order.
 2. **Settled kinds.** After its first look a kind is SETTLED when its count was not cut short of
-   the full count limit (its total is the single scan's) and either it screened fewer than L
-   candidates (all of them) or L is its whole budget. A settled kind's report is the one a single
-   scan to the full budget gives.
+   the full count limit (its total is the single scan's) and either it screened every candidate
+   (fewer than the half's or the look's limit) or L is its whole budget. A settled kind has
+   screened exactly the single scan's candidates, and its report is the single scan's.
 3. **One round when the first look settles every kind**: the job then groups, tests with the
    whole test budget, ranks and lists exactly as before (small figures: the usual case).
 4. **Two rounds otherwise.** The scheduling rule, stated exactly:
@@ -61,7 +76,9 @@ result: no fact was reported falsely, but every fact the cheap kinds had already
       order of ADR-0039 decision 6 with ⌈tests / 2⌉ runs (30 of the default 60).
    3. The long scan: every kind not settled, in registry order, from a fresh source with the full
       limits (candidatesPerKind, countLimit), skipping the candidates its first look screened.
-      They count as checked, so a kind still screens at most candidatesPerKind candidates in all.
+      They count as checked, so a kind still screens at most candidatesPerKind candidates in all:
+      its first look, then the single scan's order. A kind with more candidates than its budget
+      thus screens the newest half instead of as many of the last ones in construction order.
       A skipped candidate counts towards a step's batch like a screened one (at most BATCH = 4
       candidates looked at between two yields).
    4. Round 2: every true fact is grouped again, without the facts round 1 did not confirm, so
@@ -107,15 +124,27 @@ result: no fact was reported falsely, but every fact the cheap kinds had already
 
 ## Consequences
 
-- The reported figure, in Node with a 20 s budget: 11 facts. Before, the stop came during the
-  long scans with 0 tested. The first look of every kind took about 3 s and round 1 started at
-  about 3.1 s. `apps/web/test/find-fairness-150.test.ts` pins it without the wall clock: the
-  host's stop after 10,000 job steps. Before this ADR the job was still counting and screening
-  there and ended with nothing; now it ends with confirmed facts and the caps above.
+- The reported figure, `apps/web/test/find-fairness-150.test.ts`, without the wall clock: the
+  host's stop after 15,000 job steps. Round 1's tests start at step 11,052, about 2.2 s in Node.
+  Run-16c's job was then still counting its first kinds (its scan takes about 175,000 steps)
+  and ended with nothing. Now it ends with confirmed facts, D = X among them, and the caps
+  above.
+- On the page (single file, no workers, the development container without other load, a probe
+  copy of `fallback-discovery.spec.ts` with the conics, not committed):
+  - run-16c's build listed 11 facts (its scan just fit the 20 s there);
+  - this change without the newest half listed 22, including several consequences of
+    D = X but not D = X itself;
+  - the final build lists 10: the Simson line first, then D = X, with the consequences of
+    D = X under it.
+
+  The first look and round 1 are done early whatever the machine's speed. A stop during the
+  ranking shows the facts not yet checked against the knowledge in the preliminary order
+  (ADR-0039, unchanged), so a fact that follows from two shown ones can still be shown then.
+
 - On a figure where the whole job finishes within the time budget, two rounds can report other
   facts than one round would with the same budget:
-  - round 1 spends half the tests on the first look's facts, which are those of the earliest
-    objects, since candidates are tuples in construction order;
+  - round 1 spends half the tests on the first look's facts (each kind's oldest and newest
+    candidates);
   - a group found whole only by the long scan is tested again as the larger group (a larger
     collinear or concyclic set, a longer class), which costs a test run. The ranking puts the
     group that stands for more facts first among equals (ADR-0039 decision 7 d′) and hides the
@@ -123,13 +152,33 @@ result: no fact was reported falsely, but every fact the cheap kinds had already
     one first (exact before numeric, tagged before untagged), both are shown: the larger is not
     implied by the smaller.
 
-  Figures whose kinds all fit in the first look (the corpus figures, the triangle centres) run
-  one round exactly as before; their frozen tests are unchanged.
+  Figures whose kinds all fit in the first look run one round exactly as before: the triangle
+  centres of `find.test.ts`, and the inversion and reflection figures of ADR-0039. The corpus's
+  base figure (seven free points and seven constructed) takes two rounds: dangle, harmonic and
+  conconic have more than 1,000 candidates. Its frozen tests (`corpora.test.ts`: no degenerate
+  or false claim is ever reported) pass unchanged. No frozen test changes.
 
-- The first look adds about 15 × 1,000 screens and a bounded count per kind before the tests.
+- A measure kind cut at its budget now reports `stop: 'budget'` after a long scan ("checked 400
+  of 6,536 dangle candidates: budget"). The single scan's list of a measure kind ends at
+  candidatesPerKind silently when its count of matches is not over countLimit. It then reports
+  no stop and its cap line is missing: a pre-existing gap of ADR-0035 decision 10, left as it
+  is for one round and for hunt.
+- The first look adds about 15 × 1,000 screens and two bounded counts per kind before the tests.
   The long scan re-enumerates (but does not screen) the first look's candidates. Neither changes
-  the size of a job step, so ADR-0037's gate is unaffected. Before and after this change,
-  `fallback-discovery.spec.ts` (150 objects, no workers) passes it: the numbers are in STATUS.
+  the size of a job step. ADR-0037's gate (`fallback-discovery.spec.ts`, 150 objects, no
+  workers), measured on the development container without other load:
+  - before (run-16c, four runs): longest task 55, 74, 66 and 83 ms; 11–14 of about 4,800
+    tasks over 16 ms;
+  - with the first look but before decision 9: two runs of four had one task of 167 and
+    125 ms (decision 9's stop step);
+  - with decision 9 (four runs): longest task 43, 50, 49 and 46 ms; 8–14 of about 4,890 tasks
+    over 16 ms;
+  - the final code, with the newest half (four runs): longest task 79, 52, 49 and 49 ms; 7–9 of
+    about 4,750 tasks over 16 ms. All four pass the gate (≤ 150 ms, < 1 %).
+
+  The STATUS section has the final numbers. One step of 80 ms remains in the grouping of all
+  true facts, the same in run-16c (ADR-0037's follow-up).
+
 - `FindBudget.firstLook` is optional in the type, so a FindBudget written without it still
   type-checks. It means "the default", and the default carries the value.
 
