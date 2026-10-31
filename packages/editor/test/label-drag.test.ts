@@ -3,11 +3,12 @@
  * dragLabel(angle, dist)… → dragEnd | dragCancel. The moves are coalesced into ONE history
  * entry that writes the object's label_angle / label_dist (whole degrees in [0, 360), whole
  * px clamped to [0, MAX_LABEL_DRAG_PX]); undo restores; cancel leaves no trace; a label
- * dropped where it was adds no entry. Any object with a style can have its label dragged.
+ * dropped where it was keeps its one entry, as a point drag. Any object with a style can have its label dragged.
  */
 import { describe, expect, it } from 'vitest';
 import { parse } from '@geomira/lang/parse';
 import { print } from '@geomira/lang/print';
+import { findObject } from '@geomira/kernel/document';
 import { applyEdit } from '../src/edit';
 import { MAX_LABEL_DRAG_PX } from '../src/label-drag';
 import type { EditorState } from '../src/state';
@@ -95,7 +96,7 @@ describe('a label drag is one edit of label_angle and label_dist', () => {
     );
   });
 
-  it('cancel restores the document and the history; dropped where it was: no entry', () => {
+  it('cancel restores the document and the history; dropped where it was: one entry, as a point drag', () => {
     const s0 = editorOf(FIG);
     const s = edit(s0, {
       kind: 'style',
@@ -113,8 +114,16 @@ describe('a label drag is one edit of label_angle and label_dist', () => {
     const back = edit(edit(moved, { kind: 'dragLabel', angle: 45.2, dist: 8.8 }), {
       kind: 'dragEnd',
     });
-    expect(back.doc).toBe(s.doc);
-    expect(back.history.past).toEqual(s.history.past);
+    // As a point drag moved and brought back (ADR-0012 decision 9, L14's model): the gesture's
+    // first move recorded its entry, and the drop keeps it; the offset is the one it started with.
+    const was = findObject(s.doc, a)?.style;
+    expect(findObject(back.doc, a)?.style).toMatchObject({
+      labelAngle: was?.labelAngle,
+      labelDist: was?.labelDist,
+    });
+    expect(back.history.past).toHaveLength(s.history.past.length + 1);
+    expect(back.history.past.at(-1)?.before).toBe(s.doc);
+    expect(edit(back, { kind: 'undo' }).doc).toBe(s.doc);
     // A press without a move ends with nothing.
     const still = edit(edit(s, { kind: 'dragStart', id: a, part: 'label' }), { kind: 'dragEnd' });
     expect(still.doc).toBe(s.doc);

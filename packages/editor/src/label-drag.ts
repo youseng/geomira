@@ -75,10 +75,3 @@ export function labelDragMove(
   const next = withDocument(state, r.doc, env);
   return done({ ...next, history, drag: { ...drag, moved: true } });
 }
-
-/** Whether the drag left the label where it was (the same offset fields as before it). */
-export function labelUnmoved(state: EditorState, drag: DragState): boolean {
-  const was = findObject(drag.before, drag.id)?.style;
-  const now = findObject(state.doc, drag.id)?.style;
-  return was?.labelAngle === now?.labelAngle && was?.labelDist === now?.labelDist;
-}

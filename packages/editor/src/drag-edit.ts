@@ -22,7 +22,7 @@ import {
 } from './drag';
 import { dependentsKept } from './drag-dependents';
 import { amendLast, record } from './history';
-import { labelDragMove, labelDragStart, labelUnmoved } from './label-drag';
+import { labelDragMove, labelDragStart } from './label-drag';
 import { lockedDrag } from './locked';
 import { done, refuse, type EditResult } from './result';
 import { withDocument, type DragState, type EditorEnv, type EditorState } from './state';
@@ -79,9 +79,9 @@ function scaled(state: EditorState, id: number): number {
 /** Rounds the base's coordinates at drag end, unless that would move the object visibly. */
 function end(state: EditorState, drag: DragState, env: EditorEnv): EditResult {
   const finished = { ...state, drag: null };
-  // A label dropped where it was is no edit: as if the drag had been cancelled.
-  if (drag.part === 'label')
-    return drag.moved && labelUnmoved(state, drag) ? cancel(state, drag, env) : done(finished);
+  // A label drag's moves wrote their own (rounded) offsets: the drop keeps the gesture's one
+  // entry, even back where it started, as a point drag does (ADR-0049, L14's history model).
+  if (drag.part === 'label') return done(finished);
   const base = findObject(state.doc, drag.base);
   const c = evalContextFor(state.doc);
   if (!drag.moved || base === undefined || !c.ok) return done(finished);

@@ -59,8 +59,10 @@ test on the estimate would disagree with the drawn text (a wide "W", a narrow "l
    the first move records the history entry ("move the label of A"), later moves amend it, so
    the gesture is ONE entry; `dragCancel` restores the document and history exactly; document
    edits, undo and redo are refused while it runs; a `dragMove` on a label drag and a `dragLabel`
-   on a point drag are refused. A drag that ends with the offset it started with is no edit (as
-   if cancelled); a press without a move adds nothing. A missing object and an object in a
+   on a point drag are refused. A drag that moved keeps its one entry when it ends, even with the offset it
+   started with (as a point drag moved and brought back; the editor's model-based fuzz test, L14,
+   requires the history to shrink only on `dragCancel`: its nightly run of 20,000 found the
+   first version, which dropped that entry, see Amendment); a press without a move adds nothing. A missing object and an object in a
    locked layer (ADR-0020) are refused at the start.
 6. **Generic.** Any object with a style can have its label dragged: the edit writes its style's
    `labelAngle` / `labelDist` (a managed image's own fields, ADR-0010 decision 5); the scene
@@ -120,3 +122,12 @@ None. Added lines only: `packages/scene/test/exports.test.ts` (the `./label-hit`
 New tests: `packages/scene/test/label-hit.test.ts`, `packages/editor/test/label-drag.test.ts`,
 `apps/web/test/gestures-label.test.ts`, `apps/web/test/laws/label-hit-laws.test.ts`,
 `apps/web/e2e/label-drag.spec.ts`.
+
+## Amendment (2026-10-31, nightly 41218368581)
+
+The first version ended a label drag dropped at its starting offset as a cancel, removing the
+gesture's history entry at `dragEnd`. The frozen L14 test (`packages/editor/test/laws/fuzz.test.ts`)
+models the drag protocol of ADR-0012 decision 9, where only `dragCancel` shrinks the history; its
+500 runs in CI did not meet the case, its nightly 20,000 did (seed 20261021, path 1830: a label
+gesture moved away and back). The code now follows the protocol: the drop keeps the entry, as a
+point drag does. `packages/editor/test/label-drag.test.ts` asserts it (it failed before the fix).
