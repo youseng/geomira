@@ -19,6 +19,7 @@ import { parseRational, toNumber } from '@geomira/num/rational';
 import { alreadyMessage } from '@geomira/lang/same-construction';
 import { pointsCoincide } from '@geomira/scene/coincide';
 import { chooseSelectors } from './choice';
+import { commonTangents } from './machine-tangents';
 import { applyEdit } from './edit';
 import { conventionalName, preferredName } from './conventional-names';
 import { descriptiveName, wantedName, type Description } from './descriptive-names';
@@ -266,6 +267,10 @@ function nameOf(state: EditorState, id: number | undefined): string | undefined 
 function tangent(state: EditorState, picks: readonly number[], env: EditorEnv): EditResult {
   const [p, c] = picks;
   const [P, C] = [state.values.values.get(p ?? -1), state.values.values.get(c ?? -1)];
+  const oval = (v: Value<number> | undefined) => v?.kind === 'circle' || v?.kind === 'conic';
+  // Two curves (ADR-0045, the tool's second curve pick): their common tangents.
+  if (p !== undefined && c !== undefined && oval(P) && oval(C))
+    return commonTangents(state, [p, c], env, (s, defs) => addAll(s, defs, 'line', env));
   if (p === undefined || c === undefined || P?.kind !== 'point')
     return refuse(state, 'pick a point and a circle or a conic');
   if (C?.kind !== 'circle' && C?.kind !== 'conic')

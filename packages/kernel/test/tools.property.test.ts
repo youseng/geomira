@@ -24,6 +24,7 @@ import { SYMMEDIAN_POINT_PROPERTIES } from './helpers/symmedian-point-properties
 import { PROJECTIVE_PROPERTIES } from './helpers/projective-properties';
 import { CONIC_PROPERTIES } from './helpers/conic-properties';
 import { CONIC_CONIC_PROPERTIES } from './helpers/conic-conic-properties';
+import { SIMILITUDE_PROPERTIES } from './helpers/similitude-properties';
 
 interface Property {
   readonly tools: readonly string[];
@@ -292,6 +293,7 @@ const PROPERTIES: readonly Property[] = [
   ...PROJECTIVE_PROPERTIES,
   ...CONIC_PROPERTIES,
   ...CONIC_CONIC_PROPERTIES,
+  ...SIMILITUDE_PROPERTIES,
   {
     tools: ['add', 'sub', 'mul', 'div', 'neg'],
     name: 'arithmetic: a − b = a + (−b), (a·b)/b = a, exact values carried',

@@ -40,6 +40,8 @@ export type ToolId =
   | 'orthocenter'
   | 'ninepoint_center'
   | 'excenter'
+  | 'exsimilicenter'
+  | 'insimilicenter'
   | 'isogonal'
   | 'spiral_center'
   | 'pole'

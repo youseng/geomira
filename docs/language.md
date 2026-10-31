@@ -143,7 +143,7 @@ Values: `color=red` or `color="#ff0000"`; `width=1.5`; `dash=solid|dashed|dotted
 
 ## Selectors
 
-Selectors are the trailing arguments of a branchable call (`intersect`, `tangent_point`, `tangent_from`). A bare index (`intersect(a, b, 2)`) and a call with two candidates and no selector are errors with a hint.
+Selectors are the trailing arguments of a branchable call (`intersect`, `tangent_point`, `tangent_from`, `foci`, and `tangent` of two curves). A bare index (`intersect(a, b, 2)`) and a call with two candidates and no selector are errors with a hint.
 
 | selector | meaning |
 | --- | --- |
@@ -309,7 +309,7 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `center` | points | `center(round)` | point | can succeed | — |
 | `on` | points | `on(linear, number)` · `on(round, number, number)` · `on(round, number)` · `on(conic, number, number)` | point | can succeed | cos(30°) is not rational |
 | `other` | points | `other(linear, round, point)` · `other(round, linear, point)` · `other(round, round, point)` · `other(linear, conic, point)` · `other(conic, linear, point)` | point | can succeed | — |
-| `tangent` | lines | `tangent(point, round)` · `tangent(point, conic)` | line | can succeed | — |
+| `tangent` | lines | `tangent(point, round)` · `tangent(point, conic)` · `tangent(round, round)` · `tangent(conic, conic)` · `tangent(round, conic)` · `tangent(conic, round)` | line | can succeed | — |
 | `polar` | lines | `polar(point, round)` · `polar(point, conic)` | line | can succeed | — |
 | `radical_axis` | lines | `radical_axis(round, round)` | line | can succeed | — |
 | `incenter` | points | `incenter(point, point, point)` | point | can succeed | √(18) is not rational |
@@ -325,7 +325,7 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `ninepoint_center` | points | `ninepoint_center(point, point, point)` | point | can succeed | — |
 | `power` | measures | `power(point, round)` | number | can succeed | — |
 | `radius` | measures | `radius(round)` | number | can succeed | √(2) is not rational |
-| `tangent_point` | points | `tangent_point(point, round)` · `tangent_point(point, conic)` | point | can succeed | √(275/1296) is not rational |
+| `tangent_point` | points | `tangent_point(point, round)` · `tangent_point(point, conic)` · `tangent_point(round, round)` · `tangent_point(conic, conic)` · `tangent_point(round, conic)` · `tangent_point(conic, round)` | point | can succeed | √(275/1296) is not rational |
 | `tangent_from` | lines | `tangent_from(point, round)` · `tangent_from(point, conic)` | line | can succeed | √(275/1296) is not rational |
 | `reflect` | transformations | `reflect(linear)` · `reflect(point)` · `reflect(point, linear)` · `reflect(curve, linear)` · `reflect(polygon, linear)` · `reflect(point, point)` · `reflect(curve, point)` · `reflect(polygon, point)` | transform, point, line, circle, polygon | can succeed | — |
 | `rotate` | transformations | `rotate(point, number)` · `rotate(point, point, number)` · `rotate(curve, point, number)` · `rotate(polygon, point, number)` | transform, point, line, circle, polygon | can succeed | sin(60°) is not rational |
@@ -361,6 +361,8 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `foci` | points | `foci(round)` · `foci(conic)` | point | can succeed | √(250563/4096) is not rational; √(2) is not rational |
 | `conic_to_circle` | transformations | `conic_to_circle(conic)` | transform | can succeed | — |
 | `circle_to_centre` | transformations | `circle_to_centre(round, point)` | transform | can succeed | √(500) is not rational |
+| `exsimilicenter` | points | `exsimilicenter(round, round)` | point, ideal_point | can succeed | — |
+| `insimilicenter` | points | `insimilicenter(round, round)` | point | can succeed | √(2) is not rational |
 
 ## Versions
 

@@ -54,6 +54,8 @@ const GROUP_OF: Readonly<Record<ToolId, ToolGroupId>> = {
   orthocenter: 'centers',
   ninepoint_center: 'centers',
   excenter: 'centers',
+  exsimilicenter: 'centers',
+  insimilicenter: 'centers',
   isogonal: 'centers',
   spiral_center: 'centers',
   radical_center: 'centers',

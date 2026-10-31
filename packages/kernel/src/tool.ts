@@ -25,6 +25,11 @@ export interface BranchShape {
   readonly candidates: 1 | 2 | 4;
   /** The low-level selector it accepts: along(±) on line ∩ circle, orient(±) on circle ∩ circle and tangent choices. */
   readonly low: 'along' | 'orient' | 'none';
+  /**
+   * A second low-level selector with its own structural label (ADR-0045: the common tangents of
+   * two circles take along(±) for internal / external besides orient(±) for the side).
+   */
+  readonly alsoLow?: 'along';
   /** Whether other(P) applies (two objects that can meet twice). */
   readonly other: boolean;
   /** "line ∩ circle", "circle ∩ circle", "tangent choices": named in messages. */

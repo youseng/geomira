@@ -134,6 +134,28 @@ function gliderClick(
   return r.ok ? withTool(r, reset(state)) : refuse(state, r.reason);
 }
 
+/**
+ * The second object of a pair (ToolUI.pair, ADR-0045): when only the pair's step is filled, a
+ * pick of the same kind that is not the first object, with neither the first object nor a point
+ * under the click (those keep their meaning: a glider on the first curve, the point).
+ */
+function pairPick(
+  state: EditorState,
+  tool: ToolUI,
+  candidates: readonly { readonly id: number; readonly kind: string }[],
+): readonly [number, number] | undefined {
+  const { pair } = tool;
+  const ts = state.toolState;
+  const [first] = ts.picks;
+  if (pair === undefined || first === undefined || ts.slots.length !== 1) return undefined;
+  if (ts.slots[0] !== pair.slot) return undefined;
+  const step = stepsOf(tool, ts).steps[pair.slot];
+  if (step === undefined || candidates.some((h) => h.id === first || h.kind === 'point'))
+    return undefined;
+  const second = candidates.find((h) => HIT_KINDS[step.pick].includes(h.kind));
+  return second === undefined ? undefined : [first, second.id];
+}
+
 function click(
   state: EditorState,
   tool: ToolUI,
@@ -147,6 +169,8 @@ function click(
   const [first] = open;
   if (first === undefined)
     return refuse(state, tool.build.kind === 'text' ? 'type the text' : 'nothing to pick');
+  const pair = pairPick(state, tool, input.hit.hits);
+  if (pair !== undefined) return build(state, tool, pair, env);
   for (const h of input.hit.hits) {
     const o = open.find((x) => HIT_KINDS[x.step.pick].includes(h.kind));
     if (o !== undefined) return pushPick(state, tool, h.id, o.index, env);
@@ -191,6 +215,8 @@ function objectInput(state: EditorState, tool: ToolUI, id: number, env: EditorEn
   const [first] = open;
   if (first === undefined) return refuse(state, 'nothing to pick');
   const v = state.values.values.get(id);
+  const pair = v === undefined ? undefined : pairPick(state, tool, [{ id, kind: v.kind }]);
+  if (pair !== undefined) return build(state, tool, pair, env);
   const o = open.find((x) => fits(v, x.step.pick));
   if (o === undefined)
     return refuse(state, `${first.step.prompt}: pick a ${PICK_WORDS[first.step.pick]}`);

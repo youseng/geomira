@@ -177,7 +177,8 @@ export function chooseSelectors(
 ): Choice {
   const ec = evalContextFor(doc);
   if (!ec.ok) return { ok: false, reason: ec.reason };
-  const decider = tool === 'tangent_from' ? 'tangent_point' : tool;
+  // A tangent is decided as its touch point (tangent_from; tangent of two curves, ADR-0045).
+  const decider = tool === 'tangent_from' || tool === 'tangent' ? 'tangent_point' : tool;
   const spec = registry.get(decider);
   const args = argIds.map((id) => values.values.get(id));
   const vals = args.filter((a): a is Value<number> => a !== undefined);
@@ -203,7 +204,8 @@ export function chooseSelectors(
   };
   const pts = pointIds(c);
   // Up to four candidates (conic ∩ conic, ADR-0043): its own tiers (choice-many.ts).
-  if (cands.length > 2) return chooseAmong(c, pts, ROBUST_SIGMAS);
+  // Common tangents (ADR-0045) too, with any count: their along(±) tier is there.
+  if (cands.length > 2 || tool === 'tangent') return chooseAmong(c, pts, ROBUST_SIGMAS);
   const t1 = tier1(c, pts);
   if (t1 !== undefined) return { ok: true, selectors: [t1], tier: 1 };
   const t2 = tier2(c, pts);
