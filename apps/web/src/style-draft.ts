@@ -26,6 +26,8 @@ export const STYLE_FIELDS = [
   'z',
   'labelAngle',
   'labelDist',
+  'show',
+  'digits',
 ] as const satisfies readonly (keyof Style)[];
 
 type Missing = Exclude<keyof Style, (typeof STYLE_FIELDS)[number]>;
@@ -154,6 +156,8 @@ export function patchStyle(s: Style, patch: StylePatch): Style {
     ...(x.z === undefined ? {} : { z: x.z }),
     ...(x.labelAngle === undefined ? {} : { labelAngle: x.labelAngle }),
     ...(x.labelDist === undefined ? {} : { labelDist: x.labelDist }),
+    ...(x.show === undefined ? {} : { show: x.show }),
+    ...(x.digits === undefined ? {} : { digits: x.digits }),
   };
 }
 

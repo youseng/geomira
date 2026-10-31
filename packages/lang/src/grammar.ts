@@ -52,7 +52,8 @@ attrItem      = key , [ "=" , value , { "," , value } ] ;   (* a list (exclude, 
 value         = float | number | name | "-" , name | string | stars ;
 style keys    : color=word|string, width=float, dash=solid|dashed|dotted, hidden[=true|false],
                 noimage[=true|false], label=string, z=float, label_angle=float (degrees),
-                label_dist=float (pixels, >= 0).
+                label_dist=float (pixels, >= 0), show[=true|false],
+                digits=integer (0 to 10).
 
 (* ---- expressions ---- *)
 expr          = product , { ( "+" | "-" ) , product } ;

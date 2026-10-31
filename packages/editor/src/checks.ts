@@ -115,5 +115,7 @@ export function styleProblem(s: Style): string | undefined {
     return 'a label distance is a finite number ≥ 0';
   if (!finite(s.opacity) || (s.opacity ?? 0) < 0 || (s.opacity ?? 0) > 1)
     return 'an opacity is a number in [0, 1]';
+  if (s.digits !== undefined && !(Number.isInteger(s.digits) && s.digits >= 0 && s.digits <= 10))
+    return 'digits is a whole number from 0 to 10';
   return undefined;
 }

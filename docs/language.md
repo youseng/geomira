@@ -56,7 +56,8 @@ attrItem      = key , [ "=" , value , { "," , value } ] ;   (* a list (exclude, 
 value         = float | number | name | "-" , name | string | stars ;
 style keys    : color=word|string, width=float, dash=solid|dashed|dotted, hidden[=true|false],
                 noimage[=true|false], label=string, z=float, label_angle=float (degrees),
-                label_dist=float (pixels, >= 0).
+                label_dist=float (pixels, >= 0), show[=true|false],
+                digits=integer (0 to 10).
 
 (* ---- expressions ---- *)
 expr          = product , { ( "+" | "-" ) , product } ;
@@ -136,14 +137,14 @@ measure       = segment | angle | number | expr ;
 
 | statement | keys |
 | --- | --- |
-| definition | color, width, dash, opacity, hidden, noimage, label, layers |
-| style | color, width, dash, opacity, hidden, noimage, label |
+| definition | color, width, dash, opacity, hidden, noimage, label, show, digits, layers |
+| style | color, width, dash, opacity, hidden, noimage, label, show, digits |
 | claim | name |
 | triangle | acute, scalene, obtuse_at_<vertex> |
 | @layer | main, visible, locked, opacity, order; derived layers also suffix, exclude |
 | @view | layers, viewport |
 
-Values: `color=red` or `color="#ff0000"`; `width=1.5`; `dash=solid|dashed|dotted`; `opacity=0.5` (in [0, 1], times the layer's opacity); flags `hidden`, `noimage`, `locked` (or `=true` / `=false`); `label="…"`; lists `exclude=X,Y`, `layers=a,b` (a list takes the rest of its bracket group).
+Values: `color=red` or `color="#ff0000"`; `width=1.5`; `dash=solid|dashed|dotted`; `opacity=0.5` (in [0, 1], times the layer's opacity); flags `hidden`, `noimage`, `locked` (or `=true` / `=false`); `label="…"`; `show` draws a measurement (a number defined by `dist`, `angle` or `dangle` of named objects) as its value on the figure, with `digits=2` decimals (a whole number from 0 to 10; absent: 2; ADR-0048); lists `exclude=X,Y`, `layers=a,b` (a list takes the rest of its bracket group).
 
 ## Selectors
 
