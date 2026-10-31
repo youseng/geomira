@@ -26,20 +26,25 @@ export const STYLE_FIELDS = [
   'z',
   'labelAngle',
   'labelDist',
+  'show',
+  'digits',
 ] as const satisfies readonly (keyof Style)[];
 
 type Missing = Exclude<keyof Style, (typeof STYLE_FIELDS)[number]>;
 /** A compile error here means a Style field is missing from STYLE_FIELDS. */
 export const STYLE_FIELDS_COMPLETE: [Missing] extends [never] ? true : never = true;
 
-/** What the card offers for a kind of object. */
-export type CardKind = 'point' | 'curve' | 'text' | 'none';
+/**
+ * What the card offers for a kind of object; 'distance' and 'angle' are the measurements the
+ * figure can draw (ADR-0048, style-measure.ts), every other number is 'none'.
+ */
+export type CardKind = 'point' | 'curve' | 'text' | 'distance' | 'angle' | 'none';
 
 /** A field of the card's main rows. */
 export type Field = 'color' | 'width' | 'opacity' | 'label' | 'visible';
 
-/** A field behind the card's "More" disclosure. */
-export type MoreField = 'dash' | 'z' | 'labelOffset' | 'noimage';
+/** A field behind the card's "More" disclosure (`digits`: a measurement's decimals). */
+export type MoreField = 'dash' | 'z' | 'labelOffset' | 'noimage' | 'digits';
 
 export interface CardFields {
   readonly main: readonly Field[];
@@ -61,6 +66,17 @@ export function fieldsOf(kind: CardKind): CardFields {
       };
     case 'text':
       return { main: ['color', 'opacity', 'visible'], more: ['z', 'labelOffset', 'noimage'] };
+    // A measurement (ADR-0048): its label is a prefix, "visible" is `show`; no image.
+    case 'distance':
+      return {
+        main: ['color', 'opacity', 'label', 'visible'],
+        more: ['digits', 'z', 'labelOffset'],
+      };
+    case 'angle':
+      return {
+        main: ['color', 'width', 'opacity', 'label', 'visible'],
+        more: ['digits', 'dash', 'z', 'labelOffset'],
+      };
     case 'none':
       return { main: [], more: [] };
     default:
@@ -154,6 +170,8 @@ export function patchStyle(s: Style, patch: StylePatch): Style {
     ...(x.z === undefined ? {} : { z: x.z }),
     ...(x.labelAngle === undefined ? {} : { labelAngle: x.labelAngle }),
     ...(x.labelDist === undefined ? {} : { labelDist: x.labelDist }),
+    ...(x.show === undefined ? {} : { show: x.show }),
+    ...(x.digits === undefined ? {} : { digits: x.digits }),
   };
 }
 

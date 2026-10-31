@@ -62,6 +62,9 @@ function randomStyle(rng: Rng): Style {
   if (chance(rng, 0.2)) s = { ...s, labelDist: double(rng, 0, 40) };
   // ADR-0029: the object's own opacity.
   if (chance(rng, 0.2)) s = { ...s, opacity: chance(rng, 0.2) ? 1 : double(rng, 0, 1) };
+  // ADR-0048: measurements shown on the figure, and their decimals.
+  if (chance(rng, 0.3)) s = { ...s, show: chance(rng, 0.8) };
+  if (chance(rng, 0.2)) s = { ...s, digits: Math.min(10, Math.floor(double(rng, 0, 11))) };
   return s;
 }
 

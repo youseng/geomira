@@ -19,7 +19,8 @@
     "./display": "./src/display.ts",
     "./hit": "./src/hit.ts",
     "./bounds": "./src/bounds.ts",
-    "./palette": "./src/palette.ts"
+    "./palette": "./src/palette.ts",
+    "./measure": "./src/measure.ts"
   },
   "dependencies": {
     "@geomira/kernel": "workspace:*",

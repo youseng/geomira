@@ -26,7 +26,16 @@ import { toolUI, type PickKind, type ToolUI } from './tools';
 export { claimToolKinds, stepsOf } from './tool-steps';
 
 export type ToolInput =
-  | { readonly kind: 'click'; readonly hit: HitResult; readonly world: Vec<number> }
+  | {
+      readonly kind: 'click';
+      readonly hit: HitResult;
+      readonly world: Vec<number>;
+      /**
+       * The object whose label is under the click (scene hitLabel), if any: the Move tool
+       * selects it when no object is hit (ADR-0048: a measurement's value is its label).
+       */
+      readonly label?: number;
+    }
   | { readonly kind: 'object'; readonly id: number }
   | { readonly kind: 'finish' }
   | { readonly kind: 'cancel' }
@@ -136,11 +145,11 @@ function pushPick(
   return done({ ...state, toolState: next });
 }
 
-function moveClick(state: EditorState, hit: HitResult, env: EditorEnv): EditResult {
-  const top = hit.hits[0];
+function moveClick(state: EditorState, hit: HitResult, env: EditorEnv, label?: number) {
+  const top = hit.hits[0]?.id ?? label;
   return applyEdit(
     state,
-    { kind: 'select', ids: top === undefined ? [] : [top.id], mode: 'replace' },
+    { kind: 'select', ids: top === undefined ? [] : [top], mode: 'replace' },
     env,
   );
 }
@@ -208,7 +217,7 @@ function click(
   env: EditorEnv,
 ): EditResult {
   const ts = state.toolState;
-  if (tool.id === 'move') return moveClick(state, input.hit, env);
+  if (tool.id === 'move') return moveClick(state, input.hit, env, input.label);
   if (tool.id === 'glider') return gliderClick(state, input, env);
   const open = openSteps(tool, ts);
   const [first] = open;

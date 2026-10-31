@@ -257,9 +257,20 @@ export class Gestures {
     if (this.pointers.size === 0) this.mode = { kind: 'none' };
   }
 
+  /**
+   * A click: the tool gets the hit test; in the Move tool, when no object is hit, also the
+   * object of the label under the click (it selects it: a measurement's value is its label,
+   * ADR-0048).
+   */
   private click(q: Vec2, display: DisplayList): void {
     const world = toWorld(this.view(display), q);
-    this.store.input({ kind: 'click', hit: hitTest(display, q), world });
+    const hit = hitTest(display, q);
+    const m = this.metrics();
+    const label =
+      this.store.current().tool === 'move' && hit.hits.length === 0
+        ? hitLabel(display, q, m.width, m.px)?.id
+        : undefined;
+    this.store.input({ kind: 'click', hit, world, ...(label === undefined ? {} : { label }) });
   }
 
   private hover(q: Vec2, display: DisplayList): void {

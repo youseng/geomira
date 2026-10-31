@@ -12,6 +12,7 @@ import * as labelText from '../src/label-text';
 import * as labels from '../src/labels';
 import * as labelBox from '../src/label-box';
 import * as labelHit from '../src/label-hit';
+import * as measure from '../src/measure';
 import * as palette from '../src/palette';
 import * as style from '../src/style';
 import * as types from '../src/types';
@@ -51,6 +52,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'drawStyle',
       'effectiveStyle',
       'labelOf',
+      'placedLabel',
       'zOf',
     ],
   },
@@ -73,6 +75,21 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './hit': { module: hit, names: ['HIT_RADIUS', 'hitItem', 'hitTest'] },
   './bounds': { module: bounds, names: ['sceneBounds'] },
   './palette': { module: palette, names: ['NAMED_COLOURS', 'paletteColour'] },
+  './measure': {
+    module: measure,
+    names: [
+      'DEFAULT_DIGITS',
+      'MAX_DIGITS',
+      'digitsOf',
+      'distanceLabelAngle',
+      'formatMeasure',
+      'inDegrees',
+      'measureDef',
+      'measureRuns',
+      'measureShape',
+      'middle',
+    ],
+  },
 };
 
 describe('@geomira/scene subpath surface', () => {

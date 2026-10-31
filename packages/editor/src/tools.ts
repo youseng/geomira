@@ -15,7 +15,7 @@
  * circle) take them in either order (`anyOrder`), as Geomdraw's did.
  */
 import type { ToolId } from './tool-state';
-import { anyOrder, call, described, L, mapTool, OVAL, P, type ToolUI } from './tool-ui';
+import { anyOrder, call, described, L, mapTool, OVAL, P, shown, type ToolUI } from './tool-ui';
 import { CENTER_TOOLS, TRIANGLE_CIRCLE_TOOLS } from './tools-centers';
 import {
   CIRCLE_RADIUS,
@@ -293,23 +293,27 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     steps: [P('where the text goes')],
     build: { kind: 'text' },
   },
-  call(
-    'measure_distance',
-    'Distance',
-    'q',
-    'dist',
-    'distance',
-    [P('first point'), P('second point')],
-    'The distance between two points.',
+  shown(
+    call(
+      'measure_distance',
+      'Distance',
+      'q',
+      'dist',
+      'distance',
+      [P('first point'), P('second point')],
+      'The distance between two points, shown on the figure.',
+    ),
   ),
-  call(
-    'measure_angle',
-    'Angle',
-    'a',
-    'angle',
-    'angle',
-    [P('point on the first arm'), P('vertex'), P('point on the second arm')],
-    'The angle ABC in degrees.',
+  shown(
+    call(
+      'measure_angle',
+      'Angle',
+      'a',
+      'angle',
+      'angle',
+      [P('point on the first arm'), P('vertex'), P('point on the second arm')],
+      'The angle ABC in degrees, shown on the figure.',
+    ),
   ),
   ...MEASURE_TOOLS,
   {

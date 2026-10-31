@@ -1,6 +1,7 @@
 /**
  * The meaning of attributes (ADR-0009): every Style field (color, width, dash, hidden,
- * noimage, label; z, label_angle, label_dist since ADR-0010; opacity since ADR-0029), an
+ * noimage, label; z, label_angle, label_dist since ADR-0010; opacity since ADR-0029; show and
+ * digits since ADR-0048), an
  * object's layers, a claim's name, layer options and rules, view
  * contents, triangle types. Each statement kind accepts its own keys; anything else is an
  * error with the list of keys it takes.
@@ -21,7 +22,12 @@ export const STYLE_KEYS: readonly string[] = Object.freeze([
   'z',
   'label_angle',
   'label_dist',
+  'show',
+  'digits',
 ]);
+
+/** The most decimals a measurement shows (ADR-0048: `digits` is a whole number in [0, 10]). */
+export const MAX_DIGITS = 10;
 export const DASHES: readonly string[] = Object.freeze(['solid', 'dashed', 'dotted']);
 
 export interface Checked {
@@ -148,7 +154,33 @@ export function styleOf(m: ReadonlyMap<string, Attr>, out: Checked): Style {
     const t = textAttr(label, false, out);
     if (t !== undefined) s = { ...s, label: t };
   }
-  return { ...s, ...sceneStyle(m, out) };
+  return { ...s, ...sceneStyle(m, out), ...measureStyle(m, out) };
+}
+
+/** The measurement fields (ADR-0048): `show` (a flag) and `digits` (a whole number in [0, 10]). */
+function measureStyle(m: ReadonlyMap<string, Attr>, out: Checked): Style {
+  const [show, digits] = [m.get('show'), m.get('digits')];
+  const sv = show === undefined ? undefined : boolAttr(show, out);
+  const dv = digits === undefined ? undefined : digitsAttr(digits, out);
+  return {
+    ...(sv === undefined ? {} : { show: sv }),
+    ...(dv === undefined ? {} : { digits: dv }),
+  };
+}
+
+function digitsAttr(a: Attr, out: Checked): number | undefined {
+  const v = single(a, out);
+  const x = v?.kind === 'number' ? floatLiteral(v.text) : undefined;
+  if (x !== undefined && Number.isInteger(x) && x >= 0 && x <= MAX_DIGITS) return x;
+  if (v !== undefined)
+    out.diags.push(
+      error(
+        v.span,
+        `"${a.key}" takes a whole number from 0 to ${String(MAX_DIGITS)}`,
+        `write ${a.key}=2`,
+      ),
+    );
+  return undefined;
 }
 
 /** The scene's Style fields (ADR-0010): z, label_angle (degrees), label_dist (pixels). */
