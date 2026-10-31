@@ -42,6 +42,9 @@ export default defineConfig({
           name: 'packages',
           include: ['packages/*/test/**/*.test.ts'],
           environment: 'node',
+          // ADR-0055: a hang guard, not a budget. Exhaustive sweeps (every tool on every argument
+          // list) take about 4 s under coverage on an idle machine, too close to vitest's 5 s.
+          testTimeout: 15_000,
         },
       },
       {
