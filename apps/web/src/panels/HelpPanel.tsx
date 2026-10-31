@@ -28,7 +28,8 @@ export function HelpPanel() {
       <p className="muted">
         Type statements of the language in the command bar or the text panel; see the language
         reference for every tool. Right-click an object, on the canvas or in the Objects panel (or
-        hold a finger on it), to change its style.
+        hold a finger on it), to change its style or its name. In the Move tool, drag a label to
+        move it next to its object.
       </p>
       <AboutSection />
     </div>
