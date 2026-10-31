@@ -59,8 +59,10 @@ export interface ConfirmEnv {
   readonly env: DiscoveryEnv;
   readonly kinds: ClaimKinds;
   readonly n: number;
-  /** runJob runs allowed in all (the test budget). */
+  /** runJob runs allowed in all (the test budget), the runs made before included. */
   readonly tests: number;
+  /** runJob runs made before, by an earlier round (ADR-0052; none: 0). They number the seeds. */
+  readonly before?: number;
   readonly tag: (u: Unit) => LemmaTag | undefined;
   /** A class rebuilt from its construction members and the checks confirmed (keys). */
   readonly regroup: (u: Unit, ok: ReadonlySet<string>) => readonly Unit[];
@@ -258,6 +260,7 @@ export function* confirmUnits(
   e: ConfirmEnv,
   units: readonly Unit[],
 ): Generator<DiscoveryProgress, Confirmed, DiscoveryCommand> {
+  const before = e.before ?? 0;
   const p: Progress = {
     found: [],
     unconfirmed: [],
@@ -265,10 +268,10 @@ export function* confirmUnits(
     construction: [],
     unitOf: new Map(),
     queue: [...units],
-    runs: 0,
+    runs: before,
     total: Math.min(
       e.tests,
-      units.reduce((n, u) => n + claimsOf(u).length, 0),
+      units.reduce((n, u) => n + claimsOf(u).length, before),
     ),
   };
   const done = (cmd?: 'cancel' | 'stop'): Confirmed => ({
@@ -301,6 +304,24 @@ export function* confirmUnits(
     }
   }
   return done();
+}
+
+/**
+ * Two rounds' tests as one (ADR-0052): `b` ran after `a` (its runs count `a`'s), the units it
+ * tested are new; a fact unconfirmed in both is listed once.
+ */
+export function joined(a: Confirmed, b: Confirmed): Confirmed {
+  const listed = new Set(a.unconfirmed.map((u) => u.fact.key));
+  return {
+    found: [...a.found, ...b.found],
+    unconfirmed: [...a.unconfirmed, ...b.unconfirmed.filter((u) => !listed.has(u.fact.key))],
+    tested: new Set([...a.tested, ...b.tested]),
+    runs: b.runs,
+    construction: [...a.construction, ...b.construction],
+    retriesUntested: a.retriesUntested + b.retriesUntested,
+    unitOf: new Map([...a.unitOf, ...b.unitOf]),
+    ...(b.cmd === undefined ? {} : { cmd: b.cmd }),
+  };
 }
 
 function foundFact(

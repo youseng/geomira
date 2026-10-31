@@ -40,6 +40,11 @@ export interface Pools {
   readonly values: ReadonlyMap<number, Value<number>>;
   /** The figure's scale (lengths are screened relative to it). */
   readonly scale: number;
+  /**
+   * Enumerate the same tuples with those whose last positions name the newest objects first
+   * (the first look's second half, ADR-0052); absent: construction order.
+   */
+  readonly newestFirst?: boolean;
 }
 
 /** Relative window of the measure pairing: TRUE_FACTOR·FLOOR_MAX (num's constants). */
@@ -112,6 +117,10 @@ function* tuples(
   p: Pools,
   pairs: readonly (readonly [number, number])[],
 ): Generator<number[]> {
+  if (p.newestFirst === true) {
+    yield* newestTuples(shape, p, pairs);
+    return;
+  }
   const out: number[] = [];
   function* fill(pos: number): Generator<number[]> {
     if (pos === shape.length) {
@@ -135,6 +144,46 @@ function* tuples(
     }
   }
   yield* fill(0);
+}
+
+/**
+ * The tuples of `tuples`, those whose last positions name the newest objects first (ADR-0052):
+ * the positions are filled from the last, each pool newest first; a transposition (i, j), i < j,
+ * bounds position i from above by position j's object in construction order.
+ */
+function* newestTuples(
+  shape: readonly ClaimParam[],
+  p: Pools,
+  pairs: readonly (readonly [number, number])[],
+): Generator<number[]> {
+  const out = Array<number>(shape.length).fill(-1);
+  const at = (id: number) => p.order.get(id) ?? -1;
+  const taken = (id: number, pos: number) => {
+    for (let k = pos + 1; k < out.length; k++) if (out[k] === id) return true;
+    return false;
+  };
+  function* fill(pos: number): Generator<number[]> {
+    if (pos < 0) {
+      yield [...out];
+      return;
+    }
+    const param = shape[pos] ?? 'point';
+    if (isLiteralParam(param)) {
+      yield* fill(pos - 1);
+      return;
+    }
+    const upper = pairs.filter(([i]) => i === pos).map(([, j]) => at(out[j] ?? -1));
+    const ceiling = Math.min(p.order.size, ...upper);
+    const ids = pool(p, param);
+    for (let k = ids.length - 1; k >= 0; k--) {
+      const id = ids[k] ?? -1;
+      if (taken(id, pos) || at(id) >= ceiling) continue;
+      out[pos] = id;
+      yield* fill(pos - 1);
+    }
+    out[pos] = -1;
+  }
+  yield* fill(shape.length - 1);
 }
 
 /** Literal assignments of a kind: none when it has no literal parameter. */
