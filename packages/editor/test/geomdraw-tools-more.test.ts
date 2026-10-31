@@ -132,7 +132,7 @@ describe('the new tools over kernel tools build what the language writes', () =>
     let t = useTool(editorOf(FIG), 'circle_radius');
     expect(t.toolState.value).toBe('1');
     t = run(t, click(t, 4, 0));
-    expect(defText(t, 'c_1')).toBe('circle(B, 1)');
+    expect(defText(t, 'c_B')).toBe('circle(B, 1)');
   });
 });
 

@@ -17,7 +17,8 @@ import type { Shape } from './types';
 
 export type ShapeResult =
   | { readonly kind: 'shape'; readonly shape: Shape }
-  | { readonly kind: 'none' }
+  /** Not drawn; `reason` says why when it is worth saying (a measurement, ADR-0048). */
+  | { readonly kind: 'none'; readonly reason?: string }
   | { readonly kind: 'unavailable'; readonly reason: string; readonly atInfinity?: true };
 
 const NOT_FINITE: ShapeResult = {

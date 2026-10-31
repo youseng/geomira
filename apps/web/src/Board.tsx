@@ -6,9 +6,15 @@ import { hitTest } from '@geomira/scene/hit';
 import type { Scene, Undrawable } from '@geomira/scene/types';
 import { toWorld, type Size, type Vec2, type Viewport } from '@geomira/scene/viewport';
 import { around, type Box } from './card-place';
-import { Gestures, type Hold } from './gestures';
+import {
+  ESTIMATED_METRICS,
+  Gestures,
+  pressedObject,
+  type Hold,
+  type LabelMetrics,
+} from './gestures';
 import { timeout } from './long-press';
-import { drawDisplay, drawPreview, LIGHT_THEME, type UiState } from './render';
+import { drawDisplay, drawPreview, LIGHT_THEME, measuredWidth, type UiState } from './render';
 import type { EditorStore } from './store';
 import { useSurface, useWheelZoom } from './surface';
 
@@ -119,24 +125,36 @@ function useFrame(props: BoardProps, display: DisplayList | null) {
 }
 
 /**
+ * How the canvas measures label runs (the renderer's own measure, ADR-0049), so a press is
+ * on a label exactly where it is drawn; the scene's estimate without a 2D context.
+ */
+function labelMetrics(canvas: HTMLCanvasElement | null): LabelMetrics {
+  const ctx = canvas?.getContext('2d');
+  return ctx === null || ctx === undefined
+    ? ESTIMATED_METRICS
+    : { width: measuredWidth(ctx, LIGHT_THEME), px: LIGHT_THEME.fontSize };
+}
+
+/**
  * The pointer gestures, with the long press of touch (ADR-0029): it opens the style card of
- * the object under the finger, as a right-click does.
+ * the object under the finger (or of the label under it, ADR-0049), as a right-click does.
  */
 function useGestures(props: BoardProps): Gestures {
   const { store, canvasRef } = props;
   const onStyle = useRef(props.onStyle);
   onStyle.current = props.onStyle;
   return useMemo(() => {
+    const metrics = () => labelMetrics(canvasRef.current);
     const hold: Hold = {
       schedule: timeout,
       onHold: (q, display) => {
-        const id = hitTest(display, q).hits[0]?.id;
+        const id = pressedObject(display, q, metrics());
         const r = canvasRef.current?.getBoundingClientRect();
         if (id !== undefined && r !== undefined)
           onStyle.current(id, around(r.left + q.x, r.top + q.y, ANCHOR_PX));
       },
     };
-    return new Gestures(store, hold);
+    return new Gestures(store, hold, metrics);
   }, [store, canvasRef]);
 }
 
@@ -172,10 +190,10 @@ export function Board(props: BoardProps) {
         gestures.down(e.pointerId, local(e), display, e.pointerType !== 'mouse');
       }}
       onContextMenu={(e) => {
-        // No browser menu on the canvas; on an object, its style card (ADR-0029).
+        // No browser menu on the canvas; on an object or its label, its style card (ADR-0029).
         e.preventDefault();
         if (display === null) return;
-        const id = hitTest(display, local(e)).hits[0]?.id;
+        const id = pressedObject(display, local(e), labelMetrics(canvasRef.current));
         if (id === undefined) return;
         gestures.endPress();
         onStyle(id, around(e.clientX, e.clientY, ANCHOR_PX));

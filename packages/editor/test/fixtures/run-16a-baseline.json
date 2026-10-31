@@ -701,6 +701,41 @@
     ],
     "claims": []
   },
+  "tests/fixtures/export/measurements.geo": {
+    "objects": [
+      "A: point 0.00000000000 0.00000000000",
+      "B: point 6.00000000000 0.00000000000",
+      "C: point 1.00000000000 4.00000000000",
+      "D: point -2.00000000000 3.00000000000",
+      "s: line 0.00000000000 0.00000000000 6.00000000000 0.00000000000 0.00000000000 1.00000000000",
+      "l: line 6.00000000000 0.00000000000 -5.00000000000 4.00000000000",
+      "d: number 6.00000000000",
+      "e: number 4.12310562562",
+      "h: number 3.74817028533",
+      "α: number 75.9637565321",
+      "β: number 65.3764352138",
+      "γ: number 38.6598082541",
+      "n: number 6.40312423743",
+      "r: number 1.45521375022",
+      "u: undefined: coincident points: angle(A, B, C) needs A ≠ B"
+    ],
+    "drawn": [
+      "s line",
+      "l line",
+      "d distance",
+      "e distance",
+      "h distance",
+      "α angle_mark",
+      "β angle_mark",
+      "γ angle_mark",
+      "A point",
+      "B point",
+      "C point",
+      "D point"
+    ],
+    "unavailable": ["u: coincident points: angle(A, B, C) needs A ≠ B"],
+    "claims": []
+  },
   "tests/fixtures/export/near-tangent.geo": {
     "objects": [
       "O: point 0.00000000000 0.00000000000",

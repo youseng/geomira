@@ -5,13 +5,15 @@
  * visible part of a line, segment or ray; the point of a circle at 45° if it is visible,
  * else the middle of its first visible arc; a polygon's vertex centroid; an angle mark's
  * outermost arc at its middle (or the corner of its square); a segment mark's middle tick; a
- * text's anchor (ADR-0011). A label whose anchor is off the surface is not placed.
+ * text's anchor (ADR-0011); a distance measurement's middle (ADR-0048). A label whose anchor
+ * is off the surface is not placed.
  *
  * Automatic direction (points without `label_angle`): of the eight compass directions,
  * preferring 45°, 135°, 315°, 225°, 90°, 0°, 270°, 180° in that order, the one farthest
  * (in angle) from the directions of the drawn curves that pass within NEAR_PX of the point;
  * so labels avoid the lines through their point. An angle mark's label points along the
- * bisector of its angle, out of the angle; other kinds default to 45°. A text without
+ * bisector of its angle, out of the angle (an angle measurement's too); a distance
+ * measurement's to the left of its ends' direction; other kinds default to 45°. A text without
  * `label_angle` is centred on its anchor (its string is the label, at distance 0 by default).
  *
  * The text box is aligned away from the anchor: left-aligned when the offset points right,
@@ -21,8 +23,9 @@ import { clipLine } from './clip';
 import { boxesOverlap, labelBox, MIN_CLEAR_DEG } from './label-box';
 import { paletteColour } from './palette';
 import type { LabelRun } from './label-text';
+import { distanceLabelAngle, middle } from './measure';
 import type { DisplayItem, Path, Primitive, Scene } from './types';
-import type { Rect, Vec2, View } from './viewport';
+import { toScreen, type Rect, type Vec2, type View } from './viewport';
 
 export interface PlacedLabel {
   readonly id: number;
@@ -295,14 +298,28 @@ function automatic(p: Primitive, item: DisplayItem): boolean {
   return item.kind === 'point' && p.label !== null && p.label.angle === null;
 }
 
-/** A label with a fixed direction: explicit, or by kind (marks: the bisector; others 45°). */
+/**
+ * A label with a fixed direction: explicit, or by kind (marks: the bisector; a distance
+ * measurement: the left of its ends' direction, ADR-0048; others 45°).
+ */
 function placeFixed(view: View, p: Primitive, item: DisplayItem): PlacedLabel | undefined {
-  const anchor = anchorOf(view, item);
+  const s = p.shape;
+  const anchor = s.kind === 'distance' ? distanceAnchor(view, s.p, s.q) : anchorOf(view, item);
   if (p.label === null || anchor === undefined) return undefined;
   const angle =
     p.label.angle ??
-    (item.kind === 'angle_mark' ? (((bisector(item.paths) ?? 45) % 360) + 360) % 360 : 45);
+    (item.kind === 'angle_mark'
+      ? (((bisector(item.paths) ?? 45) % 360) + 360) % 360
+      : s.kind === 'distance'
+        ? distanceLabelAngle(s.p, s.q)
+        : 45);
   return placedAt(p, item, anchor, angle);
+}
+
+/** A distance measurement's anchor: the middle of its ends, on the surface (else none). */
+function distanceAnchor(view: View, p: Vec2, q: Vec2): Vec2 | undefined {
+  const a = toScreen(view, middle(p, q));
+  return onSurface(view, a) ? a : undefined;
 }
 
 /**

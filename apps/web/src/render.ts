@@ -7,6 +7,7 @@
  */
 import { assertNever } from '@geomira/num/assert';
 import type { DisplayList } from '@geomira/scene/display';
+import { labelGlyphs, runPx, type RunWidth } from '@geomira/scene/label-hit';
 import type { PlacedLabel } from '@geomira/scene/labels';
 import { dashPattern } from '@geomira/scene/style';
 import type { DisplayItem, Path } from '@geomira/scene/types';
@@ -133,6 +134,35 @@ function halo(ctx: Canvas2D, item: DisplayItem, ui: UiState, theme: Theme): void
   }
 }
 
+/**
+ * The halo of an item that draws no stroke (a distance measurement, ADR-0048: its value label
+ * is all it draws): a box behind its label, the label's drawn box grown by HALO.
+ */
+function labelHalos(
+  ctx: Canvas2D,
+  display: DisplayList,
+  ui: UiState,
+  theme: Theme,
+  fonts: FontState,
+): void {
+  for (const item of display.items) {
+    if (item.paths.length > 0 || item.fill !== null) continue;
+    const selected = ui.selection.has(item.id);
+    if (!selected && ui.hover !== item.id && ui.highlight?.has(item.id) !== true) continue;
+    const l = display.labels.find((x) => x.id === item.id);
+    if (l === undefined) continue;
+    const { box } = labelGlyphs(l, l.runs.map(measuredWidth(ctx, theme, fonts)), theme.fontSize);
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = selected ? theme.selection : theme.hover;
+    ctx.fillRect(
+      box.minX - HALO,
+      box.minY - HALO,
+      box.maxX - box.minX + 2 * HALO,
+      box.maxY - box.minY + 2 * HALO,
+    );
+  }
+}
+
 function drawItem(ctx: Canvas2D, item: DisplayItem, theme: Theme): void {
   const { style } = item;
   if (item.fill !== null) {
@@ -177,31 +207,34 @@ class FontState {
   }
 }
 
-function drawLabel(ctx: Canvas2D, l: PlacedLabel, theme: Theme, fonts: FontState): void {
-  const size = theme.fontSize;
-  const small = Math.round(size * 0.7);
-  const fontOf = (pos: string) => `${String(pos === 'base' ? size : small)}px ${theme.fontFamily}`;
-  const widths = l.runs.map((r) => {
-    fonts.set(fontOf(r.pos));
+/** The label font at a size (CSS px). */
+function fontAt(px: number, theme: Theme): string {
+  return `${String(px)}px ${theme.fontFamily}`;
+}
+
+/**
+ * The width of a label run as drawn: measured in its font (the base size, or the small size
+ * of sub- and superscripts). drawLabel measures with it, and the canvas's label hit-testing
+ * (scene hitLabel, ADR-0049) is given it, so both place the runs from the same widths.
+ */
+export function measuredWidth(ctx: Canvas2D, theme: Theme, fonts = new FontState(ctx)): RunWidth {
+  return (r) => {
+    fonts.set(fontAt(runPx(r.pos, theme.fontSize), theme));
     return ctx.measureText(r.text).width;
-  });
-  const total = widths.reduce((a, w) => a + w, 0);
-  let x = l.at.x - (l.align === 'left' ? 0 : l.align === 'right' ? total : total / 2);
-  const y =
-    l.baseline === 'top'
-      ? l.at.y + size * 0.8
-      : l.baseline === 'bottom'
-        ? l.at.y - size * 0.2
-        : l.at.y + size * 0.3;
+  };
+}
+
+/** Draws a label's runs where scene labelGlyphs places them (the box hitLabel tests). */
+function drawLabel(ctx: Canvas2D, l: PlacedLabel, theme: Theme, fonts: FontState): void {
+  const width = measuredWidth(ctx, theme, fonts);
+  const { glyphs } = labelGlyphs(l, l.runs.map(width), theme.fontSize);
   ctx.globalAlpha = l.opacity;
   colour(ctx, 'fillStyle', l.color, theme);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
-  for (const [i, r] of l.runs.entries()) {
-    fonts.set(fontOf(r.pos));
-    const dy = r.pos === 'sub' ? size * 0.25 : r.pos === 'sup' ? -size * 0.4 : 0;
-    ctx.fillText(r.text, x, y + dy);
-    x += widths[i] ?? 0;
+  for (const g of glyphs) {
+    fonts.set(fontAt(g.px, theme));
+    ctx.fillText(g.text, g.x, g.y);
   }
 }
 
@@ -229,9 +262,10 @@ export function drawDisplay(
     ctx.fillText(`Not drawn: ${display.problem}`, width / 2, height / 2);
     return;
   }
-  for (const item of display.items) halo(ctx, item, ui, theme);
-  for (const item of display.items) drawItem(ctx, item, theme);
   const fonts = new FontState(ctx);
+  for (const item of display.items) halo(ctx, item, ui, theme);
+  labelHalos(ctx, display, ui, theme, fonts);
+  for (const item of display.items) drawItem(ctx, item, theme);
   for (const l of display.labels) drawLabel(ctx, l, theme, fonts);
   ctx.globalAlpha = 1;
 }

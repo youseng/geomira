@@ -1,4 +1,5 @@
-import { memo, useRef, type RefObject } from 'react';
+import type { ClaimBoxHost } from './ClaimBox';
+import { memo, useMemo } from 'react';
 import type { EditorState } from '@geomira/editor/state';
 import { assertNever } from '@geomira/num/assert';
 import type { Scene } from '@geomira/scene/types';
@@ -7,9 +8,11 @@ import { ClaimsPanel } from './panels/ClaimsPanel';
 import { HelpPanel } from './panels/HelpPanel';
 import { LayersPanel } from './panels/LayersPanel';
 import { ObjectsPanel } from './panels/ObjectsPanel';
-import { TextPanel, type TextDraft } from './panels/TextPanel';
+import { TextPanel } from './panels/TextPanel';
+import { timeout } from './long-press';
 import { useSettled } from './settled';
 import type { EditorStore } from './store';
+import { TextApplier } from './text-apply';
 import type { DiscoveryRuns } from './discovery-runs';
 import type { TestRuns } from './test-runs';
 
@@ -32,17 +35,17 @@ export interface SidePanelProps {
   /** On a phone: whether the drawer is open. */
   readonly open: boolean;
   readonly onClose: () => void;
-  readonly onTestClaim: (text: string) => boolean;
+  readonly claimBox: ClaimBoxHost;
   /** Opens an object's style card (a right-click on its row; ADR-0029). Stable. */
   readonly onStyle: (id: number, anchor: Box) => void;
 }
 
 type BodyProps = Pick<
   SidePanelProps,
-  'tab' | 'store' | 'state' | 'runs' | 'discovery' | 'onTestClaim' | 'undrawable' | 'onStyle'
+  'tab' | 'store' | 'state' | 'runs' | 'discovery' | 'claimBox' | 'undrawable' | 'onStyle'
 > & {
   readonly coincident: number;
-  readonly kept: RefObject<TextDraft | null>;
+  readonly applier: TextApplier;
 };
 
 /** The tab's panel; memoised, so a drag frame (with the settled state unchanged) skips it. */
@@ -52,15 +55,15 @@ const Body = memo(function Body({
   state,
   runs,
   discovery,
-  onTestClaim,
+  claimBox,
   coincident,
-  kept,
+  applier,
   undrawable,
   onStyle,
 }: BodyProps) {
   switch (tab) {
     case 'Text':
-      return <TextPanel store={store} state={state} kept={kept} />;
+      return <TextPanel state={state} applier={applier} />;
     case 'Objects':
       return <ObjectsPanel store={store} state={state} undrawable={undrawable} onStyle={onStyle} />;
     case 'Layers':
@@ -72,7 +75,7 @@ const Body = memo(function Body({
           state={state}
           runs={runs}
           discovery={discovery}
-          onTestClaim={onTestClaim}
+          claimBox={claimBox}
         />
       );
     case 'Help':
@@ -87,13 +90,13 @@ const Body = memo(function Body({
  * tabs (styles: the style card, ADR-0029). On a phone the tab row sits above the tool strip
  * and a tab opens the panel as a drawer over the canvas. During a drag they show the state from before it and update at drag
  * end (settled.ts, note F of Run 9a). The text panel's draft is kept here while another tab is
- * shown (Run 10 audit, W4).
+ * shown (Run 10 audit, W4), with its pending apply (ADR-0047).
  */
 export function SidePanel(props: SidePanelProps) {
   const { store, scene, runs, discovery, tab, onTab, open, onClose } = props;
-  const { onTestClaim, undrawable, onStyle } = props;
+  const { claimBox, undrawable, onStyle } = props;
   const state = useSettled(props.state);
-  const kept = useRef<TextDraft>(null);
+  const applier = useMemo(() => new TextApplier(store, timeout, () => performance.now()), [store]);
   return (
     <aside className={open ? 'side open' : 'side'} aria-label="Figure">
       <div className="tabs" role="tablist" aria-label="Panels">
@@ -122,9 +125,9 @@ export function SidePanel(props: SidePanelProps) {
           state={state}
           runs={runs}
           discovery={discovery}
-          onTestClaim={onTestClaim}
+          claimBox={claimBox}
           coincident={scene.coincident.length}
-          kept={kept}
+          applier={applier}
           undrawable={undrawable}
           onStyle={onStyle}
         />

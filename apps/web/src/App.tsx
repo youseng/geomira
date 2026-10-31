@@ -3,6 +3,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -174,20 +175,31 @@ function useApp() {
     showTab: panels.showTab,
     fitAfterEdit,
   });
-  const onTestClaim = useStable(header.props.onTestClaim);
+  const testClaim = useStable(header.props.claimBox.test);
+  const completeClaim = useStable(header.props.claimBox.complete);
+  const claimBox = useMemo(
+    () => ({ test: testClaim, complete: completeClaim }),
+    [testClaim, completeClaim],
+  );
   const openClaims = useStable(() => {
     panels.showTab('Claims');
   });
   const style = useStyleCard(store);
   const { state } = snap;
   // The canvas previews the style card's draft (ADR-0029): a render override, not an edit.
-  const styled = usePreviewScene(page.scene, state.doc, state.values.values, style.card);
+  const styled = usePreviewScene(
+    page.scene,
+    state.doc,
+    state.values.values,
+    style.card,
+    store.env.registry,
+  );
   // A viewed special position or branch fix replaces it, a draft too (ADR-0035, ADR-0036).
   const found = useDiscoveryCanvas(page.discovery, store, styled, state.doc);
   return {
     ...{ page, canvasRef, commandRef, setSize, panels, dialog, setDialog, header, size },
     ...useUndrawable(),
-    ...{ onTestClaim, openClaims, style, shown: found.scene, highlight: found.highlight },
+    ...{ claimBox, openClaims, style, shown: found.scene, highlight: found.highlight },
   };
 }
 
@@ -256,6 +268,7 @@ function StyleCardView({ app }: { app: ReturnType<typeof useApp> }) {
       state={page.snap.state}
       card={style.card}
       onDraft={style.setDraft}
+      onName={style.setName}
       onClose={style.close}
     />
   );
@@ -305,7 +318,7 @@ export function App() {
             onTab={panels.showTab}
             open={panels.open}
             onClose={panels.close}
-            onTestClaim={app.onTestClaim}
+            claimBox={app.claimBox}
             onStyle={app.style.open}
           />
         </Boundary>

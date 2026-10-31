@@ -159,7 +159,7 @@ describe('parse-level selector checks (SPEC §7)', () => {
     ]);
     const hints = selectorDiagnostics(b.doc, REGISTRY).map((d) => d.hint);
     expect(hints).toEqual([
-      'remove the selectors: only intersect, tangent_point, tangent_from, foci choose among candidates',
+      'remove the selectors: only intersect, tangent, tangent_point, tangent_from, foci choose among candidates',
       'use along(±) instead',
       'use orient(±) instead',
       'remove along(±)',

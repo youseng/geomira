@@ -89,6 +89,7 @@ export function markPaths(view: View, s: Shape, rect: Rect): Path[] {
       return segmentMarkPaths(view, s, rect);
     case 'text':
       return inside(rect, s.at) ? [{ kind: 'dot', c: toScreen(view, s.at), r: 0 }] : [];
+    case 'distance':
     case 'point':
     case 'line':
     case 'circle':

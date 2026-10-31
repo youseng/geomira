@@ -8,7 +8,7 @@
 import type { DocumentEdit } from './edit';
 import { sameConstruction } from '@geomira/kernel/construction-key';
 import { exprKinds, objectKinds } from '@geomira/kernel/derived';
-import type { DocObject } from '@geomira/kernel/document';
+import type { DocObject, Document, Style } from '@geomira/kernel/document';
 import { call, lit, ref, type Expr } from '@geomira/kernel/expr';
 import { onConicSign } from '@geomira/kernel/conic';
 import { requireOnCircle } from '@geomira/kernel/incidence';
@@ -19,14 +19,18 @@ import { parseRational, toNumber } from '@geomira/num/rational';
 import { alreadyMessage } from '@geomira/lang/same-construction';
 import { pointsCoincide } from '@geomira/scene/coincide';
 import { chooseSelectors } from './choice';
+import { commonTangents } from './machine-tangents';
 import { applyEdit } from './edit';
 import { conventionalName, preferredName } from './conventional-names';
+import { descriptiveName, wantedName, type Description } from './descriptive-names';
 import { freshName, type NameKind } from './names';
 import { done, refuse, type EditResult } from './result';
 import { localResponses } from './robust';
 import type { EditorEnv, EditorState } from './state';
 import { idleTool, type ToolState } from './tool-state';
-import type { ToolUI } from './tool-ui';
+import { claimArgs } from './claim-tool';
+import { withFields } from './style-fields';
+import type { ToolUI, ToolValue } from './tool-ui';
 
 /** The idle tool after a build: no picks; the claim kind and the typed number stay. */
 export function reset(state: EditorState): ToolState {
@@ -72,9 +76,11 @@ function addEdit(
   kind: NameKind,
   env: EditorEnv,
   wanted?: string,
+  style?: Style,
 ): DocumentEdit {
   const name = preferredName(state.doc, nameKind(state, def, env, kind), wanted);
-  return { kind: 'add', object: { name, def, layers: [state.activeLayer] } };
+  const object = { name, def, layers: [state.activeLayer] };
+  return { kind: 'add', object: style === undefined ? object : { ...object, style } };
 }
 
 /** "l is line(A, B) already; …": what reusing `objs` instead of adding them again says. */
@@ -106,10 +112,17 @@ export function add(
   kind: NameKind,
   env: EditorEnv,
   wanted?: string,
+  style?: Style,
 ): EditResult {
   const same = sameConstruction(state.doc, def, env.registry);
-  if (same !== undefined) return reuse(state, [same], env);
-  return applyEdit(state, addEdit(state, def, kind, env, wanted), env);
+  if (same === undefined)
+    return applyEdit(state, addEdit(state, def, kind, env, wanted, style), env);
+  // A reused object takes the fields of `style` it lacks, as ONE edit (ADR-0048: a measurement
+  // made before and not shown is shown by the Distance or Angle tool).
+  const want = style === undefined ? undefined : withFields(same.style, style);
+  if (want === undefined) return reuse(state, [same], env);
+  const r = applyEdit(state, { kind: 'style', id: same.id, style: want }, env);
+  return r.ok ? reuse(r.state, [same], env) : r;
 }
 
 /**
@@ -123,6 +136,7 @@ function addAll(
   defs: readonly Expr[],
   kind: NameKind,
   env: EditorEnv,
+  want: (doc: Document) => string | undefined = () => undefined,
 ): EditResult {
   const edits: DocumentEdit[] = [];
   const reused: DocObject[] = [];
@@ -134,7 +148,7 @@ function addAll(
       if (old && !reused.includes(same)) reused.push(same);
       continue;
     }
-    const e = addEdit(probe, def, kind, env);
+    const e = addEdit(probe, def, kind, env, want(probe.doc));
     const r = applyEdit(probe, e, env);
     if (!r.ok) return refuse(state, r.reason);
     probe = r.state;
@@ -202,7 +216,9 @@ function branches(
     if (ch.ok && ch.note !== undefined) notes.push(ch.note);
   }
   if (defs.length === 0) return refuse(state, missed[0] ?? 'nothing to build');
-  const r = addAll(state, defs, kind, env);
+  const r = addAll(state, defs, kind, env, (doc) =>
+    tool === 'tangent_from' ? descriptiveName(doc, TANGENT, [nameOf(state, args[0])]) : undefined,
+  );
   const said = [
     ...(missed.length === 0
       ? []
@@ -252,9 +268,20 @@ function atInfinity(state: EditorState, a: number, b: number, env: EditorEnv): E
   };
 }
 
+/** The tangent at A, and the tangents from A, are t_A (ADR-0050). */
+const TANGENT: Description = { prefix: 't', picks: 'first' };
+
+function nameOf(state: EditorState, id: number | undefined): string | undefined {
+  return state.doc.objects.find((o) => o.id === id)?.name;
+}
+
 function tangent(state: EditorState, picks: readonly number[], env: EditorEnv): EditResult {
   const [p, c] = picks;
   const [P, C] = [state.values.values.get(p ?? -1), state.values.values.get(c ?? -1)];
+  const oval = (v: Value<number> | undefined) => v?.kind === 'circle' || v?.kind === 'conic';
+  // Two curves (ADR-0045, the tool's second curve pick): their common tangents.
+  if (p !== undefined && c !== undefined && oval(P) && oval(C))
+    return commonTangents(state, [p, c], env, (s, defs) => addAll(s, defs, 'line', env));
   if (p === undefined || c === undefined || P?.kind !== 'point')
     return refuse(state, 'pick a point and a circle or a conic');
   if (C?.kind !== 'circle' && C?.kind !== 'conic')
@@ -273,7 +300,8 @@ function tangent(state: EditorState, picks: readonly number[], env: EditorEnv): 
         `the figure moves (put the point on the ${C.kind} with "Point on object" first)`,
     );
   }
-  return add(state, call('tangent', [ref(p), ref(c)]), 'line', env);
+  const wanted = descriptiveName(state.doc, TANGENT, [nameOf(state, p)]);
+  return add(state, call('tangent', [ref(p), ref(c)]), 'line', env, wanted);
 }
 
 /**
@@ -294,11 +322,10 @@ function tangentStays(state: EditorState, p: number, c: number, env: EditorEnv):
 }
 
 /** The tool's typed number as an exact literal, or why it is not one. */
-function typedValue(tool: ToolUI, text: string): Expr | string {
+function typedValue(value: ToolValue, text: string): Expr | string {
   const t = text.trim().replace(/°$/u, '');
   const r = parseRational(t);
-  if (tool.value === undefined) return 'this tool takes no number';
-  return r.ok ? lit(r.value, t) : `${tool.value.label}: ${r.reason}`;
+  return r.ok ? lit(r.value, t) : `${value.label}: ${r.reason}`;
 }
 
 function callBuild(
@@ -308,14 +335,16 @@ function callBuild(
   picks: readonly number[],
   env: EditorEnv,
 ): EditResult {
-  const first = state.doc.objects.find((o) => o.id === picks[0])?.name;
-  const wanted = conventionalName(b.prefer, first);
-  const value = tool.value === undefined ? undefined : typedValue(tool, state.toolState.value);
+  const names = picks.map((id) => nameOf(state, id));
+  const conventional = conventionalName(b.prefer, names[0]);
+  const wanted = wantedName(state.doc, conventional, b.describe, names);
+  const value =
+    tool.value === undefined ? undefined : typedValue(tool.value, state.toolState.value);
   if (typeof value === 'string') return refuse(state, value);
   const args = [...picks.map(ref), ...(value === undefined ? [] : [value])];
   // A map tool that builds the map alone (reflect(l)) names it as a transformation.
   const kind = tool.map === true && state.toolState.mapOnly === true ? 'transform' : b.name;
-  return add(state, call(b.tool, args), kind, env, wanted);
+  return add(state, call(b.tool, args), kind, env, wanted, b.style);
 }
 
 /** Builds the tool's object(s) from complete picks, in the order of the tool's steps. */
@@ -324,6 +353,7 @@ export function build(
   tool: ToolUI,
   picks: readonly number[],
   env: EditorEnv,
+  groups: readonly (readonly number[])[] = picks.map((id) => [id]),
 ): EditResult {
   const b = tool.build;
   switch (b.kind) {
@@ -332,7 +362,10 @@ export function build(
     case 'call':
       return withTool(callBuild(state, tool, b, picks, env), reset(state));
     case 'claim': {
-      const claim = { kind: state.toolState.claimKind, args: picks.map(ref) };
+      const ts = state.toolState;
+      const args = claimArgs(ts.claimKind, groups, ts.value);
+      if (typeof args === 'string') return refuse(state, args);
+      const claim = { kind: ts.claimKind, args };
       return withTool(applyEdit(state, { kind: 'addClaim', claim }, env), reset(state));
     }
     case 'derivedLayer': {

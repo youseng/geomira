@@ -5,6 +5,7 @@ import { objectsByLayer, type ObjectRow } from '@geomira/editor/panels';
 import type { EditorState } from '@geomira/editor/state';
 import { assertNever } from '@geomira/num/assert';
 import type { EditorStore } from '../store';
+import { MeasurementsList } from './MeasurementsList';
 
 export interface ObjectsPanelProps {
   readonly store: EditorStore;
@@ -98,12 +99,21 @@ function Row(p: { row: ObjectRow } & ObjectsPanelProps) {
  * Undefined or Inexact value is listed with its reason (shown as undefined, never as a
  * wrong figure), and a curve the canvas cannot place at its zoom as "not drawable at this
  * zoom" (ADR-0023). A click selects the object, or gives it to a tool that waits for a pick;
- * a right-click or a long press opens its style card (ADR-0029).
+ * a right-click or a long press opens its style card (ADR-0029). The figure's numbers are
+ * also listed first, with their values, under "Measurements" (ADR-0048).
  */
 export function ObjectsPanel({ store, state, undrawable, onStyle }: ObjectsPanelProps) {
   const groups = useMemo(() => objectsByLayer(state), [state]);
   return (
     <div className="objects">
+      <MeasurementsList
+        store={store}
+        state={state}
+        onStyle={onStyle}
+        onPick={(id) => {
+          pickObject(store, id);
+        }}
+      />
       {groups.map((g) => (
         <section key={g.id} className="object-group">
           <h3>

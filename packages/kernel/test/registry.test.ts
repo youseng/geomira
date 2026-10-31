@@ -110,6 +110,8 @@ describe('createRegistry', () => {
       'foci',
       'conic_to_circle',
       'circle_to_centre',
+      'exsimilicenter',
+      'insimilicenter',
     ]);
     for (const t of REGISTRY.tools) {
       expect(t.id).toBe(t.name);

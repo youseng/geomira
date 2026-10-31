@@ -25,6 +25,7 @@ import { FloatField } from '@geomira/num/float-field';
 import { pointsCoincide } from '@geomira/scene/coincide';
 import { side, type Choice, type ChoiceCtx } from './options';
 import { firmness, localResponses, type Values } from './robust';
+import { alongChoice } from './choice-tangents';
 
 type V = Vec<number>;
 
@@ -326,15 +327,17 @@ export function chooseAmong(c: ChoiceCtx, points: readonly number[], sigmas: num
   const t1 = otherThree(c, points);
   if (t1 !== undefined) return { ok: true, selectors: [t1], tier: 1 };
   const t2 = filters(c, points);
+  if (t2 !== undefined && t2.score >= sigmas) return { ok: true, selectors: t2.sels, tier: 2 };
+  // Common tangents of two circles (ADR-0045): their structural along(±) label first.
+  const t3 = alongChoice(c, points, sigmas, { picks, computeWith, candidatesIn });
+  if (t3 !== undefined) return t3;
   if (t2 !== undefined)
-    return t2.score >= sigmas
-      ? { ok: true, selectors: t2.sels, tier: 2 }
-      : {
-          ok: true,
-          selectors: t2.sels,
-          tier: 2,
-          note: `the selectors decide by ${t2.score.toFixed(1)} standard deviations of the local noise (a point of the construction near the intersection makes the choice firmer)`,
-        };
+    return {
+      ok: true,
+      selectors: t2.sels,
+      tier: 2,
+      note: `the selectors decide by ${t2.score.toFixed(1)} standard deviations of the local noise (a point of the construction near the intersection makes the choice firmer)`,
+    };
   const t4 = nearIncident(c, points);
   if (t4 !== undefined) return { ok: true, selectors: [t4], tier: 4 };
   return {

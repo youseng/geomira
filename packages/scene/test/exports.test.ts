@@ -11,6 +11,8 @@ import * as hit from '../src/hit';
 import * as labelText from '../src/label-text';
 import * as labels from '../src/labels';
 import * as labelBox from '../src/label-box';
+import * as labelHit from '../src/label-hit';
+import * as measure from '../src/measure';
 import * as palette from '../src/palette';
 import * as style from '../src/style';
 import * as types from '../src/types';
@@ -50,6 +52,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'drawStyle',
       'effectiveStyle',
       'labelOf',
+      'placedLabel',
       'zOf',
     ],
   },
@@ -64,10 +67,29 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     module: labelBox,
     names: ['LABEL_FONT_PX', 'LABEL_GAP_PX', 'MIN_CLEAR_DEG', 'boxesOverlap', 'labelBox'],
   },
+  './label-hit': {
+    module: labelHit,
+    names: ['LABEL_PICK_PX', 'estimatedWidth', 'hitLabel', 'labelGlyphs', 'labelOffset', 'runPx'],
+  },
   './display': { module: display, names: ['ARC_SAGITTA', 'MARGIN_PX', 'MAX_ARC_RADIUS', 'layout'] },
   './hit': { module: hit, names: ['HIT_RADIUS', 'hitItem', 'hitTest'] },
   './bounds': { module: bounds, names: ['sceneBounds'] },
   './palette': { module: palette, names: ['NAMED_COLOURS', 'paletteColour'] },
+  './measure': {
+    module: measure,
+    names: [
+      'DEFAULT_DIGITS',
+      'MAX_DIGITS',
+      'digitsOf',
+      'distanceLabelAngle',
+      'formatMeasure',
+      'inDegrees',
+      'measureDef',
+      'measureRuns',
+      'measureShape',
+      'middle',
+    ],
+  },
 };
 
 describe('@geomira/scene subpath surface', () => {

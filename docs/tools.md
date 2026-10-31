@@ -366,9 +366,9 @@ The center of the nine-point circle of ABC: the midpoint of the circumcenter and
 
 ### tangent_point
 
-tangent_point(P, c, selectors): a point where a tangent from P touches a circle or a conic; two candidates (orient(+): cross(O − P, T − P) > 0, O the center, or for a conic the midpoint of the chord of contact), one double point when P is on the curve.
+tangent_point(P, c, selectors): a point where a tangent from P touches a circle or a conic; two candidates (orient(+): cross(O − P, T − P) > 0, O the center, or for a conic the midpoint of the chord of contact), one double point when P is on the curve. tangent_point(c1, c2, selectors): the touch point on c1 of a common tangent of two curves (ADR-0045; the candidates and selectors of tangent(c1, c2)).
 
-- Signatures: `tangent_point(point, round)`, `tangent_point(point, conic)`
+- Signatures: `tangent_point(point, round)`, `tangent_point(point, conic)`, `tangent_point(round, round)`, `tangent_point(conic, conic)`, `tangent_point(round, conic)`, `tangent_point(conic, round)`
 - Result: point
 - Exact run (RationalField): can succeed
 - Export: numeric
@@ -376,6 +376,10 @@ tangent_point(P, c, selectors): a point where a tangent from P touches a circle 
 - By construction:
   - `tangent_point(point, round)`: on(result, #2); on(result, polar(#1, #2)); perpendicular(line(#1, result), line(center(#2), result))
   - `tangent_point(point, conic)`: on(result, #2); on(result, polar(#1, #2))
+  - `tangent_point(round, round)`: on(result, #1); tangent(tangent(result, #1), #2)
+  - `tangent_point(conic, conic)`: on(result, #1); tangent(tangent(result, #1), #2)
+  - `tangent_point(round, conic)`: on(result, #1); tangent(tangent(result, #1), #2)
+  - `tangent_point(conic, round)`: on(result, #1); tangent(tangent(result, #1), #2)
 - Degenerate cases:
   - P inside c (or P = the center) → Undefined
   - P on c (the gap |OP| − r within the band) → the double point
@@ -386,6 +390,20 @@ tangent_point(P, c, selectors): a point where a tangent from P touches a circle 
   - a touch point outside an arc is not a candidate
   - a conic: P its center or no tangent from P (P inside it) → Undefined
   - a conic: P on an asymptote → Undefined (one touch point is at infinity)
+  - two curves: no selector → Undefined (ambiguous: add a selector), in every field and whatever the count
+  - two circles: equal circles or concentric circles → Undefined
+  - two circles: one inside the other → Undefined (no common tangent)
+  - two circles: tangent circles → the common tangent at the touch point, one double candidate
+  - two circles: intersecting circles → the two external tangents only
+  - two circles: nearly coincident circles → Undefined (ambiguous) unless the external touch points are apart beyond the band
+  - two circles: square roots not representable → Inexact over Q; always Inexact mod p
+  - two curves: a touch point off an arc is not a candidate
+  - two curves: other(P) → Undefined (it does not apply); along(±) or orient(±) with a conic → Undefined
+  - two circles: along(−) keeps the external tangents, along(+) the internal ones; orient(±) the side of O₁O₂ where T lies (structural labels; a vanished branch is never replaced)
+  - a conic: the curves coincide → Undefined (within the band: ambiguous)
+  - a conic: no common tangent → Undefined
+  - a conic: the line at infinity (two parabolas) and an asymptote of the first curve are not candidates
+  - a conic: over Q and mod p the common tangents are roots of a quartic → Inexact
 - Examples:
   - `tangent_point((5, 5), circle((0, 0), (5, 0)), orient(+))` → point (5, 0)
   - `tangent_point((6, 0), circle((0, 0), (5, 0)), orient(+))` → point (4.16666666667, -2.76385399196)
@@ -560,6 +578,49 @@ foci(k, selectors): a focus of a conic (an ellipse's or a hyperbola's two foci n
   - `foci(conic((0, 0), (1, 1), (-1, 1), (2, 4), (-2, 4)), near(point(0, 0)))` → point (0, 1/4)
   - `foci(circle((1, 2), (4, 6)))` → point (1, 2)
 
+### exsimilicenter
+
+exsimilicenter(c1, c2): the external centre of similitude (r₂·O₁ − r₁·O₂)/(r₂ − r₁), the centre of the homothety of ratio r₂/r₁ taking c1 to c2; the external common tangents pass through it. Equal radii: the point at infinity of O₁O₂. Exact over Q when the radii are rational.
+
+- Signatures: `exsimilicenter(round, round)`
+- Result: point, ideal_point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `exsimilicenter(round, round)`: arguments 1, 2 in any order (the same value)
+- By construction:
+  - `exsimilicenter(round, round)`: collinear(result, center(#1), center(#2))
+- Degenerate cases:
+  - concentric circles (equal ones included) → Undefined
+  - radii not rational → Inexact over Q; always Inexact mod p (equal radii need no root)
+  - a circle with no positive radius → Undefined
+  - equal radii → the point at infinity of the direction O₁O₂ (ADR-0040)
+  - radii within the band of equal → Undefined (ambiguous: near infinity)
+- Examples:
+  - `exsimilicenter(circle((0, 0), 1), circle((6, 0), 2))` → point (-6, 0)
+  - `exsimilicenter(circle((0, 0), 1), circle((5, 0), 1))` → point at infinity, direction (5, 0)
+
+### insimilicenter
+
+insimilicenter(c1, c2): the internal centre of similitude (r₂·O₁ + r₁·O₂)/(r₂ + r₁), the centre of the homothety of ratio −r₂/r₁ taking c1 to c2; the internal common tangents pass through it. Exact over Q when the radii are rational.
+
+- Signatures: `insimilicenter(round, round)`
+- Result: point
+- Exact run (RationalField): can succeed
+- Export: numeric
+- Symmetry:
+  - `insimilicenter(round, round)`: arguments 1, 2 in any order (the same value)
+- By construction:
+  - `insimilicenter(round, round)`: collinear(result, center(#1), center(#2))
+- Degenerate cases:
+  - concentric circles (equal ones included) → Undefined
+  - radii not rational → Inexact over Q; always Inexact mod p (equal radii need no root)
+  - a circle with no positive radius → Undefined
+  - equal radii → the midpoint of O₁O₂, exact in every field
+- Examples:
+  - `insimilicenter(circle((0, 0), 1), circle((6, 0), 2))` → point (2, 0)
+  - `insimilicenter(circle((0, 0), 1), circle((6, 0), (7, 1)))` → point (2.48528137424, 0)
+
 ## Lines
 
 ### line
@@ -670,9 +731,9 @@ The perpendicular bisector of AB (chiral: a quarter turn of B − A).
 
 ### tangent
 
-tangent(P, c): the tangent to c at P (P on c); chiral (a quarter turn of P − O). tangent(P, k) on a conic: the tangent at P, direction a quarter turn of −∇Q(P).
+tangent(P, c): the tangent to c at P (P on c); chiral (a quarter turn of P − O). tangent(P, k) on a conic: the tangent at P, direction a quarter turn of −∇Q(P). tangent(c1, c2, selectors): a common tangent of two curves (circles or conics, up to four: two external and two internal for two circles), the tangent of c1 at its touch point T; selectors judge T; two circles: along(−) the external pair, along(+) the internal pair, orient(±) the side of O₁O₂ where T lies.
 
-- Signatures: `tangent(point, round)`, `tangent(point, conic)`
+- Signatures: `tangent(point, round)`, `tangent(point, conic)`, `tangent(round, round)`, `tangent(conic, conic)`, `tangent(round, conic)`, `tangent(conic, round)`
 - Result: line
 - Exact run (RationalField): can succeed
 - Export: numeric
@@ -680,12 +741,33 @@ tangent(P, c): the tangent to c at P (P on c); chiral (a quarter turn of P − O
 - By construction:
   - `tangent(point, round)`: on(#1, result); tangent(result, #2); perpendicular(result, line(center(#2), #1))
   - `tangent(point, conic)`: on(#1, result); tangent(result, #2)
+  - `tangent(round, round)`: tangent(result, #1); tangent(result, #2)
+  - `tangent(conic, conic)`: tangent(result, #1); tangent(result, #2)
+  - `tangent(round, conic)`: tangent(result, #1); tangent(result, #2)
+  - `tangent(conic, round)`: tangent(result, #1); tangent(result, #2)
 - Degenerate cases:
   - P not on c → Undefined
   - P within the band of c → Undefined (ambiguous)
   - a conic: P not on k (the gap Q/|∇Q| as a length) → Undefined; within the band → ambiguous
+  - tangent(P, c) with a selector → Undefined (the tangent at P is unique)
+  - two curves: no selector → Undefined (ambiguous: add a selector), in every field and whatever the count
+  - two circles: equal circles or concentric circles → Undefined
+  - two circles: one inside the other → Undefined (no common tangent)
+  - two circles: tangent circles → the common tangent at the touch point, one double candidate
+  - two circles: intersecting circles → the two external tangents only
+  - two circles: nearly coincident circles → Undefined (ambiguous) unless the external touch points are apart beyond the band
+  - two circles: square roots not representable → Inexact over Q; always Inexact mod p
+  - two curves: a touch point off an arc is not a candidate
+  - two curves: other(P) → Undefined (it does not apply); along(±) or orient(±) with a conic → Undefined
+  - two circles: along(−) keeps the external tangents, along(+) the internal ones; orient(±) the side of O₁O₂ where T lies (structural labels; a vanished branch is never replaced)
+  - a conic: the curves coincide → Undefined (within the band: ambiguous)
+  - a conic: no common tangent → Undefined
+  - a conic: the line at infinity (two parabolas) and an asymptote of the first curve are not candidates
+  - a conic: over Q and mod p the common tangents are roots of a quartic → Inexact
 - Examples:
   - `tangent((3, 4), circle((0, 0), (5, 0)))` → line (3, 4) + t·(-4, 3), t ∈ [−∞, ∞], chiral
+  - `tangent(circle((0, 0), 7), circle((10, 0), 1), near(point(0, 10)))` → line (21/5, 28/5) + t·(-28/5, 21/5), t ∈ [−∞, ∞], chiral
+  - `tangent(circle((0, 0), 7), circle((10, 0), 1), along(+), orient(-))` → line (28/5, -21/5) + t·(21/5, 28/5), t ∈ [−∞, ∞], chiral
 
 ### polar
 

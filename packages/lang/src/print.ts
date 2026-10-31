@@ -68,6 +68,8 @@ function styleItems(s: Style): string[] {
   if (s.z !== undefined) out.push(`z=${formatFloat(s.z)}`);
   if (s.labelAngle !== undefined) out.push(`label_angle=${formatFloat(s.labelAngle)}`);
   if (s.labelDist !== undefined) out.push(`label_dist=${formatFloat(s.labelDist)}`);
+  if (s.show !== undefined) out.push(s.show ? 'show' : 'show=false');
+  if (s.digits !== undefined) out.push(`digits=${formatFloat(s.digits)}`);
   return out;
 }
 

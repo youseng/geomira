@@ -5,11 +5,18 @@
  */
 import type { ToolId } from './tool-state';
 import type { NamePreference } from './conventional-names';
+import type { Description } from './descriptive-names';
 import type { NameKind } from './names';
+import type { Style } from '@geomira/kernel/document';
 
 export type PickKind =
   | 'point'
   | 'line'
+  /**
+   * A line, segment or ray, or two points that give the line through them (the claim tool's
+   * line parameters, ADR-0051: `concurrent(line(A, P), …)` by picking A, then P).
+   */
+  | 'line_or_points'
   | 'circle'
   /** A circle or a conic (ADR-0042: the Tangent tool). */
   | 'oval'
@@ -34,6 +41,13 @@ export type Build =
       readonly name: NameKind;
       /** The conventional name, used when free (conventional-names.ts). */
       readonly prefer?: NamePreference;
+      /** The name from the picked points (descriptive-names.ts, ADR-0050), after `prefer`. */
+      readonly describe?: Description;
+      /**
+       * The style of what it builds (the Distance and Angle tools: `show`, so a new measurement
+       * is drawn, ADR-0048); a same construction that exists is given it (machine-build.ts).
+       */
+      readonly style?: Style;
     }
   /** intersect(a, b, …): every intersection not yet a point, each with the GUI selector choice. */
   | { readonly kind: 'intersection' }
@@ -69,6 +83,12 @@ export interface ToolUI {
    * before its point. Only for steps of different kinds, so the order of the call is clear.
    */
   readonly anyOrder?: boolean;
+  /**
+   * A second object of the kind of step `slot`, picked when that step alone is filled, completes
+   * the tool with the two objects instead of the other steps (ADR-0045: the Tangent tool's
+   * second circle or conic gives their common tangents); `prompt` joins the status line then.
+   */
+  readonly pair?: { readonly slot: number; readonly prompt: string };
   /** A pick may name an object picked before (the ratio AB / AC picks A twice). */
   readonly repeats?: boolean;
   /** The number the tool asks for, written as the call's last argument. */
@@ -102,6 +122,11 @@ export function call(
   return { id, label, key, help, steps, build };
 }
 
+/** A `call` tool whose object is drawn as a measurement (`show`, ADR-0048). */
+export function shown(t: ToolUI): ToolUI {
+  return t.build.kind === 'call' ? { ...t, build: { ...t.build, style: { show: true } } } : t;
+}
+
 /** `call` whose picks may come in any order (ADR-0024). */
 export function anyOrder(t: ToolUI): ToolUI {
   return { ...t, anyOrder: true };
@@ -110,6 +135,11 @@ export function anyOrder(t: ToolUI): ToolUI {
 /** A map tool (ToolUI.map): its first step is the object to map. */
 export function mapTool(t: ToolUI): ToolUI {
   return { ...t, map: true };
+}
+
+/** `call` named from its picked points (ADR-0050: line(A, C) is l_AC). */
+export function described(t: ToolUI, describe: Description): ToolUI {
+  return t.build.kind === 'call' ? { ...t, build: { ...t.build, describe } } : t;
 }
 
 /** `call` with a number typed in the tool's field, written last (rotate(X, O, 60)). */

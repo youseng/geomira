@@ -52,7 +52,8 @@ attrItem      = key , [ "=" , value , { "," , value } ] ;   (* a list (exclude, 
 value         = float | number | name | "-" , name | string | stars ;
 style keys    : color=word|string, width=float, dash=solid|dashed|dotted, hidden[=true|false],
                 noimage[=true|false], label=string, z=float, label_angle=float (degrees),
-                label_dist=float (pixels, >= 0).
+                label_dist=float (pixels, >= 0), show[=true|false],
+                digits=integer (0 to 10).
 
 (* ---- expressions ---- *)
 expr          = product , { ( "+" | "-" ) , product } ;
@@ -79,6 +80,10 @@ claim         = kind , "(" , expr , { "," , expr } , ")"    (* every kind by nam
               | segment , "=" , [ number , ( "·" | "*" ) ] , segment          (* length *)
               | segment , "/" , segment , "=" , segment , "/" , segment      (* ratio *)
               | segment , "/" , segment , "=" , number                       (* ratio_value *)
+              | segment , ( "·" | "*" ) , segment , "=" , segment , ( "·" | "*" ) , segment
+                                    (* length_product (ADR-0051) *)
+              | segment , "+" , segment , "=" , segment
+              | segment , "=" , segment , "+" , segment                       (* length_sum *)
               | [ number , [ "·" | "*" ] ] , dangle , "=" , dangle           (* dangle *)
               | "∡" , "(" , expr , "," , expr , ")" , "=" , number           (* dangle_lines *)
               | angle , "=" , angle                                          (* angle_eq *)

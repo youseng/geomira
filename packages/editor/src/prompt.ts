@@ -4,8 +4,17 @@
  * by "and", with "in either order" while more than one is.
  */
 import type { EditorState } from './state';
-import { openSteps } from './tool-steps';
+import { filledSteps, openSteps, pendingPair, stepsOf } from './tool-steps';
 import { toolUI } from './tools';
+
+/** Whether a tool with a rest step has its picks and may end now (ADR-0051: say so). */
+function finishable(state: EditorState): boolean {
+  const tool = toolUI(state.tool);
+  if (tool === undefined) return false;
+  const ts = state.toolState;
+  const { steps, rest } = stepsOf(tool, ts);
+  return rest !== undefined && pendingPair(ts) === undefined && filledSteps(ts) >= steps.length;
+}
 
 export function toolPrompt(state: EditorState): string {
   const tool = toolUI(state.tool);
@@ -15,7 +24,12 @@ export function toolPrompt(state: EditorState): string {
   const open = openSteps(tool, ts);
   const [first] = open;
   if (first === undefined) return `${tool.label}: ${tool.help}`;
-  if (open.length === 1) return `${tool.label}: ${first.step.prompt}`;
+  const pair = tool.pair;
+  // ADR-0045: a second object of the filled step's kind completes the tool too.
+  if (open.length === 1 && pair !== undefined && ts.slots.length === 1 && ts.slots[0] === pair.slot)
+    return `${tool.label}: ${first.step.prompt} (${pair.prompt})`;
+  if (open.length === 1)
+    return `${tool.label}: ${first.step.prompt}${finishable(state) ? ', or Finish' : ''}`;
   const steps = open.map((o) => o.step.prompt).join(' and ');
   return `${tool.label}: ${steps}, in either order`;
 }

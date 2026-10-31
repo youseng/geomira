@@ -17,8 +17,6 @@ import type { Registry } from '@geomira/kernel/registry';
 import { NO_REMOVAL, mergeRemovals } from '@geomira/kernel/derived-edit';
 import type { Removal } from '@geomira/kernel/edit';
 import type { Diagnostic } from '@geomira/lang/diagnostic';
-import { stable } from '@geomira/lang/canonical';
-import { parseInto } from '@geomira/lang/parse-into';
 import { assertNever } from '@geomira/num/assert';
 import {
   addAssumption,
@@ -32,6 +30,7 @@ import {
 import { definitionProblem, dependentsProblem, styleProblem } from './checks';
 import { dragEdit, type DragEdit } from './drag-edit';
 import { record, redo, undo } from './history';
+import { textStep, typingCommit, type ReplaceText } from './text-edit';
 import { textComments } from './comments';
 import { lockedChange } from './locked';
 import { textOrder } from './order';
@@ -50,7 +49,7 @@ export type DocumentEdit =
   | { readonly kind: 'renameClaim'; readonly id: number; readonly name?: string }
   | { readonly kind: 'addAssumption'; readonly assumption: NewAssumption }
   | { readonly kind: 'removeAssumption'; readonly id: number }
-  | { readonly kind: 'replaceText'; readonly text: string }
+  | ReplaceText
   | { readonly kind: 'docViewport'; readonly viewport: Viewport | null };
 
 export type Edit =
@@ -77,20 +76,6 @@ function plain(r: { ok: true; doc: Document; id?: number }): Step {
   return r.id === undefined
     ? { ok: true, doc: r.doc, removed: NO_REMOVAL, added: [] }
     : { ok: true, doc: r.doc, removed: NO_REMOVAL, added: [], id: r.id };
-}
-
-/**
- * The document of a whole text (lang's parseInto). Degenerate: a text with an error is
- * refused, with its diagnostics (applying the lines that parsed would silently drop the
- * others); a text that gives the same document changes nothing (no history entry).
- */
-function replaceText(doc: Document, text: string, env: EditorEnv): Step {
-  const r = parseInto(doc, text, env.registry);
-  const errors = r.diagnostics.filter((d) => d.severity === 'error');
-  if (errors.length > 0)
-    return { ok: false, error: 'the text has errors; nothing was changed', diagnostics: errors };
-  const same = stable(r.doc) === stable(doc);
-  return { ok: true, doc: same ? doc : r.doc, removed: NO_REMOVAL, added: [] };
 }
 
 /** A kernel DocEdit through applyDocEdit (invariants and derived layers kept). */
@@ -192,8 +177,10 @@ function docStep(doc: Document, e: DocumentEdit, env: EditorEnv): Step {
       const r = removeAssumption(doc, e.id);
       return r.ok ? plain(r) : r;
     }
-    case 'replaceText':
-      return replaceText(doc, e.text, env);
+    case 'replaceText': {
+      const r = textStep(doc, e, env);
+      return r.ok ? { ok: true, doc: r.doc, removed: NO_REMOVAL, added: [] } : r;
+    }
     case 'docViewport': {
       const p = e.viewport === null ? undefined : viewportProblem(e.viewport);
       if (p !== undefined) return { ok: false, error: p };
@@ -234,10 +221,10 @@ function labelOf(state: EditorState, e: DocumentEdit | { kind: 'batch'; label: s
 
 /**
  * A GUI edit's step, refused when it touches a locked layer (ADR-0020). The text
- * (replaceText) is exempt: it is how a locked figure is still edited.
+ * (replaceText, commitText) is exempt: it is how a locked figure is still edited.
  */
-function guarded(doc: Document, step: Step, text: boolean): Step {
-  if (!step.ok || text) return step;
+function guarded(doc: Document, step: Step): Step {
+  if (!step.ok) return step;
   const locked = lockedChange(doc, step.doc);
   return locked === undefined ? step : { ok: false, error: locked };
 }
@@ -261,6 +248,19 @@ function commit(state: EditorState, step: Step, label: string, env: EditorEnv): 
   };
 }
 
+/**
+ * A whole text as one edit: an entry of its own, or the text panel's typing session
+ * (text-edit.ts, ADR-0047). The text is exempt from the locked-layer guard (ADR-0020).
+ */
+function commitText(state: EditorState, e: ReplaceText, env: EditorEnv): EditResult {
+  const step = textStep(state.doc, e, env);
+  if (!step.ok) return refuse(state, step.error, step.diagnostics);
+  const doc = textComments(textOrder(step.doc));
+  const c = typingCommit(state.history, labelOf(state, e), state.doc, doc, e.typing);
+  const next = withDocument(state, c.doc, env);
+  return { ok: true, state: { ...next, history: c.history }, removed: NO_REMOVAL, added: [] };
+}
+
 function historyStep(state: EditorState, which: 'undo' | 'redo', env: EditorEnv): EditResult {
   const r = which === 'undo' ? undo(state.history) : redo(state.history);
   if (r === undefined) return refuse(state, `nothing to ${which}`);
@@ -268,10 +268,22 @@ function historyStep(state: EditorState, which: 'undo' | 'redo', env: EditorEnv)
   return { ok: true, state: { ...next, history: r.history }, removed: NO_REMOVAL, added: [] };
 }
 
-/** Logs an applied edit (the debug report's last edits; log.ts: UI edits leave first). */
+/**
+ * Logs an applied edit (the debug report's last edits; log.ts: UI edits leave first). A text's
+ * parse is not logged: the text says it all.
+ */
 function logged(r: EditResult, e: Edit): EditResult {
   if (!r.ok) return r;
-  return { ...r, state: { ...r.state, log: appendLog(r.state.log, e) } };
+  const entry = e.kind === 'replaceText' && e.parsed !== undefined ? withoutParse(e) : e;
+  return { ...r, state: { ...r.state, log: appendLog(r.state.log, entry) } };
+}
+
+function withoutParse(e: ReplaceText): ReplaceText {
+  return {
+    kind: e.kind,
+    text: e.text,
+    ...(e.typing === undefined ? {} : { typing: e.typing }),
+  };
 }
 
 /** Applies one edit (see the module comment). Never throws; a refusal leaves the state as it was. */
@@ -287,7 +299,7 @@ function batch(
   env: EditorEnv,
 ): EditResult {
   if (state.drag !== null) return refuse(state, DRAGGING);
-  const step = guarded(state.doc, batchStep(state.doc, e.edits, env), false);
+  const step = guarded(state.doc, batchStep(state.doc, e.edits, env));
   return commit(state, step, labelOf(state, e), env);
 }
 
@@ -303,6 +315,7 @@ function apply(state: EditorState, e: Edit, env: EditorEnv): EditResult {
       return uiEdit(state, e);
     case 'dragStart':
     case 'dragMove':
+    case 'dragLabel':
     case 'dragEnd':
     case 'dragCancel':
       return dragEdit(state, e, env);
@@ -333,16 +346,12 @@ function apply(state: EditorState, e: Edit, env: EditorEnv): EditResult {
     case 'renameClaim':
     case 'addAssumption':
     case 'removeAssumption':
-    case 'replaceText':
     case 'docViewport':
       return state.drag === null
-        ? commit(
-            state,
-            guarded(state.doc, docStep(state.doc, e, env), e.kind === 'replaceText'),
-            labelOf(state, e),
-            env,
-          )
+        ? commit(state, guarded(state.doc, docStep(state.doc, e, env)), labelOf(state, e), env)
         : refuse(state, DRAGGING);
+    case 'replaceText':
+      return state.drag === null ? commitText(state, e, env) : refuse(state, DRAGGING);
     default:
       return assertNever(e, 'edit');
   }
