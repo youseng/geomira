@@ -277,7 +277,7 @@ describe('layout: offsets in pixels at any zoom; hit = drawn', () => {
 function fitView(t: Doc): View {
   const b = sceneBounds(t.scene());
   if (b === null) throw new Error('empty');
-  return { viewport: fitViewport(b, SIZE), size: SIZE };
+  return { viewport: fitViewport(b, SIZE, 40), size: SIZE };
 }
 
 describe('laws on shown measurements (L8, L9)', () => {
@@ -315,7 +315,8 @@ describe('laws on shown measurements (L8, L9)', () => {
           const scene = t.scene();
           assertAllFinite(scene, 'scene');
           const b = sceneBounds(scene);
-          const v = fit && b !== null ? { viewport: fitViewport(b, SIZE), size: SIZE } : view(zoom);
+          const v =
+            fit && b !== null ? { viewport: fitViewport(b, SIZE, 40), size: SIZE } : view(zoom);
           const d = layout(scene, v);
           assertAllFinite(d, 'display');
           checkL8(
