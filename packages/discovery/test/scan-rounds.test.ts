@@ -10,7 +10,13 @@ import type { ClaimKindSpec } from '@geomira/claims/kind';
 import { screenSteps } from '@geomira/claims/screen';
 import type { Document } from '@geomira/kernel/document';
 import { Figure } from '../../claims/test/helpers/build';
-import { plainCandidates, poolsOf, type Candidate, type Pools } from '../src/candidates';
+import {
+  countPlain,
+  plainCandidates,
+  poolsOf,
+  type Candidate,
+  type Pools,
+} from '../src/candidates';
 import { joined, type Confirmed } from '../src/confirm';
 import { BATCH, scanKind, scanKinds } from '../src/scan';
 import {
@@ -184,6 +190,34 @@ describe('the first look (ADR-0052)', () => {
       for (let i = 1; i < last.length; i++)
         expect(last[i], name).toBeLessThanOrEqual(last[i - 1] ?? 0);
       expect(last[0]).toBe(Math.max(...last));
+      // The same tuples, each once (the count is of tuples, before keys remove repeats).
+      expect(drain(countPlain(kind, newest, 1_000_000)), name).toEqual(
+        drain(countPlain(kind, pools, 1_000_000)),
+      );
+    }
+  });
+
+  it('newest first with lines and a literal parameter (dangle_lines θ, parallel, concurrent)', () => {
+    const f = new Figure().point('A', 0, 0).point('B', 4, 1).point('C', 1, 3).point('D', -2, 2);
+    for (const [n, a, b] of [
+      ['l', 'A', 'B'],
+      ['m', 'B', 'C'],
+      ['n', 'C', 'D'],
+      ['o', 'D', 'A'],
+      ['q', 'A', 'C'],
+    ] as const)
+      f.def(n, 'line', a, b);
+    const lines = poolsOfDoc(f.doc);
+    for (const name of ['dangle_lines', 'parallel', 'perpendicular', 'concurrent']) {
+      const kind = KINDS.get(name);
+      if (kind === undefined) throw new Error(name);
+      const fwd = [...plainCandidates(kind, lines)].map((c) => c.key).sort();
+      const back = [...plainCandidates(kind, newestFirst(lines))].map((c) => c.key).sort();
+      expect(back, name).toEqual(fwd);
+      expect(back.length, name).toBeGreaterThan(4);
+      expect(drain(countPlain(kind, newestFirst(lines), 1_000_000)), name).toEqual(
+        drain(countPlain(kind, lines, 1_000_000)),
+      );
     }
   });
 
@@ -199,6 +233,17 @@ describe('the first look (ADR-0052)', () => {
     expect(end.value.reports[at]?.stop).toBe('time');
     expect(end.value.reports.slice(at + 1)).toEqual(lookReports(l.looks.slice(at + 1)));
     expect(end.value.reports).toHaveLength(l.looks.length);
+  });
+
+  it('a stop while a kind prepares its candidates: nothing checked, no total known', () => {
+    const g = firstLook(only('conconic'), poolsOfDoc(thirtyPoints()), budget, () => undefined);
+    const first = g.next();
+    expect(first.done !== true && first.value.total).toBe(0);
+    const end = g.next('stop');
+    if (end.done !== true) throw new Error('not stopped');
+    expect(end.value.looks.map((x) => x.report)).toEqual([
+      { kind: 'conconic', checked: 0, total: 0, more: true, exact: false, stop: 'time' },
+    ]);
   });
 
   it('a count the first look cut is counted again by the long scan, even with nothing to screen', () => {
@@ -275,6 +320,23 @@ describe('scanKind with candidates seen before (ADR-0052)', () => {
     const report: KindReport = out.value.report;
     expect(report.checked).toBe(all.length);
     expect(report.stop).toBeUndefined();
+  });
+
+  it('a scan to its end makes one step per BATCH candidates looked at, a part batch included', () => {
+    let whole = 0;
+    for (const name of ['collinear', 'concyclic', 'equal', 'on', 'conconic']) {
+      const k = KINDS.get(name);
+      if (k === undefined) throw new Error(name);
+      const all: Candidate[] = [];
+      const run = steps(
+        scanKind('find', k, pools, { source, limit: 100_000, phase: 'p' }, (c) => all.push(c)),
+      );
+      const batches = run.progress.filter((p) => p.total > 0).length;
+      expect(batches, name).toBe(Math.ceil(all.length / BATCH));
+      if (all.length % BATCH === 0) whole++;
+    }
+    // At least one kind ends on a whole batch (no part batch to end the last step).
+    expect(whole).toBeGreaterThan(0);
   });
 });
 
