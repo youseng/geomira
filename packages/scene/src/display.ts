@@ -27,6 +27,7 @@ import { conicPaths, conicPlacement } from './conic-paths';
 import { clipCircle, clipLine, clipPolygon, inside, type Span } from './clip';
 import { placeLabels, type PlacedLabel } from './labels';
 import { markPaths } from './mark-paths';
+import { middle } from './measure';
 import { paletteColour } from './palette';
 import { curvePlacement, polygonPlacement, type Placement } from './placement';
 import { MAX_WIDTH } from './style';
@@ -145,10 +146,15 @@ function itemOf(view: View, p: Primitive, rect: Rect): DisplayItem | null {
     case 'text':
       paths = markPaths(view, s, rect);
       break;
+    case 'distance':
+      // No stroke (ADR-0048): the item is its label, kept while the middle of pq is in view.
+      if (!inside(rect, middle(s.p, s.q))) return null;
+      paths = [];
+      break;
     default:
       return assertNever(s, 'shape');
   }
-  if (paths.length === 0 && region === null) return null;
+  if (paths.length === 0 && region === null && s.kind !== 'distance') return null;
   const style = { ...p.style, color: paletteColour(p.style.color) };
   const fill = p.style.color === null ? null : region;
   return { id: p.id, name: p.name, kind: s.kind, style, paths, region, fill };
@@ -168,6 +174,7 @@ function placement(s: Primitive['shape'], rect: Rect, zoom: number): Placement {
     case 'angle_mark':
     case 'segment_mark':
     case 'text':
+    case 'distance':
       return 'ok';
     default:
       return assertNever(s, 'shape');

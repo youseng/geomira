@@ -5,8 +5,9 @@
  *
  * 1. Visibility (order.ts): an object is drawn iff it is not hidden (its effective style,
  *    style.ts) and some layer of its set is visible; it is drawn once, in its drawing layer.
- * 2. Values: a drawable value becomes a Shape (shapes.ts); an Undefined or Inexact value of
- *    a visible object is listed in `unavailable` with its reason, never drawn.
+ * 2. Values: a drawable value becomes a Shape (shapes.ts), and so does a number styled `show`
+ *    that is a measurement (measure.ts, ADR-0048); an Undefined or Inexact value of a visible
+ *    object is listed in `unavailable` with its reason, never drawn.
  * 3. Coincident images (SPEC §13, coincide.ts): a managed image whose value coincides with
  *    its source's within BAND is not drawn WHILE THE SOURCE IS SHOWN, where shown means
  *    drawn, or itself a coincident image of a shown source (so X** on X* on X is not drawn
@@ -14,16 +15,17 @@
  *    drawn: fixed points never disappear. No document change.
  * 4. Order: stable keys (order.ts), independent of where images sit in the object list.
  */
-import type { DocObject, Document } from '@geomira/kernel/document';
+import type { DocObject, Document, Style } from '@geomira/kernel/document';
 import { evalContextFor } from '@geomira/kernel/context';
 import { undef, type Value } from '@geomira/kernel/value';
 import type { ToleranceContext } from '@geomira/num/tolerance';
 import { coincides } from './coincide';
 import { indexDocument, type DocIndex } from './doc-index';
 import { compare, drawingLayer, drawKey } from './order';
-import { shapeOf } from './shapes';
-import { drawStyle, effectiveStyle, labelOf, zOf } from './style';
-import type { Primitive, Scene, Shape, Unavailable } from './types';
+import { digitsOf, formatMeasure, inDegrees, measureRuns, measureShape } from './measure';
+import { shapeOf, type ShapeResult } from './shapes';
+import { drawStyle, effectiveStyle, labelOf, placedLabel, zOf } from './style';
+import type { Label, Primitive, Scene, Shape, ShapeKind, Unavailable } from './types';
 
 interface Candidate {
   readonly o: DocObject;
@@ -52,7 +54,7 @@ function candidate(
   const style = effectiveStyle(index, o);
   if (layer === undefined || style.hidden === true) return undefined;
   const value = values.get(o.id) ?? NOT_EVALUATED;
-  const s = shapeOf(value, ctx);
+  const s = shapeFor(o, style, value, values, ctx);
   if (s.kind === 'none') return undefined;
   if (s.kind === 'unavailable') {
     const base = { id: o.id, name: o.name, reason: s.reason };
@@ -66,9 +68,34 @@ function candidate(
     shape: s.shape,
     style: drawStyle(style, kind, layer.opacity),
     layer: layer.id,
-    label: labelOf(o.name, style, kind, s.shape.kind === 'text' ? s.shape.text : undefined),
+    label:
+      value.kind === 'number'
+        ? measureLabel(o, style, value.v, kind)
+        : labelOf(o.name, style, kind, s.shape.kind === 'text' ? s.shape.text : undefined),
   };
   return { o, value, shape: s.shape, primitive, key: drawKey(index, o, layer, kind, zOf(style)) };
+}
+
+/**
+ * The shape of an object's value; a number styled `show` is drawn when it is a measurement
+ * (ADR-0048, measure.ts), any other number is not drawn.
+ */
+function shapeFor(
+  o: DocObject,
+  style: Style,
+  value: Value<number>,
+  values: ReadonlyMap<number, Value<number>>,
+  ctx: ToleranceContext,
+): ShapeResult {
+  const s = shapeOf(value, ctx);
+  if (s.kind !== 'none' || value.kind !== 'number' || style.show !== true) return s;
+  return measureShape(o.def, value.v, values);
+}
+
+/** A measurement's label: its value (`digits` decimals, ° for angles) after the style's label. */
+function measureLabel(o: DocObject, style: Style, v: number, kind: ShapeKind): Label {
+  const { text, runs } = measureRuns(style, formatMeasure(v, digitsOf(style), inDegrees(o.def)));
+  return placedLabel(text, runs, style, kind);
 }
 
 /**
