@@ -38,6 +38,7 @@ import * as viewsMod from '../src/views';
 import * as discoveryMod from '../src/discovery';
 import * as styleCardMod from '../src/style-card';
 import * as textDraftMod from '../src/text-draft';
+import * as measurementsMod from '../src/measurements';
 
 const SURFACE: Record<string, { module: object; names: string[] }> = {
   './state': {
@@ -139,6 +140,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     names: ['branchChooser', 'branchFixEdit', 'factEdit'],
   },
   './style-card': { module: styleCardMod, names: ['cardEdit', 'cardNameProblem', 'fixedName'] },
+  './measurements': { module: measurementsMod, names: ['measurementRows'] },
   './views': {
     module: viewsMod,
     names: [

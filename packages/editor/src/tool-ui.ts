@@ -7,6 +7,7 @@ import type { ToolId } from './tool-state';
 import type { NamePreference } from './conventional-names';
 import type { Description } from './descriptive-names';
 import type { NameKind } from './names';
+import type { Style } from '@geomira/kernel/document';
 
 export type PickKind =
   | 'point'
@@ -42,6 +43,11 @@ export type Build =
       readonly prefer?: NamePreference;
       /** The name from the picked points (descriptive-names.ts, ADR-0050), after `prefer`. */
       readonly describe?: Description;
+      /**
+       * The style of what it builds (the Distance and Angle tools: `show`, so a new measurement
+       * is drawn, ADR-0048); a same construction that exists is given it (machine-build.ts).
+       */
+      readonly style?: Style;
     }
   /** intersect(a, b, …): every intersection not yet a point, each with the GUI selector choice. */
   | { readonly kind: 'intersection' }
@@ -114,6 +120,11 @@ export function call(
   const build: Build =
     prefer === undefined ? { kind: 'call', tool, name } : { kind: 'call', tool, name, prefer };
   return { id, label, key, help, steps, build };
+}
+
+/** A `call` tool whose object is drawn as a measurement (`show`, ADR-0048). */
+export function shown(t: ToolUI): ToolUI {
+  return t.build.kind === 'call' ? { ...t, build: { ...t.build, style: { show: true } } } : t;
 }
 
 /** `call` whose picks may come in any order (ADR-0024). */
