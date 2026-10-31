@@ -93,6 +93,18 @@ result: no fact was reported falsely, but every fact the cheap kinds had already
    (discovery-b). Find.ts stays under 400 lines and the catch-all shard, which was at 85 of its
    100 minutes, is lighter.
 
+9. **A stop ends the knowledge rebuild in progress** (`rank.ts`). Found while measuring
+   ADR-0037's gate with this change: once the first round makes the job reach its ranking within
+   the 20 s, the host's stop can arrive while the ranking rebuilds the knowledge with a shown
+   fact. After a stop find.ts drives the ranking to its end in one step, and `rankFacts` checked
+   the stop only between facts. So the rebuild in progress (a whole knowledge build of the
+   figure) ran in that one step: 185 ms in Node on the 150-object figure, a 135 ms task on the
+   page. The rebuild now checks the stop between its chunks and is dropped. No snapshot is read
+   after a stop (no fact is checked against one), so nothing is lost
+   (`discovery/test/rank-stop.test.ts`, failing before the fix). This predates this ADR: any
+   stop during the ranking had it. It is fixed here because this change makes it reachable on
+   the gate's figure.
+
 ## Consequences
 
 - The reported figure, in Node with a 20 s budget: 11 facts. Before, the stop came during the
