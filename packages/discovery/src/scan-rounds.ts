@@ -122,8 +122,9 @@ export function* firstLook(
       notSearched.push({ kind: kind.name, reason: kind.finder.notSearched });
       continue;
     }
+    // A look a command ended carries no `seen`: the job ends with it.
     const { cmd, ...look } = yield* lookAt(kind, pools, newest, budget, visit);
-    looks.push(cmd === undefined ? look : { kind, report: look.report });
+    looks.push(look);
     if (cmd !== undefined) return { looks, notSearched, cmd };
   }
   return { looks, notSearched };

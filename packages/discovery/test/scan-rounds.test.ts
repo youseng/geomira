@@ -12,7 +12,7 @@ import type { Document } from '@geomira/kernel/document';
 import { Figure } from '../../claims/test/helpers/build';
 import { plainCandidates, poolsOf, type Candidate, type Pools } from '../src/candidates';
 import { joined, type Confirmed } from '../src/confirm';
-import { BATCH, scanKind } from '../src/scan';
+import { BATCH, scanKind, scanKinds } from '../src/scan';
 import {
   allSettled,
   FIRST_COUNT,
@@ -109,12 +109,29 @@ describe('the first look (ADR-0052)', () => {
     });
   });
 
-  it('a first look as large as the budget settles every kind', () => {
-    const l = look(KINDS, pools, { ...budget, firstLook: 200 }).look;
+  it('a first look as large as the budget settles every kind: it is the single scan', () => {
+    const { look: l, visited } = look(KINDS, pools, { ...budget, firstLook: 200 });
     expect(allSettled(l.looks)).toBe(true);
+    const single: Candidate[] = [];
+    const scan = steps(scanKinds('find', KINDS, pools, budget, (c) => single.push(c))).value;
+    expect(visited.map((c) => c.key)).toEqual(single.map((c) => c.key));
+    expect(l.looks.map((x) => x.report)).toEqual(scan.reports);
     expect(lookReports(l.looks)).toEqual(l.looks.map((x) => x.report));
     const capped = look(KINDS, pools, { ...budget, firstLook: 5_000 }).look;
     expect(capped.looks.map((x) => x.report)).toEqual(l.looks.map((x) => x.report));
+  });
+
+  it('a kind the oldest half covers has no newest half', () => {
+    // Halves of 20: some kinds have fewer candidates.
+    const b = { ...budget, firstLook: 40 };
+    const phases = steps(firstLook(KINDS, pools, b, () => undefined)).progress.map((p) => p.phase);
+    const l = look(KINDS, pools, b).look;
+    for (const x of l.looks) {
+      const newest = phases.includes(`screening ${x.kind.name} from the newest objects`);
+      expect(newest, x.kind.name).toBe(x.report.checked >= 20);
+    }
+    expect(l.looks.some((x) => x.report.checked > 0 && x.report.checked < 20)).toBe(true);
+    expect(l.looks.some((x) => x.report.checked > 20)).toBe(true);
   });
 
   it('a stop ends the first look at that kind; kinds after it have no look', () => {
