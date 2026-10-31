@@ -369,7 +369,8 @@ and its counterexample documents.
 ## 11. Language (packages/lang)
 ### 11.1 Statements
 `name = expr [attrs]` · `claim <claim> [name=…]` · `assume <condition>` ·
-`triangle A B C [type]` · `style X <attrs>` (including `[noimage]`) · `label X "…"` ·
+`triangle A B C [type]` · `style X <attrs>` (including `[noimage]`; `[show]` and `[digits=N]`
+draw a measurement, ADR-0048) · `label X "…"` ·
 `@version 1` · `@layer name [visible=false] [locked] [opacity=…]` ·
 `@layer inv = image(T, main) [suffix=*] [exclude=X,Y]` · `@view name layers=…` ·
 `@viewport …` · `# comment`. Expressions: nested calls, names, exact numbers (with ° for
@@ -416,6 +417,11 @@ the box their runs are drawn in, from the widths the renderer measures (one func
 the runs for drawing and picking); dragging a label in the Move tool writes its offset as ONE
 edit, whole degrees and px, at most 100 px from its anchor; a point's dot wins over a label
 under it (ADR-0049, amending ADR-0010 decision 13).
+Measurements (ADR-0048): a number styled `show` whose definition is `dist`, `angle` or `dangle`
+of named objects is drawn as its value (`digits` decimals, default 2; ° for angles): a distance
+as a label at the middle of the measured segment, offset to the left of A → B in pixels (no
+stroke); an angle as one arc at the vertex with the value outside it. Absent `show`: not drawn
+(numbers were never drawn). Other numbers are not drawn and say why; an Undefined one is listed.
 Coincident images: the scene does not draw a managed image whose value coincides with its
 source within BAND (points on the mirror line or the inversion circle, the mirror line,
 the inversion circle) WHILE THE SOURCE IS DRAWN. If the source is hidden (for example an
@@ -427,7 +433,7 @@ SVG · PNG · TikZ (snippet + standalone; six-digit colours) · Asymptote `stand
 (self-contained helper functions, named pairs, constructive where mapped, numeric
 otherwise) and `aops` (`import olympiad;`, only functions verified in the vendored
 olympiad.asy source; if its licence does not allow vendoring, aops output is snapshot-
-tested and checked by hand in each audit). Escaping table `texText` (ASCII specials,
+tested and checked by hand in each audit). Shown measurements (ADR-0048) are drawn like any display-list item and label. Escaping table `texText` (ASCII specials,
 Greek, ′ ″, ∩ ∪, ∠ ∡, ⟂ ∥, — –, °, ≤ ≥ ≠, →, ℓ with subscripts, √(…)); unknown characters
 → `?` + `% Warning` + UI message. CI (cached TeX Live + Asymptote image) compiles every
 example's TikZ and standalone Asymptote and checks Asymptote's `write()` coordinates
@@ -436,7 +442,7 @@ against the kernel (≤ 1e-6·scale).
 ## 15. Web app
 Panels: Text (two-way, per-line diagnostics; applies as you type after a 500 ms pause, never
 over a figure changed meanwhile, ADR-0047), Objects (by layer, Undefined/Inexact
-reasons), Layers, Claims (live badges; local verdict line; global verdict line;
+reasons; first the Measurements: every number with its definition and value as shown, ADR-0048), Layers, Claims (live badges; local verdict line; global verdict line;
 "open counterexample"), Style. Command bar with registry autocomplete; shortcuts and help
 generated from data; mobile (390×664) pan, pinch, drag and panels work. Views UI: v1.1.
 (ADR-0051) Every claim kind is reachable from the Claim tool (a line parameter takes a line,
