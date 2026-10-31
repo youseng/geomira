@@ -190,6 +190,9 @@ measurements.
 
 ## Frozen tests changed
 
-None. Added lines only: `packages/lang/test/helpers/gen-doc.ts` (the generator draws `show` and
-`digits`), `packages/scene/test/exports.test.ts` (the `./measure` subpath, `placedLabel`),
-`packages/editor/test/exports.test.ts` (the `./measurements` subpath).
+None modified. Added lines only: `packages/lang/test/helpers/gen-doc.ts` (the generator draws `show`
+and `digits`), `packages/scene/test/exports.test.ts` (the `./measure` subpath, `placedLabel`),
+`packages/editor/test/exports.test.ts` (the `./measurements` subpath), and the frozen baselines
+`packages/editor/test/fixtures/run-16a-baseline.json` and `run-16b-baseline.json`, which gain the
+new fixture's summary (inserted lines only, as Run 16b did for conics.geo: the baseline tests
+require every fixture to have an entry).
