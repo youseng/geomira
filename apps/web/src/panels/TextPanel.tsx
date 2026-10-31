@@ -1,22 +1,19 @@
-import { useEffect, useMemo, useState, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import type { EditorState } from '@geomira/editor/state';
+import { canApply, hasEdits, isStale, type TextDraft } from '@geomira/editor/text-draft';
+import type { Document } from '@geomira/kernel/document';
 import type { Registry } from '@geomira/kernel/registry';
 import type { Diagnostic } from '@geomira/lang/diagnostic';
-import { parse } from '@geomira/lang/parse';
-import { print } from '@geomira/lang/print';
+import { parseText } from '@geomira/lang/parse-text';
+import { lineColumnOf, offsetOf, type LineColumn } from '../caret';
 import type { EditorStore } from '../store';
-
-/** The text as typed and the printed text it started from (equal: no edits of its own). */
-export interface TextDraft {
-  readonly draft: string;
-  readonly base: string;
-}
+import type { TextApplier } from '../text-apply';
 
 export interface TextPanelProps {
   readonly store: EditorStore;
   readonly state: EditorState;
-  /** Where the draft is kept while the panel is closed (another tab is shown). */
-  readonly kept: RefObject<TextDraft | null>;
+  /** The draft and its applies (kept by the side panel while another tab is shown). */
+  readonly applier: TextApplier;
 }
 
 /**
@@ -24,7 +21,7 @@ export interface TextPanelProps {
  * (ADR-0029): the text is still accepted, so files saved with repeats stay editable.
  */
 export function diagnosticsOf(text: string, registry: Registry): readonly Diagnostic[] {
-  return parse(text, registry, { sameConstruction: 'warning' }).diagnostics;
+  return parseText(text, registry).result.diagnostics;
 }
 
 export function DiagnosticList({ items }: { items: readonly Diagnostic[] }) {
@@ -43,84 +40,118 @@ export function DiagnosticList({ items }: { items: readonly Diagnostic[] }) {
   );
 }
 
+/** Where the caret and the scroll were, to restore them when the field's text is replaced. */
+interface Caret {
+  readonly start: LineColumn;
+  readonly end: LineColumn;
+  readonly scroll: number;
+}
+
 /**
- * The draft and the printed text it started from, restored from `kept` when the panel opens
- * again; a draft without edits of its own follows the figure.
+ * Ctrl+Enter replaces the text with the printed figure while the field has the focus: `keep`
+ * notes the caret (line and column) and the scroll, which come back, clamped to the new text,
+ * once it shows.
  */
-function useDraft(printed: string, kept: RefObject<TextDraft | null>) {
-  const [draft, setDraft] = useState(() => kept.current?.draft ?? printed);
-  // The printed text the draft started from: a draft equal to it holds no edits of its own.
-  const [base, setBase] = useState(() => kept.current?.base ?? printed);
-  useEffect(() => {
-    kept.current = { draft, base };
-  }, [kept, draft, base]);
-  useEffect(() => {
-    if (draft === base && printed !== base) {
-      setDraft(printed);
-      setBase(printed);
-    }
-  }, [printed, draft, base]);
-  const sync = (text: string) => {
-    setDraft(text);
-    setBase(text);
+function useCaretKept(text: string) {
+  const field = useRef<HTMLTextAreaElement>(null);
+  const caret = useRef<Caret | null>(null);
+  useLayoutEffect(() => {
+    const t = field.current;
+    const c = caret.current;
+    caret.current = null;
+    if (t === null || c === null) return;
+    t.setSelectionRange(offsetOf(t.value, c.start), offsetOf(t.value, c.end));
+    t.scrollTop = c.scroll;
+  }, [text]);
+  const keep = (t: HTMLTextAreaElement) => {
+    const start = lineColumnOf(t.value, t.selectionStart);
+    caret.current = { start, end: lineColumnOf(t.value, t.selectionEnd), scroll: t.scrollTop };
   };
-  return { draft, base, setDraft, sync };
+  return { field, keep };
+}
+
+/** Apply text (apply now), Revert text, and the note on a text typed on an older figure. */
+function TextActions(p: {
+  readonly applier: TextApplier;
+  readonly draft: TextDraft;
+  readonly doc: Document;
+  readonly errors: boolean;
+}) {
+  const { applier, draft } = p;
+  return (
+    <div className="text-actions">
+      <button
+        type="button"
+        disabled={!canApply(draft, p.errors)}
+        onClick={() => {
+          applier.applyNow();
+        }}
+      >
+        Apply text
+      </button>
+      <button
+        type="button"
+        disabled={!hasEdits(draft)}
+        onMouseDown={(e) => {
+          // Keep the focus in the text: leaving it would apply the text this button reverts.
+          e.preventDefault();
+        }}
+        onClick={() => {
+          applier.revert();
+        }}
+      >
+        Revert text
+      </button>
+      {isStale(draft, p.doc) && (
+        <span className="muted">
+          The figure changed meanwhile: this text is not applied as you type. Apply text puts it in
+          place of the figure; Revert text shows the figure&apos;s text.
+        </span>
+      )}
+    </div>
+  );
 }
 
 /**
  * The text panel (SPEC §15, two-way): the figure's text as the language prints it. Editing
- * shows the diagnostics of every line as you type; Apply (or leaving the field, or
- * Ctrl+Enter) turns the text into the figure as ONE edit (replaceText: the parser decides,
- * ids are kept, undo returns). A text with errors is not applied: the figure stays and the
- * errors stay listed. A change of the figure from elsewhere updates the text, unless the text
- * holds unapplied edits, which are kept until applied or reverted, also while another tab is
- * shown (a text with errors is not applied when the field loses focus; Run 10 audit, W4).
+ * shows the diagnostics of every line as you type, and the text applies as you type
+ * (ADR-0047, text-apply.ts): after a pause, a text without errors becomes the figure (one
+ * replaceText; a typing session is one undo), and the field keeps the text as typed, caret
+ * and scroll included. Apply text, Ctrl+Enter and leaving the field apply at once and show the
+ * printed figure. A text with errors is not applied: the figure stays and the errors stay
+ * listed. A change of the figure from elsewhere updates the text, unless the text holds edits
+ * that were not applied: they are kept, with a note, and applied only by Apply text (also
+ * while another tab is shown; Run 10 audit, W4).
  */
-export function TextPanel({ store, state, kept }: TextPanelProps) {
-  const printed = useMemo(() => print(state.doc), [state.doc]);
-  const { draft, base, setDraft, sync } = useDraft(printed, kept);
-  const dirty = draft !== base;
-  const registry = store.env.registry;
-  const diagnostics = useMemo(() => diagnosticsOf(draft, registry), [draft, registry]);
+export function TextPanel({ state, applier }: TextPanelProps) {
+  const draft = useSyncExternalStore(applier.subscribe, applier.getSnapshot, applier.getSnapshot);
+  const doc = state.doc;
+  useEffect(() => {
+    applier.follow(doc);
+  }, [applier, doc]);
+  const { field, keep } = useCaretKept(draft.text);
+  const diagnostics = applier.parse().result.diagnostics;
   const errors = diagnostics.some((d) => d.severity === 'error');
-  const apply = () => {
-    if (!dirty || errors) return;
-    const r = store.apply({ kind: 'replaceText', text: draft });
-    if (r.ok) sync(print(r.state.doc));
-  };
   return (
     <div className="text-panel">
       <textarea
+        ref={field}
         aria-label="Text"
         spellCheck={false}
-        value={draft}
+        value={draft.text}
         onChange={(e) => {
-          setDraft(e.target.value);
+          applier.type(e.target.value);
         }}
-        onBlur={apply}
+        onBlur={() => {
+          applier.leave();
+        }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) apply();
+          if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey)) return;
+          keep(e.currentTarget);
+          applier.applyNow();
         }}
       />
-      <div className="text-actions">
-        <button type="button" disabled={!dirty || errors} onClick={apply}>
-          Apply text
-        </button>
-        <button
-          type="button"
-          disabled={!dirty}
-          onMouseDown={(e) => {
-            // Keep the focus in the text: leaving it would apply the text this button reverts.
-            e.preventDefault();
-          }}
-          onClick={() => {
-            sync(printed);
-          }}
-        >
-          Revert text
-        </button>
-        {dirty && printed !== base && <span className="muted">The figure changed meanwhile.</span>}
-      </div>
+      <TextActions applier={applier} draft={draft} doc={doc} errors={errors} />
       <DiagnosticList items={diagnostics} />
     </div>
   );
