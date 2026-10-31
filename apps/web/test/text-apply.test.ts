@@ -157,6 +157,15 @@ const OTHERS: readonly (readonly [string, (s: EditorStore) => void])[] = [
     },
   ],
   [
+    // ADR-0049's label drag goes through the drag protocol too: it ends the pending apply.
+    'a label drag',
+    (s) => {
+      s.apply({ kind: 'dragStart', id: idOf(s, 'A'), part: 'label' });
+      s.apply({ kind: 'dragLabel', angle: 30, dist: 20 });
+      s.apply({ kind: 'dragEnd' });
+    },
+  ],
+  [
     'a tool action',
     (s) => {
       s.apply({ kind: 'tool', tool: 'midpoint' });
