@@ -29,18 +29,13 @@ import { placeCard, type Box } from './card-place';
 import { useDialog } from './Dialogs';
 import { MathText } from './MathText';
 import type { EditorStore } from './store';
-import {
-  canReset,
-  cardKindOf,
-  fieldsOf,
-  inheritedStyle,
-  kindName,
-  type Field,
-} from './style-draft';
+import { canReset, inheritedStyle, kindName, type Field, type MoreField } from './style-draft';
+import { cardFields, cardKindFor, notDrawnNote } from './style-measure';
 import { cardWrite, previewDocument, type CardWrite } from './style-name';
 import {
   ColourRow,
   DashField,
+  DigitsField,
   LabelRow,
   NoImageField,
   OffsetFields,
@@ -153,9 +148,13 @@ function MainRow({ field, ...p }: RowProps & { readonly field: Field }) {
 
 /** The settings behind "More"; `generation` renews the typed fields after a Reset. */
 function More(
-  p: RowProps & { readonly generation: number; readonly onToggle: (o: boolean) => void },
+  p: RowProps & {
+    readonly more: readonly MoreField[];
+    readonly generation: number;
+    readonly onToggle: (o: boolean) => void;
+  },
 ) {
-  const more = fieldsOf(p.kind).more;
+  const { more } = p;
   return (
     <details
       className="sc-more"
@@ -164,6 +163,7 @@ function More(
       }}
     >
       <summary>More</summary>
+      {more.includes('digits') && <DigitsField key={`d${String(p.generation)}`} {...p} />}
       {more.includes('dash') && <DashField {...p} />}
       {more.includes('z') && <ZField key={`z${String(p.generation)}`} {...p} />}
       {more.includes('labelOffset') && <OffsetFields key={`o${String(p.generation)}`} {...p} />}
@@ -284,8 +284,9 @@ function Card(p: StyleCardProps & { o: DocObject }) {
   const inherited = useMemo(() => inheritedStyle(state.doc, o), [state.doc, o]);
   const fixed = useFixedKind(store, state.doc, o.id);
   const value = state.values.values.get(o.id);
-  const kind = cardKindOf(value?.kind ?? 'undefined', fixed);
-  const fields = fieldsOf(kind);
+  const kind = cardKindFor(o, value, fixed);
+  const fields = cardFields(kind, { ...inherited, ...card.draft });
+  const note = notDrawnNote(o, kind, { ...inherited, ...card.draft });
   const rows: RowProps = { name: o.name, kind, draft: card.draft, inherited, set: onDraft };
   const write = useMemo(
     () => cardWrite(state.doc, store.env.registry, o, card.name, card.draft),
@@ -311,8 +312,10 @@ function Card(p: StyleCardProps & { o: DocObject }) {
           // The label's typed text is renewed after a Reset.
           <MainRow key={f === 'label' ? `label${String(generation)}` : f} field={f} {...rows} />
         ))}
-        {fields.more.length > 0 && <More {...rows} generation={generation} onToggle={setMore} />}
-        {kind === 'none' && <p className="muted">Not drawn: nothing to style.</p>}
+        {fields.more.length > 0 && (
+          <More {...rows} more={fields.more} generation={generation} onToggle={setMore} />
+        )}
+        {note !== undefined && <p className="muted">{note}</p>}
       </div>
       <Footer
         draft={card.draft}

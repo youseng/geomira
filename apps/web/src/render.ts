@@ -134,6 +134,35 @@ function halo(ctx: Canvas2D, item: DisplayItem, ui: UiState, theme: Theme): void
   }
 }
 
+/**
+ * The halo of an item that draws no stroke (a distance measurement, ADR-0048: its value label
+ * is all it draws): a box behind its label, the label's drawn box grown by HALO.
+ */
+function labelHalos(
+  ctx: Canvas2D,
+  display: DisplayList,
+  ui: UiState,
+  theme: Theme,
+  fonts: FontState,
+): void {
+  for (const item of display.items) {
+    if (item.paths.length > 0 || item.fill !== null) continue;
+    const selected = ui.selection.has(item.id);
+    if (!selected && ui.hover !== item.id && ui.highlight?.has(item.id) !== true) continue;
+    const l = display.labels.find((x) => x.id === item.id);
+    if (l === undefined) continue;
+    const { box } = labelGlyphs(l, l.runs.map(measuredWidth(ctx, theme, fonts)), theme.fontSize);
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = selected ? theme.selection : theme.hover;
+    ctx.fillRect(
+      box.minX - HALO,
+      box.minY - HALO,
+      box.maxX - box.minX + 2 * HALO,
+      box.maxY - box.minY + 2 * HALO,
+    );
+  }
+}
+
 function drawItem(ctx: Canvas2D, item: DisplayItem, theme: Theme): void {
   const { style } = item;
   if (item.fill !== null) {
@@ -233,9 +262,10 @@ export function drawDisplay(
     ctx.fillText(`Not drawn: ${display.problem}`, width / 2, height / 2);
     return;
   }
-  for (const item of display.items) halo(ctx, item, ui, theme);
-  for (const item of display.items) drawItem(ctx, item, theme);
   const fonts = new FontState(ctx);
+  for (const item of display.items) halo(ctx, item, ui, theme);
+  labelHalos(ctx, display, ui, theme, fonts);
+  for (const item of display.items) drawItem(ctx, item, theme);
   for (const l of display.labels) drawLabel(ctx, l, theme, fonts);
   ctx.globalAlpha = 1;
 }
