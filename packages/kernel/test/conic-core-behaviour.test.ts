@@ -158,6 +158,21 @@ describe('the glider on a conic', () => {
       if (P.kind !== 'point') throw new Error(why(P));
       expect(Math.abs(qValue(F, ELL, P))).toBeLessThan(1e-12);
     }
+    // On an axis the nearest point is the vertex: the Newton steps run until the cursor is on
+    // the conic (one step from (3, 0) lands at (13/6, 0), off it).
+    for (const [cursor, want] of [
+      [{ x: 3, y: 0 }, [2, 0]],
+      [{ x: 0, y: 2.5 }, [0, 1]],
+      [{ x: -2.5, y: 0 }, [-2, 0]],
+    ] as const) {
+      const s = conicDragParameter(F, k, cursor, CTX);
+      if (!('form' in s)) throw new Error(s.reason);
+      const P = conicGliderPoint(F, k, s.u, s.v, CTX);
+      expect(P.kind === 'point' ? [P.x, P.y] : why(P)).toEqual([
+        expect.closeTo(want[0], 9),
+        expect.closeTo(want[1], 9),
+      ]);
+    }
     expect(why(conicDragParameter(F, k, { x: 0, y: 0 }, CTX))).toBe(
       'undefined: the cursor is at the center: no nearest point',
     );
