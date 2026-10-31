@@ -6,6 +6,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Edit } from '@geomira/editor/edit';
+import { randomizeEdit } from '@geomira/editor/randomize';
 import { isStale } from '@geomira/editor/text-draft';
 import { findObjectByName } from '@geomira/kernel/document';
 import { ref } from '@geomira/kernel/expr';
@@ -183,6 +184,14 @@ const OTHERS: readonly (readonly [string, (s: EditorStore) => void])[] = [
     },
   ],
   [
+    'Randomize',
+    (s) => {
+      const r = randomizeEdit(s.current(), s.env, 'any', 20261030);
+      if (r.kind === 'refused') throw new Error(r.reason);
+      s.apply(r.edit);
+    },
+  ],
+  [
     'an example or link opened',
     (s) => {
       s.openText('@version 1\nP = (1, 1)\n', 'link');
@@ -214,6 +223,30 @@ describe('a document change while a pause is pending wins (ADR-0047, audit hunt 
       expect(store.current().doc, what).toBe(newer);
     });
   }
+
+  it('redo: the pending apply is dropped', () => {
+    const { store, applier, start } = setup();
+    store.command('E = (7, 7)');
+    store.apply({ kind: 'undo' });
+    applier.follow(store.current().doc);
+    expect(store.current().doc).toBe(start);
+    applier.type(START.replace('C = (1, 3)', 'C = (2, 3)'));
+    store.apply({ kind: 'redo' });
+    const newer = store.current().doc;
+    vi.advanceTimersByTime(TEXT_APPLY_PAUSE_MS * 10);
+    expect(store.current().doc).toBe(newer);
+  });
+
+  it('undo then redo back to the very figure the text was typed on: the text applies', () => {
+    const { store, applier } = setup();
+    store.command('E = (7, 7)');
+    applier.follow(store.current().doc);
+    applier.type(print(store.current().doc).replace('C = (1, 3)', 'C = (2, 3)'));
+    store.apply({ kind: 'undo' });
+    store.apply({ kind: 'redo' });
+    vi.advanceTimersByTime(TEXT_APPLY_PAUSE_MS);
+    expect(hasLine(store, 'C = (2, 3)') && hasLine(store, 'E = (7, 7)')).toBe(true);
+  });
 
   it('a drag still in progress when the pause ends: not applied', () => {
     const { store, applier, start } = setup();
