@@ -303,6 +303,7 @@ function apply(state: EditorState, e: Edit, env: EditorEnv): EditResult {
       return uiEdit(state, e);
     case 'dragStart':
     case 'dragMove':
+    case 'dragLabel':
     case 'dragEnd':
     case 'dragCancel':
       return dragEdit(state, e, env);

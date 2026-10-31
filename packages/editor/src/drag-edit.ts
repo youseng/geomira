@@ -1,5 +1,7 @@
 /**
- * Drag edits (SPEC §12): dragStart(id) → dragMove(to)… → dragEnd | dragCancel. A gesture is
+ * Drag edits (SPEC §12): dragStart(id) → dragMove(to)… → dragEnd | dragCancel. A label drag
+ * (ADR-0049, label-drag.ts) is the same protocol: dragStart(id, part 'label') → dragLabel(angle,
+ * dist)… → dragEnd | dragCancel; each kind of move is refused on the other kind of drag. A gesture is
  * ONE history entry: the first move records it, later moves amend it (coalescing), dragEnd
  * rounds the moved coordinates (drag.ts) inside the same entry, dragCancel restores the
  * document and the undo entries from before the gesture, exactly. Out-of-order edits (a move without
@@ -20,14 +22,18 @@ import {
 } from './drag';
 import { dependentsKept } from './drag-dependents';
 import { amendLast, record } from './history';
+import { labelDragMove, labelDragStart, labelUnmoved } from './label-drag';
 import { lockedDrag } from './locked';
 import { done, refuse, type EditResult } from './result';
 import { withDocument, type DragState, type EditorEnv, type EditorState } from './state';
 
 export type DragEdit =
-  | { readonly kind: 'dragStart'; readonly id: number }
+  /** `part: 'label'` drags the object's label (ADR-0049); absent, the object itself. */
+  | { readonly kind: 'dragStart'; readonly id: number; readonly part?: 'label' }
   /** The dragged object's new position, world coordinates. */
   | { readonly kind: 'dragMove'; readonly to: Vec<number> }
+  /** The dragged label's new offset: degrees counter-clockwise as seen, CSS px (ADR-0049). */
+  | { readonly kind: 'dragLabel'; readonly angle: number; readonly dist: number }
   | { readonly kind: 'dragEnd' }
   | { readonly kind: 'dragCancel' };
 
@@ -73,6 +79,9 @@ function scaled(state: EditorState, id: number): number {
 /** Rounds the base's coordinates at drag end, unless that would move the object visibly. */
 function end(state: EditorState, drag: DragState, env: EditorEnv): EditResult {
   const finished = { ...state, drag: null };
+  // A label dropped where it was is no edit: as if the drag had been cancelled.
+  if (drag.part === 'label')
+    return drag.moved && labelUnmoved(state, drag) ? cancel(state, drag, env) : done(finished);
   const base = findObject(state.doc, drag.base);
   const c = evalContextFor(state.doc);
   if (!drag.moved || base === undefined || !c.ok) return done(finished);
@@ -106,12 +115,19 @@ function cancel(state: EditorState, drag: DragState, env: EditorEnv): EditResult
 }
 
 export function dragEdit(state: EditorState, e: DragEdit, env: EditorEnv): EditResult {
-  if (e.kind === 'dragStart') return start(state, e.id);
+  if (e.kind === 'dragStart')
+    return e.part === 'label' ? labelDragStart(state, e.id) : start(state, e.id);
   const drag = state.drag;
   if (drag === null) return refuse(state, `${e.kind} without a drag in progress`);
   switch (e.kind) {
     case 'dragMove':
-      return move(state, drag, e.to, env);
+      return drag.part === 'label'
+        ? refuse(state, 'a label drag moves the label: dragLabel')
+        : move(state, drag, e.to, env);
+    case 'dragLabel':
+      return drag.part === 'label'
+        ? labelDragMove(state, drag, e.angle, e.dist, env)
+        : refuse(state, 'an object drag moves the object: dragMove');
     case 'dragEnd':
       return end(state, drag, env);
     case 'dragCancel':

@@ -394,7 +394,8 @@ Diagnostics carry line, column and a fix hint.
 State = { doc, values, selection, hover, tool, toolState, history, viewport }. Every
 change is an edit through `applyEdit` (add, remove with cascade list, rename, redefine,
 style, layers, derived layers, views, drag, replaceText, claims, assumptions; viewport
-outside history). Drag is coalesced; at drag end values are rounded to the FINER of the
+outside history). Drags are coalesced (a label drag, ADR-0049, writes its offset); at drag
+end values are rounded to the FINER of the
 power-of-ten grid 10^(⌊log10 scale⌋ − 4) and the power of ten just below 0.1 px at the
 current zoom, and stored as exact decimals. GUI tools are data; one state machine runs
 them; the GUI selector choice follows §7. Names of what a GUI tool builds: a free
@@ -409,7 +410,11 @@ edits, user agent.
 ## 13. Scene and rendering (packages/scene)
 values + doc → SceneBuilder → Scene (world-coordinate primitives) → canvas | exporters.
 y-up world; flip only in viewport.ts. Hit-testing uses the SAME primitives that are
-drawn (law L8). Labels: text grammar, offsets as (angle, pixels).
+drawn (law L8). Labels: text grammar, offsets as (angle, pixels). Labels are hit-tested on
+the box their runs are drawn in, from the widths the renderer measures (one function places
+the runs for drawing and picking); dragging a label in the Move tool writes its offset as ONE
+edit, whole degrees and px, at most 100 px from its anchor; a point's dot wins over a label
+under it (ADR-0049, amending ADR-0010 decision 13).
 Coincident images: the scene does not draw a managed image whose value coincides with its
 source within BAND (points on the mirror line or the inversion circle, the mirror line,
 the inversion circle) WHILE THE SOURCE IS DRAWN. If the source is hidden (for example an

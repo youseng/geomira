@@ -309,6 +309,26 @@ const drags: fc.Arbitrary<Make>[] = [
     edit({ kind: 'dragStart', id: objectId(s, i) }),
     edit({ kind: 'dragMove', to: { x: 0.5, y: -0.25 } }),
   ]),
+  // Label drags (ADR-0049): whole gestures, and a label move out of order.
+  fc
+    .tuple(
+      n,
+      fc.array(
+        fc.tuple(
+          fc.double({ min: -720, max: 720, noNaN: true }),
+          fc.double({ min: -50, max: 300, noNaN: true }),
+        ),
+        { minLength: 1, maxLength: 3 },
+      ),
+      fc.nat({ max: 3 }),
+    )
+    .map(([i, moves, end]) => (s) => {
+      const steps: Step[] = [edit({ kind: 'dragStart', id: objectId(s, i), part: 'label' })];
+      for (const [angle, dist] of moves) steps.push(edit({ kind: 'dragLabel', angle, dist }));
+      steps.push(edit(end === 0 ? { kind: 'dragCancel' } : { kind: 'dragEnd' }));
+      return steps;
+    }),
+  fc.constant<Edit>({ kind: 'dragLabel', angle: 10, dist: 5 }).map((e) => () => [edit(e)]),
 ];
 
 /** Tool inputs: clicks through the scene, panel picks, finish, cancel, text. */

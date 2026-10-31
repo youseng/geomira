@@ -187,7 +187,13 @@ function useApp() {
   const style = useStyleCard(store);
   const { state } = snap;
   // The canvas previews the style card's draft (ADR-0029): a render override, not an edit.
-  const styled = usePreviewScene(page.scene, state.doc, state.values.values, style.card);
+  const styled = usePreviewScene(
+    page.scene,
+    state.doc,
+    state.values.values,
+    style.card,
+    store.env.registry,
+  );
   // A viewed special position or branch fix replaces it, a draft too (ADR-0035, ADR-0036).
   const found = useDiscoveryCanvas(page.discovery, store, styled, state.doc);
   return {
@@ -262,6 +268,7 @@ function StyleCardView({ app }: { app: ReturnType<typeof useApp> }) {
       state={page.snap.state}
       card={style.card}
       onDraft={style.setDraft}
+      onName={style.setName}
       onClose={style.close}
     />
   );

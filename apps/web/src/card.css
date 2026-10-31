@@ -191,3 +191,19 @@
   opacity: 0.45;
   cursor: default;
 }
+
+/* The Name field's line (ADR-0046): why a typed name cannot be written, or why it is fixed. */
+.sc-note {
+  margin: 0;
+  padding: 0 10px 4px 84px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.sc-note.sc-problem {
+  color: var(--bad);
+}
+
+.sc-name-input[readonly] {
+  opacity: 0.6;
+}

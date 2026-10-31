@@ -11,6 +11,7 @@ import * as hit from '../src/hit';
 import * as labelText from '../src/label-text';
 import * as labels from '../src/labels';
 import * as labelBox from '../src/label-box';
+import * as labelHit from '../src/label-hit';
 import * as palette from '../src/palette';
 import * as style from '../src/style';
 import * as types from '../src/types';
@@ -63,6 +64,10 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './label-box': {
     module: labelBox,
     names: ['LABEL_FONT_PX', 'LABEL_GAP_PX', 'MIN_CLEAR_DEG', 'boxesOverlap', 'labelBox'],
+  },
+  './label-hit': {
+    module: labelHit,
+    names: ['LABEL_PICK_PX', 'estimatedWidth', 'hitLabel', 'labelGlyphs', 'labelOffset', 'runPx'],
   },
   './display': { module: display, names: ['ARC_SAGITTA', 'MARGIN_PX', 'MAX_ARC_RADIUS', 'layout'] },
   './hit': { module: hit, names: ['HIT_RADIUS', 'hitItem', 'hitTest'] },

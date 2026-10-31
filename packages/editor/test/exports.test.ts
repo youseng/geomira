@@ -36,6 +36,7 @@ import * as promptMod from '../src/prompt';
 import * as previewMod from '../src/preview';
 import * as viewsMod from '../src/views';
 import * as discoveryMod from '../src/discovery';
+import * as styleCardMod from '../src/style-card';
 
 const SURFACE: Record<string, { module: object; names: string[] }> = {
   './state': {
@@ -136,6 +137,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     module: discoveryMod,
     names: ['branchChooser', 'branchFixEdit', 'factEdit'],
   },
+  './style-card': { module: styleCardMod, names: ['cardEdit', 'cardNameProblem', 'fixedName'] },
   './views': {
     module: viewsMod,
     names: [

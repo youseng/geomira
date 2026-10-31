@@ -15,6 +15,7 @@
     "./label-text": "./src/label-text.ts",
     "./labels": "./src/labels.ts",
     "./label-box": "./src/label-box.ts",
+    "./label-hit": "./src/label-hit.ts",
     "./display": "./src/display.ts",
     "./hit": "./src/hit.ts",
     "./bounds": "./src/bounds.ts",
