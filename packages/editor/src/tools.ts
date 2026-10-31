@@ -191,10 +191,11 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     id: 'tangent',
     label: 'Tangent',
     key: 't',
-    help: 'The tangent at a point of a circle or a conic, or both tangents from an outside point (click the point and the curve in either order).',
+    help: 'The tangent at a point of a circle or a conic, or both tangents from an outside point (click the point and the curve in either order); or the common tangents of two circles or conics (click both curves).',
     // The prompt keeps "circle" (the status bar a frozen e2e test reads); a conic is accepted too.
     steps: [P('point'), OVAL('circle')],
     anyOrder: true,
+    pair: { slot: 1, prompt: 'or a second circle or conic for the common tangents' },
     build: { kind: 'tangent' },
   },
   POLAR,

@@ -15,6 +15,10 @@ export function toolPrompt(state: EditorState): string {
   const open = openSteps(tool, ts);
   const [first] = open;
   if (first === undefined) return `${tool.label}: ${tool.help}`;
+  const pair = tool.pair;
+  // ADR-0045: a second object of the filled step's kind completes the tool too.
+  if (open.length === 1 && pair !== undefined && ts.slots.length === 1 && ts.slots[0] === pair.slot)
+    return `${tool.label}: ${first.step.prompt} (${pair.prompt})`;
   if (open.length === 1) return `${tool.label}: ${first.step.prompt}`;
   const steps = open.map((o) => o.step.prompt).join(' and ');
   return `${tool.label}: ${steps}, in either order`;

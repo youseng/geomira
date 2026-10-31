@@ -69,6 +69,12 @@ export interface ToolUI {
    * before its point. Only for steps of different kinds, so the order of the call is clear.
    */
   readonly anyOrder?: boolean;
+  /**
+   * A second object of the kind of step `slot`, picked when that step alone is filled, completes
+   * the tool with the two objects instead of the other steps (ADR-0045: the Tangent tool's
+   * second circle or conic gives their common tangents); `prompt` joins the status line then.
+   */
+  readonly pair?: { readonly slot: number; readonly prompt: string };
   /** A pick may name an object picked before (the ratio AB / AC picks A twice). */
   readonly repeats?: boolean;
   /** The number the tool asks for, written as the call's last argument. */

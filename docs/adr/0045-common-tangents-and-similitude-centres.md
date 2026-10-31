@@ -105,21 +105,57 @@ four lines; its selectors judge points, and its low-level labels are one sign pe
    (an arc's circle), as radical_axis does. Guarantee: collinear with the two centres. No map
    facts (the tools build points, not maps). Export 'numeric'. Family points.
 
-### Tests (kernel, lang, discovery)
+### The GUI (packages/editor, apps/web)
 
-9. Degenerate cases by name (`degenerate-similitude.ts`, `degenerate-common-tangents.ts`); the
-   property tests (`similitude-properties.ts`: the homotheties of ratio ±r₂/r₁ about E and I take
-   O₁ to O₂, in either order; equal radii; (O₁, O₂; I, E) harmonic); L3 on figures whose four
-   tangents are rational (`laws/l3-common-tangents.test.ts`: r₁ ± r₂ = D·cos of two rational
-   angles), with tangencies, equal radii and random circles; L11 through both tangencies
-   (`laws/l11-common-tangents.test.ts`); the mirror test (`common-tangents-mirror.test.ts`);
-   theorems (`theorems-common-tangents.test.ts`): the external common tangents meet at the
-   exsimilicenter, the internal at the insimilicenter, Monge's theorem twice (exact over Q),
-   and every common tangent of ellipses and circles is tangent to both curves and touches the
-   first at tangent_point. Guarantees: tangent(c1, c2): tangent to both curves (the claims'
-   `tangent` kind on both); tangent_point(c1, c2): on c1, and the tangent of c1 there is tangent
-   to c2; discovery's guarantees-hold test checks each on figures stable under the local noise.
-   The language reads, prints and diagnoses the new overloads (`lang/test/common-tangents.test.ts`).
+9. **The Tangent tool takes two curves.** `ToolUI.pair = { slot, prompt }` (data): when only the
+   curve step is filled, a click on (or a panel choice of) ANOTHER circle or conic completes the
+   tool with the two curves; a click that hits a point or the first curve itself keeps its
+   meaning (the point; a glider on the first curve and the tangent there), so every earlier flow
+   is unchanged. The status line says so after the first curve: "Tangent: point (or a second
+   circle or conic for the common tangents)"; the first prompt ("point and circle, in either
+   order", a frozen e2e test) is unchanged.
+10. **One batch** (ADR-0024 decision 2, machine-tangents.ts): every common tangent that is not a
+    full line of the figure yet (same carrier, decided with EPS; ADR-0029: a repeat is not added
+    again, and with none left the build is refused with that reason) is written
+    `tangent(c1, c2, selectors)` with the GUI choice for its touch point on c1 (choice.ts decides
+    `tangent` of two curves as `tangent_point`, as it does tangent_from); one history entry. No
+    common tangent → refused with the kernel's reason ("no common tangent: one circle lies inside
+    the other"). With more than two candidates, tangents no selector singles out are named in the
+    notice ("2 of 4 common tangents built; the others: …"); with two, the build is refused.
+11. **The choice for common tangents** (choice-many.ts with every count, choice-tangents.ts):
+    other(P, Q, R) (never applies) → the filters and near(P) of ADR-0043 decision 14 when one
+    reaches ROBUST_SIGMAS → then the along(±) tier: along(±) alone when it singles the tangent out
+    (the double tangent of two tangent circles); else along(±) with near(P) / far_from(P) for a
+    point of the construction that tells the tangent from the other one of its pair by at least
+    ROBUST_SIGMAS (both reflection-equivariant); else along(±), orient(±) (structural,
+    orientation-dependent: the only orientation-dependent choice, written when nothing else
+    decides, as SPEC §7's tier 3) → a weaker filter (the ADR-0043 fallback with its note) →
+    near(P) for an incident point. Conic ∩ conic is unchanged (its pairs have no along label).
+12. **Exsimilicenter and Insimilicenter tools** in the Centers group (tools-centers.ts): pick two
+    circles, build `exsimilicenter(c1, c2)` / `insimilicenter(c1, c2)`. Every letter and digit is
+    a tool's key already; their keys are `.` and `:` (free; `<` and `>` would be escaped in the
+    palette's titles). Icons: apps/web/src/icons-similitude.tsx (two circles, two common tangents
+    and their meeting point), spread into icons.tsx's Record.
+
+### Tests (kernel, lang, discovery, editor)
+
+13. Degenerate cases by name (`degenerate-similitude.ts`, `degenerate-common-tangents.ts`); the
+    property tests (`similitude-properties.ts`: the homotheties of ratio ±r₂/r₁ about E and I take
+    O₁ to O₂, in either order; equal radii; (O₁, O₂; I, E) harmonic); L3 on figures whose four
+    tangents are rational (`laws/l3-common-tangents.test.ts`: r₁ ± r₂ = D·cos of two rational
+    angles), with tangencies, equal radii and random circles; L11 through both tangencies
+    (`laws/l11-common-tangents.test.ts`); the mirror test (`common-tangents-mirror.test.ts`);
+    theorems (`theorems-common-tangents.test.ts`): the external common tangents meet at the
+    exsimilicenter, the internal at the insimilicenter, Monge's theorem twice (exact over Q),
+    and every common tangent of ellipses and circles is tangent to both curves and touches the
+    first at tangent_point. Guarantees: tangent(c1, c2): tangent to both curves (the claims'
+    `tangent` kind on both); tangent_point(c1, c2): on c1, and the tangent of c1 there is tangent
+    to c2; discovery's guarantees-hold test checks each on figures stable under the local noise.
+    The language reads, prints and diagnoses the new overloads (`lang/test/common-tangents.test.ts`).
+    The editor: `editor/test/common-tangents-tool.test.ts` (four tangents in one entry, tangent to
+    both circles, two along(−) and two along(+); reflection-equivariant selectors when a point
+    separates the pairs; a repeat refused; inside refused with the kernel's reason; intersecting
+    circles; a conic and a circle; the first curve clicked again; the two new tools, keys, group).
 
 ## Consequences
 
