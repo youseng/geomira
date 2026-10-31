@@ -48,9 +48,10 @@ interface Caret {
 }
 
 /**
- * Ctrl+Enter replaces the text with the printed figure while the field has the focus: `keep`
- * notes the caret (line and column) and the scroll, which come back, clamped to the new text,
- * once it shows.
+ * Ctrl+Enter replaces the text with the printed figure while the field has the focus:
+ * `keepAcross(t, action)` notes the caret (line and column) and the scroll, runs the action,
+ * and puts them back, clamped to the new text, once it shows. When the action leaves the text
+ * as it was, nothing is put back later (the next key must not move the caret).
  */
 function useCaretKept(text: string) {
   const field = useRef<HTMLTextAreaElement>(null);
@@ -63,11 +64,13 @@ function useCaretKept(text: string) {
     t.setSelectionRange(offsetOf(t.value, c.start), offsetOf(t.value, c.end));
     t.scrollTop = c.scroll;
   }, [text]);
-  const keep = (t: HTMLTextAreaElement) => {
-    const start = lineColumnOf(t.value, t.selectionStart);
-    caret.current = { start, end: lineColumnOf(t.value, t.selectionEnd), scroll: t.scrollTop };
+  const keepAcross = (t: HTMLTextAreaElement, action: () => string) => {
+    const before = t.value;
+    const start = lineColumnOf(before, t.selectionStart);
+    caret.current = { start, end: lineColumnOf(before, t.selectionEnd), scroll: t.scrollTop };
+    if (action() === before) caret.current = null;
   };
-  return { field, keep };
+  return { field, keepAcross };
 }
 
 /** Apply text (apply now), Revert text, and the note on a text typed on an older figure. */
@@ -129,7 +132,7 @@ export function TextPanel({ state, applier }: TextPanelProps) {
   useEffect(() => {
     applier.follow(doc);
   }, [applier, doc]);
-  const { field, keep } = useCaretKept(draft.text);
+  const { field, keepAcross } = useCaretKept(draft.text);
   const diagnostics = applier.parse().result.diagnostics;
   const errors = diagnostics.some((d) => d.severity === 'error');
   return (
@@ -147,8 +150,10 @@ export function TextPanel({ state, applier }: TextPanelProps) {
         }}
         onKeyDown={(e) => {
           if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey)) return;
-          keep(e.currentTarget);
-          applier.applyNow();
+          keepAcross(e.currentTarget, () => {
+            applier.applyNow();
+            return applier.getSnapshot().text;
+          });
         }}
       />
       <TextActions applier={applier} draft={draft} doc={doc} errors={errors} />

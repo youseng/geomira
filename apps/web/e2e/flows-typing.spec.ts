@@ -80,6 +80,12 @@ test('a text with errors is not applied; its diagnostics stay; Ctrl+Enter keeps 
   // The caret stays at the end of its line, now one character longer.
   expect(await caret(area)).toBe(at + '\nM = midpoint(A, B)'.length);
   await expect(area).toBeFocused();
+  // Ctrl+Enter on a text that is already the printed figure changes nothing, and the caret
+  // put elsewhere afterwards is where the next keys go (it used to jump back on the next key).
+  await page.keyboard.press('Control+Enter');
+  await caretAfter(area, 'A = (0, 0)');
+  await page.keyboard.type('\nZ = (9, 9)', { delay: 20 });
+  await expect(area).toHaveValue(/^A = \(0, 0\)\nZ = \(9, 9\)\nB = \(4, 0\)$/mu);
   expect(errors).toEqual([]);
 });
 
