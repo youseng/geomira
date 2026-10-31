@@ -37,6 +37,7 @@ import * as previewMod from '../src/preview';
 import * as viewsMod from '../src/views';
 import * as discoveryMod from '../src/discovery';
 import * as styleCardMod from '../src/style-card';
+import * as textDraftMod from '../src/text-draft';
 
 const SURFACE: Record<string, { module: object; names: string[] }> = {
   './state': {
@@ -150,6 +151,21 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'switchView',
       'viewOf',
       'viewShown',
+    ],
+  },
+  './text-draft': {
+    module: textDraftMod,
+    names: [
+      'applied',
+      'atPause',
+      'canApply',
+      'draftOf',
+      'follow',
+      'hasEdits',
+      'isStale',
+      'onApplyNow',
+      'settled',
+      'typedInto',
     ],
   },
 };

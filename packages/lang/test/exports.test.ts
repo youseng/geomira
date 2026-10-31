@@ -11,6 +11,7 @@ import * as notation from '../src/notation';
 import * as parse from '../src/parse';
 import * as sameConstruction from '../src/same-construction';
 import * as parseInto from '../src/parse-into';
+import * as parseText from '../src/parse-text';
 import * as print from '../src/print';
 import * as printClaim from '../src/print-claim';
 
@@ -39,6 +40,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     names: ['alreadyMessage', 'sameConstructionMessage'],
   },
   './print-claim': { module: printClaim, names: ['printClaim'] },
+  './parse-text': { module: parseText, names: ['parseText', 'rebase'] },
 };
 
 describe('@geomira/lang subpath surface', () => {

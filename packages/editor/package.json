@@ -36,7 +36,8 @@
     "./discovery": "./src/discovery.ts",
     "./claim-tool": "./src/claim-tool.ts",
     "./claim-bar": "./src/claim-bar.ts",
-    "./style-card": "./src/style-card.ts"
+    "./style-card": "./src/style-card.ts",
+    "./text-draft": "./src/text-draft.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

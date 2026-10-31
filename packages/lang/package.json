@@ -9,6 +9,7 @@
     "./parse": "./src/parse.ts",
     "./print": "./src/print.ts",
     "./parse-into": "./src/parse-into.ts",
+    "./parse-text": "./src/parse-text.ts",
     "./diagnostic": "./src/diagnostic.ts",
     "./migrate": "./src/migrate.ts",
     "./canonical": "./src/canonical.ts",

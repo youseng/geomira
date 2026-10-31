@@ -394,8 +394,9 @@ Diagnostics carry line, column and a fix hint.
 State = { doc, values, selection, hover, tool, toolState, history, viewport }. Every
 change is an edit through `applyEdit` (add, remove with cascade list, rename, redefine,
 style, layers, derived layers, views, drag, replaceText, claims, assumptions; viewport
-outside history). Drags are coalesced (a label drag, ADR-0049, writes its offset); at drag
-end values are rounded to the FINER of the
+outside history). Drags are coalesced (a label drag, ADR-0049, writes its offset), and so is
+the text panel's typing session (replaceText with `typing: 'start' | 'continue'`: one history
+entry until any other action; ADR-0047); at drag end values are rounded to the FINER of the
 power-of-ten grid 10^(⌊log10 scale⌋ − 4) and the power of ten just below 0.1 px at the
 current zoom, and stored as exact decimals. GUI tools are data; one state machine runs
 them; the GUI selector choice follows §7. Names of what a GUI tool builds: a free
@@ -433,7 +434,8 @@ example's TikZ and standalone Asymptote and checks Asymptote's `write()` coordin
 against the kernel (≤ 1e-6·scale).
 
 ## 15. Web app
-Panels: Text (two-way, per-line diagnostics), Objects (by layer, Undefined/Inexact
+Panels: Text (two-way, per-line diagnostics; applies as you type after a 500 ms pause, never
+over a figure changed meanwhile, ADR-0047), Objects (by layer, Undefined/Inexact
 reasons), Layers, Claims (live badges; local verdict line; global verdict line;
 "open counterexample"), Style. Command bar with registry autocomplete; shortcuts and help
 generated from data; mobile (390×664) pan, pinch, drag and panels work. Views UI: v1.1.
