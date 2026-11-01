@@ -152,13 +152,11 @@ export const CONIC_J: readonly string[] = [`${K}/conic-pencil.ts`];
 
 /**
  * ADR-0057 (third cold run, d08200e: kernel-h, the catch-all, past 100 minutes with 2,386 mutants):
- * the tool files of ADR-0045 and Run 16c's conic tools join light shards (kernel-c 19, kernel-i
- * 20, kernel-k 23, kernel-b 22 minutes on that run).
+ * Run 16c's conic tools join light shards (kernel-i 20, kernel-k 23, kernel-b 22 minutes on that
+ * run). ADR-0045's common-tangents.ts and similitude.ts went to kernel-c first, which then took 100
+ * minutes (bbd6b41): they stay in the catch-all kernel-h (37 minutes there), and the conic type
+ * (CONIC_F) moves from kernel-f (past 100 minutes, 63 timeouts) to kernel-i.
  */
-export const HEAVY_C: readonly string[] = [
-  `${K}/tools/common-tangents.ts`,
-  `${K}/tools/similitude.ts`,
-];
 export const HEAVY_I: readonly string[] = [`${K}/tools/conic-conic.ts`];
 export const HEAVY_K: readonly string[] = [`${K}/tools/dual-tangents.ts`];
 export const HEAVY_B: readonly string[] = [`${K}/tools/foci.ts`];
@@ -210,7 +208,6 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
       `${K}/tools/intersect.ts`,
       `${K}/tools/range.ts`,
       ...present(PROJECTIVE_C),
-      ...present(HEAVY_C),
     ],
     parent: 'kernel-2',
   },
@@ -234,7 +231,7 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     parent: 'kernel-3',
   },
   {
-    files: [`${K}/tools/circles.ts`, `${K}/tools/incircle.ts`, ...present(CONIC_F)],
+    files: [`${K}/tools/circles.ts`, `${K}/tools/incircle.ts`],
     parent: 'kernel-3',
   },
   {
@@ -247,7 +244,7 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     parent: 'kernel-4',
   },
   {
-    files: [`${K}/tools/lines.ts`, ...present(MOBIUS_I), ...present(HEAVY_I)],
+    files: [`${K}/tools/lines.ts`, ...present(MOBIUS_I), ...present(HEAVY_I), ...present(CONIC_F)],
     parent: 'kernel-h',
   },
   // ADR-0057: the projective constructors moved here from kernel-i (86 minutes cold on a0d505b).

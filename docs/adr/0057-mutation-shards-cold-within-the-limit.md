@@ -95,3 +95,16 @@ run's rates):
 
 Thirty mutation jobs in all. The same frozen line of `scripts/mutation-discovery.test.ts` (the id
 list and its parents) changes again, under this ADR.
+
+## Amendment: the fourth cold run (bbd6b41, run 41254264516)
+
+Twenty-eight of thirty shards finished, in 7 to 82 minutes, and the gate scored every package but the kernel
+(num 92.82 %, claims 84.90 %, discovery 84.64 %; the kernel 92.34 % without kernel-f's report). kernel-f
+(circles, incircle, the conic type) ran past 100 minutes with 63 of 695 mutants timed out; it had
+taken 48 and 62 minutes on the two runs before, with the same files. kernel-c finished at 100 minutes:
+its report shows common-tangents.ts and similitude.ts with 15 timeouts and intersect.ts with 46. A
+timed-out mutant costs about 1.5 times its covering tests (the kernel suite runs 107 s under
+coverage), so how many mutants cross the timeout, which depends on the runner, decides a shard's
+minutes. Two last moves, to the shards with the most room on that run: common-tangents.ts and
+similitude.ts back to the catch-all kernel-h (37 minutes), and the conic type (CONIC_F) from kernel-f
+to kernel-i (33).
