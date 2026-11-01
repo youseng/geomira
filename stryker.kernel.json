@@ -18,6 +18,8 @@
     "packages/kernel/src/transform/**/*.ts"
   ],
   "coverageAnalysis": "perTest",
+  "timeoutMS": 2500,
+  "timeoutFactor": 1.2,
   "incremental": true,
   "incrementalFile": "reports/mutation/kernel/stryker-incremental.json",
   "reporters": ["clear-text", "progress", "html", "json"],
