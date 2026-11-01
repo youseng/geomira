@@ -1,7 +1,14 @@
 import { defineConfig } from 'vitest/config';
 
+/**
+ * ADR-0055: the reporters list every test slower than this with its time (in CI's log too), so a
+ * test that grows slow is seen long before it meets a hang guard.
+ */
+export const SLOW_TEST_MS = 2500;
+
 export default defineConfig({
   test: {
+    slowTestThreshold: SLOW_TEST_MS,
     // `pnpm test:coverage` (part of `pnpm verify`) enforces the per-package coverage gates.
     // Packages join `include` and `thresholds` in the run that builds them.
     coverage: {

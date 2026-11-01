@@ -39,3 +39,11 @@ test, which a frozen test cannot take.
 - **Making the sweep faster**: its time is mostly the per-call assertions under coverage, in a
   frozen file.
 - **An explicit timeout in the test**: a modification of a frozen test.
+
+## Amendment (the maintainer's decision, 2026-11-01): slow tests are reported
+
+The 15 s hang guard is accepted. So that a test that grows slow is still seen, `vitest.config.ts`
+sets `slowTestThreshold` to `SLOW_TEST_MS` = 2,500 ms at the root (a reporter option: it covers
+every project). The default reporter lists every test slower than that with its time, in CI's log
+as locally. `scripts/vitest-config.test.ts` pins the threshold, the three projects and the
+packages' 15 s timeout.
