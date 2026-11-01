@@ -22,12 +22,22 @@ function direction<T>(F: { toNumber(x: T): number }, v: Value<T>): unknown {
 }
 
 const common = (tool: string): Record<string, () => void> => ({
-  'concentric circles (equal ones included) → Undefined': () => {
+  'concentric circles of different radii → their common centre, exact in every field': () => {
     for (const F of FIELDS) {
-      expect(reason(at(F, tool, U, circ(pt(0, 0), num(3))))).toBe('undefined: concentric circles');
-      expect(reason(at(F, tool, U, U))).toBe('undefined: concentric circles');
+      const v = at(F, tool, U, circ(pt(0, 0), num(3)));
+      expect(v.kind === 'point' && [F.toNumber(v.x), F.toNumber(v.y)]).toEqual([0, 0]);
     }
   },
+  'identical circles → Undefined; concentric with radii within the band of equal → Undefined (ambiguous)':
+    () => {
+      for (const F of FIELDS)
+        expect(reason(at(F, tool, U, U))).toBe(
+          'undefined: identical circles: no centre of similitude',
+        );
+      expect(reason(at(FloatField, tool, U, circ(pt(0, 0), num(1 + 1e-8))))).toMatch(
+        /^undefined: ambiguous: concentric/u,
+      );
+    },
   'radii not rational → Inexact over Q; always Inexact mod p (equal radii need no root)': () => {
     const X = circ(pt(5, 1), num(3));
     expect(at(RationalField, tool, W, X).kind).toBe('inexact');

@@ -591,7 +591,8 @@ exsimilicenter(c1, c2): the external centre of similitude (r₂·O₁ − r₁·
 - By construction:
   - `exsimilicenter(round, round)`: collinear(result, center(#1), center(#2))
 - Degenerate cases:
-  - concentric circles (equal ones included) → Undefined
+  - concentric circles of different radii → their common centre, exact in every field
+  - identical circles → Undefined; concentric with radii within the band of equal → Undefined (ambiguous)
   - radii not rational → Inexact over Q; always Inexact mod p (equal radii need no root)
   - a circle with no positive radius → Undefined
   - equal radii → the point at infinity of the direction O₁O₂ (ADR-0040)
@@ -613,7 +614,8 @@ insimilicenter(c1, c2): the internal centre of similitude (r₂·O₁ + r₁·O�
 - By construction:
   - `insimilicenter(round, round)`: collinear(result, center(#1), center(#2))
 - Degenerate cases:
-  - concentric circles (equal ones included) → Undefined
+  - concentric circles of different radii → their common centre, exact in every field
+  - identical circles → Undefined; concentric with radii within the band of equal → Undefined (ambiguous)
   - radii not rational → Inexact over Q; always Inexact mod p (equal radii need no root)
   - a circle with no positive radius → Undefined
   - equal radii → the midpoint of O₁O₂, exact in every field

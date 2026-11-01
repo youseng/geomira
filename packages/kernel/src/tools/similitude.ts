@@ -8,31 +8,47 @@
  * Q then, else Inexact; mod p there are no square roots (always Inexact), except equal radii
  * (r₁² = r₂² exactly), where no root is needed: E is the point at infinity of the direction O₁O₂
  * (ADR-0040) and I the midpoint of O₁O₂. The centres are taken of the carrier circles (an arc's
- * circle), as radical_axis does. Concentric circles → Undefined (both), as the maintainer's
- * request decides (ADR-0045, Uncertain: the limit would be the common centre).
+ * circle), as radical_axis does. Concentric circles of different radii: both centres are the
+ * common centre O (the homotheties of ratio ±r₂/r₁ about O; the limit of the formulas, which give
+ * O there too), returned without a square root, so exact in every field; identical circles →
+ * Undefined (the maintainer's decision, ADR-0045).
  */
 import { inexact, isInexact, type Field, type Inexact } from '@geomira/num/field';
 import { half, isZeroVec, vAdd, vScale, vSub } from '../geom';
 import { rootGap } from '../incidence';
 import type { EvalContext, ExampleArg, ToolSpec } from '../tool';
-import { pointOf, undef, type Circle, type Undefined, type Value, type Vec } from '../value';
+import { pointOf, undef, type Circle, type Value, type Vec } from '../value';
 import { badArgs, circleAt, degenerateCircle } from './args';
 
 type Which = 'exsimilicenter' | 'insimilicenter';
 
-/** The two circles, or why they have no centre of similitude. */
+/**
+ * The two circles, or the answer for concentric ones: the common centre (the midpoint of the two
+ * centres, so both argument orders give the same value) when the radii differ; identical circles
+ * (radii equal: exactly, or within EPS as a length in floats) → Undefined; radii within the band of
+ * equal → Undefined (ambiguous).
+ */
 function circlesOf<T>(
   F: Field<T>,
   args: readonly Value<T>[],
   ctx: EvalContext,
   tool: Which,
-): readonly [Circle<T>, Circle<T>] | Undefined {
+): readonly [Circle<T>, Circle<T>] | Value<T> {
   const [c1, c2] = [circleAt(args, 0), circleAt(args, 1)];
   if (c1 === undefined || c2 === undefined || args.length !== 2) return badArgs(tool);
   const bad = degenerateCircle(F, c1, ctx) ?? degenerateCircle(F, c2, ctx);
   if (bad !== undefined) return bad;
-  if (isZeroVec(F, vSub(F, c2.c, c1.c), ctx)) return undef('concentric circles');
-  return [c1, c2];
+  if (!isZeroVec(F, vSub(F, c2.c, c1.c), ctx)) return [c1, c2];
+  const identical = undef('identical circles: no centre of similitude');
+  if (F.eq(c1.r2, c2.r2)) return identical;
+  if (F.kind === 'float') {
+    const s = F.sign(rootGap(F, c1.r2, c2.r2), 'length', ctx);
+    if (s === 0) return identical;
+    if (s === 'ambiguous')
+      return undef('ambiguous: concentric circles with radii within the band of equal');
+  }
+  const O = vScale(F, vAdd(F, c1.c, c2.c), half(F));
+  return pointOf(O.x, O.y);
 }
 
 /** (r₂·O₁ ± r₁·O₂)/(r₂ ± r₁) for rational (representable) radii, or the Inexact root. */
@@ -59,7 +75,8 @@ function canonical<T>(F: Field<T>, w: Vec<T>): Vec<T> | Inexact {
 }
 
 /**
- * The exsimilicenter. Degenerate cases: concentric circles (equal ones included) → Undefined;
+ * The exsimilicenter. Degenerate cases: concentric circles → their centre (identical ones →
+ * Undefined, radii within the band of equal → Undefined, ambiguous);
  * equal radii (r₁ − r₂ zero as a length; exact fields: r₁² = r₂²) → the point at infinity of the
  * direction O₁O₂ (mod p Inexact: canonical); radii within the band of equal → Undefined (ambiguous: near infinity); radii
  * not rational → Inexact over Q, always mod p; a circle with no positive radius → Undefined.
@@ -82,7 +99,8 @@ function exsimilicenter<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalCont
 }
 
 /**
- * The insimilicenter. Degenerate cases: concentric circles (equal ones included) → Undefined;
+ * The insimilicenter. Degenerate cases: concentric circles → their centre (identical ones →
+ * Undefined, radii within the band of equal → Undefined, ambiguous);
  * equal radii (exactly) → the midpoint of O₁O₂, exact in every field; radii not rational →
  * Inexact over Q, always mod p; a circle with no positive radius → Undefined.
  */
@@ -109,7 +127,8 @@ const C3: ExampleArg = {
 };
 
 const COMMON = [
-  'concentric circles (equal ones included) → Undefined',
+  'concentric circles of different radii → their common centre, exact in every field',
+  'identical circles → Undefined; concentric with radii within the band of equal → Undefined (ambiguous)',
   'radii not rational → Inexact over Q; always Inexact mod p (equal radii need no root)',
   'a circle with no positive radius → Undefined',
 ];

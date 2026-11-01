@@ -200,3 +200,15 @@ four lines; its selectors judge points, and its low-level labels are one sign pe
   algorithm ADR-0043 audited, with the same band decisions.
 - **Concentric circles → the common centre** for both centres of similitude (the continuous
   limit): the request says Undefined; recorded as Uncertain for the maintainer.
+
+## Amendment (the maintainer's decision, 2026-11-01): concentric circles
+
+Two concentric circles of different radii have both centres of similitude at their common centre
+O: the homotheties of ratio r₂/r₁ and −r₂/r₁ about O take one circle to the other, and the formulas
+of decision 8 give O there too (so the result is continuous as the centres meet). exsimilicenter and
+insimilicenter return O (the midpoint of the two centres, so both argument orders give one value)
+without a square root, so exactly in every field, even for irrational radii. Only identical circles
+are Undefined ("identical circles: no centre of similitude"); concentric circles with radii within
+the band of equal are Undefined (ambiguous). The first version made every pair of concentric
+circles Undefined. `packages/kernel/test/similitude-concentric.test.ts` failed before the change;
+the degenerate cases of `helpers/degenerate-similitude.ts` and docs/tools.md follow.
