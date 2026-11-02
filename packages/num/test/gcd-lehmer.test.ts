@@ -60,19 +60,20 @@ describe('gcd (ADR-0056)', () => {
     expect(gcd(f399, f398)).toBe(1n);
   });
 
-  it('is much faster than Euclid on numbers of 30,000 bits', () => {
+  it('is much faster than Euclid on numbers of 50,000 bits', () => {
     const rng = createRng(7);
-    const [a, b] = [bits(rng, 30_000), bits(rng, 30_000)];
+    const [a, b] = [bits(rng, 50_000), bits(rng, 50_000)];
     const time = (f: (x: bigint, y: bigint) => bigint): number => {
       const t0 = performance.now();
       f(a, b);
       return performance.now() - t0;
     };
-    // Warm both up once, then compare: Lehmer is about 10 times faster at this size, so a
-    // factor of 3 holds on any machine, while Euclid's quadratic steps cannot reach it.
-    time(gcd);
-    time(euclid);
+    const median = (f: (x: bigint, y: bigint) => bigint): number =>
+      [time(f), time(f), time(f)].sort((x, y) => x - y)[1] ?? Number.POSITIVE_INFINITY;
     expect(gcd(a, b)).toBe(euclid(a, b));
-    expect(time(gcd) * 3).toBeLessThan(time(euclid));
+    // Lehmer is about 15 times faster at this size. Mutation testing instruments the source's gcd
+    // and not this file's Euclid (Stryker's dry run measured 2.65 times at 30,000 bits), so the
+    // bound is 2: Euclid's quadratic steps cannot reach it, and the instrumented Lehmer keeps it.
+    expect(median(gcd) * 2).toBeLessThan(median(euclid));
   });
 });
