@@ -160,6 +160,14 @@ export const CONIC_J: readonly string[] = [`${K}/conic-pencil.ts`];
 export const HEAVY_I: readonly string[] = [`${K}/tools/conic-conic.ts`];
 export const HEAVY_K: readonly string[] = [`${K}/tools/dual-tangents.ts`];
 export const HEAVY_B: readonly string[] = [`${K}/tools/foci.ts`];
+
+/**
+ * ADR-0059 (the fifth cold run, 9784b4e: kernel-h past 100 minutes, 94 % of 1,514 mutants, 147
+ * timeouts): ADR-0045's two tool files leave the catch-all, common-tangents.ts for kernel-f (59
+ * minutes on that run) and similitude.ts for kernel-d (27).
+ */
+export const HEAVY_F: readonly string[] = [`${K}/tools/common-tangents.ts`];
+export const HEAVY_D: readonly string[] = [`${K}/tools/similitude.ts`];
 export const CONIC_F: readonly string[] = [`${K}/conic-type.ts`, `${K}/conic-around.ts`];
 
 /** The entries whose file exists at this commit (a `file:a-b` entry by its file). */
@@ -217,6 +225,7 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
       `${K}/tools/tangents.ts`,
       `${K}/tools/other.ts`,
       ...present(PROJECTIVE_D),
+      ...present(HEAVY_D),
     ],
     parent: 'kernel-2',
   },
@@ -231,7 +240,7 @@ const KERNEL_GROUPS: readonly { readonly files: readonly string[]; readonly pare
     parent: 'kernel-3',
   },
   {
-    files: [`${K}/tools/circles.ts`, `${K}/tools/incircle.ts`],
+    files: [`${K}/tools/circles.ts`, `${K}/tools/incircle.ts`, ...present(HEAVY_F)],
     parent: 'kernel-3',
   },
   {

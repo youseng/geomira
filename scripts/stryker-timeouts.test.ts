@@ -25,3 +25,13 @@ describe('Stryker timeouts (ADR-0058)', () => {
       ]);
     });
 });
+
+describe('the nightly shard limit (ADR-0059)', () => {
+  it("Stryker stops a shard at 150 minutes; the job's own limit, 170, leaves time to save", () => {
+    const yml = readFileSync(join(ROOT, '.github', 'workflows', 'nightly.yml'), 'utf8');
+    expect(yml).toContain('timeout 150m pnpm exec stryker');
+    expect(yml).toMatch(
+      /name: mutation-\$\{\{ matrix\.id \}\}\n(?: {4}.*\n)*? {4}timeout-minutes: 170\n/u,
+    );
+  });
+});

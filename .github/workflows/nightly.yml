@@ -104,7 +104,8 @@ jobs:
     name: mutation-${{ matrix.id }}
     needs: plan
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    # ADR-0059: Stryker's own limit is 150 minutes; the job's leaves time to save the cache.
+    timeout-minutes: 170
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
@@ -140,7 +141,7 @@ jobs:
           args=(run "stryker.${{ matrix.pkg }}.json")
           if [ -n "$MUTATE" ]; then args+=(--mutate "$MUTATE"); fi
           start=$(date +%s)
-          timeout 100m pnpm exec stryker "${args[@]}"
+          timeout 150m pnpm exec stryker "${args[@]}"
           echo "${{ matrix.id }}: Stryker took $(( ($(date +%s) - start) / 60 )) min" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Save incremental mutation result
         if: always()
