@@ -62,6 +62,9 @@ describe('the find job (ADR-0035)', () => {
     expect(r.notSearched.map((x) => x.kind)).toEqual([
       ...['ratio', 'ratio_value'],
       ...['cross_ratio', 'cross_ratio_lines'],
+      ...['similar', 'similar_direct', 'similar_opposite'],
+      ...['congruent', 'congruent_direct', 'congruent_opposite'],
+      ...['length_product', 'length_sum'],
     ]);
     expect(r.caps).toContain('ratio not searched: eight points: too many tuples to search in v1');
     expect(r.untested).toBeGreaterThan(0);

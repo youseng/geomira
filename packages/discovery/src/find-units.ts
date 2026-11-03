@@ -3,7 +3,9 @@
  * (group.ts merges facts only through proper ones: two points apart, three points apart and not
  * on a line, two lines not parallel), and the lemma tag of a unit (a group carries the tag of
  * the first tagged fact it stands for: the tags match facts of their own size), and the
- * knowledge of the facts confirmed so far (a unit that follows from it is not tested).
+ * knowledge of the facts confirmed so far (a unit that follows from it is not tested). And the
+ * units to test, in test order, from the screen's true facts (ADR-0039 decision 6; the find job
+ * groups them once per round, ADR-0052).
  */
 import type { Document } from '@geomira/kernel/document';
 import type { Registry } from '@geomira/kernel/registry';
@@ -13,10 +15,18 @@ import type { Closure, FactData } from './closure';
 import type { Candidate, Pools } from './candidates';
 import { asFact, type Known } from './confirm';
 import { knowledgeSteps, type Knowledge } from './derive';
-import type { GroupEnv, Unit } from './group';
+import { groupKind, type GroupEnv, type TrueFact, type Unit } from './group';
+import { lemmaTagger } from './lemmas';
 import { claimsOf, follows } from './rank';
 import { objectKey } from './terms';
-import type { FoundFact, LemmaTag } from './types';
+import { TICK } from './ticking';
+import type { Fact, FoundFact, LemmaTag } from './types';
+
+/**
+ * Units tagged between two yields: each costs up to a millisecond on a large figure (a lemma's
+ * search), so a step stays short.
+ */
+export const UNITS_PER_STEP = 16;
 
 /** Parts of a group asked for a tag at most (the rest are not looked at). */
 const TAGGED_PARTS = 8;
@@ -123,4 +133,87 @@ export class Learned implements Known {
       terms: this.knowledge.closure.terms,
     });
   }
+}
+
+/** What the grouping reads of the find job's state (find.ts). */
+export interface Screened {
+  readonly kinds: ClaimKinds;
+  readonly pools: Pools;
+  readonly knowledge: { readonly closure: Closure };
+  /** Screen-true facts of the grouped kinds, by kind (construction facts included). */
+  readonly trueFacts: ReadonlyMap<string, readonly TrueFact[]>;
+  /** Screen-true facts of the other kinds that do not follow from the construction. */
+  readonly singles: readonly Candidate[];
+  /** Each kind's registry index (the test order). */
+  readonly kindIndex: ReadonlyMap<string, number>;
+  /** Each unit's lemma tag by its key (set while grouping). */
+  readonly tags: Map<string, LemmaTag | undefined>;
+}
+
+/** Groups that hold by construction, found while grouping: their count, the facts to list. */
+export interface Built {
+  count: number;
+  readonly shown: Fact[];
+}
+
+/**
+ * The order units are tested in (the test budget cuts the end): tagged first, then fewer
+ * distinct objects (a group counts as one fact of its kind: an n-ary group the kind's arity, a
+ * class its first link), a group standing for more facts first, the kind's registry order, the
+ * newest objects first (ADR-0035 decision 12's criteria that need no verdict), then the key.
+ */
+function testOrder(s: Screened, units: readonly Unit[]): Unit[] {
+  const keyOf = (u: Unit) => ({
+    u,
+    untagged: s.tags.get(u.key) === undefined ? 1 : 0,
+    size:
+      u.chain?.[0]?.objects.length ??
+      (u.parts.length > 1 ? Math.min(u.objects.length, u.kind.params.length) : u.objects.length),
+    kind: s.kindIndex.get(u.kind.name) ?? 0,
+    latest: Math.max(-1, ...u.objects.map((id) => s.pools.order.get(id) ?? -1)),
+  });
+  return units
+    .map(keyOf)
+    .sort(
+      (a, b) =>
+        a.untagged - b.untagged ||
+        a.size - b.size ||
+        b.u.parts.length - a.u.parts.length ||
+        a.kind - b.kind ||
+        b.latest - a.latest ||
+        (a.u.key < b.u.key ? -1 : a.u.key > b.u.key ? 1 : 0),
+    )
+    .map((x) => x.u);
+}
+
+/**
+ * The units to test, in test order: groups of the grouped kinds, and the single facts. Groups
+ * that hold by construction go to `built` (the caller lists them), never to the units.
+ */
+export function* unitSteps(s: Screened, built: Built): Generator<undefined, Unit[], unknown> {
+  const env = groupEnv(s.knowledge.closure, s.pools);
+  const out: Unit[] = [];
+  for (const kind of s.kinds.kinds) {
+    const facts = s.trueFacts.get(kind.name);
+    if (facts === undefined) continue;
+    for (const u of yield* groupKind(kind, facts, env)) {
+      if (!u.construction) {
+        out.push(u);
+        continue;
+      }
+      built.count += u.parts.length;
+      if (u.objects.length > kind.params.length || u.parts.length > 0) built.shown.push(asFact(u));
+    }
+    yield undefined;
+  }
+  for (const [i, c] of s.singles.entries()) {
+    out.push({ ...c, parts: [c], construction: false });
+    if (i % TICK === TICK - 1) yield undefined;
+  }
+  const tagger = lemmaTagger(s.knowledge.closure);
+  for (const [i, u] of out.entries()) {
+    s.tags.set(u.key, tagUnit(tagger, u));
+    if (i % UNITS_PER_STEP === UNITS_PER_STEP - 1) yield undefined;
+  }
+  return testOrder(s, out);
 }

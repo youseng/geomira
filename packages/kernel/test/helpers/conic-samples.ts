@@ -11,7 +11,11 @@ import type { Value } from '../../src/value';
 const eq = (x: Rational, y: Rational): boolean => Q.isZero(Q.sub(x, y));
 
 export const CONIC = {
-  samples: { conic: ['A', 'B', 'C', 'D', 'P'] } as Readonly<Record<string, readonly string[]>>,
+  samples: {
+    conic: ['A', 'B', 'C', 'D', 'P'],
+    exsimilicenter: ['c', 'd'],
+    insimilicenter: ['c', 'd'],
+  } as Readonly<Record<string, readonly string[]>>,
   sameFigure(a: Value<Rational>, b: Value<Rational>): boolean {
     if (a.kind !== 'conic' || b.kind !== 'conic') return false;
     const pairs: readonly [Rational, Rational][] = [

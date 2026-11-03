@@ -3,7 +3,7 @@
  * and rays, a point of each full line, circles' bounding boxes (an arc counts as its
  * circle), an ellipse's box, a parabola's vertex, a hyperbola's vertex nearest the rest of the
  * figure (both when nothing else bounds it; never its centre, which is not on the curve: Run
- * 16c audit), polygon vertices, an angle mark's vertex, a segment mark's ends, a text's anchor. Null for a scene
+ * 16c audit), polygon vertices, an angle mark's vertex, a segment mark's ends, a text's anchor, a distance measurement's ends. Null for a scene
  * with no primitive. Sums that overflow are
  * skipped (a circle of radius 1e300 at 1e300 contributes nothing), so the result is finite.
  */
@@ -43,6 +43,7 @@ function pointsOf(s: Shape): Vec2[] {
     case 'angle_mark':
       return [s.b];
     case 'segment_mark':
+    case 'distance':
       return [s.p, s.q];
     case 'text':
       return [s.at];

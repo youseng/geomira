@@ -69,11 +69,43 @@ function crossRatioBody(kind: string, a: readonly Expr[], names: Names): string 
     : undefined;
 }
 
+/** `similar(ABC, DEF)`: two glued triangles when all six are point names (ADR-0051). */
+function triangles(kind: string, a: readonly Expr[], names: Names): string | undefined {
+  if (a.length !== 6) return undefined;
+  const [p, q] = [glued(a.slice(0, 3), names), glued(a.slice(3, 6), names)];
+  return p === undefined || q === undefined ? undefined : `${kind}(${p}, ${q})`;
+}
+
+/** The bodies of ADR-0051's kinds, or undefined (another kind, or arguments that do not fit). */
+function lengthsAndTriangles(kind: string, a: readonly Expr[], names: Names): string | undefined {
+  switch (kind) {
+    case 'length_product':
+      return a.length === 8
+        ? `${seg(a[0], a[1], names)}·${seg(a[2], a[3], names)} = ${seg(a[4], a[5], names)}·${seg(a[6], a[7], names)}`
+        : undefined;
+    case 'length_sum':
+      return a.length === 6
+        ? `${seg(a[0], a[1], names)} + ${seg(a[2], a[3], names)} = ${seg(a[4], a[5], names)}`
+        : undefined;
+    case 'similar':
+    case 'similar_direct':
+    case 'similar_opposite':
+    case 'congruent':
+    case 'congruent_direct':
+    case 'congruent_opposite':
+      return triangles(kind, a, names);
+    default:
+      return undefined;
+  }
+}
+
 /** `claim …` body (without attributes). */
 export function printClaimBody(kind: string, args: readonly Expr[], names: Names): string {
   const a = args;
   const n = a.length;
   const fallback = call(kind, args, names);
+  const extra = lengthsAndTriangles(kind, a, names);
+  if (extra !== undefined) return extra;
   switch (kind) {
     case 'equal': {
       const [x, y] = a;

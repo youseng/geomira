@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { TRIANGLE_TYPES, type TriangleType } from '@geomira/claims/randomize';
 import { FORMATS, type ExportFormat } from '@geomira/export/formats';
 import { SINGLE_FILE, SITE_URL } from './build-info';
 import { EXAMPLES } from './examples';
 import { Glyph, SrOnly } from './icons';
+import { ClaimBox, type ClaimBoxHost } from './ClaimBox';
 import { Menu, MenuItem } from './Menu';
 
 export interface HeaderProps {
@@ -24,8 +24,8 @@ export interface HeaderProps {
   readonly onMeasure: () => void;
   readonly onTriangleType: (t: TriangleType) => void;
   readonly onRandomize: () => void;
-  /** Adds the claim and tests it; false when it was refused (the notice says why). */
-  readonly onTestClaim: (text: string) => boolean;
+  /** The claim box: adds a claim and tests it, completes it, says what it could not read. */
+  readonly claimBox: ClaimBoxHost;
   readonly onStats: (on: boolean) => void;
   readonly onHelp: () => void;
 }
@@ -95,40 +95,6 @@ function Randomize(p: HeaderProps) {
         ))}
       </select>
     </div>
-  );
-}
-
-/** A claim to add and test at once ("collinear(A, B, C)", "AB = CD", "claim …"). */
-export function ClaimBox(p: {
-  readonly label: string;
-  readonly className: string;
-  readonly onTestClaim: (text: string) => boolean;
-}) {
-  const [text, setText] = useState('');
-  return (
-    <form
-      className={p.className}
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (p.onTestClaim(text)) setText('');
-      }}
-    >
-      <input
-        type="text"
-        aria-label={p.label}
-        placeholder="Test a claim: A, B, C collinear · ABCD cyclic · AB ⟂ CD · AB = CD"
-        spellCheck={false}
-        autoComplete="off"
-        value={text}
-        onChange={(e) => {
-          setText(e.target.value);
-        }}
-      />
-      <button type="submit" className="tb" title="Add the claim and test it (local test)">
-        <Glyph>{'▸'}</Glyph>
-        Test
-      </button>
-    </form>
   );
 }
 
@@ -319,7 +285,7 @@ export function Header(p: HeaderProps) {
       <Brand />
       <History {...p} />
       <Randomize {...p} />
-      <ClaimBox label="Claim to test" className="claim-form" onTestClaim={p.onTestClaim} />
+      <ClaimBox label="Claim to test" className="claim-form" host={p.claimBox} />
       <div className="spacer" />
       <ViewMenu {...p} />
       <Examples {...p} />

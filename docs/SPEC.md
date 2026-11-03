@@ -200,6 +200,9 @@ v1.1 tools (Run 13): `spiral_center`, `isogonal`, `symmedian`, `pole`,
 `line(P, X∞)` is the parallel through P. Run 16c (ADR-0043): `intersect(k1, k2, selectors)` of two
 conics or a conic and a circle (up to four candidates; `other(P, Q, R)` gives the fourth exactly),
 `foci(k, selectors)` (an ellipse's or hyperbola's two foci, a parabola's focus, a circle's centre).
+ADR-0045: `tangent(c1, c2, selectors)` and `tangent_point(c1, c2, selectors)`, the common tangents
+of two circles, two conics or a circle and a conic (up to four; the line is the tangent of c1 at
+its touch point, which selectors judge), and `exsimilicenter(c1, c2)`, `insimilicenter(c1, c2)`.
 
 ### 6.3 Degenerate behaviour (each item is a test)
 Parallel / coincident lines → Undefined; coincident defining points → Undefined;
@@ -210,7 +213,7 @@ perpendicular at B; of a zero angle → that line; ext_bisector correspondingly.
 
 ## 7. Branch selection
 Branchable tools produce a candidate list (0–2 values; 0–4 for conic ∩ conic and conic ∩ circle,
-ADR-0043). Selectors (applied in order):
+ADR-0043, and for common tangents, ADR-0045). Selectors (applied in order):
 - Filters: `same_side(Q, l)`, `opposite_side(Q, l)`, `on_arc(B, C, [not] A)`,
   `between(A, B)`, `inside(c)`, `outside(c)`.
 - Rankers: `other(P)` (P must lie on both objects within BAND; picks the candidate
@@ -221,7 +224,9 @@ ADR-0043). Selectors (applied in order):
 - Low-level: `along(+)` / `along(−)` (line ∩ curve: the candidate further / less far
   along the line's direction d); `orient(+)` / `orient(−)` (circle ∩ circle: sign of
   cross(c2 − c1, P − c1); tangent choices: sign of cross(O − P, T − P)). Shown with a
-  neutral note, never a warning.
+  neutral note, never a warning. Common tangents of two circles (ADR-0045) carry both labels:
+  `along(−)` the external pair, `along(+)` the internal pair (measured along O₁→O₂, achiral, no
+  line argument: reflection-equivariant), `orient(±)` the side of O₁O₂ where the touch point lies.
 ORIENTATION DEPENDENCE (exact definition): a selector is orientation-dependent iff it is
 `orient(±)`, or `along(±)` on a line with `chiral = true`. All other selectors are
 reflection-equivariant. Invariant (law L16): a script with no orientation-dependent
@@ -238,6 +243,8 @@ first kind that singles it out (within a kind, the largest decision margin):
 for a named point incident (within BAND) with the clicked candidate. With four candidates
 (ADR-0043): `other(P, Q, R)` with points at the three others → one filter, else two filters whose
 kept candidates meet in the clicked one → `near(P)`; conic ∩ conic has no low-level selector.
+Common tangents of two circles (ADR-0045): the tiers for four, then `along(±)` with a
+reflection-equivariant selector that separates the pair, then `along(±), orient(±)`.
 
 ## 8. Transformations, layers, views
 ### 8.1 Transformations
@@ -287,7 +294,11 @@ and `harmonic(A,B;C,D)` for four collinear or concyclic points (the complex cros
 `cross_ratio_lines`, `harmonic_lines` for four concurrent lines; collinear accepts points at
 infinity · (ADR-0042) on(P, k) and tangent(l, k) with a conic k, and `conconic(A,…,F,…)` (the
 points on one conic: one determinant condition per point after the fifth, NDG distinct and no
-three collinear).
+three collinear). · (ADR-0051) `similar(ABC, DEF)` and `congruent(ABC, DEF)` (A ↔ D, B ↔ E, C ↔ F;
+directly or oppositely, by proportional or equal sides) and their orientation forms
+`similar_direct`, `similar_opposite`, `congruent_direct`, `congruent_opposite` (NDG: both
+triangles proper), `AB·CD = EF·GH` (`length_product`) and `AB + CD = EF` (`length_sum`: the
+squared condition with an order item; not polynomial).
 Each kind defines, generically over Field<T>: `conditions(values)` (must all be 0),
 `ndg(values)` (must all be non-zero: NON-DEGENERACY data), and a float `residual`
 (dimensionless, ≥ 0). Directed angles use the complex form: with
@@ -295,8 +306,9 @@ z₁ = (C − B)·conj(A − B) and z₂ = (F − E)·conj(D − E), the conditi
 Im(z₁ⁿ·conj(z₂)) = 0, NDG z₁ ≠ 0 and z₂ ≠ 0 (for n = 1 this is the cross/dot formula).
 Lengths enter as squares. POLYNOMIAL KINDS (the whitelist for the prime-field rung):
 collinear, concyclic, concurrent, parallel, perpendicular, on, tangent, equal points,
-length and ratio equalities, directed angles, cross ratios and harmonic quadruples, conconic. Undirected angles and anything involving
-order or inequality are NOT polynomial kinds. Kinds also carry their argument symmetries and
+length and ratio equalities, directed angles, cross ratios and harmonic quadruples, conconic,
+similar and congruent triangles (every orientation form), length products (ADR-0051). Undirected
+angles, sums of lengths and anything involving order or inequality are NOT polynomial kinds. Kinds also carry their argument symmetries and
 optional finder hints (ADR-0035); the kinds are a registry value (`claimKindRegistry`).
 
 ### 10.2 Three-valued evaluation
@@ -357,7 +369,8 @@ and its counterexample documents.
 ## 11. Language (packages/lang)
 ### 11.1 Statements
 `name = expr [attrs]` · `claim <claim> [name=…]` · `assume <condition>` ·
-`triangle A B C [type]` · `style X <attrs>` (including `[noimage]`) · `label X "…"` ·
+`triangle A B C [type]` · `style X <attrs>` (including `[noimage]`; `[show]` and `[digits=N]`
+draw a measurement, ADR-0048) · `label X "…"` ·
 `@version 1` · `@layer name [visible=false] [locked] [opacity=…]` ·
 `@layer inv = image(T, main) [suffix=*] [exclude=X,Y]` · `@view name layers=…` ·
 `@viewport …` · `# comment`. Expressions: nested calls, names, exact numbers (with ° for
@@ -382,10 +395,16 @@ Diagnostics carry line, column and a fix hint.
 State = { doc, values, selection, hover, tool, toolState, history, viewport }. Every
 change is an edit through `applyEdit` (add, remove with cascade list, rename, redefine,
 style, layers, derived layers, views, drag, replaceText, claims, assumptions; viewport
-outside history). Drag is coalesced; at drag end values are rounded to the FINER of the
+outside history). Drags are coalesced (a label drag, ADR-0049, writes its offset), and so is
+the text panel's typing session (replaceText with `typing: 'start' | 'continue'`: one history
+entry until any other action; ADR-0047); at drag end values are rounded to the FINER of the
 power-of-ten grid 10^(⌊log10 scale⌋ − 4) and the power of ten just below 0.1 px at the
 current zoom, and stored as exact decimals. GUI tools are data; one state machine runs
-them; the GUI selector choice follows §7. Autosave: a document opened from a link is not
+them; the GUI selector choice follows §7. Names of what a GUI tool builds: a free
+conventional name (ADR-0016), else, for lines, segments, rays, circles and tangents built
+from named points, a name from those points (l_AC, s_AC, r_AC, c_ABC, c_O, t_A, l_P; next
+free variant `_2`, `_3`, …; grammatical and at most 12 characters), else l, l_1, … / c, c_1,
+… (ADR-0050); existing objects are never renamed automatically. Autosave: a document opened from a link is not
 saved until the first edit; the previous autosave is kept with "Restore previous
 figure". Share link `#s=` + lz-string(text). Debug report: text, app version, last 50
 edits, user agent.
@@ -393,7 +412,16 @@ edits, user agent.
 ## 13. Scene and rendering (packages/scene)
 values + doc → SceneBuilder → Scene (world-coordinate primitives) → canvas | exporters.
 y-up world; flip only in viewport.ts. Hit-testing uses the SAME primitives that are
-drawn (law L8). Labels: text grammar, offsets as (angle, pixels).
+drawn (law L8). Labels: text grammar, offsets as (angle, pixels). Labels are hit-tested on
+the box their runs are drawn in, from the widths the renderer measures (one function places
+the runs for drawing and picking); dragging a label in the Move tool writes its offset as ONE
+edit, whole degrees and px, at most 100 px from its anchor; a point's dot wins over a label
+under it (ADR-0049, amending ADR-0010 decision 13).
+Measurements (ADR-0048): a number styled `show` whose definition is `dist`, `angle` or `dangle`
+of named objects is drawn as its value (`digits` decimals, default 2; ° for angles): a distance
+as a label at the middle of the measured segment, offset to the left of A → B in pixels (no
+stroke); an angle as one arc at the vertex with the value outside it. Absent `show`: not drawn
+(numbers were never drawn). Other numbers are not drawn and say why; an Undefined one is listed.
 Coincident images: the scene does not draw a managed image whose value coincides with its
 source within BAND (points on the mirror line or the inversion circle, the mirror line,
 the inversion circle) WHILE THE SOURCE IS DRAWN. If the source is hidden (for example an
@@ -405,17 +433,23 @@ SVG · PNG · TikZ (snippet + standalone; six-digit colours) · Asymptote `stand
 (self-contained helper functions, named pairs, constructive where mapped, numeric
 otherwise) and `aops` (`import olympiad;`, only functions verified in the vendored
 olympiad.asy source; if its licence does not allow vendoring, aops output is snapshot-
-tested and checked by hand in each audit). Escaping table `texText` (ASCII specials,
+tested and checked by hand in each audit). Shown measurements (ADR-0048) are drawn like any display-list item and label. Escaping table `texText` (ASCII specials,
 Greek, ′ ″, ∩ ∪, ∠ ∡, ⟂ ∥, — –, °, ≤ ≥ ≠, →, ℓ with subscripts, √(…)); unknown characters
 → `?` + `% Warning` + UI message. CI (cached TeX Live + Asymptote image) compiles every
 example's TikZ and standalone Asymptote and checks Asymptote's `write()` coordinates
 against the kernel (≤ 1e-6·scale).
 
 ## 15. Web app
-Panels: Text (two-way, per-line diagnostics), Objects (by layer, Undefined/Inexact
-reasons), Layers, Claims (live badges; local verdict line; global verdict line;
+Panels: Text (two-way, per-line diagnostics; applies as you type after a 500 ms pause, never
+over a figure changed meanwhile, ADR-0047), Objects (by layer, Undefined/Inexact
+reasons; first the Measurements: every number with its definition and value as shown, ADR-0048), Layers, Claims (live badges; local verdict line; global verdict line;
 "open counterexample"), Style. Command bar with registry autocomplete; shortcuts and help
 generated from data; mobile (390×664) pan, pinch, drag and panels work. Views UI: v1.1.
+(ADR-0051) Every claim kind is reachable from the Claim tool (a line parameter takes a line,
+segment or ray, or two points: `line(A, P)`; a kind's number comes from the tool's field) and
+from the header's claim box, which lists the forms it reads, completes the word at the cursor,
+and says what it could not read (the word, its column, the form to write); the logic is in
+packages/editor (claim-tool.ts, claim-bar.ts).
 
 ## 16. Worker job protocol
 `runJob(job)` is a pure generator in packages/claims yielding progress after each sample

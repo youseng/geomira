@@ -1,28 +1,36 @@
 /**
  * The `find` job (ADR-0035, ADR-0039): "what is special about this figure?". Screens every
  * searched claim kind's candidates in the current figure (the numeric rung on shared
- * perturbations), sets aside the facts that follow from the construction and the maps (the
+ * perturbations; the first look of every kind before any kind's long scan, ADR-0052), sets aside the facts that follow from the construction and the maps (the
  * knowledge of derive.ts), merges the rest into maximal facts (group.ts), confirms them with the
  * LOCAL test (claims' runJob, n = 200 by default) and reports only HOLDS IN THIS CONFIGURATION,
  * ranked; a confirmed fact that follows from the construction and the facts shown above it is
  * hidden and listed under the fact it follows from, as are the facts a group stands for. Every
  * bounded step yields progress; `cancel` ends with nothing, `stop` (the host's time budget) ends
- * with what is confirmed. Every cap is in the result.
+ * with what is confirmed. Every cap is in the result. When the first look settles every kind
+ * there is one round of tests; otherwise two (twoRounds).
  */
 import { deriveSeed } from '@geomira/num/rng';
 import { claimKindRegistry, type ClaimKinds } from '@geomira/claims/kind-registry';
 import { screenSteps, type Screen } from '@geomira/claims/screen';
 import { poolsOf, type Candidate, type Pools } from './candidates';
-import { asFact, confirmUnits, type ConfirmEnv, type Confirmed, withFact } from './confirm';
-import { Listing } from './consequences';
+import {
+  asFact,
+  confirmUnits,
+  joined,
+  type ConfirmEnv,
+  type Confirmed,
+  type Known,
+  withFact,
+} from './confirm';
+import { listHidden } from './consequences';
 import { knowledgeSteps, type Knowledge } from './derive';
 import { grouped, groupKind, type TrueFact, type Unit } from './group';
-import { groupEnv, Learned, tagUnit } from './find-units';
-import { lemmaTagger } from './lemmas';
+import { type Built, groupEnv, Learned, unitSteps } from './find-units';
 import { rankFacts, type Ranked } from './rank';
-import { scanKinds } from './scan';
+import { allSettled, firstLook, firstTests, longScan, lookReports, type Look } from './scan-rounds';
 import { capLines } from './text';
-import { asSteps, drain, TICK } from './ticking';
+import { asSteps, drain } from './ticking';
 import {
   CONSTRUCTION_SHOWN,
   DEFAULT_FIND_BUDGET,
@@ -41,14 +49,8 @@ import {
 
 export { withFact };
 
-/**
- * Units tagged or checked against the knowledge between two yields: each costs up to a
- * millisecond on a large figure (a lemma's search, a derivation per link), so a step stays short.
- */
-const UNITS_PER_STEP = 16;
-
 interface State {
-  readonly budget: FindBudget;
+  readonly budget: FindBudget & { readonly firstLook: number };
   readonly kinds: ClaimKinds;
   readonly screen: Screen;
   readonly pools: Pools;
@@ -128,20 +130,107 @@ export function* runFind(
     constructionCount: 0,
     tags: new Map(),
   };
-  const scanned = yield* scanKinds('find', kinds, pools, budget, (c) => {
+  const look = yield* firstLook(kinds, pools, budget, (c) => {
     judge(s, c);
   });
-  if (scanned.cmd === 'cancel') return { kind: 'cancelled' };
-  s.reports.push(...scanned.reports);
-  s.notSearched.push(...scanned.notSearched);
+  if (look.cmd === 'cancel') return { kind: 'cancelled' };
+  s.notSearched.push(...look.notSearched);
   // Once stopped, nothing more is tested: the job ends without another step.
-  if (scanned.cmd === 'stop') return yield* confirm(job, env, s, [], true);
-  const units = yield* asSteps<Unit[], DiscoveryProgress, DiscoveryCommand>(unitSteps(s), () =>
-    progress('grouping facts', 0, 1),
+  if (look.cmd === 'stop') {
+    s.reports.push(...lookReports(look.looks));
+    return yield* confirm(job, env, s, [], undefined);
+  }
+  const known = learned(job, env, s);
+  if (!allSettled(look.looks)) return yield* twoRounds(job, env, s, known, look.looks);
+  // The first look settled every kind: one round, the whole test budget.
+  s.reports.push(...lookReports(look.looks));
+  const { units, built: groups } = yield* grouping(s);
+  if (units === 'cancel') return { kind: 'cancelled' };
+  list(s, groups);
+  if (units === 'stop') return yield* confirm(job, env, s, [], undefined);
+  const t = yield* confirmUnits(confirmEnv(job, env, s, known, s.budget.tests, 0), units);
+  return yield* confirm(job, env, s, units, t);
+}
+
+/**
+ * Groups the true facts so far (find-units.ts) as job steps: the units, or the command that
+ * stopped it, and the groups that hold by construction (`built`, listed by `list`).
+ */
+function* grouping(
+  s: State,
+): Generator<
+  DiscoveryProgress,
+  { readonly units: Unit[] | 'cancel' | 'stop'; readonly built: Built },
+  DiscoveryCommand
+> {
+  const built: Built = { count: 0, shown: [] };
+  const units = yield* asSteps<Unit[], DiscoveryProgress, DiscoveryCommand>(
+    unitSteps(s, built),
+    () => progress('grouping facts', 0, 1),
   );
-  if ('cmd' in units && units.cmd === 'cancel') return { kind: 'cancelled' };
-  const list = 'cmd' in units ? [] : units.value;
-  return yield* confirm(job, env, s, list, 'cmd' in units);
+  return { units: 'cmd' in units ? units.cmd : units.value, built };
+}
+
+/** Lists the construction groups of one grouping (the last complete one, ADR-0052). */
+function list(s: State, built: Built): void {
+  s.constructionCount += built.count;
+  for (const f of built.shown) s.construction.unshift(f);
+}
+
+/**
+ * ADR-0052: the first look's facts are grouped and tested with the first share of the test
+ * budget; then the long scan; then every true fact is grouped again (without the facts the
+ * first round did not confirm) and the units not tested yet are tested with the rest. A stop
+ * ends the job with what is confirmed, its reports saying which kinds the time cut. The
+ * construction groups listed are those of the last complete grouping (the second covers every
+ * true fact the first did).
+ */
+function* twoRounds(
+  job: FindJob,
+  env: DiscoveryEnv,
+  s: State,
+  known: Known,
+  looks: readonly Look[],
+): Generator<DiscoveryProgress, FindOutcome, DiscoveryCommand> {
+  const first = yield* grouping(s);
+  if (first.units === 'cancel') return { kind: 'cancelled' };
+  const units1 = first.units === 'stop' ? [] : first.units;
+  const t1 =
+    first.units === 'stop'
+      ? undefined
+      : yield* confirmUnits(confirmEnv(job, env, s, known, firstTests(s.budget.tests), 0), units1);
+  if (t1 === undefined || t1.cmd !== undefined) {
+    list(s, first.built);
+    s.reports.push(...lookReports(looks));
+    return yield* confirm(job, env, s, units1, t1);
+  }
+  const scan = yield* longScan(looks, s.pools, s.budget, (c) => {
+    judge(s, c);
+  });
+  if (scan.cmd === 'cancel') return { kind: 'cancelled' };
+  s.reports.push(...scan.reports);
+  if (scan.cmd === 'stop') {
+    list(s, first.built);
+    return yield* confirm(job, env, s, units1, { ...t1, cmd: 'stop' });
+  }
+  const rejected = new Set(t1.unconfirmed.map((u) => u.fact.key));
+  for (const [kind, list] of s.trueFacts)
+    s.trueFacts.set(
+      kind,
+      list.filter((f) => !rejected.has(f.c.key)),
+    );
+  const second = yield* grouping(s);
+  if (second.units === 'cancel') return { kind: 'cancelled' };
+  if (second.units === 'stop') {
+    list(s, first.built);
+    return yield* confirm(job, env, s, units1, { ...t1, cmd: 'stop' });
+  }
+  list(s, second.built);
+  const all = second.units;
+  const fresh = all.filter((u) => !t1.tested.has(u.key));
+  const e = confirmEnv(job, env, s, known, s.budget.tests, t1.runs);
+  const t2 = yield* confirmUnits(e, fresh);
+  return yield* confirm(job, env, s, all, joined(t1, t2));
 }
 
 /** The result of a job stopped before its screen began: nothing checked, said so. */
@@ -164,82 +253,38 @@ function stoppedEarly(job: FindJob, budget: FindBudget): FindResult {
   return { ...result, caps: capLines(result) };
 }
 
-/**
- * The order units are tested in (the test budget cuts the end): tagged first, then fewer
- * distinct objects (a group counts as one fact of its kind: an n-ary group the kind's arity, a
- * class its first link), a group standing for more facts first, the kind's registry order, the
- * newest objects first (ADR-0035 decision 12's criteria that need no verdict), then the key.
- */
-function testOrder(s: State, units: readonly Unit[]): Unit[] {
-  const keyOf = (u: Unit) => ({
-    u,
-    untagged: s.tags.get(u.key) === undefined ? 1 : 0,
-    size:
-      u.chain?.[0]?.objects.length ??
-      (u.parts.length > 1 ? Math.min(u.objects.length, u.kind.params.length) : u.objects.length),
-    kind: s.kindIndex.get(u.kind.name) ?? 0,
-    latest: Math.max(-1, ...u.objects.map((id) => s.pools.order.get(id) ?? -1)),
+/** The knowledge of the construction and of the facts confirmed so far, shared by the rounds. */
+function learned(job: FindJob, env: DiscoveryEnv, s: State): Known {
+  return new Learned(s.knowledge, {
+    doc: job.doc,
+    registry: env.registry,
+    kinds: s.kinds,
+    values: s.screen.values,
   });
-  return units
-    .map(keyOf)
-    .sort(
-      (a, b) =>
-        a.untagged - b.untagged ||
-        a.size - b.size ||
-        b.u.parts.length - a.u.parts.length ||
-        a.kind - b.kind ||
-        b.latest - a.latest ||
-        (a.u.key < b.u.key ? -1 : a.u.key > b.u.key ? 1 : 0),
-    )
-    .map((x) => x.u);
 }
 
-/** The units to test, in test order: groups of the grouped kinds, and the single facts. */
-function* unitSteps(s: State): Generator<undefined, Unit[], unknown> {
-  const env = groupEnv(s.knowledge.closure, s.pools);
-  const out: Unit[] = [];
-  for (const kind of s.kinds.kinds) {
-    const facts = s.trueFacts.get(kind.name);
-    if (facts === undefined) continue;
-    for (const u of yield* groupKind(kind, facts, env)) {
-      if (!u.construction) {
-        out.push(u);
-        continue;
-      }
-      s.constructionCount += u.parts.length;
-      if (u.objects.length > kind.params.length || u.parts.length > 0)
-        s.construction.unshift(asFact(u));
-    }
-    yield undefined;
-  }
-  for (const [i, c] of s.singles.entries()) {
-    out.push({ ...c, parts: [c], construction: false });
-    if (i % TICK === TICK - 1) yield undefined;
-  }
-  const tagger = lemmaTagger(s.knowledge.closure);
-  for (const [i, u] of out.entries()) {
-    s.tags.set(u.key, tagUnit(tagger, u));
-    if (i % UNITS_PER_STEP === UNITS_PER_STEP - 1) yield undefined;
-  }
-  return testOrder(s, out);
-}
-
-/** What the local tests need: the budget, the tags, and how a class is rebuilt (group.ts). */
-function confirmEnv(job: FindJob, env: DiscoveryEnv, s: State): ConfirmEnv {
+/**
+ * What the local tests need: the budget (`tests` runs in all, `before` of them made by an
+ * earlier round), the tags, the knowledge, and how a class is rebuilt (group.ts).
+ */
+function confirmEnv(
+  job: FindJob,
+  env: DiscoveryEnv,
+  s: State,
+  known: Known,
+  tests: number,
+  before: number,
+): ConfirmEnv {
   const groups = groupEnv(s.knowledge.closure, s.pools);
   return {
     job,
     env,
     kinds: s.kinds,
     n: s.budget.n,
-    tests: s.budget.tests,
+    tests,
+    before,
     tag: (u) => s.tags.get(u.key),
-    known: new Learned(s.knowledge, {
-      doc: job.doc,
-      registry: env.registry,
-      kinds: s.kinds,
-      values: s.screen.values,
-    }),
+    known,
     regroup: (u, ok) =>
       u.members === undefined
         ? []
@@ -253,25 +298,28 @@ function confirmEnv(job: FindJob, env: DiscoveryEnv, s: State): ConfirmEnv {
   };
 }
 
-/** Phases two and three: confirm, rank, list what is hidden, the result. */
+/**
+ * The end: what the local tests confirmed (`tested`; none: stopped before any test), ranked, and
+ * what is hidden listed; the result.
+ */
 function* confirm(
   job: FindJob,
   env: DiscoveryEnv,
   s: State,
   units: readonly Unit[],
-  stoppedBefore: boolean,
+  tested: Confirmed | undefined,
 ): Generator<DiscoveryProgress, FindOutcome, DiscoveryCommand> {
-  const t: Confirmed = stoppedBefore
-    ? {
-        found: [],
-        unconfirmed: [],
-        tested: new Set(),
-        runs: 0,
-        construction: [],
-        retriesUntested: 0,
-        unitOf: new Map(),
-      }
-    : yield* confirmUnits(confirmEnv(job, env, s), units);
+  const stoppedBefore = tested === undefined;
+  const t: Confirmed = tested ?? {
+    found: [],
+    unconfirmed: [],
+    tested: new Set(),
+    runs: 0,
+    construction: [],
+    retriesUntested: 0,
+    unitOf: new Map(),
+    cmd: 'stop',
+  };
   if (t.cmd === 'cancel') return { kind: 'cancelled' };
   for (const u of t.construction) {
     s.constructionCount += u.parts.length;
@@ -282,7 +330,7 @@ function* confirm(
   const halt = { stopped: stoppedBefore || t.cmd === 'stop' };
   const ranked = yield* rank(job, env, s, t.found, halt);
   if (ranked === 'cancel') return { kind: 'cancelled' };
-  const listed = yield* listHidden(s, units, t, ranked, halt);
+  const listed = yield* listHidden(s.construction, units, t, ranked, halt);
   if (listed === 'cancel') return { kind: 'cancelled' };
   const facts = listed.listing.facts().slice(0, s.budget.results);
   const result = {
@@ -335,57 +383,6 @@ function* rank(
     r = ranking.next();
   }
   return r.value;
-}
-
-/**
- * Lists every hidden fact under what it follows from (consequences.ts): the confirmed facts the
- * ranking hid, the parts of shown groups, and the untested units that follow from the facts
- * shown; units that do not follow stay untested (counted).
- */
-function* listHidden(
-  s: State,
-  units: readonly Unit[],
-  t: Confirmed,
-  ranked: Ranked,
-  halt: { stopped: boolean },
-): Generator<
-  DiscoveryProgress,
-  { listing: Listing; untested: number } | 'cancel',
-  DiscoveryCommand
-> {
-  const listing = new Listing(ranked.shown, s.construction);
-  // A found fact's own unit first: a class rebuilt from its confirmed checks may carry the key
-  // of the class it came from, whose parts include the member that failed.
-  const byKey = new Map([...units.map((u) => [u.key, u] as const), ...t.unitOf]);
-  const snaps = ranked.snapshots;
-  const ruleAt = (at: number, f: Fact & { readonly chain?: readonly Fact[] }) =>
-    snaps.list[at]?.derives(f.chain?.[0] ?? f) ?? 'incidence';
-  for (const h of ranked.hidden) {
-    listing.add(h.fact, h.at, ruleAt(h.at, h.fact));
-    for (const p of byKey.get(h.fact.key)?.parts ?? []) listing.add(asFact(p), h.at, 'part');
-  }
-  ranked.shown.forEach((f, i) => {
-    for (const p of byKey.get(f.key)?.parts ?? [])
-      if (p.key !== f.key) listing.add(asFact(p), i + 1, 'part');
-  });
-  let untested = 0;
-  for (const [i, u] of units.entries()) {
-    if (!halt.stopped && i % UNITS_PER_STEP === UNITS_PER_STEP - 1) {
-      const cmd = yield progress('listing consequences', i, units.length);
-      if (cmd === 'cancel') return 'cancel';
-      if (cmd === 'stop') halt.stopped = true;
-    }
-    if (t.tested.has(u.key)) continue;
-    const uf = { ...asFact(u), ...(u.chain === undefined ? {} : { chain: u.chain.map(asFact) }) };
-    const at = halt.stopped ? undefined : snaps.trigger(uf);
-    if (at === undefined) {
-      untested++;
-      continue;
-    }
-    listing.add(uf, at, ruleAt(at, uf));
-    for (const p of u.parts) listing.add(asFact(p), at, 'part');
-  }
-  return { listing, untested };
 }
 
 /** Runs a find job to completion (tests; hosts that need no slicing). */

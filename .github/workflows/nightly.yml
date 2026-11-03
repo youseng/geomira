@@ -12,7 +12,7 @@ name: nightly
 # this workflow or the mutation and test configuration (scripts/nightly-scope.sh decides).
 #
 # Mutation is sharded (scripts/mutation-shards.ts): the kernel in eleven shards, discovery in
-# four (ADR-0038), num and claims whole. Every shard has its own incremental file and cache key, saves them under
+# fourteen and claims in four (ADR-0038, ADR-0057), num whole. Every shard has its own incremental file and cache key, saves them under
 # `if: always()`, and gives Stryker its own time limit below the job's, so a finished shard
 # keeps its progress even if another shard runs out of time. A dispatch with `full` ignores
 # the caches, to measure full runs.
@@ -104,7 +104,8 @@ jobs:
     name: mutation-${{ matrix.id }}
     needs: plan
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    # ADR-0059: Stryker's own limit is 150 minutes; the job's leaves time to save the cache.
+    timeout-minutes: 170
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
@@ -140,7 +141,7 @@ jobs:
           args=(run "stryker.${{ matrix.pkg }}.json")
           if [ -n "$MUTATE" ]; then args+=(--mutate "$MUTATE"); fi
           start=$(date +%s)
-          timeout 100m pnpm exec stryker "${args[@]}"
+          timeout 150m pnpm exec stryker "${args[@]}"
           echo "${{ matrix.id }}: Stryker took $(( ($(date +%s) - start) / 60 )) min" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Save incremental mutation result
         if: always()

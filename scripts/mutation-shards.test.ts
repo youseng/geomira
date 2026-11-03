@@ -102,16 +102,21 @@ describe('nightly mutation shards', () => {
   it('every file a shard names exists (a renamed file cannot drop out silently)', () => {
     for (const shard of SHARDS)
       for (const p of shard.mutate.filter((m) => !m.includes('*')))
-        expect([...universe, ...filesUnder('packages/discovery/src')], p).toContain(
-          fileOf(p.replace(/^!/, '')),
-        );
+        expect(
+          [
+            ...universe,
+            ...filesUnder('packages/discovery/src'),
+            ...filesUnder('packages/claims/src'),
+          ],
+          p,
+        ).toContain(fileOf(p.replace(/^!/, '')));
   });
 
-  it('num and claims run their whole config; ids are unique', () => {
+  it('num runs its whole config; claims and discovery by file groups; ids are unique', () => {
     expect(SHARDS.filter((s) => s.pkg !== 'kernel').map((s) => [s.id, s.mutate, s.parent])).toEqual(
       [
         ['num', [], ''],
-        ['claims', [], ''],
+        ...SHARDS.filter((s) => s.pkg === 'claims').map((s) => [s.id, s.mutate, s.parent]),
         ...SHARDS.filter((s) => s.pkg === 'discovery').map((s) => [s.id, s.mutate, s.parent]),
       ],
     );

@@ -14,9 +14,9 @@ describe('glider tool on a polygon side', () => {
     const base = editorOf(TRI);
     let s = useTool(base, 'glider');
     s = input(s, click(s, 2, 0));
-    expect(addedNames(base, s)).toEqual(['l', 'D']);
-    expect(defText(s, 'l')).toBe('segment(A, B)');
-    expect(defText(s, 'D')).toBe('on(l, 1/2)');
+    expect(addedNames(base, s)).toEqual(['s_AB', 'D']);
+    expect(defText(s, 's_AB')).toBe('segment(A, B)');
+    expect(defText(s, 'D')).toBe('on(s_AB, 1/2)');
     expect(xyOf(s, 'D')).toEqual([2, 0]);
     expect(s.history.past).toHaveLength(2);
   });
@@ -25,8 +25,8 @@ describe('glider tool on a polygon side', () => {
     const base = editorOf(TRI);
     let s = useTool(base, 'glider');
     s = input(s, click(s, 2.5, 1.5));
-    expect(defText(s, 'l')).toBe('segment(B, C)');
-    expect(defText(s, 'D')).toBe('on(l, 1/2)');
+    expect(defText(s, 's_BC')).toBe('segment(B, C)');
+    expect(defText(s, 'D')).toBe('on(s_BC, 1/2)');
   });
 
   it('empty space is still refused, with nothing added', () => {

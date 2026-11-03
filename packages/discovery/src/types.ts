@@ -120,14 +120,20 @@ export interface FindBudget {
   readonly results: number;
   /** Figures per local test (the Test button's n). */
   readonly n: number;
+  /**
+   * Candidates per kind in the first look (ADR-0052): screened for every kind, and their facts
+   * tested with half the test budget, before any kind's long scan (absent: the default's).
+   */
+  readonly firstLook?: number;
 }
 
-export const DEFAULT_FIND_BUDGET: FindBudget = Object.freeze({
+export const DEFAULT_FIND_BUDGET: FindBudget & { readonly firstLook: number } = Object.freeze({
   candidatesPerKind: 20_000,
   countLimit: 2_000_000,
   tests: 60,
   results: 50,
   n: 200,
+  firstLook: 1_000,
 });
 
 export interface FindJob {

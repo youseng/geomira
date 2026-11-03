@@ -15,8 +15,8 @@ describe('a polygon side that is a segment already', () => {
     s = input(s, click(s, 2, 0));
     expect(addedNames(base, s)).toEqual([]);
     s = input(s, click(s, 1, 3));
-    expect(addedNames(base, s)).toEqual(['l']);
-    expect(defText(s, 'l')).toBe('perp(C, ab)');
+    expect(addedNames(base, s)).toEqual(['l_C']);
+    expect(defText(s, 'l_C')).toBe('perp(C, ab)');
   });
 
   it('a reversed hidden segment(B, A) is reused too', () => {

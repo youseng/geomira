@@ -8,9 +8,20 @@
  * elsewhere (Escape, undo) ends its gesture quietly: the rest of the press does nothing
  * (ADR-0028). On touch, a press held LONG_PRESS_MS within CLICK_SLOP is a LONG PRESS (the
  * style card, ADR-0029): it cancels a drag it started, and the rest of the press does nothing.
+ *
+ * Labels (ADR-0049): in the Move tool, a press that starts no point drag (none hit within the
+ * dot and its pick radius, or the editor refuses to drag it) and lies inside a label's drawn
+ * box (scene hitLabel, with the widths the renderer measures) DRAGS THE LABEL: dragStart(id,
+ * part 'label'), then dragLabel with the offset that keeps the label's reference point under
+ * the pointer where it was grabbed, then dragEnd (one edit of label_angle / label_dist). The
+ * same click slop and long press apply: a still press is a click, or on touch the style card
+ * of the label's object (pressedObject); a press that moves past CLICK_SLOP first is a drag.
  */
 import { hitTest } from '@geomira/scene/hit';
 import type { DisplayList } from '@geomira/scene/display';
+import { LABEL_FONT_PX } from '@geomira/scene/label-box';
+import { estimatedWidth, hitLabel, labelOffset, type RunWidth } from '@geomira/scene/label-hit';
+import type { PlacedLabel } from '@geomira/scene/labels';
 import { panViewport, toWorld, zoomViewport, type Vec2, type View } from '@geomira/scene/viewport';
 import type { EditorStore } from './store';
 
@@ -27,6 +38,34 @@ export interface Hold {
   readonly onHold: (q: Vec2, display: DisplayList) => void;
 }
 
+/** How the renderer measures label runs (render.ts measuredWidth) at its base label size. */
+export interface LabelMetrics {
+  readonly width: RunWidth;
+  readonly px: number;
+}
+
+/** The scene's estimate, where no canvas measures (Node tests). */
+export const ESTIMATED_METRICS: LabelMetrics = { width: estimatedWidth, px: LABEL_FONT_PX };
+
+/**
+ * The object a press at `q` is about (the style card's target on a right-click or a long
+ * press): the topmost hit object, else the object of the label under the press, else none.
+ */
+export function pressedObject(
+  display: DisplayList,
+  q: Vec2,
+  metrics: LabelMetrics = ESTIMATED_METRICS,
+): number | undefined {
+  return hitTest(display, q).hits[0]?.id ?? hitLabel(display, q, metrics.width, metrics.px)?.id;
+}
+
+/** A label being dragged: the label as placed when grabbed, and the grab point's offset. */
+interface Grab {
+  readonly label: PlacedLabel;
+  readonly dx: number;
+  readonly dy: number;
+}
+
 type Mode =
   | { readonly kind: 'none' }
   | {
@@ -35,6 +74,8 @@ type Mode =
       last: Vec2;
       moved: boolean;
       readonly drag: boolean;
+      /** The label dragged (ADR-0049), or null: the drag (if any) moves a point. */
+      readonly grab: Grab | null;
     }
   /** A long press happened: the rest of the press does nothing. */
   | { readonly kind: 'held' }
@@ -62,6 +103,8 @@ export class Gestures {
   constructor(
     private readonly store: EditorStore,
     private readonly hold: Hold | null = null,
+    /** The renderer's label measure, asked at each press (the font may load later). */
+    private readonly metrics: () => LabelMetrics = () => ESTIMATED_METRICS,
   ) {}
 
   private stopHold(): void {
@@ -125,13 +168,24 @@ export class Gestures {
     const s = this.store.current();
     const target =
       s.tool === 'move' ? hitTest(display, q).hits.find((h) => h.part === 'point') : undefined;
-    const drag = target !== undefined && this.store.apply({ kind: 'dragStart', id: target.id }).ok;
-    this.mode = { kind: 'press', start: q, last: q, moved: false, drag };
+    const point = target !== undefined && this.store.apply({ kind: 'dragStart', id: target.id }).ok;
+    const grab = s.tool === 'move' && !point ? this.grabLabel(q, display) : null;
+    const drag = point || grab !== null;
+    this.mode = { kind: 'press', start: q, last: q, moved: false, drag, grab };
     const hold = this.hold;
     if (touch && hold !== null)
       this.unhold = hold.schedule(() => {
         this.held(q, display);
       }, LONG_PRESS_MS);
+  }
+
+  /** Starts the drag of the label under `q`, if any (ADR-0049); its grab, or null. */
+  private grabLabel(q: Vec2, display: DisplayList): Grab | null {
+    const m = this.metrics();
+    const h = hitLabel(display, q, m.width, m.px);
+    if (h === undefined) return null;
+    if (!this.store.apply({ kind: 'dragStart', id: h.id, part: 'label' }).ok) return null;
+    return { label: h.label, dx: q.x - h.label.at.x, dy: q.y - h.label.at.y };
   }
 
   move(id: number, q: Vec2, display: DisplayList): void {
@@ -153,7 +207,10 @@ export class Gestures {
     if (!m.moved && distance(q, m.start) < CLICK_SLOP) return;
     this.stopHold();
     m.moved = true;
-    if (m.drag) this.store.apply({ kind: 'dragMove', to: toWorld(this.view(display), q) });
+    if (m.drag && m.grab !== null) {
+      const at = { x: q.x - m.grab.dx, y: q.y - m.grab.dy };
+      this.store.apply({ kind: 'dragLabel', ...labelOffset(m.grab.label, at) });
+    } else if (m.drag) this.store.apply({ kind: 'dragMove', to: toWorld(this.view(display), q) });
     else {
       const vp = this.store.current().viewport;
       this.store.apply({
@@ -200,9 +257,20 @@ export class Gestures {
     if (this.pointers.size === 0) this.mode = { kind: 'none' };
   }
 
+  /**
+   * A click: the tool gets the hit test; in the Move tool, when no object is hit, also the
+   * object of the label under the click (it selects it: a measurement's value is its label,
+   * ADR-0048).
+   */
   private click(q: Vec2, display: DisplayList): void {
     const world = toWorld(this.view(display), q);
-    this.store.input({ kind: 'click', hit: hitTest(display, q), world });
+    const hit = hitTest(display, q);
+    const m = this.metrics();
+    const label =
+      this.store.current().tool === 'move' && hit.hits.length === 0
+        ? hitLabel(display, q, m.width, m.px)?.id
+        : undefined;
+    this.store.input({ kind: 'click', hit, world, ...(label === undefined ? {} : { label }) });
   }
 
   private hover(q: Vec2, display: DisplayList): void {

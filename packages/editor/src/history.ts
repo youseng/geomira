@@ -4,7 +4,10 @@
  * document EXACTLY: the very objects that were there. A new action clears the redo stack.
  * Drags are coalesced: every move of one gesture replaces the `after` of the gesture's
  * entry (drag.ts), so one undo returns to the document before the drag. The history keeps
- * at most HISTORY_LIMIT entries (the oldest are dropped).
+ * at most HISTORY_LIMIT entries (the oldest are dropped). The text panel's automatic applies
+ * are coalesced the same way (ADR-0047): a typing session's entry is open (`typing`) until any
+ * other entry, an undo or a redo; while it is open, the session's next apply replaces its
+ * `after` (edit.ts).
  */
 import type { Document } from '@geomira/kernel/document';
 
@@ -20,6 +23,11 @@ export interface History {
   readonly past: readonly HistoryEntry[];
   /** The next redo is the last entry. */
   readonly future: readonly HistoryEntry[];
+  /**
+   * The last entry is a typing session's that is still open (ADR-0047). Every function here
+   * returns a history without it, so any other action ends the session (text-edit.ts opens it).
+   */
+  readonly typing?: true;
 }
 
 export const EMPTY_HISTORY: History = Object.freeze({ past: [], future: [] });

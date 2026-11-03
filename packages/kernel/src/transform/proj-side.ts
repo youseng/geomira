@@ -86,8 +86,8 @@ export function onInfinityLine<T>(
 
 /**
  * Whether a direction d is parallel to ℓ (W(d) = 0 as a sine): 'parallel', or the sign of W(d),
- * or Undefined in the band. Affine maps: always parallel. Mod p: 'parallel' iff W(d) = 0
- * exactly, otherwise 'none' (its sign is not decidable).
+ * or Undefined in the band. Affine maps: always parallel (W(d) = 0 exactly, ADR-0054). Mod p:
+ * 'parallel' iff W(d) = 0 exactly, otherwise 'none' (its sign is not decidable).
  */
 export function directionSide<T>(
   F: Field<T>,
@@ -95,7 +95,6 @@ export function directionSide<T>(
   d: Vec<T>,
   ctx: EvalContext,
 ): 'parallel' | 1 | -1 | 'none' | Undefined {
-  if (isAffine(F, m)) return 'parallel';
   const w = wOf(F, m, d, false);
   if (F.kind === 'modp') return F.isZero(w, 'dimensionless', ctx) ? 'parallel' : 'none';
   const [a, b] = wRow(m);

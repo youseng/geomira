@@ -7,6 +7,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import type { TriangleType } from '@geomira/claims/randomize';
 import type { DocumentEdit } from '@geomira/editor/edit';
 import { randomizeEdit } from '@geomira/editor/randomize';
+import { claimCompletions } from '@geomira/editor/claim-bar';
+import type { ClaimFeedback } from './ClaimBox';
 import { cycleView } from '@geomira/editor/views';
 import type { ExportFormat } from '@geomira/export/formats';
 import type { KeyAction } from '@geomira/editor/keymap';
@@ -190,21 +192,23 @@ export interface HeaderEnv {
   readonly fitAfterEdit: () => void;
 }
 
-/** The claim box: adds `claim …` as one edit and starts its local test (SPEC §10.5). */
-function testClaim(env: HeaderEnv, text: string): boolean {
-  const t = text.trim();
-  if (t === '') return false;
-  const r = env.store.command(/^claim\b/u.test(t) ? t : `claim ${t}`);
-  if (r === undefined) return false;
+/**
+ * The claim box: adds `claim …` as one edit and starts its local test (SPEC §10.5); null when
+ * added, else what it could not read (shown in the box, and as the notice).
+ */
+function testClaim(env: HeaderEnv, text: string): ClaimFeedback | null {
+  if (text.trim() === '') return { reason: 'type a claim', diagnostics: [] };
+  const r = env.store.claim(text);
+  if (r === undefined) return { reason: 'internal error', diagnostics: [] };
   if (r.kind === 'error') {
     env.store.setNotice({ tone: 'refusal', text: r.reason, diagnostics: r.diagnostics });
-    return false;
+    return { reason: r.reason, diagnostics: r.diagnostics };
   }
   const doc = r.result.state.doc;
   const claim = doc.claims[doc.claims.length - 1];
   if (claim !== undefined) env.runs.start(doc, claim.id, 'local');
   env.showTab('Claims');
-  return true;
+  return null;
 }
 
 /** Randomize: a new figure through packages/claims' sampler, one undoable edit. */
@@ -248,7 +252,11 @@ function measure(env: HeaderEnv): FrameTimes | null {
 function actions(env: HeaderEnv) {
   const { store } = env;
   return {
-    onTestClaim: (text: string) => testClaim(env, text),
+    claimBox: {
+      test: (text: string) => testClaim(env, text),
+      complete: (text: string, cursor: number) =>
+        claimCompletions(env.store.current(), text, cursor),
+    },
     onHelp: () => {
       env.showTab('Help');
     },

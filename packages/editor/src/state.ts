@@ -37,6 +37,8 @@ export interface DragState {
   readonly history: History;
   /** Whether a move has happened (then the history's last entry is this drag's). */
   readonly moved: boolean;
+  /** 'label': the gesture moves the object's label (label-drag.ts, ADR-0049); absent: the object. */
+  readonly part?: 'label';
 }
 
 export interface EditorState {

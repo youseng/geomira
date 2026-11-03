@@ -126,6 +126,8 @@ tiny figures and views (note C).
     curve (a point on it), else a free position, each with screen and world coordinates; none
     when a point is hit or the view is refused. Labels are not hit (their size depends on the
     renderer's font); picking an object by its label is an editor decision for a later run.
+    **Amended by ADR-0049:** labels are hit-tested (scene `label-hit.ts`) on the box their runs
+    are drawn in, from the widths the renderer measures, and can be dragged in the Move tool.
 
 ### Renderer (apps/web)
 

@@ -12,10 +12,10 @@ describe('polygon sides as line picks', () => {
   it('perpendicular from C to side AB, the side clicked first: segment(A, B), then perp(C, …)', () => {
     let s = useTool(editorOf(TRI), 'perpendicular');
     s = input(s, click(s, 2, 0));
-    expect(defText(s, 'l')).toBe('segment(A, B)');
+    expect(defText(s, 's_AB')).toBe('segment(A, B)');
     s = input(s, click(s, 1, 3));
-    expect(addedNames(editorOf(TRI), s)).toEqual(['l', 'l_1']);
-    expect(defText(s, 'l_1')).toBe('perp(C, l)');
+    expect(addedNames(editorOf(TRI), s)).toEqual(['s_AB', 'l_C']);
+    expect(defText(s, 'l_C')).toBe('perp(C, s_AB)');
     // The side's segment is its own edit, then the perpendicular.
     expect(s.history.past).toHaveLength(2);
   });
@@ -24,26 +24,26 @@ describe('polygon sides as line picks', () => {
     let s = useTool(editorOf(TRI), 'foot');
     s = input(s, click(s, 1, 3));
     s = input(s, click(s, 2, 0));
-    expect(defText(s, 'D')).toBe('foot(C, l)');
+    expect(defText(s, 'D')).toBe('foot(C, s_AB)');
     expect(xyOf(s, 'D')).toEqual([1, 0]);
     s = useTool(s, 'parallel');
     s = input(s, click(s, 3, 0));
     s = input(s, click(s, 1, 3));
-    expect(addedNames(editorOf(TRI), s)).toEqual(['l', 'D', 'l_1']);
-    expect(defText(s, 'l_1')).toBe('parallel(C, l)');
+    expect(addedNames(editorOf(TRI), s)).toEqual(['s_AB', 'D', 'l_C']);
+    expect(defText(s, 'l_C')).toBe('parallel(C, s_AB)');
   });
 
   it('the side nearest the click is the one made (BC, not AB)', () => {
     let s = useTool(editorOf(TRI), 'foot');
     s = input(s, click(s, 2.5, 1.5));
-    expect(defText(s, 'l')).toBe('segment(B, C)');
+    expect(defText(s, 's_BC')).toBe('segment(B, C)');
   });
 
   it('a point clicked on a side is a glider on that side (the side is made first)', () => {
     let s = useTool(editorOf(TRI), 'midpoint');
     s = input(s, click(s, 2, 0));
-    expect(defText(s, 'l')).toBe('segment(A, B)');
-    expect(defText(s, 'D')).toBe('on(l, 1/2)');
+    expect(defText(s, 's_AB')).toBe('segment(A, B)');
+    expect(defText(s, 'D')).toBe('on(s_AB, 1/2)');
     s = input(s, click(s, 1, 3));
     expect(defText(s, 'E')).toBe('midpoint(D, C)');
   });
@@ -52,9 +52,9 @@ describe('polygon sides as line picks', () => {
     const fig = `${TRI}\nc = circle(A, (2, 0))`;
     let s = useTool(editorOf(fig), 'point');
     s = input(s, click(s, 2, 0));
-    expect(addedNames(editorOf(fig), s)).toEqual(['l', 'D']);
-    expect(defText(s, 'l')).toBe('segment(A, B)');
-    expect(defText(s, 'D')).toMatch(/^intersect\((l, c|c, l), .+\)$/u);
+    expect(addedNames(editorOf(fig), s)).toEqual(['s_AB', 'D']);
+    expect(defText(s, 's_AB')).toBe('segment(A, B)');
+    expect(defText(s, 'D')).toMatch(/^intersect\((s_AB, c|c, s_AB), .+\)$/u);
     expect(xyOf(s, 'D')[0]).toBeCloseTo(2, 12);
   });
 });

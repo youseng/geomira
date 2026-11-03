@@ -105,8 +105,8 @@ describe('a GUI tool reuses the object that is the same construction', () => {
     expect(r.notice).toBe('X is intersect(ab, cd) already');
     s = r.state;
     s = input(s, { kind: 'object', id: idOf(fig, 'E') });
-    expect(addedNames(fig, s)).toEqual(['l']);
-    expect(defText(s, 'l')).toBe('line(X, E)');
+    expect(addedNames(fig, s)).toEqual(['l_XE']);
+    expect(defText(s, 'l_XE')).toBe('line(X, E)');
   });
 });
 

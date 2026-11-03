@@ -8,6 +8,7 @@ import { assertNever } from '@geomira/num/assert';
 import type { EditorState } from './state';
 import { idleTool, type ToolId } from './tool-state';
 import { TOOLS, toolUI } from './tools';
+import { toolValue, typedKey } from './tool-steps';
 import { done as ok, refuse, viewportProblem, type EditResult } from './result';
 
 export type UiEdit =
@@ -75,15 +76,20 @@ export function uiEdit(state: EditorState, e: UiEdit): EditResult {
       if (!TOOLS.some((t) => t.id === e.tool)) return refuse(state, `there is no tool "${e.tool}"`);
       const kind = e.claimKind ?? state.toolState.claimKind;
       const typed = state.toolState.typed;
-      const value = typed[e.tool] ?? toolUI(e.tool)?.value?.initial ?? '';
+      const tool = toolUI(e.tool);
+      const next = idleTool(kind, '', typed);
+      const asks = tool === undefined ? undefined : toolValue(tool, next);
+      const key = tool === undefined ? e.tool : typedKey(tool, next);
+      const value = typed[key] ?? asks?.initial ?? '';
       // Building maps alone stays chosen while the user switches between map tools.
       const mapOnly = state.toolState.mapOnly === true && toolUI(e.tool)?.map === true;
       return ok({ ...state, tool: e.tool, toolState: idleTool(kind, value, typed, mapOnly) });
     }
     case 'toolValue': {
-      if (toolUI(state.tool)?.value === undefined)
+      const tool = toolUI(state.tool);
+      if (tool === undefined || toolValue(tool, state.toolState) === undefined)
         return refuse(state, 'the active tool takes no number');
-      const typed = { ...state.toolState.typed, [state.tool]: e.value };
+      const typed = { ...state.toolState.typed, [typedKey(tool, state.toolState)]: e.value };
       return ok({ ...state, toolState: { ...state.toolState, value: e.value, typed } });
     }
     case 'toolMapOnly': {

@@ -141,7 +141,8 @@ h3.sec {
   margin: 6px 0 4px;
 }
 
-.object-row {
+.object-row,
+.measurement-row {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0 8px;
@@ -150,7 +151,8 @@ h3.sec {
   align-items: baseline;
 }
 
-.object-row:hover {
+.object-row:hover,
+.measurement-row:hover {
   background: var(--panel2);
 }
 
@@ -162,7 +164,8 @@ h3.sec {
   font: italic 14px var(--serif);
 }
 
-.object-row.selected .object-name {
+.object-row.selected .object-name,
+.measurement-row.selected .object-name {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
@@ -181,6 +184,12 @@ h3.sec {
 .status-undefined .object-status,
 .status-inexact .object-status {
   color: var(--bad);
+}
+
+/* The Measurements list (ADR-0048): the value in the ink colour, tabular figures. */
+.measurement-value {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---- layers, style, help ---- */

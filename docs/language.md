@@ -56,7 +56,8 @@ attrItem      = key , [ "=" , value , { "," , value } ] ;   (* a list (exclude, 
 value         = float | number | name | "-" , name | string | stars ;
 style keys    : color=word|string, width=float, dash=solid|dashed|dotted, hidden[=true|false],
                 noimage[=true|false], label=string, z=float, label_angle=float (degrees),
-                label_dist=float (pixels, >= 0).
+                label_dist=float (pixels, >= 0), show[=true|false],
+                digits=integer (0 to 10).
 
 (* ---- expressions ---- *)
 expr          = product , { ( "+" | "-" ) , product } ;
@@ -83,6 +84,10 @@ claim         = kind , "(" , expr , { "," , expr } , ")"    (* every kind by nam
               | segment , "=" , [ number , ( "·" | "*" ) ] , segment          (* length *)
               | segment , "/" , segment , "=" , segment , "/" , segment      (* ratio *)
               | segment , "/" , segment , "=" , number                       (* ratio_value *)
+              | segment , ( "·" | "*" ) , segment , "=" , segment , ( "·" | "*" ) , segment
+                                    (* length_product (ADR-0051) *)
+              | segment , "+" , segment , "=" , segment
+              | segment , "=" , segment , "+" , segment                       (* length_sum *)
               | [ number , [ "·" | "*" ] ] , dangle , "=" , dangle           (* dangle *)
               | "∡" , "(" , expr , "," , expr , ")" , "=" , number           (* dangle_lines *)
               | angle , "=" , angle                                          (* angle_eq *)
@@ -132,18 +137,18 @@ measure       = segment | angle | number | expr ;
 
 | statement | keys |
 | --- | --- |
-| definition | color, width, dash, opacity, hidden, noimage, label, layers |
-| style | color, width, dash, opacity, hidden, noimage, label |
+| definition | color, width, dash, opacity, hidden, noimage, label, show, digits, layers |
+| style | color, width, dash, opacity, hidden, noimage, label, show, digits |
 | claim | name |
 | triangle | acute, scalene, obtuse_at_<vertex> |
 | @layer | main, visible, locked, opacity, order; derived layers also suffix, exclude |
 | @view | layers, viewport |
 
-Values: `color=red` or `color="#ff0000"`; `width=1.5`; `dash=solid|dashed|dotted`; `opacity=0.5` (in [0, 1], times the layer's opacity); flags `hidden`, `noimage`, `locked` (or `=true` / `=false`); `label="…"`; lists `exclude=X,Y`, `layers=a,b` (a list takes the rest of its bracket group).
+Values: `color=red` or `color="#ff0000"`; `width=1.5`; `dash=solid|dashed|dotted`; `opacity=0.5` (in [0, 1], times the layer's opacity); flags `hidden`, `noimage`, `locked` (or `=true` / `=false`); `label="…"`; `show` draws a measurement (a number defined by `dist`, `angle` or `dangle` of named objects) as its value on the figure, with `digits=2` decimals (a whole number from 0 to 10; absent: 2; ADR-0048); lists `exclude=X,Y`, `layers=a,b` (a list takes the rest of its bracket group).
 
 ## Selectors
 
-Selectors are the trailing arguments of a branchable call (`intersect`, `tangent_point`, `tangent_from`). A bare index (`intersect(a, b, 2)`) and a call with two candidates and no selector are errors with a hint.
+Selectors are the trailing arguments of a branchable call (`intersect`, `tangent_point`, `tangent_from`, `foci`, and `tangent` of two curves). A bare index (`intersect(a, b, 2)`) and a call with two candidates and no selector are errors with a hint.
 
 | selector | meaning |
 | --- | --- |
@@ -200,6 +205,14 @@ P = on(ω, 2, 1)
 | `cross_ratio_lines` | `cross_ratio(a, b, c, d) = k (four concurrent lines)`, `cross_ratio_lines(a, b, c, d, k)` | `claim cross_ratio_lines(line(A, B), line(A, C), line(A, M_a), line(A, H), -1)` | yes |
 | `harmonic_lines` | `harmonic(a, b; c, d) (four concurrent lines)`, `harmonic_lines(a, b, c, d)` | `claim harmonic_lines(line(A, B), line(A, C), line(A, M_a), line(A, H))` | yes |
 | `conconic` | `conconic(A, B, C, D, E, F, …) (no three collinear)` | `claim conconic(A, B, C, H, M_a, P)` | yes |
+| `similar` | `similar(ABC, DEF) (A ↔ D, B ↔ E, C ↔ F; directly or oppositely)` | `claim similar(ABC, M_aM_bM_c)` | yes |
+| `similar_direct` | `similar_direct(ABC, DEF) (the same orientation)` | `claim similar_direct(ABC, M_aM_bM_c)` | yes |
+| `similar_opposite` | `similar_opposite(ABC, DEF) (opposite orientations)` | `claim similar_opposite(A, foot(B, line(C, A)), foot(C, line(A, B)), A, B, C)` | yes |
+| `congruent` | `congruent(ABC, DEF) (A ↔ D, B ↔ E, C ↔ F; directly or oppositely)` | `claim congruent(AM_cM_b, M_aM_bM_c)` | yes |
+| `congruent_direct` | `congruent_direct(ABC, DEF) (the same orientation)` | `claim congruent_direct(AM_cM_b, M_aM_bM_c)` | yes |
+| `congruent_opposite` | `congruent_opposite(ABC, DEF) (opposite orientations)` | `claim congruent_opposite(A, B, C, reflect(A, line(B, C)), B, C)` | yes |
+| `length_product` | `AB·CD = EF·GH` | `claim AB·M_bM_c = BC·AM_c` | yes |
+| `length_sum` | `AB + CD = EF` | `claim BM_a + M_aC = BC` | no |
 
 ## Assumptions
 
@@ -309,7 +322,7 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `center` | points | `center(round)` | point | can succeed | — |
 | `on` | points | `on(linear, number)` · `on(round, number, number)` · `on(round, number)` · `on(conic, number, number)` | point | can succeed | cos(30°) is not rational |
 | `other` | points | `other(linear, round, point)` · `other(round, linear, point)` · `other(round, round, point)` · `other(linear, conic, point)` · `other(conic, linear, point)` | point | can succeed | — |
-| `tangent` | lines | `tangent(point, round)` · `tangent(point, conic)` | line | can succeed | — |
+| `tangent` | lines | `tangent(point, round)` · `tangent(point, conic)` · `tangent(round, round)` · `tangent(conic, conic)` · `tangent(round, conic)` · `tangent(conic, round)` | line | can succeed | — |
 | `polar` | lines | `polar(point, round)` · `polar(point, conic)` | line | can succeed | — |
 | `radical_axis` | lines | `radical_axis(round, round)` | line | can succeed | — |
 | `incenter` | points | `incenter(point, point, point)` | point | can succeed | √(18) is not rational |
@@ -325,7 +338,7 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `ninepoint_center` | points | `ninepoint_center(point, point, point)` | point | can succeed | — |
 | `power` | measures | `power(point, round)` | number | can succeed | — |
 | `radius` | measures | `radius(round)` | number | can succeed | √(2) is not rational |
-| `tangent_point` | points | `tangent_point(point, round)` · `tangent_point(point, conic)` | point | can succeed | √(275/1296) is not rational |
+| `tangent_point` | points | `tangent_point(point, round)` · `tangent_point(point, conic)` · `tangent_point(round, round)` · `tangent_point(conic, conic)` · `tangent_point(round, conic)` · `tangent_point(conic, round)` | point | can succeed | √(275/1296) is not rational |
 | `tangent_from` | lines | `tangent_from(point, round)` · `tangent_from(point, conic)` | line | can succeed | √(275/1296) is not rational |
 | `reflect` | transformations | `reflect(linear)` · `reflect(point)` · `reflect(point, linear)` · `reflect(curve, linear)` · `reflect(polygon, linear)` · `reflect(point, point)` · `reflect(curve, point)` · `reflect(polygon, point)` | transform, point, line, circle, polygon | can succeed | — |
 | `rotate` | transformations | `rotate(point, number)` · `rotate(point, point, number)` · `rotate(curve, point, number)` · `rotate(polygon, point, number)` | transform, point, line, circle, polygon | can succeed | sin(60°) is not rational |
@@ -361,6 +374,8 @@ Exactness is observed by running each tool's examples over RationalField: "can s
 | `foci` | points | `foci(round)` · `foci(conic)` | point | can succeed | √(250563/4096) is not rational; √(2) is not rational |
 | `conic_to_circle` | transformations | `conic_to_circle(conic)` | transform | can succeed | — |
 | `circle_to_centre` | transformations | `circle_to_centre(round, point)` | transform | can succeed | √(500) is not rational |
+| `exsimilicenter` | points | `exsimilicenter(round, round)` | point, ideal_point | can succeed | — |
+| `insimilicenter` | points | `insimilicenter(round, round)` | point | can succeed | √(2) is not rational |
 
 ## Versions
 

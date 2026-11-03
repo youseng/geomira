@@ -1,5 +1,406 @@
 # STATUS
 
+## Maintainer request: usability (items 1–10): ACCEPTED (2026-11-03)
+
+Not a kit run, no tag. Decisions: one ADR per item, [ADR-0045](adr/0045-common-tangents-and-similitude-centres.md)
+(1), [ADR-0046](adr/0046-rename-in-the-style-card.md) (2), [ADR-0047](adr/0047-text-applies-as-you-type.md)
+(3), [ADR-0048](adr/0048-measurements-are-visible.md) (4), [ADR-0049](adr/0049-drag-a-label.md) (5),
+[ADR-0050](adr/0050-descriptive-names.md) (6), [ADR-0051](adr/0051-claims-from-the-gui.md) (7),
+[ADR-0052](adr/0052-what-is-special-budget-fairness.md) (8), [ADR-0053](adr/0053-node-engines-22-19.md) (9),
+[ADR-0054](adr/0054-kernel-mutation-survivors.md) (10), and
+five found while driving CI and the nightly to green: [ADR-0055](adr/0055-package-test-timeout.md)
+(the package tests' timeout, and the slow-test threshold), [ADR-0056](adr/0056-lehmer-gcd.md) (gcd
+by Lehmer's algorithm), [ADR-0057](adr/0057-mutation-shards-cold-within-the-limit.md) (the mutation
+shards), [ADR-0058](adr/0058-cheaper-mutation-timeouts.md) (cheaper mutation timeouts) and
+[ADR-0059](adr/0059-cold-shard-limit-150-minutes.md) (a shard's cold run within 150 minutes,
+amending ADR-0038). The maintainer's decisions of 2026-11-01 and 2026-11-02 are in ADR-0045's
+amendment (concentric circles), ADR-0055's amendment, ADR-0058 and ADR-0059. SPEC §6.2, §7,
+§10.1, §11.1, §12, §13, §14 and §15 are updated in the commits of those ADRs. Base: main = 9ade9a3 (PR
+#28, tag run-16c), ACCEPTED; `git fetch --tags && pnpm install && pnpm verify` was green on it
+before any change (4213 tests; add-only guard against run-16c: 0 violations). Branch:
+ccr-ab97e07e-93qqyk. PR: https://github.com/youseng/geomira/pull/29.
+
+How the work was done: each item was built on its own branch (a git worktree), with its tests
+first, then merged into this branch with a merge commit; after each merge the suites of the
+packages it touched were run again on the merged code, and the branch was pushed (CI on every
+push). Merge conflicts and cross-item fixes are in the merge commits and listed under "Merges".
+
+Accepted on the maintainer's rule (2026-11-02: one cold nightly after ADR-0059; if every shard
+finishes and the gate passes, the request is accepted on that run), confirmed by the maintainer on
+2026-11-03. On 98dd441, the last code commit (this STATUS commit changes docs only), everything is
+green:
+
+- CI: https://github.com/youseng/geomira/actions/runs/41434684548 (push) and
+  https://github.com/youseng/geomira/actions/runs/41434695044 (pull_request).
+- tex: https://github.com/youseng/geomira/actions/runs/41434684524 (push) and
+  https://github.com/youseng/geomira/actions/runs/41434694893 (pull_request; they compile the new
+  fixture `tests/fixtures/export/measurements.geo`).
+- deploy (build and e2e, the single file in three engines):
+  https://github.com/youseng/geomira/actions/runs/41434684781.
+- Nightly, cold (dispatched with `full`: every one of the 30 mutation shards from scratch, as main's
+  first nightly after the merge will run them; the NIGHTLY=1 test job with the 20,000-run fuzz):
+  https://github.com/youseng/geomira/actions/runs/41434694361: success. Every shard finished within
+  ADR-0059's 150 minutes (the longest kernel-a 104 and kernel-c 90; the others 4–82), and the gate
+  passed (scores under Acceptance command output).
+
+The kernel's mutation score is 92.76 %, up from 89.49 % on main before the request (item 10), and
+0.24 points short of the request's 93 % aim (Not done).
+
+### Done (each item → the tests that show it)
+
+1. **Common tangents and centres of similitude** (ADR-0045).
+   - `tangent(c1, c2, …)` and `tangent_point(c1, c2, …)` (the touch point on c1) for two circles,
+     two conics, a circle and a conic: up to four candidates; a selector judges the touch point
+     on the first curve. Two circles in closed form in every field; the external and internal
+     pairs each counted on their own gap as a length with the band; touching circles → one
+     double tangent; one inside the other, concentric or equal → Undefined with the reason. A
+     conic: the dual problem through ADR-0043's pencil, floats only (Inexact over Q and mod p);
+     the line at infinity and an asymptote of the first curve are not candidates.
+   - Low-level selectors of two circles: `along(−)` / `along(+)` = the external / internal pair
+     (no line, an achiral direction O₁→O₂: reflection-equivariant by SPEC §7's definition);
+     `orient(±)` = the side of O₁O₂ (orientation-dependent, written only when nothing else
+     decides). A vanishing pair gives "no common tangent satisfies …", never the other pair.
+   - `exsimilicenter(c1, c2)`, `insimilicenter(c1, c2)`: exact over Q when both radii are
+     rational, else Inexact (`radical`); equal radii → the exsimilicenter is the point at
+     infinity of O₁O₂; concentric circles of different radii → both are the common centre, exact
+     in every field (the maintainer's decision, ADR-0045 amendment, 21b1a14 →
+     `kernel/test/similitude-concentric.test.ts`, failed before); identical circles → Undefined; symmetry c1 ↔ c2 ('value'); guarantee: collinear
+     with the centres; export numeric.
+   - GUI: the Tangent tool's second click on a curve builds every common tangent as one batch,
+     each with the GUI choice (filters, then along(±) with near/far_from, then orient);
+     Exsimilicenter and Insimilicenter in Centers (keys `.` and `:`: every letter and digit is
+     taken).
+   - → `kernel/test/helpers/degenerate-common-tangents.ts`, `helpers/degenerate-similitude.ts`,
+     `helpers/similitude-properties.ts`, `kernel/test/laws/l3-common-tangents.test.ts` (1922 exact
+     samples), `laws/l11-common-tangents.test.ts`, `common-tangents-mirror.test.ts` (L16),
+     `theorems-common-tangents.test.ts` (the tangents meet at the centres of similitude; Monge's
+     theorem in both forms, exact over Q; each tangent touches both curves),
+     `lang/test/common-tangents.test.ts`, `editor/test/common-tangents-tool.test.ts`.
+2. **Rename in the style card** (ADR-0046): a Name field; Write to script is one batch of the
+   kernel's rename and the style edit (one history entry); images follow (A* → P*, A** → P**);
+   an invalid or taken name shows the kernel's message, Write disabled; a managed image's field
+   is read-only ("A* is the image of A in layer inv: rename A"). → `editor/test/style-card-rename.test.ts`,
+   `web/test/style-card-name.test.tsx`, `web/e2e/style-card-rename.spec.ts`.
+3. **The text applies as you type** (ADR-0047).
+   - `TEXT_APPLY_PAUSE_MS = 500` (apps/web/src/text-apply.ts); the decision is taken when the
+     pause ends (`editor/src/text-draft.ts`). The field keeps the text as typed (caret and scroll
+     stay); Apply text, Ctrl+Enter and leaving the field print the figure.
+   - The merging rule: automatic applies at most `TEXT_MERGE_MS = 3000` ms apart are one history
+     entry; leaving the field, Apply text, Ctrl+Enter, any other entry, undo, redo or a drag end
+     the session; typing back to the document before the session drops its entry.
+   - A text with errors is never applied; its diagnostics stay.
+   - The race (the audit's hunt item): any document change that is not the text panel's own drops
+     the pending apply; the typed text is kept, marked stale ("The figure changed meanwhile…"),
+     applied only by Apply text or Ctrl+Enter as an entry of its own (Revert text drops it).
+   - One parse per text: the diagnostics' parse is handed to replaceText
+     (`@geomira/lang/parse-text`). On the 150-object figure an automatic apply takes 3–4 ms (12 ms
+     with a second parse); the diagnostics' parse per keystroke (unchanged) 12–18 ms.
+   - → `web/test/text-apply.test.ts` (fake timers; every kind of other change, the label drag
+     added after the merge), `editor/test/text-draft.test.ts`, `editor/test/text-typing.test.ts`,
+     `lang/test/parse-text.test.ts`, `web/test/caret.test.ts`, `web/e2e/flows-typing.spec.ts`.
+4. **Measurements are visible** (ADR-0048).
+   - The language: `show[=true|false]` draws a measurement, `digits=N` (0–10, default 2) sets its
+     decimals, printed after `label_dist`; absent `show` = not drawn, so old files and every
+     golden snapshot are unchanged. → `lang/test/measure-attrs.test.ts` (P1/P2; the P1–P3
+     generator draws both).
+   - What is drawn: `dist` of two points and `dist(P, l)` (to the foot), `angle` and `dangle`, with
+     named arguments. A distance is its value label at the middle of the segment, 6 px to the left
+     of A→B at any zoom; an angle is the mark arc (14 px) with its value in degrees on the
+     bisector; a style `label` is a prefix ("AB = 3.61"). Every other number is "not drawn" with
+     the reason; an Undefined measurement is listed with its reason, not drawn. →
+     `scene/test/measure.test.ts` (offsets at zooms 0.5 to 10⁶, L8 and L9).
+   - The Distance and Angle tools build with `[show]` (an existing unshown one is shown by one
+     style edit); its value label drags with ADR-0049's gesture; a Move click on a label selects
+     its object; the Measurements list (`editor/src/measurements.ts`: name, definition, value,
+     Undefined with its reason) at the top of the Objects panel; the style card gives a shown
+     measurement the fields of a drawn object plus Decimals. → `editor/test/measurements.test.ts`,
+     `web/test/measurements-web.test.tsx`, `web/e2e/flows-measurements.spec.ts`.
+   - Exports draw shown measurements (SVG, PNG, TikZ, Asymptote; values through `texLabel`);
+     `tests/fixtures/export/measurements.geo` with its golden snapshots, compiled by tex.yml. →
+     `export/test/measure-export.test.ts`.
+5. **Drag a label** (ADR-0049).
+   - Labels are hit-tested on the box the renderer draws (`scene/src/label-hit.ts`; the renderer
+     draws through it, pixel for pixel as before); labels stay out of `hitTest`.
+   - The gesture (`editor/src/label-drag.ts`): dragStart(id, 'label') → dragLabel(angle, dist) →
+     dragEnd | dragCancel, one history entry writing `label_angle` / `label_dist`; any styled
+     object (points, lines, circles, marks, images).
+   - Priority in the Move tool: a draggable point's dot plus the 6 px pick radius wins; elsewhere
+     the label box (plus 2 px) drags the label; else the view pans. Whole degrees, whole px,
+     distance clamped to 0–100 px (`MAX_LABEL_DRAG_PX`; the text still takes up to 1000 px).
+   - Touch: a move of more than 4 px before 500 ms is a label drag; a still 500 ms press opens the
+     style card (ADR-0029) and cancels the started drag.
+   - SPEC §12, §13 and ADR-0010 decision 13 (amended by a note) say labels are hit.
+   - → `scene/test/label-hit.test.ts`, `web/test/laws/label-hit-laws.test.ts` (drawn = hit),
+     `editor/test/label-drag.test.ts`, `web/test/gestures-label.test.ts`, `web/e2e/label-drag.spec.ts`.
+6. **Names that say what an object is** (ADR-0050): `l_AC`, `s_AC`, `r_AC`, `c_ABC`, `c_O` (both
+   circle tools with a centre), `t_A`, the tangents from P `t_P`, `t_P_2`, perpendiculars and
+   parallels `l_P`, `l_P_2`, a polygon side made by a click `s_AB`. `l_{AC}` is not grammatical
+   (braces only in point names). Fallback to l, l_1 … when a point's name cannot be glued (a
+   lowercase name, A*, M_{ab}, a prime not last) or the name passes 12 characters
+   (`MAX_DESCRIPTIVE_NAME`); taken → `base_2`, `base_3`, …; conventional names win; nothing is
+   renamed. → `editor/test/descriptive-names.test.ts` (31 tests, 22 failed before).
+7. **Claims from the GUI** (ADR-0051).
+   - Reproduced first: a line step refused points (cevians not drawn), concurrent waited for a
+     fourth line without saying Finish (cevians as segments), the claim bar answered `AP, BQ, CR
+are concurrent` with `expected "=", found ","`, and the kinds with a number were not in the
+     tool. → `editor/test/claim-tool-lines.test.ts`, `lang/test/claim-read-problems.test.ts`.
+   - Every registry kind is in the claim tool, each number from the tool's field
+     (`editor/src/claim-tool.ts`) → `editor/test/claim-tool-kinds.test.ts` (enumerates the
+     registry).
+   - Lines by two points (`line(A, P)` in the text) or by line, segment or ray objects (carriers)
+     → `claim-tool-lines.test.ts`, `web/e2e/flows-claimtool.spec.ts`.
+   - The claim bar: accepted forms, completions, and the word it could not read
+     (`editor/src/claim-bar.ts`) → `editor/test/claim-bar.test.ts`, `flows-claimtool.spec.ts`.
+   - New kinds: `similar` (either orientation), `similar_direct`, `similar_opposite`, `congruent`,
+     `congruent_direct`, `congruent_opposite`, `length_product` (AB·CD = EF·GH, polynomial),
+     `length_sum` (AB + CD = EF, not polynomial) → `claims/test/kinds-triangles.test.ts`,
+     `claims/test/laws/l12-triangles.test.ts` (L12 and L17), `lang/test/triangle-claims-notation.test.ts`.
+   - Discovery: the new kinds come in through the registry, not searched (listed with the
+     reason) → `discovery/test/new-kinds-no-flood.test.ts`.
+8. **"What is special?" budget fairness** (ADR-0052).
+   - The cause: the find job screened every kind to its budget before testing anything; a stop
+     during the screen ended with nothing. On an idle machine run-16c found 11 facts on the
+     reported figure, so the tests stop the job after a number of steps, not a time.
+   - The rule: every searched kind first screens min(firstLook = 1,000, candidatesPerKind)
+     candidates (half in construction order, half newest first); when some kind is not settled,
+     the first round tests those facts with half the test runs, the long scan continues, and a
+     second round tests the rest. Caps are listed ("checked 1,000 of more than 20,000 conconic
+     candidates: time budget").
+   - A stop while the ranking rebuilt its knowledge ran the rest of the rebuild in one step
+     (185 ms): fixed.
+   - ADR-0037's gate (`fallback-discovery.spec.ts`): longest task 49–79 ms, 7–9 of about 4,750 over
+     16 ms (run-16c: 55–83 ms, 11–14).
+   - → `web/test/find-fairness-150.test.ts` (the reported 156-object figure: 0 facts on run-16c,
+     now at least 3 with D = X), `discovery/test/find-fairness.test.ts`,
+     `discovery/test/scan-rounds.test.ts`, `discovery/test/rank-stop.test.ts`.
+9. **engines.node ≥ 22.19** (ADR-0053) → `scripts/engines.test.ts`.
+10. **Kernel mutation** (ADR-0054).
+    - Survivors from the nightly on main 9ade9a3 (run 40897490665: kernel 89.49 %, kernel-j
+      75.92 %, kernel-b 78.63 %). Eight behaviour-test files, each under a second:
+      `kernel/test/conic-pencil-edges-behaviour.test.ts`, `conic-conic-behaviour.test.ts`,
+      `conic-pairs-edges-behaviour.test.ts`, `proj-edges-behaviour.test.ts`,
+      `conic-core-behaviour.test.ts`, `arcs-rays-behaviour.test.ts`, `map-edges-behaviour.test.ts`,
+      `tool-edges-behaviour.test.ts`.
+    - Three no-op branches removed, each shown by a test: conic-conic's `ranged` flag and
+      `vertexNear`'s non-finite-centre check, proj-side's affine shortcut. The rest are listed in
+      ADR-0054 decision 4 with the reason (equality boundaries at EPS and BAND, redundant
+      terminators, the most isolated root, polish guards, near-infinity guards, …).
+    - A bug fixed on the way (test first): two conics without a known point, the first shaped
+      like a circle, far from the origin, were reported as not meeting.
+    - Local measurement: kernel 89.49 % → 93.96 % (kernel-j 81.42 %); the nightly's numbers are
+      under Acceptance command output.
+
+### Nightly findings (found by the nightly, fixed on this branch)
+
+- **The L14 fuzz test (20,000 runs, NIGHTLY=1)** found that a label drag (item 5) moved away and
+  back to where it started removed its history entry at dragEnd; the frozen model of the drag
+  protocol shrinks the history only on dragCancel (run 41218368581, seed 20261021, path 1830). The
+  drop now keeps the entry, as a point drag does (ADR-0049 amendment) →
+  `editor/test/label-drag.test.ts` (failed before), the nightly test job green since.
+- **Thirteen of twenty mutation shards past 100 minutes** on the first cold run: item 1's tools
+  shift the seeded walk of the frozen `kernel/test/hunt-extreme.test.ts`, which then draws an exact
+  `foci` call on a conic with 16,700-digit coefficients (37–48 s, 97 % in Euclid's gcd). gcd by
+  Lehmer's algorithm and bitLength from hex (ADR-0056): that call 3.5 s, hunt-extreme's exact part
+  95.7 → 14.2 s (run-16c 14.7), the kernel's mutation test set 302 → 213 s (run-16c 199) →
+  `num/test/gcd-lehmer.test.ts` (equal to Euclid on 1,500 pairs and edge cases; faster than Euclid
+  on large numbers; failed before). Its first speed bound (3 times on 30,000 bits) failed num's dry
+  run under Stryker's instrumentation on 4fd0fc5 (2.65 measured: the source's gcd is instrumented,
+  the test's Euclid is not); it is 2 times on 50,000 bits with a median of three since 98dd441.
+- **claims and discovery-b/-c/-d/-e past 100 minutes cold**, older than this branch (discovery-d's
+  sources are unchanged and its mutants ran at run-16c's rate side by side; claims had 6,456 mutants
+  on run-16c, its last measured full run 47 minutes with 2,342). Shards rebalanced (ADR-0057):
+  claims in four shards, discovery in fourteen, kernel files moved between the eleven kernel shards
+  → `scripts/mutation-claims.test.ts`, `scripts/mutation-discovery.test.ts`,
+  `scripts/mutation-shards.test.ts`.
+- **CI's verify on 56ab141**: the frozen `kernel/test/tools-circles.direct.test.ts` sweep past
+  vitest's 5 s default (about 4 s under coverage on an idle machine, run-16c too): the package
+  tests' timeout is a 15 s hang guard (ADR-0055); at the maintainer's request the reporters list
+  every test slower than 2.5 s, in CI's log too (ADR-0055 amendment, e2716c7 →
+  `scripts/vitest-config.test.ts`).
+- **The cold-run limit** (the maintainer's decisions): cheaper timeouts, timeoutFactor 1.2 and
+  timeoutMS 2,500, no test out of the mutation run (ADR-0058 → `scripts/stryker-timeouts.test.ts`),
+  then a shard's cold run within 150 minutes, the job's limit 170 (ADR-0059, amending ADR-0038; cold
+  runs happen only after merges; incremental runs are unaffected), and ADR-0045's two tool files
+  out of the catch-all kernel-h into kernel-f and kernel-d.
+
+Cold nightly shard minutes (every shard from scratch; a shard at 100 ran out of time):
+
+| run (commit)                                      | layout                | shards past 100                                             | the others                                                            |
+| ------------------------------------------------- | --------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------- |
+| 41218368581 (5fef14e)                             | 20 shards (run-16c's) | 13                                                          | kernel-b 44, -c 54, -f 67, -j 56, num 5, discovery 65, discovery-a 42 |
+| 41230221798 (a0d505b, ADR-0056)                   | 20                    | claims, discovery-b, -c, -d, -e                             | kernel 18–95 (a 95, i 86), num 7, discovery-a 70, discovery 33        |
+| 41242777649 (d08200e, ADR-0057)                   | 25                    | kernel-h, discovery-b, -d                                   | 7–87 (claims-a 87)                                                    |
+| 41254264516 (bbd6b41, amendment)                  | 30                    | kernel-f (63 timeouts)                                      | 7–82; kernel-c 100 (finished)                                         |
+| 41296971836 (9784b4e, ADR-0058)                   | 30                    | kernel-h (94 %, 147 timeouts)                               | 4–93                                                                  |
+| 41407651278 (4fd0fc5, ADR-0059, 150-minute limit) | 30                    | none; num stopped at its dry run (the gcd speed test above) | 10–86                                                                 |
+| **41434694361 (98dd441)**                         | **30**                | **none**                                                    | **4–104 (kernel-a 104, kernel-c 90, kernel-g 82): gate passed**       |
+
+A timed-out mutant cost about 1.5 times its covering tests (1.2 since ADR-0058; the kernel suite runs
+107 s under coverage), so how many mutants cross the timeout on a given runner decides a shard's
+minutes: the same files took 48, 62 and more than 100 minutes in kernel-f. Hence ADR-0059's
+150-minute limit with margin rather than more splits.
+
+### Merges and cross-item changes
+
+- Item 1 + item 7: `editor/src/machine-build.ts`, `prompt.ts` (both prompts kept),
+  `machine.ts` (item 1's `pairPick` renamed `secondCurvePick`).
+- Item 7 + item 8: `discovery/test/scan-rounds.test.ts` (new in this branch) lists ADR-0051's kinds
+  among the kinds not searched (7818ec0).
+- Items 2/5 + 7, item 3 + the rest: the editor's exports list, `web/src/SidePanel.tsx`, SPEC §12
+  (both coalescings named).
+- Item 3 + item 5: `web/test/text-apply.test.ts` gains the label drag (56ab141).
+- The four cold nightlies and their fixes: Nightly findings, above.
+- ADR-0055: CI failed on 56ab141 with the frozen `tools-circles.direct.test.ts` sweep past vitest's
+  5 s default; it takes about 4 s under coverage on an idle machine on run-16c as well. The
+  `packages` project's timeout is a 15 s hang guard (a7e4b2e).
+
+### Not done
+
+- Item 1: no e2e spec for the common-tangent GUI flow (editor tests cover it); two conics have no
+  low-level selector, so the GUI may build only some of four tangents (its notice names the
+  others).
+- Item 2: the Name field takes the stored name (`\omega`, not ω).
+- Item 3: `flows-typing.spec.ts` runs on the desktop layout only (on the phone the drawer covers
+  the canvas the drag presses).
+- Item 5: no hover highlight or cursor change over a label (not asked).
+- Item 6: tools outside the list keep generic names (perpendicular bisector, bisectors, symmedian,
+  polar, radical axis, circle on a diameter, excircle, nine-point circle, conics, arcs, images);
+  a line's label, when shown, draws `l_AC` as l with subscript A, then C (a `label="l_{AC}"`
+  would be a follow-up).
+- Item 7: "What is special?" does not search the new kinds (a closure rule for similar triangles
+  first); `O, G, H are collinear` is still refused (it names "are" now).
+- Item 8: `hunt` keeps the single scan.
+- Item 10: the remaining survivors of ADR-0054 decision 4. **The kernel's score is 92.76 % on the
+  accepted cold run (89.49 % on main before), 0.24 points short of the request's 93 % aim.**
+- The request's constraint "shards within 100 minutes on a COLD run" is replaced by ADR-0059's
+  150 minutes (the maintainer's decision); on the accepted cold run kernel-a took 104 minutes.
+- Per-shard targets (75 %, the gate is per package): claims-c 76.26 % is the lowest shard; every
+  package passes.
+- Item 4: no dimension line (ADR-0048 decision 7, a later style option); radius, ratio, area and
+  measurements of inline expressions are not drawn (each says why); the precision is per object
+  (`digits`), not a document directive; the Measurements list shows the settled figure (it updates
+  at the drop, like every panel; the labels on the figure are live in every frame).
+
+### Known bugs
+
+- Found by item 8, present on run-16c, not fixed:
+  - A measure kind's candidate list ends at candidatesPerKind silently when its match count is under
+    countLimit: no stop and no cap line. Reproduction: the corpus base figure plus the two conics,
+    candidatesPerKind 400: dangle reports `{checked: 400, total: 6536}` without a stop.
+  - A construction fact listed twice among the hidden ones: B, C, M = midpoint(B, C),
+    N = midpoint(B, M) and eight free points list BM = CM twice.
+  - One grouping step of about 80 ms on the 150-object figure (ADR-0037's follow-up).
+- Found by item 10, not fixed: an angle mark's arms collapse onto its vertex under a projective map
+  whose matrix is scaled small (the derivative lacks the 1/W(b)² factor; matrices are never
+  normalised, ADR-0040). Reproduction: `applyProjective(FloatField, {type: 'projective', m:
+[-1e-12, 0, 0, 0, -1e-12, 0, 0, 0, -1e-12]}, mark b = (1, 1), from = (3, 1), to = (1, 2))` gives
+  from = to = b.
+- The 150-object figure's diagnostics parse per keystroke costs 12–18 ms (mostly the
+  repeated-construction check); item 3 adds no parse per keystroke.
+
+### Uncertain
+
+- Item 1: the band for the common tangents of conics is applied in the dual chart (scale 1), not as
+  a primal length.
+- Item 7: `similar` means either orientation (with `_direct` / `_opposite` kinds); the names
+  `length_product` and `length_sum` are open. `length_sum` is decided by the exact rung over Q as
+  well as numerically ((e² − a² − c²)² = 4a²c² with the order item e² − a² − c² ≥ 0, exactly
+  equivalent, ADR-0051 decision 10), never mod p; the maintainer accepted it (2026-11-01).
+- Item 10: far from the origin (about (2²³, 2²³), scale 1) common points of two conics hold to about
+  10⁻²·scale; an osculating circle at an ellipse's vertex shifted by 10⁻⁸ gives one double point at
+  (2.000000004, 0) where the true points are about (1.9998, ±0.0107) (ADR-0043 decisions 6–7's
+  band, or not?); a four-point contact's multiplicity is 4 or 2 by the order of the curves
+  (internal: it only decides the polish).
+- Item 4: an `angle` near 180° draws its arc by the float sign of the cross product, so the arc
+  changes side as the convex angle passes 180° (stated in ADR-0048).
+- Local Playwright: this container's Chromium (1243) is not the repository's Playwright's (1194);
+  five specs fail identically on run-16c here (flows-design:28, flows-review:85, three mobile
+  scene:19 baselines) and `drag-frame.spec.ts` is over 8 ms here on run-16c too. CI's deploy job
+  is the reference.
+
+### Changed frozen tests
+
+Every modified line cites its ADR in its commit message. Fifty-seven lines in sixteen files; no
+frozen line was deleted without its replacement:
+
+| file                                                | lines                                     | change                                                                                                                                                                                            | ADR, commit                   |
+| --------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `packages/editor/test/geomdraw-tools.test.ts`       | 75, 79, 86, 94, 125, 152–153, 169, 181    | the generic name of a line, segment, ray or circle built from named points → its descriptive name                                                                                                 | ADR-0050, e98f279             |
+| `packages/editor/test/machine.test.ts`              | 228, 231–234                              | the tangents from P are `t_P`, `t_P_2` (were `l_1`, `l_2`)                                                                                                                                        | ADR-0050, e98f279             |
+| `packages/editor/test/machine.test.ts`              | 283                                       | `claimToolKinds()` contains `length` (every kind is in the claim tool)                                                                                                                            | ADR-0051, 9261f13             |
+| `packages/editor/test/tangent-coincidence.test.ts`  | 36, 38, 44, 46                            | tangent names                                                                                                                                                                                     | ADR-0050, e98f279             |
+| `packages/editor/test/choice-tangent-other.test.ts` | 16                                        | finds the tangents by the initial `t` instead of `l`                                                                                                                                              | ADR-0050, e98f279             |
+| `packages/editor/test/hidden-side-reuse.test.ts`    | 18–19                                     | a polygon side made by a click is `s_AB`                                                                                                                                                          | ADR-0050, e98f279             |
+| `packages/editor/test/polygon-sides.test.ts`        | 15, 17–18, 27, 32–33, 39, 45–46, 55–57    | side names `s_AB`, and the references to them (`perp(C, s_AB)`)                                                                                                                                   | ADR-0050, e98f279             |
+| `packages/editor/test/glider-sides.test.ts`         | 17–19, 28–29                              | side names                                                                                                                                                                                        | ADR-0050, e98f279             |
+| `packages/editor/test/same-construction.test.ts`    | 108–109                                   | a line's name                                                                                                                                                                                     | ADR-0050, e98f279             |
+| `packages/editor/test/geomdraw-tools-more.test.ts`  | 135                                       | a circle's name                                                                                                                                                                                   | ADR-0050, e98f279             |
+| `apps/web/e2e/flows-build.spec.ts`                  | 28, 34, 36, 39                            | `c_ABC`; the command-bar half types `c_ABC = circle(A, B, C)` so the two texts are still compared for identity                                                                                    | ADR-0050, e98f279             |
+| `apps/web/e2e/flows-geomdraw.spec.ts`               | 53                                        | a line's name                                                                                                                                                                                     | ADR-0050, e98f279             |
+| `packages/kernel/test/selector-check.test.ts`       | 162                                       | the generated list of tools that choose among candidates includes `tangent`                                                                                                                       | ADR-0045, 2ab0776             |
+| `packages/kernel/test/helpers/conic-samples.ts`     | 14                                        | the construction-key samples add `exsimilicenter` and `insimilicenter` (one line became an object over several lines)                                                                             | ADR-0045, 2ab0776             |
+| `scripts/mutation-shards.test.ts`                   | 105 (one statement, re-wrapped), 110, 114 | files a shard names may lie in packages/claims/src; "num and claims run their whole config" → "num runs its whole config; claims and discovery by file groups" (the claims entries from `SHARDS`) | ADR-0057, d08200e             |
+| `scripts/mutation-discovery.test.ts`                | 25, 32                                    | the id list gains discovery-f … -m, the parents' list grows to fourteen, the title says fourteen shards                                                                                           | ADR-0057, d08200e and bbd6b41 |
+| `scripts/mutation-gate.test.ts`                     | 99                                        | a low package writes every shard of it (with claims split, a low `claims` shard beside passing ones no longer makes the package low); the assertion is unchanged                                  | ADR-0057, d08200e             |
+
+No assertion is weakened: each changed line asserts the new name or the new kind exactly. Lines
+only added (no ADR needed): kernel `degenerate.test.ts`, `registry.test.ts`, `radical.test.ts`,
+`tools.property.test.ts`; discovery `guarantees-hold.test.ts`, `find.test.ts`; claims
+`kinds.test.ts`; editor `exports.test.ts`, `helpers/fuzz-commands.ts`,
+`fixtures/run-16a-baseline.json`, `fixtures/run-16b-baseline.json` (the measurements fixture's
+summary); lang `exports.test.ts`, `helpers/gen-doc.ts`; scene `exports.test.ts`.
+
+### Acceptance command output
+
+Local `pnpm verify` on 98dd441 (exit 0):
+
+```text
+All matched files use Prettier code style!
+✔ no dependency violations found (939 modules, 5539 dependencies cruised)
+ok   tolerance: 1303 files scanned, 0 violation(s)
+ok   file-length: 1303 files scanned, 0 violation(s)
+ok   test-count: 4734 tests, floor 4720, 0 violation(s)
+ok   disabled-tests: 1303 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-16c, 0 violation(s)
+ok   forbidden-words: 1303 files scanned, 0 violation(s)
+ Test Files  514 passed (514)
+      Tests  4734 passed (4734)
+All files          |   96.51 |    90.41 |   99.44 |   98.36 |
+```
+
+docs/test-count.txt: 4213 → 4734.
+
+Nightly mutation gate on 98dd441, the cold run (41434694361, every shard from scratch):
+
+```text
+num mutation score: 92.58% (774 detected, 62 undetected; target 80%, gated from v1.1)
+kernel mutation gate: 92.76% (4252 detected, 332 undetected; threshold 75%): pass
+claims mutation gate: 85.14% (2509 detected, 438 undetected; threshold 75%): pass
+discovery mutation gate: 85.16% (3283 detected, 572 undetected; threshold 75%): pass
+```
+
+(num's gate line is num's whole-package score above, threshold 80 %: pass; the gate job succeeded.)
+
+Shards (score %, minutes): kernel-a 96.25 (104), b 87.48 (67), c 99.18 (90), d 95.19 (28),
+e 95.00 (60), f 90.77 (69), g 99.37 (82), h 98.02 (58), i 94.34 (39), j 84.13 (66), k 86.88 (50);
+claims-a 88.44 (65), b 88.70 (23), c 76.26 (15), claims 83.29 (52); discovery-a 96.18 (28),
+b 93.46 (48), c 77.93 (61), d 93.94 (73), e 80.49 (8), f 89.61 (45), g 80.49 (65), h 81.47 (51),
+i 88.60 (52), j 89.29 (15), k 98.91 (16), l 88.00 (14), m 98.51 (38), discovery 77.17 (72); num
+(4). Before (main's nightly on 9ade9a3, run 40897490665): kernel 89.49 %, kernel-j 75.92 %,
+kernel-b 78.63 %.
+
+Local Playwright: this container's Chromium (1243) is not the repository's Playwright's (1194). The
+items' new specs pass (style-card-rename, label-drag, flows-typing, flows-measurements,
+flows-claimtool); five frozen screenshot/pixel specs fail here identically on run-16c
+(flows-design:28, flows-review:85, three mobile scene:19 baselines); CI's deploy job runs them all
+green.
+
+### Requests
+
+- None open. Decided by the maintainer (2026-11-01, 2026-11-02): `length_sum` exact over Q (kept);
+  concentric centres of similitude (fixed); the 15 s hang guard with a 2.5 s slow-test report;
+  cheaper mutation timeouts (ADR-0058); the 150-minute cold-shard limit (ADR-0059).
+
 ## Run 16c: conic ∩ conic, foci, the scoped audit of Run 16: ACCEPTED (2026-10-29)
 
 Decisions: [ADR-0043](adr/0043-conic-intersections-and-foci.md) (conic ∩ conic and conic ∩

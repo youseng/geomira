@@ -61,7 +61,12 @@ export type Shape =
   /** `ticks` tick marks across the middle of the segment pq (ADR-0011). */
   | { readonly kind: 'segment_mark'; readonly p: Vec2; readonly q: Vec2; readonly ticks: number }
   /** A text anchored at `at`; the text itself is drawn as the item's label (ADR-0011). */
-  | { readonly kind: 'text'; readonly at: Vec2; readonly text: string };
+  | { readonly kind: 'text'; readonly at: Vec2; readonly text: string }
+  /**
+   * A distance measurement from p to q (ADR-0048): no stroke; its value is the item's label,
+   * at the middle of pq, offset to the left of p → q as seen.
+   */
+  | { readonly kind: 'distance'; readonly p: Vec2; readonly q: Vec2 };
 
 export type ShapeKind = Shape['kind'];
 
@@ -138,7 +143,10 @@ export interface DisplayItem {
   readonly name: string;
   readonly kind: ShapeKind;
   readonly style: DrawStyle;
-  /** Stroked paths (points: one dot; a text: one dot of radius 0 at its anchor, its handle). */
+  /**
+   * Stroked paths (points: one dot; a text: one dot of radius 0 at its anchor, its handle; a
+   * distance measurement: none, its label is all it draws, ADR-0048).
+   */
   readonly paths: readonly Path[];
   /** A polygon's clipped interior (where its label goes), or null. */
   readonly region: readonly Vec2[] | null;

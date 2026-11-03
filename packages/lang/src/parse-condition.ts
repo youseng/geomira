@@ -21,6 +21,8 @@ function measure(s: Side): ExprNode | undefined {
       return s.e;
     case 'scaled':
     case 'ratio':
+    case 'prod':
+    case 'sum':
     case 'dangle':
     case 'dlines':
     case 'form':

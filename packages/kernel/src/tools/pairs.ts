@@ -40,7 +40,15 @@ export type Side = -1 | 0 | 1;
  * point of other(P), whose label is measured against `from` = P when a selector needs it.
  */
 export type Cand<T> =
-  | { readonly at: Vec<T>; readonly side: Side }
+  | {
+      readonly at: Vec<T>;
+      readonly side: Side;
+      /**
+       * A second structural label, for a pair whose shape has a second low-level selector
+       * (BranchShape.alsoLow: the common tangents of two circles, ADR-0045): ±1, never measured.
+       */
+      readonly side2?: -1 | 1;
+    }
   | { readonly at: Vec<T>; readonly side: 'measure'; readonly from: Vec<T> };
 
 /** The reference of the pair's low-level selector. */

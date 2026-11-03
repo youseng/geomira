@@ -72,18 +72,18 @@ describe('order-free tools: the line or circle may be picked first', () => {
       [-6, 0],
       [2, 2],
     ]);
-    expect(added).toEqual(['D', 'l_1']);
+    expect(added).toEqual(['D', 'l_D']);
     // The new point is its own edit, as every point a pick creates (ADR-0012 item 15).
     expect(s.history.past).toHaveLength(2);
     expect(defText(s, 'D')).toBe('point(2, 2)');
-    expect(defText(s, 'l_1')).toBe('perp(D, l)');
+    expect(defText(s, 'l_D')).toBe('perp(D, l)');
   });
 
   it('the line first, then a click on that line puts the point on it (a glider)', () => {
     let s = useTool(editorOf(FIG), 'perpendicular');
     s = run(s, click(s, -6, 0), click(s, 2.5, 0));
     expect(defText(s, 'D')).toBe('on(l, 5/8)');
-    expect(defText(s, 'l_1')).toBe('perp(D, l)');
+    expect(defText(s, 'l_D')).toBe('perp(D, l)');
   });
 
   it('panel picks are order-free too; a second line is refused while the point is open', () => {
@@ -91,7 +91,7 @@ describe('order-free tools: the line or circle may be picked first', () => {
     s = input(s, { kind: 'object', id: idOf(s, 'l') });
     refusedWith(s, { kind: 'object', id: idOf(s, 'm') }, /pick a point/u);
     s = input(s, { kind: 'object', id: idOf(s, 'C') });
-    expect(defText(s, 'l_1')).toBe('parallel(C, l)');
+    expect(defText(s, 'l_C')).toBe('parallel(C, l)');
   });
 
   it('the status of an order-free pick: its slots record the step each pick filled', () => {
@@ -122,7 +122,7 @@ describe('the tangent tool from a point outside builds both tangents (ADR-0024)'
       const circle: ToolInput = { kind: 'object', id: idOf(s, 'c') };
       s = order === 'point first' ? run(s, p, circle) : run(s, circle, click(s, 6, 0));
       const added = addedNames(editorOf(fig), s);
-      expect(added).toEqual(['l_1', 'l_2']);
+      expect(added).toEqual(['t_P', 't_P_2']);
       expect(s.history.past).toHaveLength(1);
       const r2 = 10;
       const ys: number[] = [];
@@ -149,8 +149,8 @@ describe('the tangent tool from a point outside builds both tangents (ADR-0024)'
   it('a point on the circle still gives the one tangent there', () => {
     let s = useTool(editorOf(FIG), 'tangent');
     s = run(s, { kind: 'object', id: idOf(s, 'c') }, click(s, 1, 3));
-    expect(addedNames(editorOf(FIG), s)).toEqual(['l_1']);
-    expect(defText(s, 'l_1')).toBe('tangent(C, c)');
+    expect(addedNames(editorOf(FIG), s)).toEqual(['t_C']);
+    expect(defText(s, 't_C')).toBe('tangent(C, c)');
   });
 
   it('a point inside the circle is refused with the reason, and nothing is built', () => {
@@ -166,7 +166,7 @@ describe('the tangent tool from a point outside builds both tangents (ADR-0024)'
       const v = valueOf(t, name);
       return v.kind === 'line' ? Math.sign(v.p.y) : 0;
     };
-    const before = [side(s, 'l_1'), side(s, 'l_2')];
+    const before = [side(s, 't_P'), side(s, 't_P_2')];
     const id = idOf(s, 'P');
     let t = s;
     for (const e of [
@@ -178,7 +178,7 @@ describe('the tangent tool from a point outside builds both tangents (ADR-0024)'
       if (!r.ok) throw new Error(r.reason);
       t = r.state;
     }
-    expect([side(t, 'l_1'), side(t, 'l_2')]).toEqual(before);
+    expect([side(t, 't_P'), side(t, 't_P_2')]).toEqual(before);
   });
 });
 

@@ -30,6 +30,8 @@ import { badArgs, circleAt, conicAt, degenerateCircle, pointAt } from './args';
 import { conicTangentPair } from './conic-pairs';
 import { offArcs, onArcs } from './arc-range';
 import { countFromGap, midOff, reflectIn, type Pair } from './pairs';
+import { COMMON_TANGENT_DEGENERATE, commonSignatures } from './common-tangents';
+import { commonTangentPair } from './dual-tangents';
 
 type Output = 'tangent_point' | 'tangent_from';
 
@@ -118,6 +120,10 @@ function pairOf<T>(
   ctx: EvalContext,
   tool: Output,
 ): Pair<T> | Undefined | 'bad' {
+  if (tool === 'tangent_point') {
+    const common = commonTangentPair(F, args, ctx, 'point');
+    if (common !== 'bad') return common;
+  }
   const k = conicAt(args, 1);
   const P0 = pointAt(args, 0);
   if (k !== undefined && P0 !== undefined && args.length === 2)
@@ -176,13 +182,14 @@ export const TANGENT_FROM_TOOLS: readonly ToolSpec[] = [
     signatures: [
       { params: ['point', 'round'], branch: SHAPES.tangent_point },
       { params: ['point', 'conic'], branch: CONIC_SHAPES.tangent_point },
+      ...commonSignatures('point'),
     ],
     outputKinds: ['point'],
     compute: computeFor('tangent_point'),
     candidates: candidatesFor('tangent_point'),
-    degenerate: DEGENERATE,
+    degenerate: [...DEGENERATE, ...COMMON_TANGENT_DEGENERATE],
     export: 'numeric',
-    doc: 'tangent_point(P, c, selectors): a point where a tangent from P touches a circle or a conic; two candidates (orient(+): cross(O − P, T − P) > 0, O the center, or for a conic the midpoint of the chord of contact), one double point when P is on the curve.',
+    doc: 'tangent_point(P, c, selectors): a point where a tangent from P touches a circle or a conic; two candidates (orient(+): cross(O − P, T − P) > 0, O the center, or for a conic the midpoint of the chord of contact), one double point when P is on the curve. tangent_point(c1, c2, selectors): the touch point on c1 of a common tangent of two curves (ADR-0045; the candidates and selectors of tangent(c1, c2)).',
     examples: [
       { args: [P5, C5], selectors: [{ kind: 'orient', sign: 1 }] },
       { args: [['6', '0'], C5], selectors: [{ kind: 'orient', sign: 1 }] },

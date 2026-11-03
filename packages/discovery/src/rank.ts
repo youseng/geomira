@@ -127,14 +127,33 @@ export function* rankFacts(
     }
     shown.push(f);
     if (stopped()) continue;
-    const k = yield* knowledgeSteps(env.doc, env.registry, env.kinds, {
-      // The facts hidden so far are known too (each follows from the facts shown before it).
-      extra: [...shown, ...hidden.map((h) => h.fact)].flatMap((x) => claimsOf(x)),
-      values: env.values,
-      ...(env.terms === undefined ? {} : { terms: env.terms }),
-    });
+    const k = yield* rebuild(env, [...shown, ...hidden.map((h) => h.fact)], stopped);
+    if (k === undefined) continue;
     snaps.list.push(k);
     yield undefined;
   }
   return { shown, hidden, snapshots: snaps };
+}
+
+/**
+ * The knowledge with these facts known (the facts hidden so far too: each follows from the facts
+ * shown before it), in bounded steps; undefined once `stopped()`. After a stop no snapshot is
+ * read again, and the find job runs the ranking's remaining work in one step (ADR-0052), so a
+ * rebuild must not go on.
+ */
+function* rebuild(
+  env: RankEnv,
+  known: readonly FoundFact[],
+  stopped: () => boolean,
+): Ticking<Knowledge | undefined> {
+  const g = knowledgeSteps(env.doc, env.registry, env.kinds, {
+    extra: known.flatMap((x) => claimsOf(x)),
+    values: env.values,
+    ...(env.terms === undefined ? {} : { terms: env.terms }),
+  });
+  for (let r = g.next(); ; r = g.next()) {
+    if (r.done === true) return r.value;
+    if (stopped()) return undefined;
+    yield undefined;
+  }
 }

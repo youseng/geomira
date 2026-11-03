@@ -36,6 +36,14 @@ export interface Style {
   readonly labelAngle?: number;
   /** Length of the label's offset in CSS pixels, ≥ 0 (ADR-0010). Absent = the kind's default. */
   readonly labelDist?: number;
+  /**
+   * A measurement (a number defined by dist or angle of named objects) is drawn on the figure
+   * as its value (ADR-0048). Absent or false = not drawn (numbers were never drawn before);
+   * other objects ignore it.
+   */
+  readonly show?: boolean;
+  /** Decimals of a measurement's value as shown, a whole number in [0, 10] (ADR-0048). Absent = 2. */
+  readonly digits?: number;
 }
 
 export interface DocObject {

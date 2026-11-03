@@ -80,13 +80,15 @@ const dist2 = (p: Vec<number>, q: Vec<number>) => (p.x - q.x) ** 2 + (p.y - q.y)
 /**
  * The vertex of a central conic nearest to `toward` (floats), or undefined (no finite centre).
  * At the centre C, Q(C + v) = Q(C) + vᵀA·v and Q(C) = d·Cx + e·Cy + f: a vertex is C + t·u for
- * an eigenvector u of A with λ·t²|u|² = −Q(C).
+ * an eigenvector u of A with λ·t²|u|² = −Q(C). A circle (A a multiple of the identity, h = 0)
+ * has every direction as an eigenvector: u = (1, 0), its point to the right of C. Degenerate
+ * cases: no finite centre (a parabola: C and so Q(C) and t are not finite) → undefined; no real
+ * vertex (t not finite) → undefined.
  */
 function vertexNear(q: Coeffs<number>, toward: Vec<number>): Vec<number> | undefined {
   const [a, b, c, d, e, f] = q;
   const w = a * c - b * b;
   const C = { x: (b * e - c * d) / w, y: (b * d - a * e) / w };
-  if (!Number.isFinite(C.x) || !Number.isFinite(C.y)) return undefined;
   const qc = d * C.x + e * C.y + f;
   const h = Math.hypot((a - c) / 2, b);
   let best: Vec<number> | undefined;
@@ -95,7 +97,7 @@ function vertexNear(q: Coeffs<number>, toward: Vec<number>): Vec<number> | undef
       { x: b, y: lam - a },
       { x: lam - c, y: b },
     ];
-    const u = Math.hypot(u1.x, u1.y) >= Math.hypot(u2.x, u2.y) ? u1 : u2;
+    const u = h === 0 ? { x: 1, y: 0 } : Math.hypot(u1.x, u1.y) >= Math.hypot(u2.x, u2.y) ? u1 : u2;
     const t = Math.sqrt(-qc / lam) / Math.hypot(u.x, u.y);
     if (!Number.isFinite(t)) continue;
     for (const sg of [1, -1]) {
@@ -268,7 +270,6 @@ export function conicConicPair<T>(
     shape: CONIC_CONIC,
     noun: 'intersection',
     low: { kind: 'none' },
-    ranged: circles.some((c) => c.arc !== null),
     count: () => {
       const c = cands();
       if ('kind' in c) return c;

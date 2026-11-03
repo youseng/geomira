@@ -93,6 +93,38 @@ export const CLAIM_NOTATION: readonly NotationEntry[] = Object.freeze([
     forms: ['conconic(A, B, C, D, E, F, …) (no three collinear)'],
     example: 'claim conconic(A, B, C, H, M_a, P)',
   },
+  {
+    kind: 'similar',
+    forms: ['similar(ABC, DEF) (A ↔ D, B ↔ E, C ↔ F; directly or oppositely)'],
+    example: 'claim similar(ABC, M_aM_bM_c)',
+  },
+  {
+    kind: 'similar_direct',
+    forms: ['similar_direct(ABC, DEF) (the same orientation)'],
+    example: 'claim similar_direct(ABC, M_aM_bM_c)',
+  },
+  {
+    kind: 'similar_opposite',
+    forms: ['similar_opposite(ABC, DEF) (opposite orientations)'],
+    example: 'claim similar_opposite(A, foot(B, line(C, A)), foot(C, line(A, B)), A, B, C)',
+  },
+  {
+    kind: 'congruent',
+    forms: ['congruent(ABC, DEF) (A ↔ D, B ↔ E, C ↔ F; directly or oppositely)'],
+    example: 'claim congruent(AM_cM_b, M_aM_bM_c)',
+  },
+  {
+    kind: 'congruent_direct',
+    forms: ['congruent_direct(ABC, DEF) (the same orientation)'],
+    example: 'claim congruent_direct(AM_cM_b, M_aM_bM_c)',
+  },
+  {
+    kind: 'congruent_opposite',
+    forms: ['congruent_opposite(ABC, DEF) (opposite orientations)'],
+    example: 'claim congruent_opposite(A, B, C, reflect(A, line(B, C)), B, C)',
+  },
+  { kind: 'length_product', forms: ['AB·CD = EF·GH'], example: 'claim AB·M_bM_c = BC·AM_c' },
+  { kind: 'length_sum', forms: ['AB + CD = EF'], example: 'claim BM_a + M_aC = BC' },
 ]);
 
 export const ASSUMPTION_NOTATION: readonly NotationEntry[] = Object.freeze([

@@ -1,7 +1,8 @@
 /**
  * The style card's rows (ADR-0029), each a control over the draft: colour swatches and a
  * custom colour, the width and opacity sliders with their values, the label's "show" and
- * text, "shown"; behind "More": dash, z, the label's angle and distance, noimage. Each row
+ * text, "shown"; behind "More": dash, z, the label's angle and distance, noimage, and a
+ * measurement's decimals (ADR-0048, whose "shown" is its `show` attribute). Each row
  * shows the effective value (`shown`: the inherited style with the draft on top).
  */
 import { useState } from 'react';
@@ -25,6 +26,7 @@ import {
   withVisible,
   type Range,
 } from './style-values';
+import { isMeasure, measureShown, typedDigits, withShown } from './style-measure';
 
 /** The swatches, Geomdraw's named colours (the scene's palette draws them). */
 export const SWATCHES = [
@@ -188,7 +190,9 @@ export function LabelRow(p: RowProps) {
   );
 }
 
+/** "shown": `hidden` for a drawn object; for a measurement, `show` (ADR-0048). */
 export function VisibleRow(p: RowProps) {
+  const measure = isMeasure(p.kind);
   return (
     <div className="sc-row">
       <span className="sc-lab">Visible</span>
@@ -196,9 +200,10 @@ export function VisibleRow(p: RowProps) {
         <input
           type="checkbox"
           aria-label="Shown"
-          checked={shownOf(p).hidden !== true}
+          checked={measure ? measureShown(shownOf(p)) : shownOf(p).hidden !== true}
           onChange={(e) => {
-            p.set(withVisible(p.draft, p.inherited, e.target.checked));
+            const on = e.target.checked;
+            p.set(measure ? withShown(p.draft, on) : withVisible(p.draft, p.inherited, on));
           }}
         />
         shown
@@ -289,6 +294,26 @@ export function OffsetFields(p: RowProps) {
         }}
       />
     </>
+  );
+}
+
+/** "More": a measurement's decimals (ADR-0048; empty: the default, 2). */
+export function DigitsField(p: RowProps) {
+  const [text, setText] = useState(p.draft.digits === undefined ? '' : String(p.draft.digits));
+  return (
+    <label className="sc-number">
+      Decimals (0–10, empty = 2)
+      <input
+        type="text"
+        inputMode="numeric"
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          const n = typedDigits(e.target.value);
+          if (n !== null) p.set(patchStyle(p.draft, { digits: n }));
+        }}
+      />
+    </label>
   );
 }
 

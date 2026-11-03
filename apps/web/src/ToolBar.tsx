@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { claimToolKinds, stepsOf } from '@geomira/editor/machine';
+import { toolValue } from '@geomira/editor/claim-tool';
 import { toolPrompt } from '@geomira/editor/prompt';
 import type { EditorState } from '@geomira/editor/state';
 import { keyCap, TOOL_GROUPS } from '@geomira/editor/tool-groups';
@@ -99,10 +100,11 @@ function ClaimKind({ store, state }: ToolBarProps) {
  * as a field: it can be typed before or between the picks; the editor reads it at the last.
  */
 function ToolValueField({ store, state, tool }: ToolBarProps & { tool: ToolUI }) {
-  if (tool.value === undefined) return null;
+  const value = toolValue(tool, state.toolState);
+  if (value === undefined) return null;
   return (
     <label className="tool-value">
-      {tool.value.label}
+      {value.label}
       <input
         type="text"
         inputMode="decimal"
@@ -146,7 +148,7 @@ export function ToolHint({ store, state }: ToolBarProps) {
   const ts = state.toolState;
   const hasRest = tool !== undefined && stepsOf(tool, ts).rest !== undefined;
   const text = tool?.build.kind === 'text' && ts.picks.length > 0;
-  const value = tool?.value !== undefined || tool?.map === true;
+  const value = (tool !== undefined && toolValue(tool, ts) !== undefined) || tool?.map === true;
   const cancel = ts.picks.length > 0;
   if (state.tool !== 'claim' && !text && !hasRest && !cancel && !value) return null;
   return (

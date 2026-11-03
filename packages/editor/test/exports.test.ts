@@ -25,6 +25,8 @@ import * as autosaveMod from '../src/autosave';
 import * as shareMod from '../src/share';
 import * as reportMod from '../src/report';
 import * as commandMod from '../src/command';
+import * as claimToolMod from '../src/claim-tool';
+import * as claimBarMod from '../src/claim-bar';
 import * as keymapMod from '../src/keymap';
 import * as panelsMod from '../src/panels';
 import * as restoreMod from '../src/restore';
@@ -34,6 +36,9 @@ import * as promptMod from '../src/prompt';
 import * as previewMod from '../src/preview';
 import * as viewsMod from '../src/views';
 import * as discoveryMod from '../src/discovery';
+import * as styleCardMod from '../src/style-card';
+import * as textDraftMod from '../src/text-draft';
+import * as measurementsMod from '../src/measurements';
 
 const SURFACE: Record<string, { module: object; names: string[] }> = {
   './state': {
@@ -104,11 +109,38 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './randomize': { module: randomizeMod, names: ['randomizeEdit'] },
   './tool-groups': { module: toolGroupsMod, names: ['TOOL_GROUPS', 'keyCap', 'toolGroup'] },
   './prompt': { module: promptMod, names: ['toolPrompt'] },
+  './claim-tool': {
+    module: claimToolMod,
+    names: [
+      'CLAIM_VALUE_KINDS',
+      'REPEATING_CLAIM_KINDS',
+      'claimArgs',
+      'claimSteps',
+      'claimToolKinds',
+      'claimValue',
+      'secondPointStep',
+      'toolValue',
+      'typedKey',
+    ],
+  },
+  './claim-bar': {
+    module: claimBarMod,
+    names: [
+      'MAX_CLAIM_COMPLETIONS',
+      'SHORT_CLAIM_FORMS',
+      'claimCompletions',
+      'claimForms',
+      'claimLine',
+      'runClaimText',
+    ],
+  },
   './preview': { module: previewMod, names: ['toolPreview'] },
   './discovery': {
     module: discoveryMod,
     names: ['branchChooser', 'branchFixEdit', 'factEdit'],
   },
+  './style-card': { module: styleCardMod, names: ['cardEdit', 'cardNameProblem', 'fixedName'] },
+  './measurements': { module: measurementsMod, names: ['measurementRows'] },
   './views': {
     module: viewsMod,
     names: [
@@ -121,6 +153,21 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'switchView',
       'viewOf',
       'viewShown',
+    ],
+  },
+  './text-draft': {
+    module: textDraftMod,
+    names: [
+      'applied',
+      'atPause',
+      'canApply',
+      'draftOf',
+      'follow',
+      'hasEdits',
+      'isStale',
+      'onApplyNow',
+      'settled',
+      'typedInto',
     ],
   },
 };

@@ -5,11 +5,21 @@
  * draft (a transient render override, like the live tool preview of ADR-0024: no edit, not in
  * history); "Write to script" applies it as ONE style edit; "Reset" sets the draft back to the
  * default style; closing the card (✕, Escape, a press elsewhere, another object's card)
- * discards an unwritten draft.
+ * discards an unwritten draft. The Name field at the top (ADR-0046) renames the object in the
+ * same write: name and style are ONE edit (style-name.ts, @geomira/editor/style-card).
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type RefObject } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  type RefObject,
+} from 'react';
 import type { EditorState } from '@geomira/editor/state';
 import { objectKinds } from '@geomira/kernel/derived';
+import type { Registry } from '@geomira/kernel/registry';
 import type { DocObject, Document, Style } from '@geomira/kernel/document';
 import type { Value, ValueKind } from '@geomira/kernel/value';
 import { assertNever } from '@geomira/num/assert';
@@ -19,20 +29,13 @@ import { placeCard, type Box } from './card-place';
 import { useDialog } from './Dialogs';
 import { MathText } from './MathText';
 import type { EditorStore } from './store';
-import {
-  canReset,
-  canWrite,
-  cardKindOf,
-  fieldsOf,
-  inheritedStyle,
-  kindName,
-  withDraft,
-  writeEdit,
-  type Field,
-} from './style-draft';
+import { canReset, inheritedStyle, kindName, type Field, type MoreField } from './style-draft';
+import { cardFields, cardKindFor, notDrawnNote } from './style-measure';
+import { cardWrite, previewDocument, type CardWrite } from './style-name';
 import {
   ColourRow,
   DashField,
+  DigitsField,
   LabelRow,
   NoImageField,
   OffsetFields,
@@ -43,14 +46,16 @@ import {
   type RowProps,
 } from './StyleRows';
 
-/** The open card: its object, where it was opened, and the draft. */
+/** The open card: its object, where it was opened, the draft, and the typed name. */
 export interface OpenCard {
   readonly id: number;
   readonly anchor: Box;
   readonly draft: Style;
+  /** The Name field's text; absent while untouched (the field shows the current name). */
+  readonly name?: string;
 }
 
-/** The card's state: open (on an object, next to an anchor), the draft, close. */
+/** The card's state: open (on an object, next to an anchor), the draft, the name, close. */
 export function useStyleCard(store: EditorStore) {
   const [card, setCard] = useState<OpenCard | null>(null);
   const open = useCallback(
@@ -69,21 +74,33 @@ export function useStyleCard(store: EditorStore) {
   const setDraft = useCallback((draft: Style) => {
     setCard((c) => (c === null ? c : { ...c, draft }));
   }, []);
-  return { card, open, close, setDraft };
+  /** The typed name; undefined: untouched again (the field follows the object's name). */
+  const setName = useCallback((name: string | undefined) => {
+    setCard((c) => {
+      if (c === null) return c;
+      const rest = { id: c.id, anchor: c.anchor, draft: c.draft };
+      return name === undefined ? rest : { ...rest, name };
+    });
+  }, []);
+  return { card, open, close, setDraft, setName };
 }
 
-/** The scene the canvas draws: the figure's, or with the card's draft over its object. */
+/**
+ * The scene the canvas draws: the figure's, or with the card's draft over its object (and
+ * its typed name, when it can be written).
+ */
 export function usePreviewScene(
   scene: Scene,
   doc: Document,
   values: ReadonlyMap<number, Value<number>>,
   card: OpenCard | null,
+  registry: Registry,
 ): Scene {
   return useMemo(() => {
     if (card === null) return scene;
-    const preview = withDraft(doc, card.id, card.draft);
+    const preview = previewDocument(doc, registry, card.id, card.draft, card.name);
     return preview === doc ? scene : buildScene(preview, values);
-  }, [scene, doc, values, card]);
+  }, [scene, doc, values, card, registry]);
 }
 
 /** A press outside the card closes it (a right-click elsewhere then opens another one). */
@@ -131,9 +148,13 @@ function MainRow({ field, ...p }: RowProps & { readonly field: Field }) {
 
 /** The settings behind "More"; `generation` renews the typed fields after a Reset. */
 function More(
-  p: RowProps & { readonly generation: number; readonly onToggle: (o: boolean) => void },
+  p: RowProps & {
+    readonly more: readonly MoreField[];
+    readonly generation: number;
+    readonly onToggle: (o: boolean) => void;
+  },
 ) {
-  const more = fieldsOf(p.kind).more;
+  const { more } = p;
   return (
     <details
       className="sc-more"
@@ -142,6 +163,7 @@ function More(
       }}
     >
       <summary>More</summary>
+      {more.includes('digits') && <DigitsField key={`d${String(p.generation)}`} {...p} />}
       {more.includes('dash') && <DashField {...p} />}
       {more.includes('z') && <ZField key={`z${String(p.generation)}`} {...p} />}
       {more.includes('labelOffset') && <OffsetFields key={`o${String(p.generation)}`} {...p} />}
@@ -155,6 +177,8 @@ export interface StyleCardProps {
   readonly state: EditorState;
   readonly card: OpenCard;
   readonly onDraft: (s: Style) => void;
+  /** The Name field changed (ADR-0046); undefined after a write (untouched again). */
+  readonly onName: (name: string | undefined) => void;
   readonly onClose: () => void;
 }
 
@@ -184,20 +208,58 @@ function Header({ o, kind, onClose }: { o: DocObject; kind: string; onClose: () 
   );
 }
 
-/** Reset (to the default style) and Write to script (one style edit). */
-function Footer(p: { store: EditorStore; o: DocObject; draft: Style; onReset: () => void }) {
+/**
+ * The Name field (ADR-0046): the object's name, editable; under it, why a typed name cannot
+ * be written (Write is then disabled), or why a managed image's name is fixed (read-only).
+ * Enter writes, as the button does.
+ */
+function NameRow(p: {
+  readonly name: string;
+  readonly write: CardWrite;
+  readonly onName: (name: string) => void;
+  readonly onWrite: () => void;
+}) {
+  const note = useId();
+  const { message, fixed } = p.write;
+  return (
+    <>
+      <div className="sc-row">
+        <span className="sc-lab">Name</span>
+        <input
+          type="text"
+          className="sc-text sc-name-input"
+          aria-label="Name"
+          value={p.name}
+          readOnly={fixed}
+          spellCheck={false}
+          autoComplete="off"
+          aria-invalid={message !== undefined && !fixed}
+          {...(message === undefined ? {} : { 'aria-describedby': note })}
+          onChange={(e) => {
+            p.onName(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') p.onWrite();
+          }}
+        />
+      </div>
+      {message !== undefined && (
+        <p id={note} className={fixed ? 'sc-note' : 'sc-note sc-problem'} role="status">
+          {message}
+        </p>
+      )}
+    </>
+  );
+}
+
+/** Reset (to the default style) and Write to script (name and style: one edit). */
+function Footer(p: { draft: Style; write: CardWrite; onReset: () => void; onWrite: () => void }) {
   return (
     <footer>
       <button type="button" disabled={!canReset(p.draft)} onClick={p.onReset}>
         Reset
       </button>
-      <button
-        type="button"
-        disabled={!canWrite(p.draft, p.o.style)}
-        onClick={() => {
-          p.store.apply(writeEdit(p.o.id, p.draft));
-        }}
-      >
+      <button type="button" disabled={p.write.edit === null} onClick={p.onWrite}>
         Write to script
       </button>
     </footer>
@@ -212,7 +274,8 @@ function useFixedKind(store: EditorStore, doc: Document, id: number): ValueKind 
   }, [doc, store, id]);
 }
 
-function Card({ store, state, card, onDraft, onClose, o }: StyleCardProps & { o: DocObject }) {
+function Card(p: StyleCardProps & { o: DocObject }) {
+  const { store, state, card, onDraft, onName, onClose, o } = p;
   const ref = useDialog(onClose);
   useCloseOutside(ref, onClose);
   const [more, setMore] = useState(false);
@@ -221,9 +284,18 @@ function Card({ store, state, card, onDraft, onClose, o }: StyleCardProps & { o:
   const inherited = useMemo(() => inheritedStyle(state.doc, o), [state.doc, o]);
   const fixed = useFixedKind(store, state.doc, o.id);
   const value = state.values.values.get(o.id);
-  const kind = cardKindOf(value?.kind ?? 'undefined', fixed);
-  const fields = fieldsOf(kind);
+  const kind = cardKindFor(o, value, fixed);
+  const fields = cardFields(kind, { ...inherited, ...card.draft });
+  const note = notDrawnNote(o, kind, { ...inherited, ...card.draft });
   const rows: RowProps = { name: o.name, kind, draft: card.draft, inherited, set: onDraft };
+  const write = useMemo(
+    () => cardWrite(state.doc, store.env.registry, o, card.name, card.draft),
+    [state.doc, store, o, card.name, card.draft],
+  );
+  const onWrite = () => {
+    // After a write the field follows the object's name again (an undo shows the old one).
+    if (write.edit !== null && store.apply(write.edit).ok) onName(undefined);
+  };
   return (
     <div
       ref={ref}
@@ -235,17 +307,20 @@ function Card({ store, state, card, onDraft, onClose, o }: StyleCardProps & { o:
     >
       <Header o={o} kind={kindName(value, fixed)} onClose={onClose} />
       <div className="sc-rows">
+        <NameRow name={card.name ?? o.name} write={write} onName={onName} onWrite={onWrite} />
         {fields.main.map((f) => (
           // The label's typed text is renewed after a Reset.
           <MainRow key={f === 'label' ? `label${String(generation)}` : f} field={f} {...rows} />
         ))}
-        {fields.more.length > 0 && <More {...rows} generation={generation} onToggle={setMore} />}
-        {kind === 'none' && <p className="muted">Not drawn: nothing to style.</p>}
+        {fields.more.length > 0 && (
+          <More {...rows} more={fields.more} generation={generation} onToggle={setMore} />
+        )}
+        {note !== undefined && <p className="muted">{note}</p>}
       </div>
       <Footer
-        store={store}
-        o={o}
         draft={card.draft}
+        write={write}
+        onWrite={onWrite}
         onReset={() => {
           onDraft({});
           setGeneration((g) => g + 1);

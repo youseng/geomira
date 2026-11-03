@@ -25,7 +25,7 @@ import { requireOnConic } from './conic-incidence';
 import { arcFilter, betweenFilter, discFilter, noOrder, sideFilter } from './select-filters';
 import { requireOnCircle, requireOnLine, rootGap } from './incidence';
 import type { EvaluatedSelector } from './selector';
-import type { EvalContext } from './tool';
+import type { BranchShape, EvalContext } from './tool';
 import type { Cand, Curve, Pair, Side } from './tools/pairs';
 import { undef, type Undefined, type Value, type Vec } from './value';
 
@@ -35,13 +35,22 @@ type Result<T> = List<T> | Undefined | Inexact;
 const plural = <T>(pair: Pair<T>): string => pair.plural ?? `${pair.noun}s`;
 
 /** The message of a call with two (or up to four) candidates and no selector that singles one out. */
+/** The low-level selectors of a shape (orient, and along for common tangents: ADR-0045). */
+export function lowsOf(shape: BranchShape): ('along' | 'orient')[] {
+  return [
+    ...(shape.alsoLow === undefined ? [] : [shape.alsoLow]),
+    ...(shape.low === 'none' ? [] : [shape.low]),
+  ];
+}
+
 function addSelector<T>(pair: Pair<T>): string {
+  const lows = lowsOf(pair.shape).map((l) => `${l}(±)`);
+  const low = lows.length === 0 ? '' : ` or ${lows.join(', ')}`;
   if (pair.shape.candidates === 4)
     return (
       `ambiguous: add a selector: ${pair.shape.describe} has up to four ${plural(pair)} ` +
-      '(for example other(P, Q, R), near(P), same_side(Q, l))'
+      `(for example ${pair.shape.other ? 'other(P, Q, R), ' : ''}near(P), same_side(Q, l)${low})`
     );
-  const low = pair.shape.low === 'none' ? '' : ` or ${pair.shape.low}(±)`;
   return (
     `ambiguous: add a selector: ${pair.shape.describe} has two ${plural(pair)} ` +
     `(for example other(P), near(P), same_side(Q, l)${low})`
@@ -56,12 +65,14 @@ function misused<T>(pair: Pair<T>, sels: readonly EvaluatedSelector<T>[]): Undef
   const { shape } = pair;
   for (const s of sels) {
     const k = s.selector.kind;
-    if ((k === 'along' || k === 'orient') && shape.low !== k) {
+    if ((k === 'along' || k === 'orient') && !lowsOf(shape).includes(k)) {
       const use = shape.low === 'none' ? '' : `: use ${shape.low}(±)`;
       return undef(`${s.text} does not apply to ${shape.describe}${use}`);
     }
     if (k === 'other' && (!shape.other || pair.other === undefined)) {
-      return undef(`${s.text} does not apply to ${shape.describe}: they meet only once`);
+      // Common tangents (ADR-0045) have no other(·): they are not the two points of a pair.
+      const once = shape.candidates === 1 ? ': they meet only once' : '';
+      return undef(`${s.text} does not apply to ${shape.describe}${once}`);
     }
     if (s.selector.kind === 'other') {
       const named = 1 + (s.selector.rest?.length ?? 0);
@@ -298,8 +309,10 @@ function lowLevel<T>(
 ): Result<T> {
   const want = s.selector.kind === 'along' || s.selector.kind === 'orient' ? s.selector.sign : 1;
   const out: Cand<T>[] = [];
+  const second = pair.shape.alsoLow !== undefined && s.selector.kind === pair.shape.alsoLow;
   for (const c of list) {
-    const side = measure(F, pair, s, c, ctx);
+    // The second label (ADR-0045) is structural: every candidate of such a pair carries it.
+    const side = second ? (c.side === 'measure' ? 0 : (c.side2 ?? 0)) : measure(F, pair, s, c, ctx);
     if (typeof side !== 'number') return side;
     if (side === 0 || side === want) out.push(c);
   }

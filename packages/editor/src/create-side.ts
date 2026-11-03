@@ -11,6 +11,7 @@ import { call, type Expr } from '@geomira/kernel/expr';
 import type { Vec } from '@geomira/kernel/value';
 import type { HitResult, VirtualHit } from '@geomira/scene/hit';
 import { applyEdit } from './edit';
+import { descriptiveName } from './descriptive-names';
 import { freshName } from './names';
 import type { EditResult } from './result';
 import type { EditorEnv, EditorState } from './state';
@@ -78,8 +79,15 @@ function existingSide(state: EditorState, side: Expr): number | undefined {
 export function sideObject(state: EditorState, side: Expr, env: EditorEnv): EditResult {
   const id = existingSide(state, side);
   if (id !== undefined) return { ok: true, state, removed: NO_REMOVAL, added: [], id };
-  const object = { name: freshName(state.doc, 'line'), def: side, layers: [state.activeLayer] };
+  const object = { name: sideName(state, side), def: side, layers: [state.activeLayer] };
   return applyEdit(state, { kind: 'add', object }, env);
+}
+
+/** The side AB is s_AB, as the Segment tool names it (ADR-0050), else l, l_1, …. */
+function sideName(state: EditorState, side: Expr): string {
+  const names = (ends(side) ?? []).map((id) => findObject(state.doc, id)?.name);
+  const wanted = descriptiveName(state.doc, { prefix: 's', picks: 'all' }, names);
+  return wanted ?? freshName(state.doc, 'line');
 }
 
 /**

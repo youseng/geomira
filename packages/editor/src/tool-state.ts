@@ -40,6 +40,8 @@ export type ToolId =
   | 'orthocenter'
   | 'ninepoint_center'
   | 'excenter'
+  | 'exsimilicenter'
+  | 'insimilicenter'
   | 'isogonal'
   | 'spiral_center'
   | 'pole'
@@ -70,6 +72,12 @@ export type ToolId =
   | 'claim'
   | 'derived_layer';
 
+/**
+ * What `ToolState.typed` is keyed by: a tool, or (ADR-0051) the claim tool's kind, whose
+ * numbers differ in meaning (k = 2 for AB = k·CD, θ = 90 for ∡(l, m) = θ).
+ */
+export type TypedKey = ToolId | `claim:${string}`;
+
 export interface ToolState {
   /** Objects picked for the active tool, in the order they were picked. */
   readonly picks: readonly number[];
@@ -87,7 +95,12 @@ export interface ToolState {
    * The last number typed for each tool that asks for one: a tool switch gives it back, so
    * the field "keeps the last number for the next use" (ADR-0024 item 5).
    */
-  readonly typed: Readonly<Partial<Record<ToolId, string>>>;
+  readonly typed: Readonly<Partial<Record<TypedKey, string>>>;
+  /**
+   * The claim tool's steps filled by TWO points (ADR-0051): picks with such a slot give
+   * line(first, second); a slot here with one pick so far waits for its second point.
+   */
+  readonly pairs?: readonly number[];
   /**
    * The map tools (reflect, rotate, translate, homothety, spiral; ToolUI.map) build the
    * transformation alone, `f = reflect(l)`, instead of an object's image (Run 13, ADR-0031):

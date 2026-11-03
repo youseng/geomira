@@ -6,10 +6,12 @@
  * digits 6–9 for the excenter and three circles, and Shift+N for the nine-point circle (every
  * lowercase letter is taken). The excenter and the excircle are the ones opposite the first
  * pick. Each center, the circumcircle and the incircle take their olympiad name when it is
- * free (conventional-names.ts).
+ * free (conventional-names.ts). The centres of similitude of two circles (ADR-0045) pick two
+ * circles; every letter and digit being taken, their keys are . and : (two free keys side by side; < and > would be escaped in the
+ * palette's titles).
  */
 import type { NamePreference } from './conventional-names';
-import { call, P, type ToolStep, type ToolUI } from './tool-ui';
+import { C, call, P, type ToolStep, type ToolUI } from './tool-ui';
 
 const TRIANGLE: readonly ToolStep[] = [P('first vertex'), P('second vertex'), P('third vertex')];
 
@@ -124,5 +126,23 @@ export const CENTER_TOOLS: readonly ToolUI[] = [
     OPPOSITE,
     'The excenter I_a of triangle ABC opposite A (the center of that excircle).',
     { kind: 'vertex', base: 'I' },
+  ),
+  call(
+    'exsimilicenter',
+    'Exsimilicenter',
+    '.',
+    'exsimilicenter',
+    'point',
+    [C('first circle'), C('second circle')],
+    'The external center of similitude of two circles, where their external common tangents meet (a point at infinity for equal radii).',
+  ),
+  call(
+    'insimilicenter',
+    'Insimilicenter',
+    ':',
+    'insimilicenter',
+    'point',
+    [C('first circle'), C('second circle')],
+    'The internal center of similitude of two circles, where their internal common tangents meet.',
   ),
 ];

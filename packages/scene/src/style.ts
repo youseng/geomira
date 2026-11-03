@@ -15,7 +15,7 @@
 import type { DocObject, Style } from '@geomira/kernel/document';
 import { assertNever } from '@geomira/num/assert';
 import type { DocIndex } from './doc-index';
-import { parseLabel } from './label-text';
+import { parseLabel, type LabelRun } from './label-text';
 import type { Dash, DrawStyle, Label, ShapeKind } from './types';
 
 /** Widths above this many CSS px are drawn at this width. */
@@ -96,6 +96,20 @@ export function zOf(style: Style): number {
 export function labelOf(name: string, style: Style, kind: ShapeKind, shown?: string): Label | null {
   const text = kind === 'text' ? (shown ?? '') : (style.label ?? (kind === 'point' ? name : ''));
   if (text === '') return null;
+  return placedLabel(text, parseLabel(text), style, kind);
+}
+
+/**
+ * A label of the given text and runs with the style's offset: the angle in degrees (null =
+ * automatic), normalised to [0, 360); the distance, the kind's default when absent or invalid,
+ * capped at MAX_LABEL_DIST. A measurement's label (ADR-0048) is made with it.
+ */
+export function placedLabel(
+  text: string,
+  runs: readonly LabelRun[],
+  style: Style,
+  kind: ShapeKind,
+): Label {
   const angle =
     style.labelAngle !== undefined && Number.isFinite(style.labelAngle)
       ? ((style.labelAngle % 360) + 360) % 360
@@ -103,7 +117,7 @@ export function labelOf(name: string, style: Style, kind: ShapeKind, shown?: str
   const fallback = kind === 'point' ? POINT_LABEL_DIST : kind === 'text' ? 0 : CURVE_LABEL_DIST;
   return {
     text,
-    runs: parseLabel(text),
+    runs,
     angle,
     dist: Math.min(MAX_LABEL_DIST, finiteAtLeast0(style.labelDist) ?? fallback),
   };

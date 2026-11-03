@@ -1,7 +1,7 @@
 /**
  * The v1 tools of Runs 2, 3a, 3b, 4 and 8a, the v1.1 tools of Run 13 and the inversion tools
  * of Run 14 (ADR-0032), the projective tools of Run 16a (ADR-0040) and the conic tools of Run 16b
- * (ADR-0042), in registry order (read only by registry.ts; the generated docs group
+ * (ADR-0042), the centres of similitude (ADR-0045), in registry order (read only by registry.ts; the generated docs group
  * them by family).
  */
 import { withGuarantees } from '../guarantees';
@@ -25,6 +25,7 @@ import { MEASURE_TOOLS } from './measures';
 import { GLIDER_TOOLS } from './on';
 import { OTHER_TOOLS } from './other';
 import { POINT_TOOLS } from './points';
+import { SIMILITUDE_TOOLS } from './similitude';
 import { POLE_TOOLS } from './poles';
 import { TANGENT_FROM_TOOLS } from './tangent-from';
 import { TANGENT_TOOLS } from './tangents';
@@ -63,6 +64,7 @@ export const BUILTIN_TOOLS: readonly ToolSpec[] = Object.freeze(
     ...CONIC_TOOLS,
     ...FOCI_TOOLS,
     ...CONIC_MAP_TOOLS,
+    ...SIMILITUDE_TOOLS,
   ]
     .map(withGuarantees)
     .map(withMapFacts),

@@ -19,6 +19,7 @@ import { selectorExprs } from './expr';
 import type { Registry } from './registry';
 import { callKinds } from './kinds';
 import { formatExpr } from './selector';
+import { lowsOf } from './select';
 import type { BranchShape, ToolSpec } from './tool';
 import type { ValueKind } from './value';
 
@@ -68,7 +69,7 @@ function choosers(registry: Registry): string {
 }
 
 function lowHint(shapes: readonly BranchShape[]): string {
-  const lows = [...new Set(shapes.map((s) => s.low).filter((l) => l !== 'none'))];
+  const lows = [...new Set(shapes.flatMap((s) => lowsOf(s)))];
   return lows.map((l) => ` or ${l}(±)`).join('');
 }
 
@@ -110,6 +111,17 @@ function shapesOf(
     if (r.ok && r.signature.branch !== undefined) shapes.push(r.signature.branch);
   }
   return shapes;
+}
+
+/** Whether some combination of the argument kinds resolves to an overload of the tool. */
+function resolves(tool: ToolSpec, combos: readonly ValueKind[][], registry: Registry): boolean {
+  return combos.some(
+    (kinds) =>
+      registry.resolve(
+        tool.name,
+        kinds.map((kind) => ({ kind })),
+      ).ok,
+  );
 }
 
 /**
@@ -178,16 +190,18 @@ function branchChecks(
   if (shapes.some((s) => s.candidates > 1) && kinds.length === 0) {
     const many = shapes.filter((s) => s.candidates > 1);
     const four = many.some((s) => s.candidates === 4);
+    // Common tangents (ADR-0045) take no other(·): it is suggested only where it applies.
+    const other = many.some((s) => s.other) ? `${four ? 'other(P, Q, R)' : 'other(P)'}, ` : '';
     out.push(
       diag(
         `${show()}: ${[...new Set(many.map((s) => s.describe))].join(' or ')} can have ${four ? 'up to four' : 'two'} candidates and the call has no selector`,
-        `add a selector, e.g. ${four ? 'other(P, Q, R)' : 'other(P)'}, near(P), same_side(Q, l)${lowHint(shapes)}`,
+        `add a selector, e.g. ${other}near(P), same_side(Q, l)${lowHint(shapes)}`,
       ),
     );
   }
   out.push(...otherChecks(e, show, shapes));
   for (const low of ['along', 'orient'] as const) {
-    if (kinds.includes(low) && !shapes.some((s) => s.low === low)) {
+    if (kinds.includes(low) && !shapes.some((s) => lowsOf(s).includes(low))) {
       const use = lowHint(shapes);
       out.push(
         diag(
@@ -198,9 +212,11 @@ function branchChecks(
     }
   }
   if (kinds.includes('other') && !shapes.some((s) => s.other)) {
-    out.push(
-      diag(`${show()}: other(P) does not apply: the objects meet only once`, 'remove other(P)'),
-    );
+    const once = shapes.every((s) => s.candidates === 1);
+    const why = once
+      ? 'the objects meet only once'
+      : `${[...new Set(shapes.map((s) => s.describe))].join(' or ')} takes no other(P)`;
+    out.push(diag(`${show()}: other(P) does not apply: ${why}`, 'remove other(P)'));
   }
   if (kinds.filter((k) => k === 'other').length > 1) {
     out.push(diag(`${show()}: other(·) appears more than once`, 'keep one other(P)'));
@@ -232,6 +248,14 @@ function checkCall(
   if (combos === undefined) return [];
   const shapes = shapesOf(tool, combos, registry);
   if (shapes.length > 0) return branchChecks(e, text, shapes);
+  if (e.selectors.length > 0 && resolves(tool, combos, registry))
+    // A branchable tool's overload with one result (tangent(P, c), foci(c)): ADR-0045.
+    return [
+      diag(
+        `${text()}: this ${e.tool} has one result and takes no selectors`,
+        `remove the selectors: only ${e.tool} of two curves chooses among candidates`,
+      ),
+    ];
   const index = combinations(e.args.slice(0, -1), kindsOfRef, registry);
   const last = e.args[e.args.length - 1];
   const lastKinds = last === undefined ? undefined : staticKinds(last, kindsOfRef, registry);

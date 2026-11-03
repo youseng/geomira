@@ -181,6 +181,8 @@ function gapTo(q: Coeffs<N>, X: Vec<N>): N {
 
 /** Whether a length is zero or inside the band (a decision: merged, double, on). */
 const within = (len: N, ctx: ToleranceContext): boolean => {
+  // gapTo is Infinity at a curve's centre (no first-order distance): not within (ADR-0045).
+  if (!Number.isFinite(len)) return false;
   const s = F.sign(len, 'length', ctx);
   return s === 0 || s === 'ambiguous';
 };

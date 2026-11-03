@@ -225,13 +225,13 @@ describe('construction tools', () => {
     expect(defText(s, 'mk')).toBe('mark_right(B, A, H)');
     let t = useTool(editorOf(FIG), 'tangent');
     t = run(t, click(t, 1, 3), click(t, -Math.sqrt(10), 0.0001));
-    expect(defText(t, 'l_1')).toBe('tangent(C, c)');
+    expect(defText(t, 't_C')).toBe('tangent(C, c)');
     let u = useTool(editorOf(`${FIG}\nP = (6, 0)`), 'tangent');
     u = run(u, click(u, 6, 0), { kind: 'object', id: idOf(u, 'c') });
-    // ADR-0024: both tangents are built at once (no click chooses one), l_2 the upper one.
-    expect(defText(u, 'l_1')).toMatch(/^tangent_from\(P, c, /u);
-    expect(defText(u, 'l_2')).toMatch(/^tangent_from\(P, c, /u);
-    const v = u.values.values.get(idOf(u, 'l_2'));
+    // ADR-0024: both tangents are built at once (no click chooses one), t_P_2 the upper one.
+    expect(defText(u, 't_P')).toMatch(/^tangent_from\(P, c, /u);
+    expect(defText(u, 't_P_2')).toMatch(/^tangent_from\(P, c, /u);
+    const v = u.values.values.get(idOf(u, 't_P_2'));
     expect(v?.kind === 'line' && v.p.y > 0).toBe(true);
   });
 
@@ -280,7 +280,7 @@ describe('construction tools', () => {
         'equal',
       ]),
     );
-    expect(claimToolKinds()).not.toContain('length');
+    expect(claimToolKinds()).toContain('length');
     let s = useTool(editorOf(FIG), 'claim', 'collinear');
     s = run(s, click(s, 0, 0), click(s, 4, 0), click(s, 2, 0), { kind: 'finish' });
     expect(print(s.doc)).toContain('claim collinear(A, B, D)');

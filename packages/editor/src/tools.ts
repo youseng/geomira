@@ -15,7 +15,7 @@
  * circle) take them in either order (`anyOrder`), as Geomdraw's did.
  */
 import type { ToolId } from './tool-state';
-import { anyOrder, call, L, mapTool, OVAL, P, type ToolUI } from './tool-ui';
+import { anyOrder, call, described, L, mapTool, OVAL, P, shown, type ToolUI } from './tool-ui';
 import { CENTER_TOOLS, TRIANGLE_CIRCLE_TOOLS } from './tools-centers';
 import {
   CIRCLE_RADIUS,
@@ -84,53 +84,68 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     [P('first point'), P('second point')],
     'The midpoint of two points.',
   ),
-  call(
-    'line',
-    'Line',
-    'l',
-    'line',
-    'line',
-    [P('first point'), P('second point')],
-    'The line through two points.',
+  described(
+    call(
+      'line',
+      'Line',
+      'l',
+      'line',
+      'line',
+      [P('first point'), P('second point')],
+      'The line through two points.',
+    ),
+    { prefix: 'l', picks: 'all' },
   ),
-  call(
-    'segment',
-    'Segment',
-    's',
-    'segment',
-    'line',
-    [P('first end'), P('second end')],
-    'The segment between two points.',
+  described(
+    call(
+      'segment',
+      'Segment',
+      's',
+      'segment',
+      'line',
+      [P('first end'), P('second end')],
+      'The segment between two points.',
+    ),
+    { prefix: 's', picks: 'all' },
   ),
-  call(
-    'ray',
-    'Ray',
-    'L',
-    'ray',
-    'line',
-    [P('start'), P('a point it passes through')],
-    'The ray from a point through another.',
+  described(
+    call(
+      'ray',
+      'Ray',
+      'L',
+      'ray',
+      'line',
+      [P('start'), P('a point it passes through')],
+      'The ray from a point through another.',
+    ),
+    { prefix: 'r', picks: 'all' },
   ),
   anyOrder(
-    call(
-      'parallel',
-      'Parallel',
-      'h',
-      'parallel',
-      'line',
-      [P('point'), L('line')],
-      'The parallel to a line through a point (click them in either order).',
+    described(
+      call(
+        'parallel',
+        'Parallel',
+        'h',
+        'parallel',
+        'line',
+        [P('point'), L('line')],
+        'The parallel to a line through a point (click them in either order).',
+      ),
+      { prefix: 'l', picks: 'first' },
     ),
   ),
   anyOrder(
-    call(
-      'perpendicular',
-      'Perpendicular',
-      'j',
-      'perp',
-      'line',
-      [P('point'), L('line')],
-      'The perpendicular to a line through a point (click them in either order).',
+    described(
+      call(
+        'perpendicular',
+        'Perpendicular',
+        'j',
+        'perp',
+        'line',
+        [P('point'), L('line')],
+        'The perpendicular to a line through a point (click them in either order).',
+      ),
+      { prefix: 'l', picks: 'first' },
     ),
   ),
   call(
@@ -154,24 +169,30 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
   EXT_BISECTOR,
   SYMMEDIAN_TOOL,
   SYMMEDIAN_POINT_TOOL,
-  call(
-    'circle',
-    'Circle (center, point)',
-    'c',
-    'circle',
-    'circle',
-    [P('center'), P('point on the circle')],
-    'The circle with a center through a point.',
+  described(
+    call(
+      'circle',
+      'Circle (center, point)',
+      'c',
+      'circle',
+      'circle',
+      [P('center'), P('point on the circle')],
+      'The circle with a center through a point.',
+    ),
+    { prefix: 'c', picks: 'first' },
   ),
   CIRCLE_RADIUS,
-  call(
-    'circle3',
-    'Circle (3 points)',
-    'k',
-    'circle',
-    'circle',
-    [P('first point'), P('second point'), P('third point')],
-    'The circle through three points.',
+  described(
+    call(
+      'circle3',
+      'Circle (3 points)',
+      'k',
+      'circle',
+      'circle',
+      [P('first point'), P('second point'), P('third point')],
+      'The circle through three points.',
+    ),
+    { prefix: 'c', picks: 'all' },
   ),
   call(
     'conic5',
@@ -191,10 +212,11 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     id: 'tangent',
     label: 'Tangent',
     key: 't',
-    help: 'The tangent at a point of a circle or a conic, or both tangents from an outside point (click the point and the curve in either order).',
+    help: 'The tangent at a point of a circle or a conic, or both tangents from an outside point (click the point and the curve in either order); or the common tangents of two circles or conics (click both curves).',
     // The prompt keeps "circle" (the status bar a frozen e2e test reads); a conic is accepted too.
     steps: [P('point'), OVAL('circle')],
     anyOrder: true,
+    pair: { slot: 1, prompt: 'or a second circle or conic for the common tangents' },
     build: { kind: 'tangent' },
   },
   POLAR,
@@ -271,23 +293,27 @@ export const TOOLS: readonly ToolUI[] = Object.freeze([
     steps: [P('where the text goes')],
     build: { kind: 'text' },
   },
-  call(
-    'measure_distance',
-    'Distance',
-    'q',
-    'dist',
-    'distance',
-    [P('first point'), P('second point')],
-    'The distance between two points.',
+  shown(
+    call(
+      'measure_distance',
+      'Distance',
+      'q',
+      'dist',
+      'distance',
+      [P('first point'), P('second point')],
+      'The distance between two points, shown on the figure.',
+    ),
   ),
-  call(
-    'measure_angle',
-    'Angle',
-    'a',
-    'angle',
-    'angle',
-    [P('point on the first arm'), P('vertex'), P('point on the second arm')],
-    'The angle ABC in degrees.',
+  shown(
+    call(
+      'measure_angle',
+      'Angle',
+      'a',
+      'angle',
+      'angle',
+      [P('point on the first arm'), P('vertex'), P('point on the second arm')],
+      'The angle ABC in degrees, shown on the figure.',
+    ),
   ),
   ...MEASURE_TOOLS,
   {
