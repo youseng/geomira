@@ -1,6 +1,6 @@
 # STATUS
 
-## Maintainer request: usability (items 1–10): NOT ACCEPTED (2026-11-01; one open point: a cold mutation run within 100 minutes per shard, see Not done)
+## Maintainer request: usability (items 1–10): ACCEPTED (2026-11-03)
 
 Not a kit run, no tag. Decisions: one ADR per item, [ADR-0045](adr/0045-common-tangents-and-similitude-centres.md)
 (1), [ADR-0046](adr/0046-rename-in-the-style-card.md) (2), [ADR-0047](adr/0047-text-applies-as-you-type.md)
@@ -8,9 +8,13 @@ Not a kit run, no tag. Decisions: one ADR per item, [ADR-0045](adr/0045-common-t
 [ADR-0050](adr/0050-descriptive-names.md) (6), [ADR-0051](adr/0051-claims-from-the-gui.md) (7),
 [ADR-0052](adr/0052-what-is-special-budget-fairness.md) (8), [ADR-0053](adr/0053-node-engines-22-19.md) (9),
 [ADR-0054](adr/0054-kernel-mutation-survivors.md) (10), and
-three found while driving CI to green: [ADR-0055](adr/0055-package-test-timeout.md) (the package
-tests' timeout), [ADR-0056](adr/0056-lehmer-gcd.md) (gcd by Lehmer's algorithm) and
-[ADR-0057](adr/0057-mutation-shards-cold-within-the-limit.md) (the mutation shards). SPEC §6.2, §7,
+five found while driving CI and the nightly to green: [ADR-0055](adr/0055-package-test-timeout.md)
+(the package tests' timeout, and the slow-test threshold), [ADR-0056](adr/0056-lehmer-gcd.md) (gcd
+by Lehmer's algorithm), [ADR-0057](adr/0057-mutation-shards-cold-within-the-limit.md) (the mutation
+shards), [ADR-0058](adr/0058-cheaper-mutation-timeouts.md) (cheaper mutation timeouts) and
+[ADR-0059](adr/0059-cold-shard-limit-150-minutes.md) (a shard's cold run within 150 minutes,
+amending ADR-0038). The maintainer's decisions of 2026-11-01 and 2026-11-02 are in ADR-0045's
+amendment (concentric circles), ADR-0055's amendment, ADR-0058 and ADR-0059. SPEC §6.2, §7,
 §10.1, §11.1, §12, §13, §14 and §15 are updated in the commits of those ADRs. Base: main = 9ade9a3 (PR
 #28, tag run-16c), ACCEPTED; `git fetch --tags && pnpm install && pnpm verify` was green on it
 before any change (4213 tests; add-only guard against run-16c: 0 violations). Branch:
@@ -21,22 +25,26 @@ first, then merged into this branch with a merge commit; after each merge the su
 packages it touched were run again on the merged code, and the branch was pushed (CI on every
 push). Merge conflicts and cross-item fixes are in the merge commits and listed under "Merges".
 
-Everything is green on eacbf5a, the last code commit (this STATUS commit changes docs only):
+Accepted on the maintainer's rule (2026-11-02: one cold nightly after ADR-0059; if every shard
+finishes and the gate passes, the request is accepted on that run), confirmed by the maintainer on
+2026-11-03. On 98dd441, the last code commit (this STATUS commit changes docs only), everything is
+green:
 
-- CI: https://github.com/youseng/geomira/actions/runs/41266532643 (push) and
-  https://github.com/youseng/geomira/actions/runs/41266535797 (pull_request).
-- tex: https://github.com/youseng/geomira/actions/runs/41266535729 (pull_request; it compiles the
-  new fixture `tests/fixtures/export/measurements.geo`).
+- CI: https://github.com/youseng/geomira/actions/runs/41434684548 (push) and
+  https://github.com/youseng/geomira/actions/runs/41434695044 (pull_request).
+- tex: https://github.com/youseng/geomira/actions/runs/41434684524 (push) and
+  https://github.com/youseng/geomira/actions/runs/41434694893 (pull_request; they compile the new
+  fixture `tests/fixtures/export/measurements.geo`).
 - deploy (build and e2e, the single file in three engines):
-  https://github.com/youseng/geomira/actions/runs/41266532151.
-- Nightly (dispatched, incremental, as every night; the NIGHTLY=1 test job with the 20,000-run fuzz,
-  and mutation testing in 30 shards with the gate):
-  https://github.com/youseng/geomira/actions/runs/41266535271: success, gate passed (scores below).
+  https://github.com/youseng/geomira/actions/runs/41434684781.
+- Nightly, cold (dispatched with `full`: every one of the 30 mutation shards from scratch, as main's
+  first nightly after the merge will run them; the NIGHTLY=1 test job with the 20,000-run fuzz):
+  https://github.com/youseng/geomira/actions/runs/41434694361: success. Every shard finished within
+  ADR-0059's 150 minutes (the longest kernel-a 104 and kernel-c 90; the others 4–82), and the gate
+  passed (scores under Acceptance command output).
 
-The open point: four cold nightlies (dispatched with `full`) were run to measure every shard from
-scratch (Nightly findings, below). No single one of them had all shards within 100 minutes: on
-the last (bbd6b41) 28 of 30 finished in 7–82 minutes, kernel-f ran past 100 and kernel-c finished at
-100; after that run both were rebalanced (eacbf5a), and no cold run was measured after it.
+The kernel's mutation score is 92.76 %, up from 89.49 % on main before the request (item 10), and
+0.24 points short of the request's 93 % aim (Not done).
 
 ### Done (each item → the tests that show it)
 
@@ -54,7 +62,9 @@ the last (bbd6b41) 28 of 30 finished in 7–82 minutes, kernel-f ran past 100 an
      decides). A vanishing pair gives "no common tangent satisfies …", never the other pair.
    - `exsimilicenter(c1, c2)`, `insimilicenter(c1, c2)`: exact over Q when both radii are
      rational, else Inexact (`radical`); equal radii → the exsimilicenter is the point at
-     infinity of O₁O₂; concentric → Undefined; symmetry c1 ↔ c2 ('value'); guarantee: collinear
+     infinity of O₁O₂; concentric circles of different radii → both are the common centre, exact
+     in every field (the maintainer's decision, ADR-0045 amendment, 21b1a14 →
+     `kernel/test/similitude-concentric.test.ts`, failed before); identical circles → Undefined; symmetry c1 ↔ c2 ('value'); guarantee: collinear
      with the centres; export numeric.
    - GUI: the Tangent tool's second click on a curve builds every common tangent as one batch,
      each with the GUI choice (filters, then along(±) with near/far_from, then orient);
@@ -192,8 +202,10 @@ are concurrent` with `expected "=", found ","`, and the kinds with a number were
   `foci` call on a conic with 16,700-digit coefficients (37–48 s, 97 % in Euclid's gcd). gcd by
   Lehmer's algorithm and bitLength from hex (ADR-0056): that call 3.5 s, hunt-extreme's exact part
   95.7 → 14.2 s (run-16c 14.7), the kernel's mutation test set 302 → 213 s (run-16c 199) →
-  `num/test/gcd-lehmer.test.ts` (equal to Euclid on 1,500 pairs and edge cases; at least 3 times
-  faster on 30,000 bits; failed before).
+  `num/test/gcd-lehmer.test.ts` (equal to Euclid on 1,500 pairs and edge cases; faster than Euclid
+  on large numbers; failed before). Its first speed bound (3 times on 30,000 bits) failed num's dry
+  run under Stryker's instrumentation on 4fd0fc5 (2.65 measured: the source's gcd is instrumented,
+  the test's Euclid is not); it is 2 times on 50,000 bits with a median of three since 98dd441.
 - **claims and discovery-b/-c/-d/-e past 100 minutes cold**, older than this branch (discovery-d's
   sources are unchanged and its mutants ran at run-16c's rate side by side; claims had 6,456 mutants
   on run-16c, its last measured full run 47 minutes with 2,342). Shards rebalanced (ADR-0057):
@@ -202,20 +214,31 @@ are concurrent` with `expected "=", found ","`, and the kinds with a number were
   `scripts/mutation-shards.test.ts`.
 - **CI's verify on 56ab141**: the frozen `kernel/test/tools-circles.direct.test.ts` sweep past
   vitest's 5 s default (about 4 s under coverage on an idle machine, run-16c too): the package
-  tests' timeout is a 15 s hang guard (ADR-0055).
+  tests' timeout is a 15 s hang guard (ADR-0055); at the maintainer's request the reporters list
+  every test slower than 2.5 s, in CI's log too (ADR-0055 amendment, e2716c7 →
+  `scripts/vitest-config.test.ts`).
+- **The cold-run limit** (the maintainer's decisions): cheaper timeouts, timeoutFactor 1.2 and
+  timeoutMS 2,500, no test out of the mutation run (ADR-0058 → `scripts/stryker-timeouts.test.ts`),
+  then a shard's cold run within 150 minutes, the job's limit 170 (ADR-0059, amending ADR-0038; cold
+  runs happen only after merges; incremental runs are unaffected), and ADR-0045's two tool files
+  out of the catch-all kernel-h into kernel-f and kernel-d.
 
 Cold nightly shard minutes (every shard from scratch; a shard at 100 ran out of time):
 
-| run (commit)                     | layout                | shards past 100                 | the others                                                            |
-| -------------------------------- | --------------------- | ------------------------------- | --------------------------------------------------------------------- |
-| 41218368581 (5fef14e)            | 20 shards (run-16c's) | 13                              | kernel-b 44, -c 54, -f 67, -j 56, num 5, discovery 65, discovery-a 42 |
-| 41230221798 (a0d505b, ADR-0056)  | 20                    | claims, discovery-b, -c, -d, -e | kernel 18–95 (a 95, i 86), num 7, discovery-a 70, discovery 33        |
-| 41242777649 (d08200e, ADR-0057)  | 25                    | kernel-h, discovery-b, -d       | 7–87 (claims-a 87)                                                    |
-| 41254264516 (bbd6b41, amendment) | 30                    | kernel-f (63 timeouts)          | 7–82; kernel-c 100 (finished)                                         |
+| run (commit)                                      | layout                | shards past 100                                             | the others                                                            |
+| ------------------------------------------------- | --------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------- |
+| 41218368581 (5fef14e)                             | 20 shards (run-16c's) | 13                                                          | kernel-b 44, -c 54, -f 67, -j 56, num 5, discovery 65, discovery-a 42 |
+| 41230221798 (a0d505b, ADR-0056)                   | 20                    | claims, discovery-b, -c, -d, -e                             | kernel 18–95 (a 95, i 86), num 7, discovery-a 70, discovery 33        |
+| 41242777649 (d08200e, ADR-0057)                   | 25                    | kernel-h, discovery-b, -d                                   | 7–87 (claims-a 87)                                                    |
+| 41254264516 (bbd6b41, amendment)                  | 30                    | kernel-f (63 timeouts)                                      | 7–82; kernel-c 100 (finished)                                         |
+| 41296971836 (9784b4e, ADR-0058)                   | 30                    | kernel-h (94 %, 147 timeouts)                               | 4–93                                                                  |
+| 41407651278 (4fd0fc5, ADR-0059, 150-minute limit) | 30                    | none; num stopped at its dry run (the gcd speed test above) | 10–86                                                                 |
+| **41434694361 (98dd441)**                         | **30**                | **none**                                                    | **4–104 (kernel-a 104, kernel-c 90, kernel-g 82): gate passed**       |
 
-A timed-out mutant costs about 1.5 times its covering tests (the kernel suite runs 107 s under
-coverage), so how many mutants cross the timeout on a given runner decides a shard's minutes: the
-same files took 48, 62 and more than 100 minutes in kernel-f.
+A timed-out mutant cost about 1.5 times its covering tests (1.2 since ADR-0058; the kernel suite runs
+107 s under coverage), so how many mutants cross the timeout on a given runner decides a shard's
+minutes: the same files took 48, 62 and more than 100 minutes in kernel-f. Hence ADR-0059's
+150-minute limit with margin rather than more splits.
 
 ### Merges and cross-item changes
 
@@ -247,14 +270,12 @@ same files took 48, 62 and more than 100 minutes in kernel-f.
 - Item 7: "What is special?" does not search the new kinds (a closure rule for similar triangles
   first); `O, G, H are collinear` is still refused (it names "are" now).
 - Item 8: `hunt` keeps the single scan.
-- Item 10: the remaining survivors of ADR-0054 decision 4. The kernel's score is 92.83 % on the
-  nightly (89.49 % on main before), short of the 93 % aim by 0.17 points.
-- **A cold mutation run with every shard within 100 minutes** (the request's constraint): not
-  shown. Four cold runs and three rebalancings (ADR-0057) brought it from 13 shards past the limit
-  to 1 (kernel-f, whose time varied from 48 to over 100 minutes with the same files); the layout
-  after that run (eacbf5a) has not had a cold run. The incremental nightly, as it runs every night,
-  is green. Per-shard targets (75 %) are missed by two shards whose packages pass the gate:
-  discovery-e 68.29 % (derive.ts alone since ADR-0057) and claims-c 76.26 % (above, barely).
+- Item 10: the remaining survivors of ADR-0054 decision 4. **The kernel's score is 92.76 % on the
+  accepted cold run (89.49 % on main before), 0.24 points short of the request's 93 % aim.**
+- The request's constraint "shards within 100 minutes on a COLD run" is replaced by ADR-0059's
+  150 minutes (the maintainer's decision); on the accepted cold run kernel-a took 104 minutes.
+- Per-shard targets (75 %, the gate is per package): claims-c 76.26 % is the lowest shard; every
+  package passes.
 - Item 4: no dimension line (ADR-0048 decision 7, a later style option); radius, ratio, area and
   measurements of inline expressions are not drawn (each says why); the precision is per object
   (`digits`), not a document directive; the Measurements list shows the settled figure (it updates
@@ -279,13 +300,12 @@ same files took 48, 62 and more than 100 minutes in kernel-f.
 
 ### Uncertain
 
-- Item 1: concentric circles with different radii: both centres of similitude are Undefined as the
-  request says; mathematically both are the common centre (the continuous limit). The band for
-  the common tangents of conics is applied in the dual chart (scale 1), not as a primal length.
+- Item 1: the band for the common tangents of conics is applied in the dual chart (scale 1), not as
+  a primal length.
 - Item 7: `similar` means either orientation (with `_direct` / `_opposite` kinds); the names
   `length_product` and `length_sum` are open. `length_sum` is decided by the exact rung over Q as
   well as numerically ((e² − a² − c²)² = 4a²c² with the order item e² − a² − c² ≥ 0, exactly
-  equivalent, ADR-0051 decision 10), never mod p: the request said "numeric rung only".
+  equivalent, ADR-0051 decision 10), never mod p; the maintainer accepted it (2026-11-01).
 - Item 10: far from the origin (about (2²³, 2²³), scale 1) common points of two conics hold to about
   10⁻²·scale; an osculating circle at an ellipse's vertex shifted by 10⁻⁸ gives one double point at
   (2.000000004, 0) where the true points are about (1.9998, ±0.0107) (ADR-0043 decisions 6–7's
@@ -332,38 +352,42 @@ summary); lang `exports.test.ts`, `helpers/gen-doc.ts`; scene `exports.test.ts`.
 
 ### Acceptance command output
 
-Local `pnpm verify` on eacbf5a (exit 0):
+Local `pnpm verify` on 98dd441 (exit 0):
 
 ```text
 All matched files use Prettier code style!
-✔ no dependency violations found (938 modules, 5531 dependencies cruised)
-ok   tolerance: 1298 files scanned, 0 violation(s)
-ok   file-length: 1298 files scanned, 0 violation(s)
-ok   test-count: 4720 tests, floor 4213, 0 violation(s)
-ok   disabled-tests: 1298 files scanned, 0 violation(s)
+✔ no dependency violations found (939 modules, 5539 dependencies cruised)
+ok   tolerance: 1303 files scanned, 0 violation(s)
+ok   file-length: 1303 files scanned, 0 violation(s)
+ok   test-count: 4734 tests, floor 4720, 0 violation(s)
+ok   disabled-tests: 1303 files scanned, 0 violation(s)
 ok   add-only: frozen tests compared with run-16c, 0 violation(s)
-ok   forbidden-words: 1298 files scanned, 0 violation(s)
- Test Files  511 passed (511)
-      Tests  4720 passed (4720)
+ok   forbidden-words: 1303 files scanned, 0 violation(s)
+ Test Files  514 passed (514)
+      Tests  4734 passed (4734)
 All files          |   96.51 |    90.41 |   99.44 |   98.36 |
 ```
 
-docs/test-count.txt: 4213 → 4720.
+docs/test-count.txt: 4213 → 4734.
 
-Nightly mutation gate on eacbf5a (run 41266535271, incremental):
+Nightly mutation gate on 98dd441, the cold run (41434694361, every shard from scratch):
 
 ```text
-num mutation gate: 92.82% (776 detected, 60 undetected; threshold 80%): pass
-kernel mutation gate: 92.83% (4245 detected, 328 undetected; threshold 75%): pass
-claims mutation gate: 84.59% (2493 detected, 454 undetected; threshold 75%): pass
-discovery mutation gate: 84.59% (3261 detected, 594 undetected; threshold 75%): pass
+num mutation score: 92.58% (774 detected, 62 undetected; target 80%, gated from v1.1)
+kernel mutation gate: 92.76% (4252 detected, 332 undetected; threshold 75%): pass
+claims mutation gate: 85.14% (2509 detected, 438 undetected; threshold 75%): pass
+discovery mutation gate: 85.16% (3283 detected, 572 undetected; threshold 75%): pass
 ```
 
-Shards (score, % ): kernel-a 96.25, b 87.48, c 98.91, d 97.18, e 95.79, f 99.59, g 99.37, h 92.09,
-i 94.58, j 84.13, k 86.88; claims-a 88.44, b 88.13, c 76.26, claims 82.32; discovery-a 96.18,
-b 93.14, c 77.76, d 93.94, e 68.29, f 89.61, g 79.82, h 80.77, i 88.24, j 89.29, k 97.83, l 87.00,
-m 98.51, discovery 76.89. Before (main's nightly on 9ade9a3, run 40897490665): kernel 89.49 %,
-kernel-j 75.92 %, kernel-b 78.63 %.
+(num's gate line is num's whole-package score above, threshold 80 %: pass; the gate job succeeded.)
+
+Shards (score %, minutes): kernel-a 96.25 (104), b 87.48 (67), c 99.18 (90), d 95.19 (28),
+e 95.00 (60), f 90.77 (69), g 99.37 (82), h 98.02 (58), i 94.34 (39), j 84.13 (66), k 86.88 (50);
+claims-a 88.44 (65), b 88.70 (23), c 76.26 (15), claims 83.29 (52); discovery-a 96.18 (28),
+b 93.46 (48), c 77.93 (61), d 93.94 (73), e 80.49 (8), f 89.61 (45), g 80.49 (65), h 81.47 (51),
+i 88.60 (52), j 89.29 (15), k 98.91 (16), l 88.00 (14), m 98.51 (38), discovery 77.17 (72); num
+(4). Before (main's nightly on 9ade9a3, run 40897490665): kernel 89.49 %, kernel-j 75.92 %,
+kernel-b 78.63 %.
 
 Local Playwright: this container's Chromium (1243) is not the repository's Playwright's (1194). The
 items' new specs pass (style-card-rename, label-drag, flows-typing, flows-measurements,
@@ -373,14 +397,9 @@ green.
 
 ### Requests
 
-- Item 7's `length_sum` rung (above) and the kind names.
-- Item 1's concentric centres of similitude (above).
-- ADR-0055's 15 s hang guard for the package tests.
-- The cold-run limit: shard times swing with the number of mutants that cross Stryker's timeout. A
-  lasting fix is cheaper timeouts, for example the slowest kernel tests (hunt-extreme, the L3
-  oracle) out of the mutation test set, or a lower `timeoutFactor`; each changes what mutation
-  testing measures, so it is the maintainer's decision. Until then, a cold run after a large change
-  may need one re-run of a shard.
+- None open. Decided by the maintainer (2026-11-01, 2026-11-02): `length_sum` exact over Q (kept);
+  concentric centres of similitude (fixed); the 15 s hang guard with a 2.5 s slow-test report;
+  cheaper mutation timeouts (ADR-0058); the 150-minute cold-shard limit (ADR-0059).
 
 ## Run 16c: conic ∩ conic, foci, the scoped audit of Run 16: ACCEPTED (2026-10-29)
 
