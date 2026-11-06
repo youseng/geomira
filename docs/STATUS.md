@@ -1,5 +1,20 @@
 # STATUS
 
+## Fix: the nightly's label law on main (2026-11-05)
+
+The first nightly after PR #29's merge (https://github.com/youseng/geomira/actions/runs/41634497192)
+failed one test: `apps/web/test/laws/label-hit-laws.test.ts` ("generated documents") found a point
+labelled `"*"` (a single superscript run) whose hit box reached down to the label's reference
+point, 6.8 px below the drawn star. Mutation shards and the gate passed in that run.
+
+- Done: `labelGlyphs` (`packages/scene/src/label-hit.ts`) boxes a label by its runs only; a label
+  with no runs keeps its empty box at the reference point (ADR-0049 unchanged) →
+  `packages/scene/test/label-hit-raised.test.ts` (failed before the fix: 6.8 px for a lone
+  superscript, 6.95 px for a lone subscript under a top-anchored label).
+- Changed frozen tests: none.
+- Acceptance output: `pnpm verify` locally: 515 files, 4741 tests passed; rules clean (add-only
+  compared with run-16c). The label law also passes with NIGHTLY=1.
+
 ## Maintainer request: usability (items 1–10): ACCEPTED (2026-11-03)
 
 Not a kit run, no tag. Decisions: one ADR per item, [ADR-0045](adr/0045-common-tangents-and-similitude-centres.md)

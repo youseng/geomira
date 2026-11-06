@@ -81,7 +81,9 @@ export function labelGlyphs(l: BoxedLabel, widths: readonly number[], px: number
         ? l.at.y - px * DESCENT_EM
         : l.at.y + px * MIDDLE_EM;
   const minX = x;
-  let [minY, maxY] = [l.at.y, l.at.y];
+  // The runs alone span the box: a label of raised or lowered runs only (a lone "*") does
+  // not reach the reference point (found by the nightly's label law).
+  let [minY, maxY] = [Infinity, -Infinity];
   const glyphs: Glyph[] = [];
   for (const [i, r] of l.runs.entries()) {
     const dy = r.pos === 'sub' ? px * SUB_EM : r.pos === 'sup' ? -px * SUP_EM : 0;
@@ -91,7 +93,7 @@ export function labelGlyphs(l: BoxedLabel, widths: readonly number[], px: number
     maxY = Math.max(maxY, y + dy + size * DESCENT_EM);
     x += w[i] ?? 0;
   }
-  if (glyphs.length === 0) return { glyphs, box: { minX, minY, maxX: minX, maxY: minY } };
+  if (glyphs.length === 0) return { glyphs, box: { minX, minY: l.at.y, maxX: minX, maxY: l.at.y } };
   return { glyphs, box: { minX, minY, maxX: x, maxY } };
 }
 
