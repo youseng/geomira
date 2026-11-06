@@ -1,5 +1,21 @@
 # STATUS
 
+## Fix: "fit to the figure" on an extent of rounding noise (2026-11-06)
+
+Both nightlies on main after PR #30 (https://github.com/youseng/geomira/actions/runs/42160893083,
+https://github.com/youseng/geomira/actions/runs/42206353891) failed the same label law again, on a
+different bug: for Z' = (18.2, 0.5) and Z = homothety(Z', Z', 17.5) the scene's bounds were two
+floats of one point (3.6·10⁻¹⁵ wide), `fitViewport` zoomed to about 5·10¹⁶ and the page refused to
+draw ("zoomed in beyond the precision of the coordinates"); the law read that message as a label.
+
+- Done: `fitViewport` (`packages/scene/src/viewport.ts`) treats an extent it could only show past
+  `viewProblem`'s precision limit as one point (the default zoom, as for zero extent) →
+  `packages/scene/test/fit-precision.test.ts` (the nightly's case and a property; both failed
+  before the fix).
+- Changed frozen tests: none.
+- Acceptance output: `pnpm verify` locally: 516 files, 4744 tests passed; rules clean. The label
+  law passes 5 times in a row with NIGHTLY=1.
+
 ## Fix: the nightly's label law on main (2026-11-05)
 
 The first nightly after PR #29's merge (https://github.com/youseng/geomira/actions/runs/41634497192)
