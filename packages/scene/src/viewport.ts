@@ -145,8 +145,8 @@ export function zoomViewport(view: View, at: Vec2, factor: number): Viewport {
 
 /**
  * The viewport that shows `bounds` (world) inside `size` with `marginPx` pixels to spare on
- * every side. Degenerate cases: no bounds → DEFAULT_VIEWPORT; a single point (zero extent)
- * → that point at the default zoom; a margin that leaves no room → the margin is ignored;
+ * every side. Degenerate cases: no bounds → DEFAULT_VIEWPORT; a single point (zero extent,
+ * or an extent below the coordinates' precision) → that point at the default zoom; a margin that leaves no room → the margin is ignored;
  * bounds too large or too small for the zoom range → the zoom is clamped. The result always
  * has a finite centre and a zoom in [MIN_ZOOM, MAX_ZOOM].
  */
@@ -162,7 +162,10 @@ export function fitViewport(bounds: Rect | null, size: Size, marginPx: number): 
   const zx = bw > 0 ? roomW / bw : Infinity;
   const zy = bh > 0 ? roomH / bh : Infinity;
   const z = Math.min(zx, zy);
+  // An extent the coordinates cannot resolve (rounding noise: two floats of one point, found
+  // by the nightly's label law) is one point: past this zoom viewProblem refuses the view.
+  const resolvable = 1 / (Number.EPSILON * Math.max(Math.abs(cx), Math.abs(cy)) * PIXEL_ULPS);
   // z = ∞: zero extent (one point); z = 0: an extent that overflows the double range.
-  const zoom = Number.isFinite(z) ? clampZoom(z) : DEFAULT_VIEWPORT.zoom;
+  const zoom = Number.isFinite(z) && z <= resolvable ? clampZoom(z) : DEFAULT_VIEWPORT.zoom;
   return { cx, cy, zoom };
 }
