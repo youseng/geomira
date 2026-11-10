@@ -1,5 +1,147 @@
 # STATUS
 
+## Maintainer request: GUI, milestone 1 (ADR-0060): NOT ACCEPTED, awaiting the maintainer (2026-11-10)
+
+Not a kit run, no tag. The request (2026-11-09/10): keep the engine, make the GUI and its
+interaction logic good; "no option for even creating new layer". The maintainer narrowed it
+during the session: no audit of the engine's edge cases or stability (done separately), only
+the GUI and its logic. Decision: [ADR-0060](adr/0060-several-objects-and-layers-from-the-panel.md).
+SPEC §12 and §15 are updated in the same commit. Base: main = 1a6d663 (PR #31), on which
+`pnpm install && pnpm verify` was green before any change (516 files, 4744 tests; rules clean).
+Branch: claude/quirky-einstein-wp1t4h.
+
+What was looked at first (in the running app, driven with Playwright, and in the code): the
+toolbar and every tool's prompt, building with the Point, Line, Circle, Intersection and Tangent
+tools, the text panel on Geomdraw's notation, selection, the style card, Delete, the Objects
+and Layers panels. Findings that this milestone fixes are in ADR-0060's context; the others are
+under Not done and Requests.
+
+### Done (each item → the tests that show it)
+
+1. **A layer can be made, named and filled from the Layers panel** (ADR-0060 decision 6): "New
+   layer" with an offered name (layer1, layer2, …), the new layer becomes the active one; each
+   layer's name is a field (Enter renames); a name is refused in place with the kernel's words;
+   "← selection" moves the selected objects to a layer. →
+   `packages/editor/test/selection-actions.test.ts` ("layers from the panel": the offered name;
+   one history entry and its undo; `layerNameProblem` refuses exactly what `addLayer` refuses),
+   `apps/web/test/selection-web.test.tsx` ("the Layers panel"), `apps/web/e2e/flows-selection.spec.ts`
+   (second test).
+2. **Several objects can be selected** (decisions 1–2): Shift, Ctrl or Cmd + click toggles an
+   object in the selection on the canvas and in the Objects panel; Ctrl+A selects what is
+   drawn. → `selection-actions.test.ts` ("the extended click of the Move tool", "select all"),
+   `packages/editor/test/keymap-select-all.test.ts`, `selection-web.test.tsx` ("a click with
+   Shift or Ctrl held": through the real gestures; a moved press still drags),
+   `flows-selection.spec.ts` (first and third tests).
+3. **Actions on the whole selection, one undo each** (decisions 3–4): the selection bar on the
+   canvas: Hide / Show, Label off / Label on, move to a layer, Delete, clear; only what would
+   change something is offered. → `selection-actions.test.ts` ("selection actions: one edit,
+   one undo", "refusals change nothing and say why", "the selection bar summary"),
+   `selection-web.test.tsx` ("the selection bar"), `flows-selection.spec.ts`.
+4. **An eye on every row of the Objects panel** (decision 5): one click hides or shows that
+   object. → `selection-actions.test.ts` ("acts on given ids instead of the selection"),
+   `selection-web.test.tsx` ("an object row's eye"), `flows-selection.spec.ts` (third test).
+5. **Bug fixed with its test** (decision 3): Delete on a selection where one object is built
+   from another was refused whole ("there is no object #…"); unreachable before, since only one
+   object could be selected. → `selection-actions.test.ts` ("remove: an object another selected
+   object takes with it is not named twice").
+6. `CHANGELOG.md` (new, asked for by the request). `docs/test-count.txt`: 4734 → 4776 (32 new
+   tests: 20 + 2 in packages/editor, 10 in apps/web; the 3 e2e tests are not in this count).
+
+### Not done
+
+- The rest of the request: the tools' input logic (one Circle tool for centre + point and three
+  points; select first, then choose the tool), box selection, styling several objects at once,
+  the toolbar's 70 buttons in one scrolling palette, and the text panel rewriting what was typed
+  into the long canonical form. Each needs a decision of the maintainer: see Requests.
+- The scripting language is untouched. The maintainer's last instruction limited this work to
+  the GUI and its logic.
+- No audit of the engine (withdrawn by the maintainer during the session). A reviewer that had
+  started on the kernel's tools was stopped; it reported nothing, so nothing from it is recorded.
+- Three of the five background reviewers of this session (language, editor, web app) ended on
+  an API rate limit before reporting; only the digest of ADR-0001 to ADR-0059 was delivered.
+  I read the SPEC, STATUS's last three sections, that digest, and the kernel, editor and web
+  sources this milestone touches; I did NOT read every ADR in full myself (CLAUDE.md's session
+  protocol, step 1).
+
+### Known bugs
+
+- Found while trying the app, not fixed (outside this milestone):
+  - The Circle (center, point) tool given three existing points builds circle(A, B) from the
+    first two and starts a new circle with the third; there is a separate tool for three points
+    (K). Reproduction: key C, click A, B, C.
+  - The Objects panel prints a free point's coordinates as fractions (`point(-29/10, -3/2)`)
+    where the text shows `(-2.9, -1.5)`.
+
+### Uncertain
+
+- e2e in this container: 118 of 123 desktop and mobile tests pass; 5 fail, and the same 5 fail
+  on the untouched base (checked by stashing the change and re-running them): the screenshot
+  baselines `claims-desktop`, mobile `euler-line`, `nine-point-circle`, `reflection-layer`, and
+  "the canvas takes the new pixel ratio" (CDP emulation). The container's Chromium (build 1243)
+  is not the one Playwright 1.56.1 pins (1194), and the baselines are CI's renders (ADR-0016
+  decision 19). CI decides; if a baseline does differ there because of this change, it is the
+  Layers or Objects panel in a screenshot, and I have not seen one that shows them.
+- Whether the selection bar should also appear right after a tool builds an object (the tool
+  selects what it built, so the bar shows): it is useful for "hide what I just made", and it is
+  one more thing on the canvas. Left as built; a maintainer call.
+
+### Changed frozen tests
+
+None. `packages/editor/test/exports.test.ts` gained lines only (the `./selection-actions`
+subpath and its names).
+
+### Acceptance command output
+
+`pnpm verify` on this branch, locally (its five steps, run as `pnpm typecheck && pnpm lint &&
+pnpm depcruise && pnpm rules` and then `pnpm test:coverage`):
+
+```
+typecheck: every package Done; tsc -p tsconfig.tests.json clean
+lint: eslint 0 problems; prettier: All matched files use Prettier code style!
+✔ no dependency violations found (946 modules, 5565 dependencies cruised)
+ok   tolerance: 1314 files scanned, 0 violation(s)
+ok   file-length: 1314 files scanned, 0 violation(s)
+ok   test-count: 4776 tests, floor 4776, 0 violation(s)
+ok   disabled-tests: 1314 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-16c, 0 violation(s)
+ok   forbidden-words: 1314 files scanned, 0 violation(s)
+ Test Files  519 passed (519)
+      Tests  4776 passed (4776)
+All files          |   96.52 |     90.4 |   99.44 |   98.36 |
+```
+
+e2e (`playwright test`, the desktop and mobile projects, with the container's Chromium): 118
+passed, 5 failed before this change's last layout edit; the same 5 fail on the untouched base
+(Uncertain). After it, the specs of the panels this change touches (flows-selection,
+flows-build, flows-audit, flows-views, flows-inversion, scene, mobile): 32 passed, the same 3
+mobile screenshot baselines failed. CI's runs are the source of truth: see the pull request.
+
+### Requests (decisions for the maintainer)
+
+1. **Rebuild or extend the editor core?** My recommendation: extend. Its design is sound (one
+   immutable state, every change an edit, tools as data, one history); what made the GUI poor
+   was missing wiring, as this milestone shows (the selection list and its modes existed and
+   nothing used them). A rebuild from scratch deletes or rewrites about 9,400 lines of frozen
+   editor tests and most of 50 e2e specs for behaviour that is mostly kept.
+2. **Box selection.** A drag on empty canvas pans today (ADR-0013 decision 6). Options: (a) the
+   Move tool's drag on empty canvas draws a selection box, and panning moves to the middle
+   button, the right button and two fingers (GeoGebra's way; changes ADR-0013 and its e2e
+   flows); (b) Shift+drag draws the box, plain drag still pans (additive).
+3. **Style card: apply at once?** Today a change is a draft until "Write to script" (ADR-0029).
+   Applying each change immediately, as one undoable edit per change (a slider drag coalesced),
+   is what GeoGebra does; it overturns ADR-0029 decisions 3–5 and their frozen tests.
+4. **The tools.** (a) One Circle tool cannot tell centre + point from the first two of three
+   points by clicks alone; it can by SELECTION FIRST (select three points, press Circle →
+   through them; select two → centre and point), which also gives every tool an any-order
+   input. (b) The palette: 70 buttons in one scrolling column; grouping the long tail (inversions,
+   similitude, conics) behind fly-outs is a change of ADR-0016's layout.
+5. **The text panel.** It replaces what was typed with the canonical long form: `P, Q =
+tangents(X, w)` becomes two `tangent_from(…, orient(±))` lines, `foot(A, BC)` becomes
+   `foot(A, line(B, C))` (ADR-0025 decision 1, "read but never printed"). Printing the short
+   forms, or keeping the typed text, changes the canonical text that the language laws, the
+   export goldens and saved files pin; a new ADR and a migration plan would come first. Say
+   whether the language is in scope again.
+
 ## Fix: "fit to the figure" on an extent of rounding noise (2026-11-06)
 
 Both nightlies on main after PR #30 (https://github.com/youseng/geomira/actions/runs/42160893083,
