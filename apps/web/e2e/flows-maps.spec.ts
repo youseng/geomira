@@ -41,7 +41,7 @@ test('the arc tool builds arc(A, B, C); Shift+Y chooses the symmedian', async ({
   await clickWorld(page, 4, 0);
   await clickWorld(page, 0, 4);
   await clickWorld(page, -4, 0);
-  await expectLines(page, 'c = arc(A, B, C)');
+  await expectLines(page, 'c = arc(ABC)');
   await commandInput(page).blur();
   await page.getByLabel('Geometry canvas').focus();
   await page.keyboard.press('Shift+Y');

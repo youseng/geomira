@@ -5,6 +5,21 @@ docs/adr/; the test evidence is in docs/STATUS.md.
 
 ## Unreleased
 
+### Script milestone: the short notation (ADR-0061)
+
+- **The text panel keeps your short script.** `D = foot(A, BC)`, `O = circumcenter(ABC)` and
+  `P, Q = tangents(X, w)` stay as written instead of being rewritten into
+  `foot(A, line(B, C))` and two `tangent_from(…, orient(±))` lines. What the tools build
+  appears in the same short form.
+- **Both results on one line.** The two intersections or the two tangents of one construction
+  are shown as `X, Y = intersect(ω, AB)` / `t, u = tangents(P, ω)`.
+- **Several statements in the command bar**, separated by `;`, as one step of undo:
+  `ABC triangle; O = circumcenter(ABC); D = foot(A, BC)`.
+- **Also read now:** `ABC triangle`, and British spellings (`circumcentre`, `incentre`,
+  `orthocentre`).
+- Saved files, share links and exports are unchanged (the long canonical text), and old files
+  open as before.
+
 ### GUI milestone 1: several objects at once, layers from the panel (ADR-0060)
 
 - **New layer in the Layers panel.** Type a name (or take the offered `layer1`) and press

@@ -28,6 +28,7 @@ import { parseAttrs } from './parse-attrs';
 import { parseExpr } from './parse-expr';
 import { parseCondition } from './parse-condition';
 import { parseClaim } from './parse-notation';
+import type { Token } from './token';
 
 export interface ParsedLine {
   readonly line: Line;
@@ -42,7 +43,7 @@ export function parseLine(src: string, line: number): ParsedLine {
   if (lexed.tokens.length === 0)
     return { line: { ...base, failed: lexFailed }, diagnostics: lexed.diagnostics };
   if (lexFailed) return { line: { ...base, failed: true }, diagnostics: lexed.diagnostics };
-  const c = cursor(lexed.tokens, line, src.length + 1);
+  const c = cursor(triangleFirst(lexed.tokens), line, src.length + 1);
   const s = statement(c);
   if (s !== undefined && !atEnd(c))
     fail(c, `unexpected ${describe(peek(c))}`, 'remove it, or start a new line');
@@ -51,6 +52,18 @@ export function parseLine(src: string, line: number): ParsedLine {
     line: ok ? { ...base, statement: s, failed: false } : { ...base, failed: true },
     diagnostics: [...lexed.diagnostics, ...c.diags],
   };
+}
+
+/**
+ * `ABC triangle …` (ADR-0061) is `triangle ABC …`: three glued point names, then the word.
+ * The tokens keep their own places, so diagnostics still point at what was written.
+ */
+function triangleFirst(tokens: readonly Token[]): readonly Token[] {
+  const [a, b, c, word, ...rest] = tokens;
+  if (a === undefined || b === undefined || c === undefined || word === undefined) return tokens;
+  const run = [a, b, c].every((t) => t.kind === 'point') && !b.spaceBefore && !c.spaceBefore;
+  const triangle = word.kind === 'name' && word.value === 'triangle' && word.spaceBefore;
+  return run && triangle ? [word, a, b, c, ...rest] : tokens;
 }
 
 function nameRef(c: Cursor, what: string): NameRef | undefined {

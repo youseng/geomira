@@ -77,7 +77,8 @@ concurrent`, `AB ⟂ CD` (or `⊥`, `perp`, `perpendicular`, `\perp`), `AB ∥ C
     block, which this ADR carries verbatim (also checked by a test):
 
 ```ebnf
-(* ---- Geomdraw's notation: read, never printed (ADR-0025) ---- *)
+(* ---- Geomdraw's notation (ADR-0025): read; the short notation writes runs and
+        branchesStmt (ADR-0061); the canonical text never does ---- *)
 statement    += pointsStmt | branchesStmt ;
 pointsStmt    = ( "point" | "points" ) , pointName , { pointName } , { attr } ;
                                     (* free points at places drawn from the names *)
@@ -88,13 +89,16 @@ definition   += name , "=" , "point" , "(" , ")" , { attr } ;           (* a fre
 triangleStmt += "triangle" , pointName , pointName , pointName ,
                 { "acute" | "scalene" | "obtuse" | "obtuse_at_" , pointName } , { attr } ;
                                     (* names that exist are used; "obtuse": at the first vertex *)
+              | pointName , pointName , pointName , "triangle" , … ;
+                                    (* ABC triangle: three glued names, then the word (ADR-0061) *)
 primary      += run ;
 run           = pointName , pointName , { pointName } ;    (* glued: AB is line(A, B), ABC is
                                        circle(A, B, C), ABCD… polygon(A, B, C, D, …); as an argument
                                        a run is spread into its points where the call or the claim
                                        takes the points and not the line, circle or polygon *)
 call         += Capitalised , "(" , [ args ] , ")" ;    (* Midpoint(…) is midpoint(…) *)
-tool         += alias ;                                     (* see "Other names" *)
+tool         += alias ;                                     (* see "Other names"; and a tool
+                                       name with "centre" for "center": circumcentre (ADR-0061) *)
 attr         += "@" , styleWord ;                           (* @red is [color=red] *)
 claim        += expr , { "," , expr } , ( "collinear" | "concyclic" | "cyclic" | "concurrent" )
               | expr , ( "⟂" | "⊥" | "perp" | "perpendicular" | "∥" | "parallel"

@@ -41,7 +41,7 @@ test('local test, then global test, then open the counterexample', async ({ page
   await tab(page, 'Claims');
   await global.getByRole('button', { name: 'Open counterexample' }).click();
   await expect(await textArea(page)).not.toHaveValue(before);
-  await expectLines(page, CLAIM, 'H = orthocenter(A, B, C)');
+  await expectLines(page, CLAIM, 'H = orthocenter(ABC)');
   await tab(page, 'Claims');
   await expect(claimItem(page, 'claim').locator('.badge')).toHaveText('false in this figure');
   await expect(

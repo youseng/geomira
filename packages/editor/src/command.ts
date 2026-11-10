@@ -20,6 +20,7 @@ import type { Signature } from '@geomira/kernel/tool';
 import { error, type Diagnostic } from '@geomira/lang/diagnostic';
 import { print } from '@geomira/lang/print';
 import { sameConstructionMessage } from '@geomira/lang/same-construction';
+import { splitStatements, type StatementPiece } from '@geomira/lang/statements';
 import { applyEdit } from './edit';
 import type { EditResult } from './result';
 import type { EditorEnv, EditorState } from './state';
@@ -108,16 +109,18 @@ export function runCommand(state: EditorState, line: string, env: EditorEnv): Co
       : { kind: 'error', reason: r.reason, diagnostics: [] };
   }
   const lines = print(state.doc).split('\n');
-  const at = replacedLine(lines, trimmed);
-  // The command's line: the directive it replaces, else a new last line.
+  const pieces = splitStatements(trimmed);
+  const at = pieces.length === 1 ? replacedLine(lines, trimmed) : undefined;
+  // The command's lines: the directive it replaces, else new last lines, one per statement
+  // (several statements separated by `;` are one edit, ADR-0061).
   const offset = at ?? lines.length - 1;
   const text =
     at === undefined
-      ? `${lines.join('\n')}${trimmed}\n`
+      ? `${lines.join('\n')}${pieces.map((p) => p.text).join('\n')}\n`
       : lines.map((l, i) => (i === at ? trimmed : l)).join('\n');
   const r = applyEdit(state, { kind: 'replaceText', text }, env);
   if (!r.ok) {
-    const diagnostics = (r.diagnostics ?? []).map((d) => ({ ...d, line: d.line - offset }));
+    const diagnostics = (r.diagnostics ?? []).map((d) => onCommandLine(d, offset, pieces));
     return { kind: 'error', reason: r.reason, diagnostics };
   }
   if (r.state.doc === state.doc)
@@ -125,6 +128,20 @@ export function runCommand(state: EditorState, line: string, env: EditorEnv): Co
   const dup = duplicateDefinition(state.doc, r.state.doc, trimmed.length, env);
   if (dup !== undefined) return { kind: 'error', reason: dup.message, diagnostics: [dup] };
   return { kind: 'edit', result: r };
+}
+
+/**
+ * A diagnostic of the applied text, on the command's own line: line 1, at the columns of the
+ * statement it belongs to (the k-th appended line is the k-th statement of the command).
+ */
+function onCommandLine(
+  d: Diagnostic,
+  offset: number,
+  pieces: readonly StatementPiece[],
+): Diagnostic {
+  const piece = pieces.length > 1 ? pieces[d.line - offset - 1] : undefined;
+  if (piece === undefined) return { ...d, line: d.line - offset };
+  return { ...d, line: 1, column: d.column + piece.start, endColumn: d.endColumn + piece.start };
 }
 
 export interface Completion {

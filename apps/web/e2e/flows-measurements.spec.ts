@@ -96,7 +96,7 @@ test('an angle measurement: its arc and value; Undefined is listed with its reas
   await clickWorld(page, 4, 0);
   await clickWorld(page, 0, 0);
   await clickWorld(page, 0, 3);
-  await expect.poll(() => source(page)).toMatch(/^\S+ = angle\(B, A, C\) \[show\]$/mu);
+  await expect.poll(() => source(page)).toMatch(/^\S+ = angle\(BAC\) \[show\]$/mu);
   await expect(await measurement(page)).toContainText('90.00° · shown');
   // Moving C onto A makes the angle Undefined: listed with its reason, not drawn.
   await tool(page, 'Move');

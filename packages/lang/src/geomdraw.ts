@@ -11,6 +11,7 @@ import type { ClaimParam } from '@geomira/claims/kind';
 import type { Registry } from '@geomira/kernel/registry';
 import type { Signature } from '@geomira/kernel/tool';
 import { hasCapability } from '@geomira/kernel/value';
+import { assertNever } from '@geomira/num/assert';
 import type { ExprNode } from './ast';
 
 /**
@@ -30,18 +31,16 @@ export const TOOL_ALIASES: Readonly<Record<string, string>> = Object.freeze({
 /** The registry name of a call's tool: itself, or the tool an alias stands for. */
 export function toolName(name: string, registry: Registry): string {
   if (registry.get(name) !== undefined) return name;
-  return Object.hasOwn(TOOL_ALIASES, name) ? (TOOL_ALIASES[name] ?? name) : name;
+  if (Object.hasOwn(TOOL_ALIASES, name)) return TOOL_ALIASES[name] ?? name;
+  // British spelling (ADR-0061): circumcentre, incentre, ninepoint_centre, … read as the tool.
+  const american = name.replace(/centre/gu, 'center');
+  return american !== name && registry.get(american) !== undefined ? american : name;
 }
 
 type Call = Extract<ExprNode, { kind: 'call' }>;
 
 function isRun(n: ExprNode): n is Call {
   return n.kind === 'call' && n.glued === true;
-}
-
-/** The kind of a run's default meaning: line (2 names), circle (3), polygon (4 or more). */
-function runKind(n: Call): string {
-  return n.args.length === 2 ? 'line' : n.args.length === 3 ? 'circle' : 'polygon';
 }
 
 /** Whether a signature takes `n` arguments whose known kinds (undefined: any) it accepts. */
@@ -54,23 +53,51 @@ function takes(s: Signature, kinds: readonly (string | undefined)[]): boolean {
   });
 }
 
+/** How a call's glued runs are read: as written (lines, circles, polygons) or spread into points. */
+export type RunReading = 'written' | 'spread';
+
+/** The kind of a run of `n` names: line (2), circle (3), polygon (4 or more). */
+function kindOfRun(n: number): string {
+  return n === 2 ? 'line' : n === 3 ? 'circle' : 'polygon';
+}
+
+/**
+ * How `tool` reads arguments of which some are runs (`runs[i]`: the number of names of
+ * argument i when it is a run, else undefined): spread into their points when no signature
+ * takes them as lines, circles or polygons but one takes the points; otherwise as written.
+ * The kinds of the other arguments are not known here: any kind fits them. The printer of the
+ * short notation (print-short.ts) asks the same question, so it writes a run only where it is
+ * read back as what it stands for. Degenerate: an unknown tool or no run → 'written'.
+ */
+export function runReading(
+  tool: string,
+  runs: readonly (number | undefined)[],
+  registry: Registry,
+): RunReading {
+  const spec = registry.get(tool);
+  if (spec === undefined || runs.every((n) => n === undefined)) return 'written';
+  const kinds = runs.map((n) => (n === undefined ? undefined : kindOfRun(n)));
+  if (spec.signatures.some((s) => takes(s, kinds))) return 'written';
+  const pointKinds = runs.flatMap((n) =>
+    n === undefined ? [undefined] : Array.from({ length: n }, () => 'point'),
+  );
+  return spec.signatures.some((s) => takes(s, pointKinds)) ? 'spread' : 'written';
+}
+
 /**
  * The arguments of a call with its glued runs spread into their points when no signature
- * takes them as lines, circles or polygons but one takes the points; otherwise as written.
- * The kinds of the other arguments are not known here: any kind fits them.
+ * takes them as lines, circles or polygons but one takes the points; otherwise as written
+ * (runReading).
  */
 export function spreadRuns(
   tool: string,
   args: readonly ExprNode[],
   registry: Registry,
 ): readonly ExprNode[] {
-  const spec = registry.get(tool);
-  if (spec === undefined || !args.some(isRun)) return args;
-  const kinds = args.map((a) => (isRun(a) ? runKind(a) : undefined));
-  if (spec.signatures.some((s) => takes(s, kinds))) return args;
-  const spread = args.flatMap((a) => (isRun(a) ? a.args : [a]));
-  const pointKinds = args.flatMap((a) => (isRun(a) ? a.args.map(() => 'point') : [undefined]));
-  return spec.signatures.some((s) => takes(s, pointKinds)) ? spread : args;
+  const runs = args.map((a) => (isRun(a) ? a.args.length : undefined));
+  return runReading(tool, runs, registry) === 'spread'
+    ? args.flatMap((a) => (isRun(a) ? a.args : [a]))
+    : args;
 }
 
 /** Whether a claim parameter takes a value of kind `k` (number parameters take numbers). */
@@ -97,21 +124,44 @@ function claimFits(
 const POINT_ASSUMPTIONS: readonly string[] = Object.freeze(['acute', 'scalene', 'convex']);
 
 /**
- * The arguments of a claim or an assumption with glued runs read as the kind needs: spread
- * into points when the kind takes points there and not the run's line or circle
- * (`collinear(ABC)`, `ABCD cyclic`, `acute(ABC)`), and a polygon in `inside(P, ABC)`.
+ * How a claim or an assumption reads arguments of which some are runs (`runs` as in
+ * runReading): spread into points when the kind takes points there and not the run's line or
+ * circle (`collinear(ABC)`, `ABCD cyclic`, `acute(ABC)`); 'polygon' for `inside(P, ABC)`.
+ */
+export function conditionReading(
+  kind: string,
+  runs: readonly (number | undefined)[],
+): RunReading | 'polygon' {
+  if (runs.every((n) => n === undefined)) return 'written';
+  if (POINT_ASSUMPTIONS.includes(kind)) return 'spread';
+  if (kind === 'inside') return 'polygon';
+  const spec = CLAIM_KINDS.find((k) => k.name === kind);
+  if (spec === undefined) return 'written';
+  const kinds = runs.map((n) => (n === undefined ? undefined : kindOfRun(n)));
+  if (claimFits(spec.params, spec.rest, kinds)) return 'written';
+  const pointKinds = runs.flatMap((n) =>
+    n === undefined ? [undefined] : Array.from({ length: n }, () => 'point'),
+  );
+  return claimFits(spec.params, spec.rest, pointKinds) ? 'spread' : 'written';
+}
+
+/**
+ * The arguments of a claim or an assumption with glued runs read as the kind needs
+ * (conditionReading): spread into points, a polygon in `inside(P, ABC)`, or as written.
  */
 export function spreadCondition(kind: string, args: readonly ExprNode[]): readonly ExprNode[] {
-  if (!args.some(isRun)) return args;
-  if (POINT_ASSUMPTIONS.includes(kind)) return args.flatMap((a) => (isRun(a) ? a.args : [a]));
-  if (kind === 'inside')
-    return args.map((a) => (isRun(a) && a.args.length >= 3 ? { ...a, tool: 'polygon' } : a));
-  const spec = CLAIM_KINDS.find((k) => k.name === kind);
-  if (spec === undefined) return args;
-  const kinds = args.map((a) => (isRun(a) ? runKind(a) : undefined));
-  if (claimFits(spec.params, spec.rest, kinds)) return args;
-  const pointKinds = args.flatMap((a) => (isRun(a) ? a.args.map(() => 'point') : [undefined]));
-  return claimFits(spec.params, spec.rest, pointKinds)
-    ? args.flatMap((a) => (isRun(a) ? a.args : [a]))
-    : args;
+  const reading = conditionReading(
+    kind,
+    args.map((a) => (isRun(a) ? a.args.length : undefined)),
+  );
+  switch (reading) {
+    case 'spread':
+      return args.flatMap((a) => (isRun(a) ? a.args : [a]));
+    case 'polygon':
+      return args.map((a) => (isRun(a) && a.args.length >= 3 ? { ...a, tool: 'polygon' } : a));
+    case 'written':
+      return args;
+    default:
+      return assertNever(reading, 'run reading');
+  }
 }

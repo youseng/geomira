@@ -7,11 +7,9 @@
  *   claims tester reports when a claim depends on that choice (ORIENTATION-DEPENDENT); a
  *   semantic selector (same_side, on_arc, other) is then the fix, as for any call.
  */
-import type { CallExpr, Expr } from '@geomira/kernel/expr';
-import { staticKinds } from '@geomira/kernel/selector-check';
-import type { BranchShape } from '@geomira/kernel/tool';
-import type { ValueKind } from '@geomira/kernel/value';
+import type { Expr } from '@geomira/kernel/expr';
 import type { ExprNode, Statement } from './ast';
+import { branchShapes } from './branches';
 import { convert } from './build-expr';
 import { define, freePoint } from './build-defs';
 import { exprEnv } from './build-env';
@@ -37,32 +35,13 @@ export function pointsStatement(st: State, s: Points, line: number): number | un
   });
 }
 
-/** The branch shapes of a call for every combination of its arguments' static kinds. */
-function shapesOf(st: State, c: CallExpr): BranchShape[] | undefined {
-  let combos: ValueKind[][] = [[]];
-  for (const a of c.args) {
-    const ks = staticKinds(a, (id) => st.staticKinds.get(id), st.registry);
-    if (ks === undefined) return undefined;
-    combos = combos.flatMap((k) => ks.map((x) => [...k, x]));
-  }
-  const shapes: BranchShape[] = [];
-  for (const kinds of combos) {
-    const r = st.registry.resolve(
-      c.tool,
-      kinds.map((kind) => ({ kind })),
-    );
-    if (r.ok && r.signature.branch !== undefined) shapes.push(r.signature.branch);
-  }
-  return shapes;
-}
-
 type Low = 'along' | 'orient' | { readonly message: string; readonly hint: string };
 
 /** The low-level selector that tells the two branches apart, or why there is none. */
 function lowOf(st: State, e: Expr): Low {
   const one = 'write one point per line, each with its own selector';
   if (e.kind !== 'call') return { message: 'two names take a call with two candidates', hint: one };
-  const shapes = shapesOf(st, e);
+  const shapes = branchShapes(e, (id) => st.staticKinds.get(id), st.registry);
   if (shapes === undefined)
     return { message: 'the kinds of the arguments are not known', hint: one };
   if (shapes.length === 0 || shapes.some((s) => s.candidates !== 2))

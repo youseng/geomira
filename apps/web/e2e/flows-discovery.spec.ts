@@ -90,7 +90,7 @@ test('Special positions: View is a draft, Open as new figure opens it', async ({
   await expect(await textArea(page)).not.toHaveValue(before);
   const opened = await text(page);
   expect(opened).not.toBe(before);
-  for (const name of ['O = circumcenter(A, B, C)', 'M = midpoint(B, C)'])
+  for (const name of ['O = circumcenter(ABC)', 'M = midpoint(B, C)'])
     expect(opened).toContain(name);
   expect(errors).toEqual([]);
 });

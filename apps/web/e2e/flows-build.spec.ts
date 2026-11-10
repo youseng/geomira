@@ -25,7 +25,7 @@ test('triangle and circumcircle by mouse and by command bar give the identical t
     [1, 3],
   ] as const)
     await clickWorld(page, x, y);
-  await expectLines(page, 'c_ABC = circle(A, B, C)');
+  await expectLines(page, 'c_ABC = circle(ABC)');
   const byMouse = await text(page);
 
   // A separate browser context: its own storage, so it does not open page 1's autosave.
@@ -33,10 +33,11 @@ test('triangle and circumcircle by mouse and by command bar give the identical t
   await openApp(other);
   for (const line of [...TRIANGLE, 'poly = polygon(A, B, C)', 'c_ABC = circle(A, B, C)'])
     await command(other, line);
-  await expectLines(other, 'c_ABC = circle(A, B, C)');
+  await expectLines(other, 'c_ABC = circle(ABC)');
   const byCommand = await text(other);
   expect(byMouse).toBe(byCommand);
-  for (const line of [...TRIANGLE, 'poly = polygon(A, B, C)', 'c_ABC = circle(A, B, C)'])
+  // The text panel shows the short notation (ADR-0061): what was typed long reads the same.
+  for (const line of [...TRIANGLE, 'poly = polygon(ABC)', 'c_ABC = circle(ABC)'])
     expect(byMouse.split('\n')).toContain(line);
   expect(errors).toEqual([]);
 });

@@ -49,7 +49,7 @@ test('the Claim tool: concurrent cevians by their points, then Finish', async ({
   const item = claimItem(page, 'concurrent');
   await expect(item.locator('.badge')).toHaveText('true in this figure');
   await tab(page, 'Text');
-  await expectLines(page, 'claim concurrent(line(A, P), line(B, Q), line(C, R))');
+  await expectLines(page, 'claim concurrent(AP, BQ, CR)');
 });
 
 test('the Claim tool: a kind with a number takes it from the field', async ({ page }) => {
