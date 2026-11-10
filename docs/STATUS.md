@@ -102,15 +102,21 @@ messages):
 ```
 typecheck: every package Done; tsc -p tsconfig.tests.json clean
 lint: eslint 0 problems; prettier: All matched files use Prettier code style!
-@@DEP@@
-@@RULES@@
+✔ no dependency violations found (954 modules, 5607 dependencies cruised)
+ok   tolerance: 1325 files scanned, 0 violation(s)
+ok   file-length: 1325 files scanned, 0 violation(s)
+ok   test-count: 4815 tests, floor 4815, 0 violation(s)
+ok   disabled-tests: 1325 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-16c, 0 violation(s)
+ok   forbidden-words: 1325 files scanned, 0 violation(s)
  Test Files  524 passed (524)
       Tests  4815 passed (4815)
 All files          |   96.53 |    90.47 |   99.45 |   98.36 |
 ```
 
-`docs/test-count.txt`: 4776 → 4815 (39 new tests: 26 in packages/lang, 7 in packages/editor,
-4 in apps/web, and 2 the count finds in changed files; the 3 new e2e tests are not counted).
+`docs/test-count.txt`: 4776 → 4815. I wrote 37 of the 39 new tests (26 in packages/lang, 7 in
+packages/editor, 4 in apps/web); I have not identified where the other 2 are generated. The 3
+new e2e tests are not in this count.
 
 e2e (`playwright test`, desktop and mobile, with the container's Chromium): 121 passed, 5
 failed, the 5 of Uncertain. CI's runs are the source of truth: see the pull request.
