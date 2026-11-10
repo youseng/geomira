@@ -22,6 +22,7 @@ import { useAutosave, useFitOnOpen, useInternalErrors, useShortcuts, useStartup 
 import { reportOf, useFit, useHeader, useKeyActions, usePage, type Dialog } from './page';
 import { SidePanel, type Tab } from './SidePanel';
 import { useSettled } from './settled';
+import { SelectionBar } from './SelectionBar';
 import { ClaimChips, DevBox, NoticeLine, Stage, ZoomControls } from './Stage';
 import type { EditorStore } from './store';
 import { StyleCard, usePreviewScene, useStyleCard } from './StyleCard';
@@ -301,6 +302,7 @@ export function App() {
             stats={header.stats}
             times={header.times}
           />
+          <SelectionBar store={store} state={settled} />
           <ClaimChips store={store} state={state} onOpen={app.openClaims} />
           <ZoomControls onZoom={header.props.onZoom} onFit={header.props.onFit} />
           <Status state={settled} />
