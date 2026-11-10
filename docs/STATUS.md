@@ -82,6 +82,9 @@ line is the same figure in the other notation.
   places), `poly = polygon(A, B, C)` → `poly = polygon(ABC)` in the panel's lines.
 - `apps/web/e2e/flows-centers.spec.ts`: `O = circumcenter(ABC)`, `ω = incircle(ABC)`.
 - `apps/web/e2e/flows-claims.spec.ts`, `flows-design.spec.ts`: `H = orthocenter(ABC)`.
+- `apps/web/e2e/pwa.spec.ts`: `H = orthocenter(ABC)` (two places). Missed at first: the `pwa`
+  project does not run in the dev container; CI's first run on the pull request failed on it
+  (ci / verify and deploy / build, the same test), and this is the fix.
 - `apps/web/e2e/flows-discovery.spec.ts`: `O = circumcenter(ABC)`.
 - `apps/web/e2e/flows-maps.spec.ts`: `c = arc(ABC)`.
 - `apps/web/e2e/flows-geomdraw.spec.ts`: the Tangent tool's two tangents are one line `…, … =
