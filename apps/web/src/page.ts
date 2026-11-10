@@ -5,8 +5,8 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { TriangleType } from '@geomira/claims/randomize';
-import type { DocumentEdit } from '@geomira/editor/edit';
 import { randomizeEdit } from '@geomira/editor/randomize';
+import { selectableIds, selectionEdit } from '@geomira/editor/selection-actions';
 import { claimCompletions } from '@geomira/editor/claim-bar';
 import type { ClaimFeedback } from './ClaimBox';
 import { cycleView } from '@geomira/editor/views';
@@ -156,10 +156,14 @@ export function useKeyActions(
           store.input({ kind: 'finish' });
           return;
         case 'delete': {
-          const edits: DocumentEdit[] = s.selection.map((id) => ({ kind: 'remove', id }));
-          if (edits.length > 0) store.apply({ kind: 'batch', label: 'remove', edits });
+          // One batch; an object a selected source's removal takes with it is not named twice.
+          const r = selectionEdit(s, { kind: 'remove' });
+          if (r.ok) store.apply(r.edit);
           return;
         }
+        case 'selectAll':
+          store.apply({ kind: 'select', ids: selectableIds(s), mode: 'replace' });
+          return;
         case 'command':
           command();
           return;

@@ -234,7 +234,8 @@ export class Gestures {
     this.store.apply({ kind: 'viewport', viewport });
   }
 
-  up(id: number, q: Vec2, display: DisplayList): void {
+  /** A pointer goes up; `extend` (Shift or Ctrl held, ADR-0060) makes its click an extended one. */
+  up(id: number, q: Vec2, display: DisplayList, extend = false): void {
     if (!this.pointers.delete(id)) return;
     this.stopHold();
     const m = this.mode;
@@ -246,7 +247,7 @@ export class Gestures {
     this.mode = { kind: 'none' };
     if (m.kind !== 'press' || this.dragGone(m)) return;
     if (m.drag) this.store.apply({ kind: m.moved ? 'dragEnd' : 'dragCancel' });
-    if (!m.moved) this.click(q, display);
+    if (!m.moved) this.click(q, display, extend);
   }
 
   cancel(id: number): void {
@@ -260,9 +261,10 @@ export class Gestures {
   /**
    * A click: the tool gets the hit test; in the Move tool, when no object is hit, also the
    * object of the label under the click (it selects it: a measurement's value is its label,
-   * ADR-0048).
+   * ADR-0048). An extended click (Shift or Ctrl) adds the object to the selection or takes it
+   * out (ADR-0060).
    */
-  private click(q: Vec2, display: DisplayList): void {
+  private click(q: Vec2, display: DisplayList, extend: boolean): void {
     const world = toWorld(this.view(display), q);
     const hit = hitTest(display, q);
     const m = this.metrics();
@@ -270,7 +272,13 @@ export class Gestures {
       this.store.current().tool === 'move' && hit.hits.length === 0
         ? hitLabel(display, q, m.width, m.px)?.id
         : undefined;
-    this.store.input({ kind: 'click', hit, world, ...(label === undefined ? {} : { label }) });
+    this.store.input({
+      kind: 'click',
+      hit,
+      world,
+      ...(label === undefined ? {} : { label }),
+      ...(extend ? { extend: true as const } : {}),
+    });
   }
 
   private hover(q: Vec2, display: DisplayList): void {

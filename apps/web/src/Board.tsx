@@ -206,7 +206,9 @@ export function Board(props: BoardProps) {
         if (tooling || cursor !== null) setCursor(tooling ? local(e) : null);
       }}
       onPointerUp={(e) => {
-        if (display !== null) gestures.up(e.pointerId, local(e), display);
+        // Shift or Ctrl (Cmd): the click adds to the selection or takes from it (ADR-0060).
+        const extend = e.shiftKey || e.ctrlKey || e.metaKey;
+        if (display !== null) gestures.up(e.pointerId, local(e), display, extend);
       }}
       onPointerCancel={(e) => {
         gestures.cancel(e.pointerId);

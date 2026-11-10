@@ -14,6 +14,8 @@ export type KeyAction =
   | { readonly kind: 'cancel' }
   | { readonly kind: 'finish' }
   | { readonly kind: 'delete' }
+  /** Every drawn object is selected (ADR-0060). */
+  | { readonly kind: 'selectAll' }
   | { readonly kind: 'command' }
   | { readonly kind: 'help' }
   | { readonly kind: 'fit' }
@@ -61,6 +63,13 @@ const COMMANDS: readonly KeyBinding[] = [
     also: ['Backspace'],
     action: { kind: 'delete' },
     help: 'Remove the selected objects (and what is built from them)',
+    section: 'Editing',
+  },
+  {
+    key: 'a',
+    ctrl: true,
+    action: { kind: 'selectAll' },
+    help: 'Select every drawn object (Shift+click or Ctrl+click adds or removes one)',
     section: 'Editing',
   },
   { key: '/', action: { kind: 'command' }, help: 'Go to the command bar', section: 'Editing' },

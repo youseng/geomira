@@ -35,6 +35,11 @@ export type ToolInput =
        * selects it when no object is hit (ADR-0048: a measurement's value is its label).
        */
       readonly label?: number;
+      /**
+       * Shift or Ctrl was held (ADR-0060): in the Move tool the clicked object joins or leaves
+       * the selection, and a click on nothing keeps it. Other tools ignore it.
+       */
+      readonly extend?: true;
     }
   | { readonly kind: 'object'; readonly id: number }
   | { readonly kind: 'finish' }
@@ -145,8 +150,19 @@ function pushPick(
   return done({ ...state, toolState: next });
 }
 
-function moveClick(state: EditorState, hit: HitResult, env: EditorEnv, label?: number) {
+function moveClick(
+  state: EditorState,
+  hit: HitResult,
+  env: EditorEnv,
+  label?: number,
+  extend = false,
+) {
   const top = hit.hits[0]?.id ?? label;
+  // An extended click (ADR-0060) toggles the object; on nothing, the selection stays.
+  if (extend)
+    return top === undefined
+      ? done(state)
+      : applyEdit(state, { kind: 'select', ids: [top], mode: 'toggle' }, env);
   return applyEdit(
     state,
     { kind: 'select', ids: top === undefined ? [] : [top], mode: 'replace' },
@@ -217,7 +233,8 @@ function click(
   env: EditorEnv,
 ): EditResult {
   const ts = state.toolState;
-  if (tool.id === 'move') return moveClick(state, input.hit, env, input.label);
+  if (tool.id === 'move')
+    return moveClick(state, input.hit, env, input.label, input.extend === true);
   if (tool.id === 'glider') return gliderClick(state, input, env);
   const open = openSteps(tool, ts);
   const [first] = open;

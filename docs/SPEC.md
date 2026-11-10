@@ -395,7 +395,10 @@ Diagnostics carry line, column and a fix hint.
 State = { doc, values, selection, hover, tool, toolState, history, viewport }. Every
 change is an edit through `applyEdit` (add, remove with cascade list, rename, redefine,
 style, layers, derived layers, views, drag, replaceText, claims, assumptions; viewport
-outside history). Drags are coalesced (a label drag, ADR-0049, writes its offset), and so is
+outside history). The selection holds any number of objects: in the Move tool a click with
+Shift or Ctrl held adds the clicked object or takes it out, Ctrl+A selects what is drawn, and
+the actions on a selection (hide, show, labels, move to a layer, remove) are one batch each
+(ADR-0060). Drags are coalesced (a label drag, ADR-0049, writes its offset), and so is
 the text panel's typing session (replaceText with `typing: 'start' | 'continue'`: one history
 entry until any other action; ADR-0047); at drag end values are rounded to the FINER of the
 power-of-ten grid 10^(⌊log10 scale⌋ − 4) and the power of ten just below 0.1 px at the
@@ -442,8 +445,11 @@ against the kernel (≤ 1e-6·scale).
 ## 15. Web app
 Panels: Text (two-way, per-line diagnostics; applies as you type after a 500 ms pause, never
 over a figure changed meanwhile, ADR-0047), Objects (by layer, Undefined/Inexact
-reasons; first the Measurements: every number with its definition and value as shown, ADR-0048), Layers, Claims (live badges; local verdict line; global verdict line;
-"open counterexample"), Style. Command bar with registry autocomplete; shortcuts and help
+reasons; first the Measurements: every number with its definition and value as shown, ADR-0048;
+each row has an eye that hides or shows its object, ADR-0060), Layers (shown, active, locked;
+a new layer, a layer's name and "move the selection here" from the panel, ADR-0060), Claims (live badges; local verdict line; global verdict line;
+"open counterexample"), Style. While objects are selected a selection bar floats on the canvas with what can be done to all of
+them in one click (ADR-0060). Command bar with registry autocomplete; shortcuts and help
 generated from data; mobile (390×664) pan, pinch, drag and panels work. Views UI: v1.1.
 (ADR-0051) Every claim kind is reachable from the Claim tool (a line parameter takes a line,
 segment or ray, or two points: `line(A, P)`; a kind's number comes from the tool's field) and

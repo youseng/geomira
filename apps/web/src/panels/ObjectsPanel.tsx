@@ -2,9 +2,11 @@ import { useMemo } from 'react';
 import type { Box } from '../card-place';
 import { LongPress, timeout } from '../long-press';
 import { objectsByLayer, type ObjectRow } from '@geomira/editor/panels';
+import { selectionEdit } from '@geomira/editor/selection-actions';
 import type { EditorState } from '@geomira/editor/state';
 import { assertNever } from '@geomira/num/assert';
 import type { EditorStore } from '../store';
+import { EyeIcon } from '../SelectionBar';
 import { MeasurementsList } from './MeasurementsList';
 
 export interface ObjectsPanelProps {
@@ -43,12 +45,32 @@ export function pickObject(store: EditorStore, id: number): void {
     store.setNotice(notice);
 }
 
+/** The eye of a row (ADR-0060): hides or shows its object (one style edit), selected or not. */
+function Eye({ row, store, state }: { row: ObjectRow; store: EditorStore; state: EditorState }) {
+  return (
+    <button
+      type="button"
+      className={`tb object-eye${row.hidden ? ' off' : ''}`}
+      aria-label={`${row.hidden ? 'Show' : 'Hide'} ${row.name}`}
+      title={row.hidden ? 'Hidden: show it' : 'Shown: hide it'}
+      onClick={() => {
+        const r = selectionEdit(state, { kind: row.hidden ? 'show' : 'hide' }, [row.id]);
+        if (r.ok) store.apply(r.edit);
+      }}
+    >
+      <EyeIcon open={!row.hidden} />
+    </button>
+  );
+}
+
 function Row(p: { row: ObjectRow } & ObjectsPanelProps) {
   const { row, store, state, undrawable, onStyle } = p;
   const selected = state.selection.includes(row.id);
   const press = useMemo(() => new LongPress(timeout), []);
-  const pick = () => {
-    pickObject(store, row.id);
+  // Shift or Ctrl adds the object to the selection or takes it out (ADR-0060).
+  const pick = (extend: boolean) => {
+    if (extend) store.apply({ kind: 'select', ids: [row.id], mode: 'toggle' });
+    else pickObject(store, row.id);
   };
   const style = (el: Element) => {
     onStyle(row.id, el.getBoundingClientRect());
@@ -80,7 +102,14 @@ function Row(p: { row: ObjectRow } & ObjectsPanelProps) {
         if (press.takeClick()) e.stopPropagation();
       }}
     >
-      <button type="button" className="object-name" aria-pressed={selected} onClick={pick}>
+      <button
+        type="button"
+        className="object-name"
+        aria-pressed={selected}
+        onClick={(e) => {
+          pick(e.shiftKey || e.ctrlKey || e.metaKey);
+        }}
+      >
         {row.name}
       </button>
       <code className="object-def">{row.definition}</code>
@@ -90,6 +119,7 @@ function Row(p: { row: ObjectRow } & ObjectsPanelProps) {
         {row.managed ? ' · image' : ''}
         {undrawable.includes(row.id) ? ' · not drawable at this zoom' : ''}
       </span>
+      <Eye row={row} store={store} state={state} />
     </li>
   );
 }
@@ -98,7 +128,8 @@ function Row(p: { row: ObjectRow } & ObjectsPanelProps) {
  * Objects by layer (SPEC §15): every object with its definition and its value's kind; an
  * Undefined or Inexact value is listed with its reason (shown as undefined, never as a
  * wrong figure), and a curve the canvas cannot place at its zoom as "not drawable at this
- * zoom" (ADR-0023). A click selects the object, or gives it to a tool that waits for a pick;
+ * zoom" (ADR-0023). A click selects the object, or gives it to a tool that waits for a pick
+ * (with Shift or Ctrl it joins or leaves the selection, ADR-0060); the eye hides or shows it;
  * a right-click or a long press opens its style card (ADR-0029). The figure's numbers are
  * also listed first, with their values, under "Measurements" (ADR-0048).
  */
