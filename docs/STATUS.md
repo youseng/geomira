@@ -1,5 +1,94 @@
 # STATUS
 
+## Maintainer request: the selection box (ADR-0062): NOT ACCEPTED, awaiting the maintainer (2026-11-10)
+
+Not a kit run, no tag. The maintainer's decision (1) of 2026-11-10: a drag selects with a box,
+panning moves to the right button. Decision:
+[ADR-0062](adr/0062-selection-box-and-right-button-pan.md); SPEC §12 updated in the same
+commit. Base: main = 89032c1 (PR #33 merged: the short notation below; CI green on it). Branch:
+claude/quirky-einstein-wp1t4h, restarted from main after the merge.
+
+### Done (each item → the tests that show it)
+
+1. **The selection box** (decisions 1–2): in the Move tool a left drag on empty canvas draws a
+   box; the objects wholly inside are selected, in construction order; Shift or Ctrl adds them.
+   → `packages/scene/test/box.test.ts` (each shape; unbounded lines never; hidden objects
+   never; a larger box never loses an object, 300 random boxes),
+   `apps/web/test/gestures-box.test.ts` ("the left button on empty canvas, Move tool"),
+   `apps/web/e2e/flows-box.spec.ts` (first test: the box is shown, then the bar hides what it
+   selected).
+2. **The right (and middle) button pans in every tool; a still right press opens the style
+   card** (decision 3). → `gestures-box.test.ts` ("the right button"), `flows-box.spec.ts`
+   (second test), and the frozen right-click flows of `style-popover.spec.ts`, which pass
+   unchanged.
+3. **Unchanged, and tested as unchanged** (decision 4): a press on a point drags it; a finger
+   pans; a left drag in a construction tool pans; a second finger ends a box. →
+   `gestures-box.test.ts` ("what stays as it was").
+
+### Not done
+
+- The maintainer's decisions (2) and (3): the style card applying at once; select first, then
+  the tool. Next milestones.
+- A key for panning (Space+drag): ADR-0062, Alternatives.
+- The Move tool's help line and the Help panel do not mention the box or the right button
+  (the help is generated from the key table, which has no mouse gestures).
+
+### Known bugs
+
+None found in this work.
+
+### Uncertain
+
+- On a laptop trackpad with no right button there is no drag that pans in the Move tool any
+  more (two-finger scrolling zooms, as before). See Requests.
+- Browsers send `contextmenu` at the press (macOS, Linux) or at the release (Windows). The
+  card is opened by the release in both; I could only run Chromium on Linux here, and the
+  unit tests drive the gesture class, not a browser's event order on Windows or macOS.
+- e2e in this container: 123 of 128 desktop and mobile tests pass; the 5 failures are the same
+  5 as on untouched main (four screenshot baselines, one pixel-ratio emulation). I checked the
+  specs of the projects that do not run here (pwa, file-url, long-task, drag-frame, fallback)
+  for mouse drags on empty canvas: drag-frame presses on a point (a drag, unchanged); none
+  pans with the left button.
+
+### Changed frozen tests
+
+For [ADR-0062](adr/0062-selection-box-and-right-button-pan.md):
+
+- `apps/web/e2e/flows-build.spec.ts` ("dragging a free point moves it…"): a left drag from a
+  point that is not free used to pan, and the test required the view to move. It now requires
+  the view to STAY (the drag draws a box) and B to be unchanged, then pans with the right
+  button and requires the view to move, B still unchanged. One import line added.
+- `packages/scene/test/exports.test.ts`: lines added only (`./box`).
+
+### Acceptance command output
+
+`pnpm verify` on this branch, locally (`pnpm typecheck && pnpm lint && pnpm depcruise &&
+pnpm rules`, then `pnpm test:coverage`); the rules after the commit (the add-only guard reads
+commit messages):
+
+```
+typecheck: every package Done; tsc -p tsconfig.tests.json clean
+lint: eslint 0 problems; prettier: All matched files use Prettier code style!
+✔ no dependency violations found (957 modules, 5621 dependencies cruised)
+ok   tolerance: 1331 files scanned, 0 violation(s)
+ok   file-length: 1331 files scanned, 0 violation(s)
+ok   test-count: 4833 tests, floor 4833, 0 violation(s)
+ok   disabled-tests: 1331 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-16c, 0 violation(s)
+ok   forbidden-words: 1331 files scanned, 0 violation(s)
+ Test Files  526 passed (526)
+      Tests  4833 passed (4833)
+All files          |   96.52 |    90.48 |   99.45 |   98.36 |
+```
+
+`docs/test-count.txt`: 4815 → 4833 (18 new tests: 8 in packages/scene, 10 in apps/web; the 2
+new e2e tests are not in this count).
+
+### Requests (decisions for the maintainer)
+
+1. **Trackpads:** should two-finger scrolling pan (and pinch or Ctrl+scroll zoom), as in most
+   drawing programs? Today the wheel zooms (a frozen e2e flow pins it).
+
 ## Maintainer request: the short notation (ADR-0061): NOT ACCEPTED, awaiting the maintainer (2026-11-10)
 
 Not a kit run, no tag. The maintainer's decisions of 2026-11-10 on the Requests of the GUI

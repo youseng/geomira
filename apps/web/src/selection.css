@@ -130,3 +130,12 @@
   background: var(--panel);
   padding: 2px 4px;
 }
+
+/* ---- the selection box while it is drawn (ADR-0062) ---- */
+.selbox {
+  position: absolute;
+  z-index: 3;
+  border: 1px dashed var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  pointer-events: none;
+}

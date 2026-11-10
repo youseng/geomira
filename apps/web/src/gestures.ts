@@ -16,6 +16,12 @@
  * the pointer where it was grabbed, then dragEnd (one edit of label_angle / label_dist). The
  * same click slop and long press apply: a still press is a click, or on touch the style card
  * of the label's object (pressedObject); a press that moves past CLICK_SLOP first is a drag.
+ *
+ * The mouse (ADR-0062): a LEFT press that starts no drag draws a SELECTION BOX in the Move
+ * tool (BoxHost: the box while it is drawn, then the objects wholly inside it are selected;
+ * with Shift or Ctrl they are added), and pans in the other tools as before; a RIGHT or middle
+ * press PANS in every tool, and a right press that does not move opens the style card of the
+ * object under it (the long press's action). A finger still pans on empty canvas.
  */
 import { hitTest } from '@geomira/scene/hit';
 import type { DisplayList } from '@geomira/scene/display';
@@ -36,6 +42,17 @@ export interface Hold {
   /** Runs `f` after `ms` milliseconds; returns the function that cancels it. */
   readonly schedule: (f: () => void, ms: number) => () => void;
   readonly onHold: (q: Vec2, display: DisplayList) => void;
+}
+
+/** Which press a pointer makes: a finger or pen (or a caller that says nothing), or a mouse button. */
+export type Press = 'plain' | 'left' | 'right';
+
+/** The selection box of the Move tool (ADR-0062), in canvas px. */
+export interface BoxHost {
+  /** The box being drawn (from its start to the pointer), or null when there is none. */
+  readonly change: (box: { readonly a: Vec2; readonly b: Vec2 } | null) => void;
+  /** The box is finished: select what is inside (`extend`: add to the selection). */
+  readonly done: (a: Vec2, b: Vec2, display: DisplayList, extend: boolean) => void;
 }
 
 /** How the renderer measures label runs (render.ts measuredWidth) at its base label size. */
@@ -76,6 +93,10 @@ type Mode =
       readonly drag: boolean;
       /** The label dragged (ADR-0049), or null: the drag (if any) moves a point. */
       readonly grab: Grab | null;
+      /** What a press that drags nothing does when it moves: pan, or draw the selection box. */
+      readonly empty: 'pan' | 'box';
+      /** A right press: without a move it opens the style card (ADR-0062). */
+      readonly menu: boolean;
     }
   /** A long press happened: the rest of the press does nothing. */
   | { readonly kind: 'held' }
@@ -105,6 +126,8 @@ export class Gestures {
     private readonly hold: Hold | null = null,
     /** The renderer's label measure, asked at each press (the font may load later). */
     private readonly metrics: () => LabelMetrics = () => ESTIMATED_METRICS,
+    /** The selection box's host; null: a left press on empty canvas pans, as a finger does. */
+    private readonly box: BoxHost | null = null,
   ) {}
 
   private stopHold(): void {
@@ -147,8 +170,11 @@ export class Gestures {
     return a === undefined || b === undefined ? undefined : [a, b];
   }
 
-  /** A pointer goes down; `touch` (a finger or a pen) may start a long press. */
-  down(id: number, q: Vec2, display: DisplayList, touch = false): void {
+  /**
+   * A pointer goes down; `touch` (a finger or a pen) may start a long press; `press` says
+   * which mouse button it is (ADR-0062), 'plain' for a finger or pen.
+   */
+  down(id: number, q: Vec2, display: DisplayList, touch = false, press: Press = 'plain'): void {
     this.pointers.set(id, q);
     this.stopHold();
     const two = this.twoPointers();
@@ -156,6 +182,7 @@ export class Gestures {
       const m = this.mode;
       if (m.kind === 'press' && m.drag && !this.dragGone(m))
         this.store.apply({ kind: 'dragCancel' });
+      this.box?.change(null);
       this.mode = {
         kind: 'pinch',
         d0: distance(...two),
@@ -166,12 +193,15 @@ export class Gestures {
     }
     if (this.pointers.size !== 1) return;
     const s = this.store.current();
-    const target =
-      s.tool === 'move' ? hitTest(display, q).hits.find((h) => h.part === 'point') : undefined;
+    // A right (or middle) press drags nothing: it pans, or opens the style card (ADR-0062).
+    const moving = s.tool === 'move' && press !== 'right';
+    const target = moving ? hitTest(display, q).hits.find((h) => h.part === 'point') : undefined;
     const point = target !== undefined && this.store.apply({ kind: 'dragStart', id: target.id }).ok;
-    const grab = s.tool === 'move' && !point ? this.grabLabel(q, display) : null;
+    const grab = moving && !point ? this.grabLabel(q, display) : null;
     const drag = point || grab !== null;
-    this.mode = { kind: 'press', start: q, last: q, moved: false, drag, grab };
+    const empty = moving && press === 'left' && this.box !== null ? 'box' : 'pan';
+    const menu = press === 'right';
+    this.mode = { kind: 'press', start: q, last: q, moved: false, drag, grab, empty, menu };
     const hold = this.hold;
     if (touch && hold !== null)
       this.unhold = hold.schedule(() => {
@@ -211,6 +241,7 @@ export class Gestures {
       const at = { x: q.x - m.grab.dx, y: q.y - m.grab.dy };
       this.store.apply({ kind: 'dragLabel', ...labelOffset(m.grab.label, at) });
     } else if (m.drag) this.store.apply({ kind: 'dragMove', to: toWorld(this.view(display), q) });
+    else if (m.empty === 'box') this.box?.change({ a: m.start, b: q });
     else {
       const vp = this.store.current().viewport;
       this.store.apply({
@@ -247,7 +278,13 @@ export class Gestures {
     this.mode = { kind: 'none' };
     if (m.kind !== 'press' || this.dragGone(m)) return;
     if (m.drag) this.store.apply({ kind: m.moved ? 'dragEnd' : 'dragCancel' });
-    if (!m.moved) this.click(q, display, extend);
+    if (m.moved && !m.drag && m.empty === 'box') {
+      this.box?.change(null);
+      this.box?.done(m.start, q, display, extend);
+    }
+    // A still right press is the style card's (the long press's action); never a tool's click.
+    if (!m.moved && m.menu) this.hold?.onHold(q, display);
+    else if (!m.moved) this.click(q, display, extend);
   }
 
   cancel(id: number): void {
@@ -255,6 +292,7 @@ export class Gestures {
     this.stopHold();
     const m = this.mode;
     if (m.kind === 'press' && m.drag && !this.dragGone(m)) this.store.apply({ kind: 'dragCancel' });
+    this.box?.change(null);
     if (this.pointers.size === 0) this.mode = { kind: 'none' };
   }
 

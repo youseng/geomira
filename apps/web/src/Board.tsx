@@ -10,9 +10,12 @@ import {
   ESTIMATED_METRICS,
   Gestures,
   pressedObject,
+  type BoxHost,
   type Hold,
   type LabelMetrics,
+  type Press,
 } from './gestures';
+import { selectBox } from './box-select';
 import { timeout } from './long-press';
 import { drawDisplay, drawPreview, LIGHT_THEME, measuredWidth, type UiState } from './render';
 import type { EditorStore } from './store';
@@ -139,8 +142,15 @@ function labelMetrics(canvas: HTMLCanvasElement | null): LabelMetrics {
  * The pointer gestures, with the long press of touch (ADR-0029): it opens the style card of
  * the object under the finger (or of the label under it, ADR-0049), as a right-click does.
  */
-function useGestures(props: BoardProps): Gestures {
+interface DrawnBox {
+  readonly a: Vec2;
+  readonly b: Vec2;
+}
+
+function useGestures(props: BoardProps, setBox: (box: DrawnBox | null) => void): Gestures {
   const { store, canvasRef } = props;
+  const sceneRef = useRef(props.scene);
+  sceneRef.current = props.scene;
   const onStyle = useRef(props.onStyle);
   onStyle.current = props.onStyle;
   return useMemo(() => {
@@ -154,69 +164,116 @@ function useGestures(props: BoardProps): Gestures {
           onStyle.current(id, around(r.left + q.x, r.top + q.y, ANCHOR_PX));
       },
     };
-    return new Gestures(store, hold, metrics);
-  }, [store, canvasRef]);
+    const scene = () => sceneRef.current;
+    const box: BoxHost = {
+      change: setBox,
+      done: (a, b, display, extend) => {
+        selectBox(store, scene(), display.view, a, b, extend);
+      },
+    };
+    return new Gestures(store, hold, metrics, box);
+  }, [store, canvasRef, setBox]);
+}
+
+interface ClientPoint {
+  readonly clientX: number;
+  readonly clientY: number;
+}
+
+/** A pointer event's place on the canvas, in CSS px from its corner. */
+function localOf(canvas: HTMLCanvasElement | null, e: ClientPoint): Vec2 {
+  const r = canvas?.getBoundingClientRect();
+  return { x: e.clientX - (r?.left ?? 0), y: e.clientY - (r?.top ?? 0) };
+}
+
+/** Whether Shift, Ctrl or Cmd is held. */
+function extending(e: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean }): boolean {
+  return e.shiftKey || e.ctrlKey || e.metaKey;
+}
+
+/**
+ * Which press a pointer event makes (ADR-0062): the left button, another one, or a finger.
+ * After a mouse's right press (Board's rightPress) its release opens the card, not contextmenu.
+ */
+function pressOf(e: { pointerType: string; button: number }): Press {
+  if (e.pointerType !== 'mouse') return 'plain';
+  return e.button === 0 ? 'left' : 'right';
+}
+
+/** The selection box while it is drawn (ADR-0062), over the canvas. */
+function BoxOverlay({ box }: { box: DrawnBox | null }) {
+  if (box === null) return null;
+  const style = {
+    left: Math.min(box.a.x, box.b.x),
+    top: Math.min(box.a.y, box.b.y),
+    width: Math.abs(box.a.x - box.b.x),
+    height: Math.abs(box.a.y - box.b.y),
+  };
+  return <div className="selbox" style={style} aria-hidden="true" />;
 }
 
 export function Board(props: BoardProps) {
   const { canvasRef, store, scene, viewport, onSize, onUndrawable, onStyle } = props;
-  const gestures = useGestures(props);
+  const [box, setBox] = useState<DrawnBox | null>(null);
+  const gestures = useGestures(props, setBox);
+  const rightPress = useRef(false);
   const size = useSurface(canvasRef, onSize);
   useWheelZoom(canvasRef, store, size);
   const display = useDisplay(scene, viewport, size, onUndrawable);
   const { cursor, setCursor } = useFrame(props, display);
-  const local = (e: { clientX: number; clientY: number }) => {
-    const r = canvasRef.current?.getBoundingClientRect();
-    return { x: e.clientX - (r?.left ?? 0), y: e.clientY - (r?.top ?? 0) };
-  };
+  const local = (e: ClientPoint) => localOf(canvasRef.current, e);
   return (
-    <canvas
-      ref={canvasRef}
-      className="board"
-      aria-label="Geometry canvas"
-      // Focusable from code only: the focus returns here after an example is chosen.
-      tabIndex={-1}
-      data-cx={viewport.cx}
-      data-cy={viewport.cy}
-      data-zoom={viewport.zoom}
-      onPointerDown={(e) => {
-        // The right button opens the style card (contextmenu below): no press, no click.
-        if (display === null || (e.pointerType === 'mouse' && e.button === 2)) return;
-        // Leave a focused field first, so its blur (the text panel applies its draft) comes
-        // before the press starts a drag, which would refuse the text (Run 10 audit).
-        const focused = document.activeElement;
-        if (focused instanceof HTMLElement && focused !== e.currentTarget) focused.blur();
-        e.currentTarget.setPointerCapture(e.pointerId);
-        gestures.down(e.pointerId, local(e), display, e.pointerType !== 'mouse');
-      }}
-      onContextMenu={(e) => {
-        // No browser menu on the canvas; on an object or its label, its style card (ADR-0029).
-        e.preventDefault();
-        if (display === null) return;
-        const id = pressedObject(display, local(e), labelMetrics(canvasRef.current));
-        if (id === undefined) return;
-        gestures.endPress();
-        onStyle(id, around(e.clientX, e.clientY, ANCHOR_PX));
-      }}
-      onPointerMove={(e) => {
-        if (display === null) return;
-        gestures.move(e.pointerId, local(e), display);
-        // The preview follows a mouse while a construction tool is active (not a drag's frames).
-        const tooling = e.pointerType === 'mouse' && store.current().tool !== 'move';
-        if (tooling || cursor !== null) setCursor(tooling ? local(e) : null);
-      }}
-      onPointerUp={(e) => {
-        // Shift or Ctrl (Cmd): the click adds to the selection or takes from it (ADR-0060).
-        const extend = e.shiftKey || e.ctrlKey || e.metaKey;
-        if (display !== null) gestures.up(e.pointerId, local(e), display, extend);
-      }}
-      onPointerCancel={(e) => {
-        gestures.cancel(e.pointerId);
-      }}
-      onPointerLeave={() => {
-        gestures.leave();
-        setCursor(null);
-      }}
-    />
+    <>
+      <BoxOverlay box={box} />
+      <canvas
+        ref={canvasRef}
+        className="board"
+        aria-label="Geometry canvas"
+        // Focusable from code only: the focus returns here after an example is chosen.
+        tabIndex={-1}
+        data-cx={viewport.cx}
+        data-cy={viewport.cy}
+        data-zoom={viewport.zoom}
+        onPointerDown={(e) => {
+          if (display === null) return;
+          const press = pressOf(e);
+          rightPress.current = press === 'right';
+          // Leave a focused field first, so its blur (the text panel applies its draft) comes
+          // before the press starts a drag, which would refuse the text (Run 10 audit).
+          const focused = document.activeElement;
+          if (focused instanceof HTMLElement && focused !== e.currentTarget) focused.blur();
+          e.currentTarget.setPointerCapture(e.pointerId);
+          gestures.down(e.pointerId, local(e), display, e.pointerType !== 'mouse', press);
+        }}
+        onContextMenu={(e) => {
+          // No browser menu on the canvas; on an object or its label, its style card (ADR-0029).
+          e.preventDefault();
+          // A mouse's right press opens the card itself when released (gestures.ts, ADR-0062).
+          if (display === null || rightPress.current) return;
+          const id = pressedObject(display, local(e), labelMetrics(canvasRef.current));
+          if (id === undefined) return;
+          gestures.endPress();
+          onStyle(id, around(e.clientX, e.clientY, ANCHOR_PX));
+        }}
+        onPointerMove={(e) => {
+          if (display === null) return;
+          gestures.move(e.pointerId, local(e), display);
+          // The preview follows a mouse while a construction tool is active (not a drag's frames).
+          const tooling = e.pointerType === 'mouse' && store.current().tool !== 'move';
+          if (tooling || cursor !== null) setCursor(tooling ? local(e) : null);
+        }}
+        onPointerUp={(e) => {
+          // Shift or Ctrl (Cmd): the click or the box adds to the selection (ADR-0060, ADR-0062).
+          if (display !== null) gestures.up(e.pointerId, local(e), display, extending(e));
+        }}
+        onPointerCancel={(e) => {
+          gestures.cancel(e.pointerId);
+        }}
+        onPointerLeave={() => {
+          gestures.leave();
+          setCursor(null);
+        }}
+      />
+    </>
   );
 }

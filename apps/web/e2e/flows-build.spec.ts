@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { clickWorld, command, dragWorld, expectLines, openApp, tab, text, tool } from './helpers';
+import { screenOf } from './helpers';
 
 /** Run 8b flows (SPEC §15): building, dragging, undo/redo, derived layers. Desktop project. */
 
@@ -50,10 +51,18 @@ test('dragging a free point moves it, rounds it at the end, and undo returns', a
   await expectLines(page, 'B = (5, 1)', 'M = midpoint(B, C)');
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expectLines(page, 'B = (4, 0)');
-  // A point that is not free is not dragged: the press pans the view instead.
+  // A point that is not free is not dragged: the left press draws a selection box instead
+  // (ADR-0062) and the view stays; the right button pans it.
   const canvas = page.getByLabel('Geometry canvas');
   const before = await canvas.getAttribute('data-cx');
   await dragWorld(page, [2.5, 1.5], [3.5, 1.5]);
+  await expect(canvas).toHaveAttribute('data-cx', before ?? '');
+  await expectLines(page, 'B = (4, 0)');
+  const [a, b] = [await screenOf(page, 2.5, 2.5), await screenOf(page, 3.5, 2.5)];
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down({ button: 'right' });
+  await page.mouse.move(b.x, b.y, { steps: 8 });
+  await page.mouse.up({ button: 'right' });
   await expect(canvas).not.toHaveAttribute('data-cx', before ?? '');
   await expectLines(page, 'B = (4, 0)');
 });
