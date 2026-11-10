@@ -35,10 +35,10 @@ test('the circumcenter O and the incircle ω by clicks; the same text as by comm
 
   await tool(page, 'Circumcenter');
   for (const [x, y] of CLICKS) await clickWorld(page, x, y);
-  await expectLines(page, 'A = (0, 0)', 'B = (4, 0)', 'C = (1, 3)', 'O = circumcenter(A, B, C)');
+  await expectLines(page, 'A = (0, 0)', 'B = (4, 0)', 'C = (1, 3)', 'O = circumcenter(ABC)');
   await tool(page, 'Incircle');
   for (const [x, y] of CLICKS) await clickWorld(page, x, y);
-  await expectLines(page, 'ω = incircle(A, B, C)');
+  await expectLines(page, 'ω = incircle(ABC)');
   const byMouse = await text(page);
 
   const other = await (await browser.newContext()).newPage();
@@ -51,7 +51,7 @@ test('the circumcenter O and the incircle ω by clicks; the same text as by comm
     'ω = incircle(A, B, C)',
   ])
     await command(other, line);
-  await expectLines(other, 'ω = incircle(A, B, C)');
+  await expectLines(other, 'ω = incircle(ABC)');
   expect(byMouse).toBe(await text(other));
   expect(errors).toEqual([]);
 });

@@ -14,6 +14,14 @@ import { exactLiteral, quote } from './lex-literals';
 
 export type Names = (id: number) => string | undefined;
 
+type Call = Extract<Expr, { kind: 'call' }>;
+
+/**
+ * Another way to write a call (the short notation, print-short.ts): its text, or undefined
+ * for the canonical form. `inner` prints a subexpression with the same hook.
+ */
+export type CallHook = (e: Call, inner: (x: Expr) => string) => string | undefined;
+
 const INFIX: Readonly<Record<string, { readonly op: string; readonly prec: number }>> = {
   add: { op: '+', prec: 1 },
   sub: { op: '-', prec: 1 },
@@ -56,7 +64,7 @@ function wrap(s: string, e: Expr, min: number): string {
 }
 
 /** An expression at a position that needs at least precedence `min`. */
-function printAt(e: Expr, names: Names, min: number): string {
+function printAt(e: Expr, names: Names, min: number, hook?: CallHook): string {
   switch (e.kind) {
     case 'ref':
       return names(e.id) ?? `#${String(e.id)}`;
@@ -68,14 +76,16 @@ function printAt(e: Expr, names: Names, min: number): string {
       const [a, b] = e.args;
       const infix = INFIX[e.tool];
       if (isInfix(e) && infix !== undefined && a !== undefined && b !== undefined) {
-        const right = printAt(b, names, infix.prec + 1);
+        const right = printAt(b, names, infix.prec + 1, hook);
         const r =
           e.tool === 'div' && b.kind === 'lit' && right.includes('/') ? `(${right})` : right;
-        return wrap(`${printAt(a, names, infix.prec)} ${infix.op} ${r}`, e, min);
+        return wrap(`${printAt(a, names, infix.prec, hook)} ${infix.op} ${r}`, e, min);
       }
       if (isNeg(e) && a !== undefined) {
         const inner =
-          a.kind === 'lit' || isNeg(a) ? `(${printExpr(a, names)})` : printAt(a, names, UNARY);
+          a.kind === 'lit' || isNeg(a)
+            ? `(${printExpr(a, names, hook)})`
+            : printAt(a, names, UNARY, hook);
         return wrap(`-${inner}`, e, min);
       }
       if (
@@ -85,11 +95,13 @@ function printAt(e: Expr, names: Names, min: number): string {
         a !== undefined &&
         b !== undefined
       ) {
-        return `(${printExpr(a, names)}, ${printExpr(b, names)})`;
+        return `(${printExpr(a, names, hook)}, ${printExpr(b, names, hook)})`;
       }
+      const other = hook?.(e, (x) => printExpr(x, names, hook));
+      if (other !== undefined) return other;
       const parts = [
-        ...e.args.map((x) => printExpr(x, names)),
-        ...e.selectors.map((s) => formatSelector(s, (x) => printExpr(x, names))),
+        ...e.args.map((x) => printExpr(x, names, hook)),
+        ...e.selectors.map((s) => formatSelector(s, (x) => printExpr(x, names, hook))),
       ];
       return `${e.tool}(${parts.join(', ')})`;
     }
@@ -98,6 +110,6 @@ function printAt(e: Expr, names: Names, min: number): string {
   }
 }
 
-export function printExpr(e: Expr, names: Names): string {
-  return printAt(e, names, 0);
+export function printExpr(e: Expr, names: Names, hook?: CallHook): string {
+  return printAt(e, names, 0, hook);
 }

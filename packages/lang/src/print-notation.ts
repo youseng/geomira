@@ -9,6 +9,9 @@ import { isPointName } from '@geomira/kernel/names';
 import { eq, ONE } from '@geomira/num/rational';
 import { litText, printExpr, type Names } from './print-expr';
 
+/** How a kind's call form `kind(args)` is written (the short notation writes lines as runs). */
+export type KindCall = (kind: string, args: readonly Expr[], names: Names) => string;
+
 function call(kind: string, args: readonly Expr[], names: Names): string {
   return `${kind}(${args.map((a) => printExpr(a, names)).join(', ')})`;
 }
@@ -99,20 +102,28 @@ function lengthsAndTriangles(kind: string, a: readonly Expr[], names: Names): st
   }
 }
 
+/** `X = Y` for two plain sides, or undefined. */
+function equalBody(a: readonly Expr[], names: Names): string | undefined {
+  const [x, y] = a;
+  return a.length === 2 && x !== undefined && y !== undefined && plainSide(x) && plainSide(y)
+    ? `${printExpr(x, names)} = ${printExpr(y, names)}`
+    : undefined;
+}
+
 /** `claim …` body (without attributes). */
-export function printClaimBody(kind: string, args: readonly Expr[], names: Names): string {
-  const a = args;
-  const n = a.length;
-  const fallback = call(kind, args, names);
+export function printClaimBody(
+  kind: string,
+  args: readonly Expr[],
+  names: Names,
+  kindCall: KindCall = call,
+): string {
+  const [a, n] = [args, args.length];
+  const fallback = kindCall(kind, args, names);
   const extra = lengthsAndTriangles(kind, a, names);
   if (extra !== undefined) return extra;
   switch (kind) {
-    case 'equal': {
-      const [x, y] = a;
-      return n === 2 && x !== undefined && y !== undefined && plainSide(x) && plainSide(y)
-        ? `${printExpr(x, names)} = ${printExpr(y, names)}`
-        : fallback;
-    }
+    case 'equal':
+      return equalBody(a, names) ?? fallback;
     case 'length': {
       const k = lit(a[4]);
       if (n !== 5 || k === undefined) return fallback;
@@ -173,8 +184,13 @@ function measure(e: Expr | undefined, names: Names): string | undefined {
 const COMPARE: Readonly<Record<string, string>> = { less: '<', greater: '>', not_equal: '≠' };
 
 /** `assume …` body. */
-export function printConditionBody(kind: string, args: readonly Expr[], names: Names): string {
-  const fallback = call(kind, args, names);
+export function printConditionBody(
+  kind: string,
+  args: readonly Expr[],
+  names: Names,
+  kindCall: KindCall = call,
+): string {
+  const fallback = kindCall(kind, args, names);
   const op = COMPARE[kind];
   if (op !== undefined) {
     const [x, y] = [measure(args[0], names), measure(args[1], names)];

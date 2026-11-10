@@ -117,13 +117,13 @@ test('after the first visit the site opens and works offline', async ({ page, co
   await offlineReady(page);
   for (const line of ['A = (1, 3)', 'B = (0, 0)', 'C = (4, 0)', 'H = orthocenter(A, B, C)'])
     await command(page, line);
-  await expectLines(page, 'H = orthocenter(A, B, C)');
+  await expectLines(page, 'H = orthocenter(ABC)');
   // The server is gone and the browser is offline.
   await site.stop();
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByLabel('Geometry canvas')).toBeVisible();
-  await expectLines(page, 'H = orthocenter(A, B, C)');
+  await expectLines(page, 'H = orthocenter(ABC)');
   // A local test runs in the worker, whose script also comes from the cache.
   await command(page, 'claim ∠BHC + ∠BAC = 180');
   await tab(page, 'Claims');

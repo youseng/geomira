@@ -10,9 +10,11 @@
 import { evalClaim, type ClaimValue } from '@geomira/claims/eval-claim';
 import { hypothesesInFigure, type FigureStatus } from '@geomira/claims/figure-hypotheses';
 import type { Document } from '@geomira/kernel/document';
+import type { Registry } from '@geomira/kernel/registry';
 import { atInfinityText } from '@geomira/kernel/ideal';
 import { formatExpr } from '@geomira/kernel/selector';
 import { print } from '@geomira/lang/print';
+import { printShort } from '@geomira/lang/print-short';
 import type { EditorEnv, EditorState } from './state';
 
 export interface ObjectRow {
@@ -86,13 +88,25 @@ export interface StatementLine {
  * assumptions, then the claims, each on one line starting with `assume ` / `claim `, in the
  * document's order (comment lines start with `#`, object lines with a name).
  */
-export function statementLines(doc: Document): {
+export function statementLines(
+  doc: Document,
+  registry?: Registry,
+): {
   claims: Map<number, StatementLine>;
   assumptions: Map<number, StatementLine>;
 } {
   const lines = print(doc).split('\n');
-  const at = (prefix: string) =>
-    lines.flatMap((text, i) => (text.startsWith(prefix) ? [{ line: i + 1, text }] : []));
+  // The text panel shows the short notation (ADR-0061), where two branches may share a line:
+  // the line NUMBERS are that text's; the statements' own text is the same in both.
+  const shown = registry === undefined ? lines : printShort(doc, registry).split('\n');
+  const numbers = (prefix: string) =>
+    shown.flatMap((text, i) => (text.startsWith(prefix) ? [i + 1] : []));
+  const at = (prefix: string) => {
+    const ns = numbers(prefix);
+    return lines
+      .filter((text) => text.startsWith(prefix))
+      .map((text, k) => ({ line: ns[k] ?? 0, text }));
+  };
   const [a, c] = [at('assume '), at('claim ')];
   return {
     claims: new Map(doc.claims.flatMap((x, i) => (c[i] === undefined ? [] : [[x.id, c[i]]]))),
@@ -111,7 +125,7 @@ export interface ClaimRow {
 
 /** The claims with their badges for the current figure (evalClaim, deterministic). */
 export function claimRows(state: EditorState, env: EditorEnv): ClaimRow[] {
-  const lines = statementLines(state.doc).claims;
+  const lines = statementLines(state.doc, env.registry).claims;
   return state.doc.claims.map((c) => ({
     id: c.id,
     line: lines.get(c.id)?.line ?? 0,
@@ -131,7 +145,7 @@ export interface HypothesisRow {
 
 /** The assume lines and whether the current figure satisfies each (note B of Run 8b). */
 export function hypothesisRows(state: EditorState, env: EditorEnv): HypothesisRow[] {
-  const lines = statementLines(state.doc).assumptions;
+  const lines = statementLines(state.doc, env.registry).assumptions;
   return hypothesesInFigure(state.doc, env.registry).map((h) => ({
     id: h.id,
     line: lines.get(h.id)?.line ?? 0,

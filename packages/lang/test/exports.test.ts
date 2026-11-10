@@ -16,9 +16,14 @@ import * as print from '../src/print';
 import * as printClaim from '../src/print-claim';
 
 /** The public modules of @geomira/lang (ADR-0002, ADR-0009) and the runtime names each exports. */
+import * as printShortMod from '../src/print-short';
+import * as statementsMod from '../src/statements';
+
 const SURFACE: Record<string, { module: object; names: string[] }> = {
   './parse': { module: parse, names: ['parse'] },
   './print': { module: print, names: ['print'] },
+  './print-short': { module: printShortMod, names: ['printShort'] },
+  './statements': { module: statementsMod, names: ['splitStatements'] },
   './parse-into': { module: parseInto, names: ['parseInto'] },
   './diagnostic': {
     module: diagnostic,

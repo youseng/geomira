@@ -376,6 +376,12 @@ draw a measurement, ADR-0048) · `label X "…"` ·
 `@viewport …` · `# comment`. Expressions: nested calls, names, exact numbers (with ° for
 angles), point literals, arithmetic, selectors (`along(+)`, `orient(-)`, …) as trailing
 arguments; math functions may start a statement (`k = sqrt(t)`).
+The SHORT notation (ADR-0061, `printShort`) is what the text panel shows: the same text with a
+line or circle argument of point names written as a run (`foot(A, BC)`), a call of exactly three
+point names glued (`circumcenter(ABC)`) and the two branches of one call as one statement
+(`X, Y = intersect(ω, AB)`, `t, u = tangents(P, ω)`), only where that reads back to the same
+definition. Files, share links and exports hold the canonical text; both read back to the same
+document. Also read: `ABC triangle`, and `centre` for `center` in a tool name.
 ### 11.2 Names and tokens
 Points: uppercase Latin letter, then digits or `_` + (digits | one letter | `{alnum+}`),
 then primes: `A`, `A1`, `A_1`, `M_a`, `M_{ab}`, `H'`, `A_1''`. A trailing `*` (or
@@ -387,7 +393,9 @@ tokenises as A*, B*. Everything else starts lowercase or Greek (`\omega` → ω)
 ### 11.3 Laws
 Parse is total (per-line recovery). P1: parse(print(doc)) = doc (up to ids). P2:
 print∘parse is idempotent. P3: parseInto keeps ids and styles of persisting names.
-Diagnostics carry line, column and a fix hint.
+Diagnostics carry line, column and a fix hint. S1–S3 (ADR-0061): the short notation reads back
+to the same document wherever the canonical one does, printing it is idempotent, and it is
+never longer.
 ### 11.4 Versioning
 `@version N` mandatory when printing; migrations with tests; old files load forever.
 
@@ -443,13 +451,14 @@ example's TikZ and standalone Asymptote and checks Asymptote's `write()` coordin
 against the kernel (≤ 1e-6·scale).
 
 ## 15. Web app
-Panels: Text (two-way, per-line diagnostics; applies as you type after a 500 ms pause, never
+Panels: Text (two-way, in the short notation, ADR-0061; per-line diagnostics; applies as you type after a 500 ms pause, never
 over a figure changed meanwhile, ADR-0047), Objects (by layer, Undefined/Inexact
 reasons; first the Measurements: every number with its definition and value as shown, ADR-0048;
 each row has an eye that hides or shows its object, ADR-0060), Layers (shown, active, locked;
 a new layer, a layer's name and "move the selection here" from the panel, ADR-0060), Claims (live badges; local verdict line; global verdict line;
 "open counterexample"), Style. While objects are selected a selection bar floats on the canvas with what can be done to all of
-them in one click (ADR-0060). Command bar with registry autocomplete; shortcuts and help
+them in one click (ADR-0060). Command bar with registry autocomplete (several statements separated by `;` are one edit,
+ADR-0061); shortcuts and help
 generated from data; mobile (390×664) pan, pinch, drag and panels work. Views UI: v1.1.
 (ADR-0051) Every claim kind is reachable from the Claim tool (a line parameter takes a line,
 segment or ray, or two points: `line(A, P)`; a kind's number comes from the tool's field) and

@@ -163,6 +163,8 @@ function strayHint(c: Cursor, t: Token): string {
     return `write ${prev.text}(${right}) to call ${prev.text}, or ${prev.text} * ${right} for a product`;
   if (operand && !attr && (prev?.kind === 'number' || prev?.value === ')'))
     return `write ${prev.kind === 'number' ? prev.text : '(…)'} * ${right} for a product`;
+  if (t.value === ';')
+    return 'write one statement per line (the command bar takes several, separated by ;)';
   return 'attributes go in brackets: [color=red]';
 }
 

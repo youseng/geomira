@@ -32,7 +32,7 @@ import {
 } from '@geomira/editor/text-draft';
 import type { Document } from '@geomira/kernel/document';
 import { parseText, type ParsedText } from '@geomira/lang/parse-text';
-import { print } from '@geomira/lang/print';
+import { printShort } from '@geomira/lang/print-short';
 import type { Schedule } from './long-press';
 
 /** The pause after the last keystroke before the text applies. */
@@ -60,7 +60,15 @@ export class TextApplier {
     private readonly now: () => number,
   ) {
     const doc = host.current().doc;
-    this.draft = draftOf(doc, print(doc));
+    this.draft = draftOf(doc, this.shown(doc));
+  }
+
+  /**
+   * The figure as the panel shows it: the short notation (ADR-0061), which reads back to the
+   * same document as the canonical text that files and links hold.
+   */
+  private shown(doc: Document): string {
+    return printShort(doc, this.host.env.registry);
   }
 
   readonly subscribe = (listener: () => void): (() => void) => {
@@ -114,7 +122,7 @@ export class TextApplier {
   revert(): void {
     this.stop();
     const doc = this.host.current().doc;
-    this.set(draftOf(doc, print(doc)));
+    this.set(draftOf(doc, this.shown(doc)));
   }
 
   /**
@@ -123,7 +131,7 @@ export class TextApplier {
    */
   follow(doc: Document): void {
     if (doc !== this.draft.doc) this.stop();
-    this.set(follow(this.draft, doc, () => print(doc)));
+    this.set(follow(this.draft, doc, () => this.shown(doc)));
   }
 
   private stop(): void {
@@ -146,7 +154,7 @@ export class TextApplier {
 
   private settle(): void {
     const doc = this.host.current().doc;
-    this.set(settled(this.draft, doc, () => print(doc)));
+    this.set(settled(this.draft, doc, () => this.shown(doc)));
   }
 
   private set(d: TextDraft): void {

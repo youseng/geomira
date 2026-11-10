@@ -29,11 +29,13 @@ test('the tangent tool from an outside point builds both tangents, circle clicke
   // ω has center (2, 1) and radius √5: its top is (2, 1 + √5).
   await clickWorld(page, 2, 1 + Math.sqrt(5));
   await clickWorld(page, 6, 3);
-  const lines = (await text(page)).split('\n').filter((l) => l.includes('tangent_from(P, ω, '));
-  expect(lines).toHaveLength(2);
+  // Both tangents, written as one statement in the text panel's short notation (ADR-0061).
+  const lines = (await text(page)).split('\n').filter((l) => l.includes('= tangents(P, ω)'));
+  expect(lines).toHaveLength(1);
+  expect(lines[0]).toMatch(/^\S+, \S+ = tangents\(P, ω\)$/u);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect
-    .poll(async () => (await text(page)).includes('tangent_from'), { timeout: 5000 })
+    .poll(async () => (await text(page)).includes('tangents('), { timeout: 5000 })
     .toBe(false);
   expect(errors).toEqual([]);
 });
@@ -71,7 +73,7 @@ test("Geomdraw's script and claim forms are read and written canonically", async
   await expectLines(page, 'M = midpoint(Q, R)');
   const t = await text(page);
   expect(t).toMatch(/^P = \(-?\d+(\.\d)?, -?\d+(\.\d)?\)$/mu);
-  expect(t).toMatch(/^X = intersect\(circle\(P, Q, R\), line\(Q, R\), along\(\+\)\)$/mu);
+  expect(t).toMatch(/^X, Y = intersect\(PQR, QR\)$/mu);
   await page.getByLabel('Claim to test').fill('P, Q, R collinear');
   await page.getByLabel('Claim to test').press('Enter');
   await expect(claimItem(page, 'collinear(P, Q, R)').locator('.badge')).toHaveText(/^false/u);

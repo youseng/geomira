@@ -53,7 +53,7 @@ test('Randomize draws a new figure of each triangle type as one undoable edit', 
     await page.getByLabel('Triangle type').selectOption(type);
     await page.getByRole('button', { name: 'Randomize', exact: true }).click();
     await expect(page.getByRole('textbox', { name: 'Text', exact: true })).not.toHaveValue(before);
-    await expectLines(page, 'H = orthocenter(A, B, C)');
+    await expectLines(page, 'H = orthocenter(ABC)');
     expect(await text(page)).toMatch(/^B = \(-?\d+(\.\d{1,4})?, -?\d+(\.\d{1,4})?\)$/mu);
     await page.getByRole('button', { name: 'Undo', exact: true }).click();
     await expect(page.getByRole('textbox', { name: 'Text', exact: true })).toHaveValue(before);

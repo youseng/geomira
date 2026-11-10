@@ -67,10 +67,10 @@ test('the eye of an object row; Ctrl+A and Delete', async ({ page }) => {
   for (const line of FIGURE) await command(page, line);
   await tab(page, 'Objects');
   await page.getByRole('button', { name: 'Hide ω', exact: true }).click();
-  await expectLines(page, 'ω = circle(A, B, C) [hidden]');
+  await expectLines(page, 'ω = circle(ABC) [hidden]');
   await tab(page, 'Objects');
   await page.getByRole('button', { name: 'Show ω', exact: true }).click();
-  await expectLines(page, 'ω = circle(A, B, C)');
+  await expectLines(page, 'ω = circle(ABC)');
 
   await page.getByLabel('Geometry canvas').focus();
   await page.keyboard.press('Control+a');
@@ -78,6 +78,6 @@ test('the eye of an object row; Ctrl+A and Delete', async ({ page }) => {
   await page.keyboard.press('Delete');
   expect((await text(page)).trim()).toBe('@version 1');
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
-  await expectLines(page, ...FIGURE);
+  await expectLines(page, 'A = (0, 0)', 'B = (4, 0)', 'C = (1, 3)', 'ω = circle(ABC)');
   expect(errors).toEqual([]);
 });
