@@ -18,6 +18,7 @@
     "./label-hit": "./src/label-hit.ts",
     "./display": "./src/display.ts",
     "./hit": "./src/hit.ts",
+    "./box": "./src/box.ts",
     "./bounds": "./src/bounds.ts",
     "./palette": "./src/palette.ts",
     "./measure": "./src/measure.ts"

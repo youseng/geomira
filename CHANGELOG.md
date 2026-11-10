@@ -5,6 +5,13 @@ docs/adr/; the test evidence is in docs/STATUS.md.
 
 ## Unreleased
 
+### GUI milestone 2: the selection box (ADR-0062)
+
+- **Drag a box to select.** In the Move tool, drag on empty canvas with the left button:
+  everything wholly inside the box is selected (Shift or Ctrl adds to the selection).
+- **Pan with the right button** (or the middle one), in every tool. A right click on an
+  object still opens its style card. Touch is unchanged: one finger pans.
+
 ### Script milestone: the short notation (ADR-0061)
 
 - **The text panel keeps your short script.** `D = foot(A, BC)`, `O = circumcenter(ABC)` and

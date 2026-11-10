@@ -8,6 +8,7 @@ import * as clip from '../src/clip';
 import * as coincide from '../src/coincide';
 import * as display from '../src/display';
 import * as hit from '../src/hit';
+import * as box from '../src/box';
 import * as labelText from '../src/label-text';
 import * as labels from '../src/labels';
 import * as labelBox from '../src/label-box';
@@ -73,6 +74,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   },
   './display': { module: display, names: ['ARC_SAGITTA', 'MARGIN_PX', 'MAX_ARC_RADIUS', 'layout'] },
   './hit': { module: hit, names: ['HIT_RADIUS', 'hitItem', 'hitTest'] },
+  './box': { module: box, names: ['inBox', 'shapeInBox'] },
   './bounds': { module: bounds, names: ['sceneBounds'] },
   './palette': { module: palette, names: ['NAMED_COLOURS', 'paletteColour'] },
   './measure': {
