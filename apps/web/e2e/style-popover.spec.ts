@@ -2,9 +2,9 @@ import { expect, test, type Page } from '@playwright/test';
 import { command, openApp, screenOf, tab } from './helpers';
 
 /**
- * ADR-0029: the style card (Geomdraw's right-click card) replaces the Style tab. It edits a
- * draft the canvas previews (no edit), "Write to script" applies it as one style edit,
- * "Reset" goes back to the default style, closing discards the draft. Desktop and mobile.
+ * ADR-0029: the style card (Geomdraw's right-click card) replaces the Style tab. Since ADR-0063
+ * every change applies at once (one undo per control), "Reset" applies the default style, and
+ * closing keeps what was applied. Desktop and mobile.
  */
 
 async function figure(page: Page): Promise<void> {
@@ -44,9 +44,10 @@ async function rightClick(page: Page, x: number, y: number): Promise<{ x: number
   return p;
 }
 
-test('a point: colour, size and opacity previewed, written as one edit, reset', async ({
+test('a point: colour, size and opacity apply at once, one undo per control; reset', async ({
   page,
 }) => {
+  // ADR-0063: the card applies every change at once (it was a draft and Write to script).
   const errors = await openApp(page);
   await figure(page);
   const at = await rightClick(page, 1, 3);
@@ -54,9 +55,8 @@ test('a point: colour, size and opacity previewed, written as one edit, reset', 
   await expect(card).toBeVisible();
   await expect(card.locator('header')).toContainText('point');
   const reset = card.getByRole('button', { name: 'Reset', exact: true });
-  const write = card.getByRole('button', { name: 'Write to script', exact: true });
   await expect(reset).toBeDisabled();
-  await expect(write).toBeDisabled();
+  await expect(card.getByRole('button', { name: 'Write to script', exact: true })).toHaveCount(0);
   // Sliders show the effective value: the scene's default radius, opacity 1.
   await expect(card.getByRole('slider', { name: 'Point size' })).toHaveValue('3.5');
   await expect(card.getByRole('slider', { name: 'Opacity' })).toHaveValue('1');
@@ -67,41 +67,37 @@ test('a point: colour, size and opacity previewed, written as one edit, reset', 
     'aria-pressed',
     'true',
   );
-  // The preview: the canvas draws the draft; the text does not change.
   await expect.poll(async () => isRed(await pixel(page, at))).toBe(true);
-  expect(await source(page)).toMatch(/^C = \(1, 3\)$/mu);
+  await expect.poll(() => source(page)).toMatch(/^C = \(1, 3\) \[color=red\]$/mu);
   await card.getByRole('slider', { name: 'Point size' }).fill('5');
   await card.getByRole('slider', { name: 'Opacity' }).fill('0.5');
-  await expect(card).toContainText('5');
-  await expect(card).toContainText('0.5');
-  await expect(write).toBeEnabled();
-  const past = await page.getByRole('button', { name: 'Undo', exact: true }).isEnabled();
-
-  await write.click();
   await expect
     .poll(() => source(page))
     .toMatch(/^C = \(1, 3\) \[color=red, width=5, opacity=0\.5\]$/mu);
-  await expect(write).toBeDisabled();
   await expect(reset).toBeEnabled();
-  expect(past).toBe(true);
 
-  // Reset: the draft goes back to the default style; writing it removes the attributes.
+  // Reset applies the default style at once.
   await reset.click();
   await expect(reset).toBeDisabled();
   await expect(card.getByRole('slider', { name: 'Point size' })).toHaveValue('3.5');
   await expect.poll(async () => isRed(await pixel(page, at))).toBe(false);
-  await write.click();
   await expect.poll(() => source(page)).toMatch(/^C = \(1, 3\)$/mu);
-  // Undo takes back the last write only: one style edit each.
-  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  // Undo takes back one control's change at a time: the reset, the opacity, the size.
+  const undo = page.getByRole('button', { name: 'Undo', exact: true });
+  await undo.click();
   await expect
     .poll(() => source(page))
     .toMatch(/^C = \(1, 3\) \[color=red, width=5, opacity=0\.5\]$/mu);
   await expect(card).toHaveCount(0);
+  await undo.click();
+  await expect.poll(() => source(page)).toMatch(/^C = \(1, 3\) \[color=red, width=5\]$/mu);
+  await undo.click();
+  await expect.poll(() => source(page)).toMatch(/^C = \(1, 3\) \[color=red\]$/mu);
   expect(errors).toEqual([]);
 });
 
-test('Escape and a click elsewhere discard the draft; the preview goes', async ({ page }) => {
+test('Escape and a click elsewhere close the card and keep what it applied', async ({ page }) => {
+  // ADR-0063: there is no draft to discard; closing keeps the change, undo takes it back.
   await openApp(page);
   await figure(page);
   const at = await rightClick(page, 1, 3);
@@ -110,14 +106,16 @@ test('Escape and a click elsewhere discard the draft; the preview goes', async (
   await expect.poll(async () => isBlue(await pixel(page, at))).toBe(true);
   await page.keyboard.press('Escape');
   await expect(card).toHaveCount(0);
-  await expect.poll(async () => isBlue(await pixel(page, at))).toBe(false);
-  expect(await source(page)).toMatch(/^C = \(1, 3\)$/mu);
-  // A click elsewhere on the page closes it too, with its draft.
+  expect(isBlue(await pixel(page, at))).toBe(true);
+  expect(await source(page)).toMatch(/^C = \(1, 3\) \[color=blue\]$/mu);
+  // A click elsewhere on the page closes it too.
   await rightClick(page, 1, 3);
-  await card.getByRole('button', { name: 'blue', exact: true }).click();
+  await card.getByRole('button', { name: 'red', exact: true }).click();
   await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
   await expect(card).toHaveCount(0);
-  expect(await source(page)).toMatch(/^C = \(1, 3\)$/mu);
+  expect(await source(page)).toMatch(/^C = \(1, 3\) \[color=red\]$/mu);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect.poll(() => source(page)).toMatch(/^C = \(1, 3\) \[color=blue\]$/mu);
 });
 
 test('a segment: line width, dash under More, label shown, visible; one style line', async ({
@@ -135,12 +133,10 @@ test('a segment: line width, dash under More, label shown, visible; one style li
   await expect(card.getByLabel('Label text')).toBeDisabled();
   await card.getByLabel('Show the label').check();
   await expect(card.getByLabel('Label text')).toHaveAttribute('placeholder', 's');
-  await card.getByRole('button', { name: 'Write to script', exact: true }).click();
   await expect
     .poll(() => source(page))
     .toMatch(/^s = segment\(A, B\) \[width=3, dash=dashed, label="s"\]$/mu);
   await card.getByLabel('Shown').uncheck();
-  await card.getByRole('button', { name: 'Write to script', exact: true }).click();
   await expect
     .poll(() => source(page))
     .toMatch(/^s = segment\(A, B\) \[width=3, dash=dashed, hidden, label="s"\]$/mu);
@@ -154,10 +150,8 @@ test('a point label: "show" off is label="", a text replaces the name', async ({
   await expect(card.getByLabel('Show the label')).toBeChecked();
   await expect(card.getByLabel('Label text')).toHaveAttribute('placeholder', 'C');
   await card.getByLabel('Label text').fill('C_1');
-  await card.getByRole('button', { name: 'Write to script', exact: true }).click();
   await expect.poll(() => source(page)).toMatch(/^C = \(1, 3\) \[label="C_1"\]$/mu);
   await card.getByLabel('Show the label').uncheck();
-  await card.getByRole('button', { name: 'Write to script', exact: true }).click();
   await expect.poll(() => source(page)).toMatch(/^C = \(1, 3\) \[label=""\]$/mu);
 });
 

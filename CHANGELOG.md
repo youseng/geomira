@@ -5,6 +5,15 @@ docs/adr/; the test evidence is in docs/STATUS.md.
 
 ## Unreleased
 
+### GUI milestone 3: the style card applies at once (ADR-0063)
+
+- **No more "Write to script".** Colour, width, opacity, label, visibility and everything under
+  More change the figure and the text as you use them. Dragging a slider or typing a label is
+  one undo; each control is its own undo.
+- **Reset** applies the default style straight away.
+- **Renaming:** type the new name and press Enter, click Rename, or just leave the field.
+- **Closing the card keeps your changes** (it used to throw them away).
+
 ### GUI milestone 2: the selection box (ADR-0062)
 
 - **Drag a box to select.** In the Move tool, drag on empty canvas with the left button:

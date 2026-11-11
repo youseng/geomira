@@ -104,7 +104,7 @@ test('the canvas takes the new pixel ratio when it changes (another screen, a zo
   await expect.poll(ratio).toBeCloseTo(2, 2);
 });
 
-test('a label typed in the style card is one edit, applied by Write to script (ADR-0029)', async ({
+test('a label typed in the style card is one edit, applied as it is typed (ADR-0063)', async ({
   page,
 }) => {
   await openApp(page);
@@ -114,15 +114,15 @@ test('a label typed in the style card is one edit, applied by Write to script (A
   await page.getByRole('button', { name: 'A', exact: true }).click({ button: 'right' });
   const card = page.getByRole('dialog', { name: 'Style of A' });
   await card.getByLabel('Label text').pressSequentially('xyz');
-  await card.getByRole('button', { name: 'Write to script', exact: true }).click();
   await expectLines(page, 'A = (0, 0) [label="xyz"]');
+  // The three keystrokes are one undo.
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expectLines(page, 'A = (0, 0)');
-  // Leaving the card without writing applies nothing: the draft is discarded.
+  // Leaving the card keeps what was typed.
   await tab(page, 'Objects');
   await page.getByRole('button', { name: 'A', exact: true }).click({ button: 'right' });
   await card.getByLabel('Label text').pressSequentially('pq');
   await tab(page, 'Text');
   await expect(card).toHaveCount(0);
-  await expectLines(page, 'A = (0, 0)');
+  await expectLines(page, 'A = (0, 0) [label="pq"]');
 });

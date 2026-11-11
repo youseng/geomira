@@ -1,12 +1,14 @@
 /**
  * The style card (ADR-0029, Geomdraw's right-click properties card): a small floating card
  * next to the object it styles, opened by a right-click (or a long press) on the object on
- * the canvas or on its row in the Objects panel. It edits a DRAFT: the canvas previews the
- * draft (a transient render override, like the live tool preview of ADR-0024: no edit, not in
- * history); "Write to script" applies it as ONE style edit; "Reset" sets the draft back to the
- * default style; closing the card (✕, Escape, a press elsewhere, another object's card)
- * discards an unwritten draft. The Name field at the top (ADR-0046) renames the object in the
- * same write: name and style are ONE edit (style-name.ts, @geomira/editor/style-card).
+ * the canvas or on its row in the Objects panel. Every change APPLIES AT ONCE (ADR-0063): a
+ * `liveStyle` edit of the object, coalesced per control, so dragging a slider or typing a
+ * label is one undo, and the text shows it as it happens. "Reset" applies the default style.
+ * Closing the card (✕, Escape, a press elsewhere, another object's card) keeps what was done.
+ * The Name field at the top (ADR-0046) renames on Enter, on leaving the field or with
+ * "Rename"; a name the kernel refuses is shown with the reason and not applied.
+ * `OpenCard.draft` is the style the card shows: the object's own, kept in step with the
+ * document (an undo while the card is open shows the style before).
  */
 import {
   useCallback,
@@ -14,6 +16,7 @@ import {
   useId,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type RefObject,
 } from 'react';
@@ -29,7 +32,15 @@ import { placeCard, type Box } from './card-place';
 import { useDialog } from './Dialogs';
 import { MathText } from './MathText';
 import type { EditorStore } from './store';
-import { canReset, inheritedStyle, kindName, type Field, type MoreField } from './style-draft';
+import {
+  canReset,
+  changedFields,
+  inheritedStyle,
+  kindName,
+  sameStyle,
+  type Field,
+  type MoreField,
+} from './style-draft';
 import { cardFields, cardKindFor, notDrawnNote } from './style-measure';
 import { cardWrite, previewDocument, type CardWrite } from './style-name';
 import {
@@ -46,7 +57,7 @@ import {
   type RowProps,
 } from './StyleRows';
 
-/** The open card: its object, where it was opened, the draft, and the typed name. */
+/** The open card: its object, where it was opened, the style it shows, and the typed name. */
 export interface OpenCard {
   readonly id: number;
   readonly anchor: Box;
@@ -66,6 +77,18 @@ export function useStyleCard(store: EditorStore) {
       setCard((c) => (c !== null && c.id === id ? c : { id, anchor, draft: o.style }));
       store.apply({ kind: 'select', ids: [id], mode: 'replace' });
     },
+    [store],
+  );
+  // The card shows the object's style as the document has it (after an undo, a text edit).
+  useEffect(
+    () =>
+      store.subscribe(() => {
+        setCard((c) => {
+          if (c === null) return c;
+          const o = store.current().doc.objects.find((x) => x.id === c.id);
+          return o === undefined || sameStyle(o.style, c.draft) ? c : { ...c, draft: o.style };
+        });
+      }),
     [store],
   );
   const close = useCallback(() => {
@@ -210,14 +233,15 @@ function Header({ o, kind, onClose }: { o: DocObject; kind: string; onClose: () 
 
 /**
  * The Name field (ADR-0046): the object's name, editable; under it, why a typed name cannot
- * be written (Write is then disabled), or why a managed image's name is fixed (read-only).
- * Enter writes, as the button does.
+ * be applied, or why a managed image's name is fixed (read-only). Enter, leaving the field
+ * and "Rename" apply a typed name (ADR-0063).
  */
 function NameRow(p: {
   readonly name: string;
   readonly write: CardWrite;
+  readonly typed: boolean;
   readonly onName: (name: string) => void;
-  readonly onWrite: () => void;
+  readonly onRename: () => void;
 }) {
   const note = useId();
   const { message, fixed } = p.write;
@@ -239,9 +263,20 @@ function NameRow(p: {
             p.onName(e.target.value);
           }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') p.onWrite();
+            if (e.key === 'Enter') p.onRename();
           }}
+          onBlur={p.onRename}
         />
+        {p.typed && (
+          <button
+            type="button"
+            className="sc-rename"
+            disabled={p.write.edit === null}
+            onClick={p.onRename}
+          >
+            Rename
+          </button>
+        )}
       </div>
       {message !== undefined && (
         <p id={note} className={fixed ? 'sc-note' : 'sc-note sc-problem'} role="status">
@@ -252,15 +287,12 @@ function NameRow(p: {
   );
 }
 
-/** Reset (to the default style) and Write to script (name and style: one edit). */
-function Footer(p: { draft: Style; write: CardWrite; onReset: () => void; onWrite: () => void }) {
+/** Reset: the default style, applied at once (one undo). */
+function Footer(p: { draft: Style; onReset: () => void }) {
   return (
     <footer>
       <button type="button" disabled={!canReset(p.draft)} onClick={p.onReset}>
         Reset
-      </button>
-      <button type="button" disabled={p.write.edit === null} onClick={p.onWrite}>
-        Write to script
       </button>
     </footer>
   );
@@ -272,6 +304,23 @@ function useFixedKind(store: EditorStore, doc: Document, id: number): ValueKind 
     const ks = objectKinds(doc, store.env.registry).get(id);
     return ks?.length === 1 ? (ks[0] ?? null) : null;
   }, [doc, store, id]);
+}
+
+/**
+ * Applies a style at once (ADR-0063): one entry per control, continued while the same control
+ * changes (`key`: the fields it changes, or a fixed key such as Reset's). A refusal (a locked
+ * layer) leaves the card as it was; the store shows the reason.
+ */
+function useLive(store: EditorStore, o: DocObject, shown: Style, onDraft: (s: Style) => void) {
+  const last = useRef<string | null>(null);
+  return (style: Style, fixedKey?: string) => {
+    const key = fixedKey ?? changedFields(shown, style);
+    if (changedFields(shown, style) === '') return;
+    const session = key === last.current ? 'continue' : 'start';
+    if (!store.apply({ kind: 'liveStyle', id: o.id, style, session }).ok) return;
+    last.current = key;
+    onDraft(style);
+  };
 }
 
 function Card(p: StyleCardProps & { o: DocObject }) {
@@ -287,13 +336,15 @@ function Card(p: StyleCardProps & { o: DocObject }) {
   const kind = cardKindFor(o, value, fixed);
   const fields = cardFields(kind, { ...inherited, ...card.draft });
   const note = notDrawnNote(o, kind, { ...inherited, ...card.draft });
-  const rows: RowProps = { name: o.name, kind, draft: card.draft, inherited, set: onDraft };
+  const live = useLive(store, o, card.draft, onDraft);
+  const rows: RowProps = { name: o.name, kind, draft: card.draft, inherited, set: live };
+  // The name alone: the style is applied as it changes.
   const write = useMemo(
-    () => cardWrite(state.doc, store.env.registry, o, card.name, card.draft),
-    [state.doc, store, o, card.name, card.draft],
+    () => cardWrite(state.doc, store.env.registry, o, card.name, o.style),
+    [state.doc, store, o, card.name],
   );
-  const onWrite = () => {
-    // After a write the field follows the object's name again (an undo shows the old one).
+  const onRename = () => {
+    // After a rename the field follows the object's name again (an undo shows the old one).
     if (write.edit !== null && store.apply(write.edit).ok) onName(undefined);
   };
   return (
@@ -307,7 +358,13 @@ function Card(p: StyleCardProps & { o: DocObject }) {
     >
       <Header o={o} kind={kindName(value, fixed)} onClose={onClose} />
       <div className="sc-rows">
-        <NameRow name={card.name ?? o.name} write={write} onName={onName} onWrite={onWrite} />
+        <NameRow
+          name={card.name ?? o.name}
+          write={write}
+          typed={card.name !== undefined && card.name.trim() !== o.name}
+          onName={onName}
+          onRename={onRename}
+        />
         {fields.main.map((f) => (
           // The label's typed text is renewed after a Reset.
           <MainRow key={f === 'label' ? `label${String(generation)}` : f} field={f} {...rows} />
@@ -319,10 +376,8 @@ function Card(p: StyleCardProps & { o: DocObject }) {
       </div>
       <Footer
         draft={card.draft}
-        write={write}
-        onWrite={onWrite}
         onReset={() => {
-          onDraft({});
+          live({}, 'reset');
           setGeneration((g) => g + 1);
         }}
       />
