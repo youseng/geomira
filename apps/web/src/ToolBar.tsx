@@ -1,3 +1,4 @@
+import { chooseTool } from '@geomira/editor/selection-tool';
 import { useState } from 'react';
 import { claimToolKinds, stepsOf } from '@geomira/editor/machine';
 import { toolValue } from '@geomira/editor/claim-tool';
@@ -34,7 +35,8 @@ export function Palette({ store, state }: ToolBarProps) {
                   aria-pressed={state.tool === t.id}
                   title={`${t.label}: ${t.help} (key ${keyCap(t.key)})`}
                   onClick={() => {
-                    store.apply({ kind: 'tool', tool: t.id });
+                    // The selection becomes the tool's picks (ADR-0064).
+                    store.run((s, env) => chooseTool(s, t.id, env));
                   }}
                 >
                   <ToolIcon tool={t.id} />
