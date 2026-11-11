@@ -5,6 +5,15 @@ docs/adr/; the test evidence is in docs/STATUS.md.
 
 ## Unreleased
 
+### GUI milestone 4: select first, then the tool (ADR-0064)
+
+- **Select, then press a tool.** Select objects (click, Shift+click, a box), then press a tool
+  button or its key: they become its inputs. Three points then Circumcenter builds O at once;
+  a point and a circle then Tangent builds both tangents. A partial selection becomes the
+  first inputs and the tool waits for the rest.
+- **Either circle button takes three points** and builds the circle through them.
+- If the selection doesn't fit the tool, a notice says why and nothing is built.
+
 ### GUI milestone 3: the style card applies at once (ADR-0063)
 
 - **No more "Write to script".** Colour, width, opacity, label, visibility and everything under
