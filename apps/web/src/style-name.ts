@@ -1,9 +1,10 @@
 /**
- * The style card's Name field (ADR-0046), pure and DOM-free: what "Write to script" applies
- * when the card holds a typed name and a style draft, what the field says under it, and the
- * document the canvas previews. The decisions are the editor's (@geomira/editor/style-card:
+ * The style card's Name field (ADR-0046), pure and DOM-free: the edit that applies a typed
+ * name, what the field says under it, and the document the canvas previews. Since ADR-0063
+ * the card applies its style as it changes, so it calls this with the object's own style and
+ * the edit is the rename alone. The decisions are the editor's (@geomira/editor/style-card:
  * one edit for name and style, the kernel's reasons, managed images fixed); this module only
- * combines them with the style draft (style-draft.ts).
+ * combines them with a style (style-draft.ts).
  */
 import type { Edit } from '@geomira/editor/edit';
 import { cardEdit, cardNameProblem, fixedName } from '@geomira/editor/style-card';

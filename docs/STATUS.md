@@ -1,5 +1,90 @@
 # STATUS
 
+## Maintainer request: the style card applies at once (ADR-0063): NOT ACCEPTED, awaiting the maintainer (2026-11-11)
+
+Not a kit run, no tag. The maintainer's decision (2) of 2026-11-10: "apply immediately".
+Decision: [ADR-0063](adr/0063-style-card-applies-at-once.md); SPEC §12 updated in the same
+commit. Base: main = f21a900 (PR #34 merged: the selection box below; CI green on it). Branch:
+claude/quirky-einstein-wp1t4h, restarted from main after the merge. The maintainer also
+answered the trackpad question of the entry below: two-finger scrolling stays zoom (no change).
+
+### Done (each item → the tests that show it)
+
+1. **Every change in the style card applies at once, one undo per control** (decisions 1–2):
+   the editor's `liveStyle` edit (`packages/editor/src/live-style.ts`) and the card's use of
+   it. → `packages/editor/test/live-style.test.ts` (one entry per run, a new control is a new
+   entry, back to the start leaves none, other edits and undo end the session, a typing
+   session does not swallow it, locked layers and drags refuse it, a change that changes
+   nothing records nothing), `apps/web/test/style-card-live.test.tsx`,
+   `apps/web/e2e/style-popover.spec.ts` (first test: three controls, three undos).
+2. **Reset applies at once** (decision 3). → `style-popover.spec.ts` (first test).
+3. **The name applies on Enter, on leaving the field, or with Rename** (decision 4). →
+   `apps/web/test/style-card-name.test.tsx`, `apps/web/e2e/style-card-rename.spec.ts`.
+4. **Closing keeps everything** (decision 5). → `style-popover.spec.ts` (second test),
+   `apps/web/e2e/flows-review.spec.ts` (the label test).
+5. **Bug found while testing, fixed in the same commit:** the first `liveCommit` recorded an
+   undo entry for a change that changes nothing (the kernel's style edit always makes a new
+   document) → "a change that changes nothing records nothing" (failed before the fix).
+
+### Not done
+
+- The maintainer's decision (3): select first, then the tool. Next milestone.
+- The card's sync with the document (decision 6) is not covered by a unit test: the web tests
+  run without a DOM, so the hook is not driven; the e2e flows cover it only indirectly (an undo
+  clicked outside the card closes it).
+
+### Known bugs
+
+None found in this work besides the one fixed above.
+
+### Uncertain
+
+- e2e in this container: the style card, review, persist and measurement flows pass on desktop
+  and mobile (29 of 30; the failure is the pixel-ratio emulation test that fails on untouched
+  main too). No spec of the projects that do not run here (pwa, file-url, long-task,
+  drag-frame, fallback) opens the style card (checked by searching them).
+
+### Changed frozen tests
+
+For [ADR-0063](adr/0063-style-card-applies-at-once.md); each asserts the same style and name
+lines as before, now without "Write to script":
+
+- `apps/web/e2e/style-popover.spec.ts` (frozen at run-16c): the first test asserts the text
+  after each control and one undo per control (it asserted no change before the write and one
+  undo for the write); the second asserts that closing keeps the change (it asserted the draft
+  was discarded); the segment and label tests lost their "Write to script" clicks; the header
+  comment.
+- `apps/web/e2e/flows-review.spec.ts` (frozen): the label test's title; the typed label is in
+  the text without a click and one undo takes it back; leaving the card keeps `label="pq"` (it
+  asserted it was discarded).
+- `apps/web/e2e/flows-persist.spec.ts` (frozen): one "Write to script" click removed.
+- Not frozen at run-16c, changed the same way: `apps/web/e2e/style-card-rename.spec.ts` (Rename
+  and two undos instead of one write), `apps/web/e2e/flows-measurements.spec.ts` (one click
+  removed), `apps/web/test/style-card-name.test.tsx` (the Rename button instead of Write).
+
+### Acceptance command output
+
+```
+typecheck: every package Done; tsc -p tsconfig.tests.json clean
+lint: eslint 0 problems; prettier: All matched files use Prettier code style!
+✔ no dependency violations found (959 modules, 5629 dependencies cruised)
+ok   tolerance: 1334 files scanned, 0 violation(s)
+ok   file-length: 1334 files scanned, 0 violation(s)
+ok   test-count: 4845 tests, floor 4845, 0 violation(s)
+ok   disabled-tests: 1334 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-16c, 0 violation(s)   (after the commit)
+ok   forbidden-words: 1334 files scanned, 0 violation(s)
+ Test Files  528 passed (528)
+      Tests  4845 passed (4845)
+All files          |   96.53 |    90.49 |   99.45 |   98.36 |
+```
+
+`docs/test-count.txt`: 4833 → 4845 (12 new tests: 9 in packages/editor, 3 in apps/web).
+
+### Requests (decisions for the maintainer)
+
+None new.
+
 ## Maintainer request: the selection box (ADR-0062): NOT ACCEPTED, awaiting the maintainer (2026-11-10)
 
 Not a kit run, no tag. The maintainer's decision (1) of 2026-11-10: a drag selects with a box,

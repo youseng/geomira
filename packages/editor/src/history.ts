@@ -28,6 +28,12 @@ export interface History {
    * returns a history without it, so any other action ends the session (text-edit.ts opens it).
    */
   readonly typing?: true;
+  /**
+   * The last entry is a live style session's that is still open (ADR-0063): the object id whose
+   * style the style card is changing. Every function here returns a history without it, so
+   * any other action ends the session (live-style.ts opens it).
+   */
+  readonly live?: number;
 }
 
 export const EMPTY_HISTORY: History = Object.freeze({ past: [], future: [] });

@@ -32,6 +32,7 @@ import { dragEdit, type DragEdit } from './drag-edit';
 import { record, redo, undo } from './history';
 import { textStep, typingCommit, type ReplaceText } from './text-edit';
 import { textComments } from './comments';
+import { liveCommit, type LiveStyle } from './live-style';
 import { lockedChange } from './locked';
 import { textOrder } from './order';
 import { appendLog } from './log';
@@ -58,6 +59,8 @@ export type Edit =
   | DragEdit
   | { readonly kind: 'undo' }
   | { readonly kind: 'redo' }
+  /** The style card's live edit: applied at once, coalesced per control (ADR-0063). */
+  | LiveStyle
   | UiEdit;
 
 /** One document step: the new document and what it removed and added. */
@@ -261,6 +264,18 @@ function commitText(state: EditorState, e: ReplaceText, env: EditorEnv): EditRes
   return { ok: true, state: { ...next, history: c.history }, removed: NO_REMOVAL, added: [] };
 }
 
+/** A live style edit (live-style.ts, ADR-0063): the style edit, then its coalesced history. */
+function commitLive(state: EditorState, e: LiveStyle, env: EditorEnv): EditResult {
+  const edit: DocumentEdit = { kind: 'style', id: e.id, style: e.style };
+  const step = guarded(state.doc, docStep(state.doc, edit, env));
+  if (!step.ok) return refuse(state, step.error, step.diagnostics);
+  const doc = textComments(textOrder(step.doc));
+  const c = liveCommit(state.history, labelOf(state, edit), state.doc, doc, e.id, e.session);
+  const next = withDocument(state, c.doc, env);
+  const history = c.history;
+  return { ok: true, state: { ...next, history }, removed: step.removed, added: step.added };
+}
+
 function historyStep(state: EditorState, which: 'undo' | 'redo', env: EditorEnv): EditResult {
   const r = which === 'undo' ? undo(state.history) : redo(state.history);
   if (r === undefined) return refuse(state, `nothing to ${which}`);
@@ -352,6 +367,8 @@ function apply(state: EditorState, e: Edit, env: EditorEnv): EditResult {
         : refuse(state, DRAGGING);
     case 'replaceText':
       return state.drag === null ? commitText(state, e, env) : refuse(state, DRAGGING);
+    case 'liveStyle':
+      return state.drag === null ? commitLive(state, e, env) : refuse(state, DRAGGING);
     default:
       return assertNever(e, 'edit');
   }

@@ -79,7 +79,6 @@ test('create → visible → live drag → drag the label → hide', async ({ pa
   const card = page.getByRole('dialog', { name: 'Style of d' });
   await card.getByLabel('Shown').uncheck();
   await expect(card).toContainText('Not drawn: tick "shown" to draw its value.');
-  await card.getByRole('button', { name: 'Write to script' }).click();
   await expect.poll(() => source(page)).toMatch(/^d = dist\(A, B\)$/mu);
   await expect(await measurement(page)).toContainText('6.00');
   await expect(await measurement(page)).not.toContainText('shown');

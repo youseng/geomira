@@ -195,6 +195,16 @@ export function sameStyle(a: Style, b: Style): boolean {
   return STYLE_FIELDS.every((k) => Object.is(a[k], b[k]));
 }
 
+/**
+ * The fields two styles set differently, sorted and joined ('' when they are the same): the
+ * style card's control key, so one control's run of changes is one undo (ADR-0063).
+ */
+export function changedFields(a: Style, b: Style): string {
+  return STYLE_FIELDS.filter((k) => !Object.is(a[k], b[k]))
+    .sort()
+    .join(',');
+}
+
 /** "Write to script" is offered when the draft differs from the object's style. */
 export function canWrite(draft: Style, current: Style): boolean {
   return !sameStyle(draft, current);

@@ -207,3 +207,9 @@
 .sc-name-input[readonly] {
   opacity: 0.6;
 }
+
+/* The Name field's Rename button (ADR-0063): shown while a new name is typed. */
+.sc-rename {
+  flex: none;
+  padding: 2px 8px;
+}

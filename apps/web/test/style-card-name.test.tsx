@@ -114,29 +114,32 @@ describe('the card shows the Name field', () => {
       />,
     );
   };
-  const writeButton = (h: string) =>
-    /<button type="button"( disabled="")?>Write to script/u.exec(h);
+  // ADR-0063: the style applies at once; a typed name is applied by Rename (or Enter).
+  const renameButton = (h: string) =>
+    /<button type="button" class="sc-rename"( disabled="")?>Rename/u.exec(h);
 
-  it('at the top of the card, with the current name; Write disabled until something changes', () => {
+  it('at the top of the card, with the current name; no Rename until a name is typed', () => {
     const h = html('C');
     expect(h).toMatch(/aria-label="Name"[^>]*value="C"/u);
     expect(h.indexOf('aria-label="Name"')).toBeLessThan(h.indexOf('Point size'));
-    expect(writeButton(h)?.[1]).toBe(' disabled=""');
+    expect(renameButton(h)).toBeNull();
+    expect(h).not.toContain('Write to script');
     expect(h).not.toContain('sc-problem');
   });
 
-  it('a new valid name enables Write', () => {
+  it('a new valid name enables Rename', () => {
     const h = html('C', { name: 'P' });
     expect(h).toMatch(/aria-label="Name"[^>]*value="P"/u);
-    expect(writeButton(h)?.[1]).toBeUndefined();
+    expect(renameButton(h)).not.toBeNull();
+    expect(renameButton(h)?.[1]).toBeUndefined();
   });
 
-  it('a taken name: the message under the field, Write disabled', () => {
+  it('a taken name: the message under the field, Rename disabled', () => {
     const h = html('C', { name: 'A', draft: { color: 'red' } });
     expect(h).toContain('the name A is already used');
     expect(h).toContain('aria-invalid="true"');
     expect(h).toMatch(/aria-describedby="[^"]+"/u);
-    expect(writeButton(h)?.[1]).toBe(' disabled=""');
+    expect(renameButton(h)?.[1]).toBe(' disabled=""');
   });
 
   it('a managed image: read-only, with the reason', () => {
