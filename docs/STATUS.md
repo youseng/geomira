@@ -137,7 +137,7 @@ Regression/iteration evidence:
 None for the authorized scope. Maintainer review and remote CI acceptance remain separate
 from this local implementation.
 
-## PR #38 screenshot repair (ADR-0066): NOT ACCEPTED, verification in progress
+## PR #38 screenshot repair (ADR-0066): NOT ACCEPTED, awaiting maintainer review
 
 ### Done
 
@@ -152,11 +152,13 @@ from this local implementation.
 
 ### Not done
 
-- Fresh full local verification and CI are pending on this follow-up.
+- Maintainer acceptance remains separate from verification. Current full verification
+  results are tracked in [PR #38](https://github.com/youseng/geomira/pull/38).
 - Three inherited internal full-page references show pre-existing UI changes (removed
-  Style tab, expanded palette, short construction notation, discovery controls). Their
-  expected/actual/diff images were inspected; they need separate reconciliation before
-  claiming the entire internal browser suite passes.
+  Style tab, expanded palette, short construction notation, discovery controls). Inspected
+  their expected/actual/diff images. Main CI run 43706723036 passes all three at the
+  existing tolerance; local platform fonts add further differences. These references and
+  their tests are left unchanged, with full internal coverage retained in CI.
 
 ### Known bugs
 
@@ -164,8 +166,8 @@ The retained-engine sampler issue in ADR-0065 is unchanged.
 
 ### Uncertain
 
-Full-page references also use platform fonts; CI results will distinguish those from
-stale UI content. No render bug or timing instability was found in the reported canvas.
+The local full-page font environment differs from CI; those local mismatches are not
+counted as passes. No render bug or timing instability was found in the reported canvas.
 
 ### Changed frozen tests
 
@@ -183,6 +185,10 @@ The sole changed canvas image is the new public phone nine-point-circle referenc
 
 - `playwright test scene --grep 'screenshot baseline' --project desktop --project mobile --repeat-each 3 --workers 1`:
   18 passed in 22.7 seconds without updating snapshots.
+
+- CI Pages-base-path validation at 35047fa, run 43714587040: passed, including the
+  previously failing mobile screenshot. Actual deployment and smoke jobs were skipped.
+- TeX/Asymptote export validation at 35047fa, run 43714590785: passed.
 
 ### Requests
 
