@@ -329,21 +329,22 @@ export class Autosave {
       targetId === undefined ? r.text !== openText : r.id === targetId,
     );
     if (target === undefined) return undefined;
-    if (target.pending) {
-      // Keep the figure being replaced in memory even when storage is still unavailable.
-      const p: Pending = {
-        editing,
-        id: id(),
-        savedAt: Date.now(),
-        producer: openText,
-        text: openText,
-        error: 'This recovery version is only in memory. Retry saving or download a backup.',
-      };
-      this.pendingSaves.set(editing.sessionId, p);
-      this.publish();
-      return target.text;
-    }
     try {
+      validatedText(target.text, this.registry);
+      if (target.pending) {
+        // Keep the figure being replaced in memory even when storage is still unavailable.
+        const p: Pending = {
+          editing,
+          id: id(),
+          savedAt: Date.now(),
+          producer: openText,
+          text: openText,
+          error: 'This recovery version is only in memory. Retry saving or download a backup.',
+        };
+        this.pendingSaves.set(editing.sessionId, p);
+        this.publish();
+        return target.text;
+      }
       const replacing: Revision = {
         id: id(),
         documentId: editing.documentId,
@@ -357,6 +358,7 @@ export class Autosave {
       this.state = await this.storage.update((s) =>
         recoverRevision(s, replacing, target.id, restoredId, Date.now(), resolve),
       );
+      this.bases.set(editing.sessionId, replacing.id);
       this.publish();
       return target.text;
     } catch (e) {

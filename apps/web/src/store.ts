@@ -193,8 +193,17 @@ export class EditorStore {
     }
   }
 
-  open(doc: Document, origin: Origin, notice: Notice | null = null): void {
-    // The figure being left saves its last edit first (its save may still be pending).
+  open(doc: Document, origin: Origin, notice: Notice | null = null, preserveCurrent = true): void {
+    // Capture committed edits even if React's debounce effect has not run yet.
+    const before = this.current();
+    if (
+      preserveCurrent &&
+      before.drag === null &&
+      (this.snap.openCount > 0 || this.autosave.wasEdited())
+    )
+      this.autosave.schedule(() => {
+        void this.autosave.save(() => print(before.doc));
+      }, 0);
     void this.autosave.flush();
     this.autosave.opened(origin, print(doc));
     this.beforeDrag = null;
@@ -229,7 +238,7 @@ export class EditorStore {
       });
       return false;
     }
-    this.openText(text, 'autosave');
+    this.openText(text, 'autosave', false);
     return true;
   }
 
@@ -239,14 +248,14 @@ export class EditorStore {
   }
 
   /** Opens a text (parse is total: lines with errors are left out and listed). */
-  openText(text: string, origin: Origin): void {
+  openText(text: string, origin: Origin, preserveCurrent = true): void {
     const r = parse(text, this.env.registry);
     const errors = r.diagnostics.filter((d) => d.severity === 'error');
     const notice: Notice | null =
       errors.length === 0
         ? null
         : { tone: 'error', text: 'Some lines had errors and were left out.', diagnostics: errors };
-    this.open(r.doc, origin, notice);
+    this.open(r.doc, origin, notice, preserveCurrent);
   }
 }
 

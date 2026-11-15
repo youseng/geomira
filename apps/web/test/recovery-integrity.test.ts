@@ -83,6 +83,30 @@ describe('whole-document integrity', () => {
     expect(print(store.current().doc)).toContain('C = (0, 1)');
   });
 
+  it('captures the last committed figure when switching before the debounce effect runs', async () => {
+    installStorage();
+    const storage = new MemoryRevisions();
+    const store = new EditorStore({ registry }, () => undefined, storage);
+    await store.autosave.initialize();
+    store.openText('@version 1\n', 'new');
+    store.command('A = (123, 456)');
+    const edited = print(store.current().doc);
+    store.openText('@version 1\nB = (1, 0)\n', 'example');
+    store.openText('@version 1\nC = (0, 1)\n', 'example');
+    await store.autosave.flush();
+    expect(storage.state.revisions.map((r) => r.text)).toContain(edited);
+    expect(storage.state.revisions.map((r) => r.text)).not.toContain('@version 1\nB = (1, 0)\n');
+  });
+
+  it('never restores invalid pending text as a partially parsed figure', async () => {
+    installStorage();
+    const autosave = new Autosave({ storage: new MemoryRevisions(), registry });
+    await autosave.save('@version 1\nA = (0, 0)\nB = unknown(A)\n');
+    const invalid = autosave.entries().find((r) => r.pending);
+    expect(await autosave.restore(canonical, invalid?.id)).toBeUndefined();
+    expect(autosave.getStatus().phase).toBe('not-saved');
+  });
+
   it('rejects unknown schemas, duplicate identities and dangling protected pointers', async () => {
     installStorage();
     const storage = new MemoryRevisions();

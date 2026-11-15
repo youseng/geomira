@@ -44,7 +44,10 @@ clocks, storage, downloads and lifecycle events belong to the web host.
   request is distinct from confirmation that the user kept a file. `downloadText` also
   supports raw legacy recovery; invalid originals use `.txt`.
 
-For document switching, flush/start pending work before changing the session. Failed work
+For document switching, `EditorStore.open` captures the latest settled figure before
+changing the session, including edits whose debounce effect has not run. Recovery uses
+its already committed replacement snapshot instead of capturing it twice. Flush/start
+pending work before changing a session through any lower-level integration. Failed work
 is retained per editing session in memory; surface the persistent warning and recovery list.
 Do not treat that memory as surviving navigation. Deliberate reload/update flows must await
 flush/retry and keep the page open on failure. Prompt 03 owns full New/Open/Save/Save As and

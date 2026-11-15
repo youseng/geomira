@@ -89,7 +89,9 @@ Chromium 141.0.7390.37.
   before keeping newly discovered conflicts. A further in-flight-save regression failed
   before retaining newer edit dirty state. A delayed-startup browser regression then failed
   when initialization replaced a figure typed before storage opened; startup now preserves
-  intervening edits/document switches. No assertions were weakened to resolve these.
+  intervening edits/document switches. Two additional boundary regressions failed before
+  capturing a committed edit on an immediate document switch and rejecting invalid pending
+  recovery text whole. No assertions were weakened to resolve these.
 - Targeted policy/storage/integrity/legacy/lifecycle regressions: 41 passed in 7 files before
   the final boundary/missing-slot additions. Subsequent policy/storage run: 28 passed.
 - Web projects: 299 passed before final additions.

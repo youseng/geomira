@@ -47,6 +47,10 @@ listener cannot fix simultaneous writers that both read A before either writes.
   previous. Commit before conditionally removing unchanged legacy keys. A failed transaction
   leaves both original slots and the valid startup figure available for retry. A cleanup
   failure does not erase the committed record. No runtime dependency is added.
+- Document switching captures the latest settled figure before changing editing identity,
+  even before the debounce effect runs. Recovery opens avoid a duplicate capture because
+  their transaction already preserves the replaced figure. Invalid pending text cannot be
+  restored as a partially parsed construction.
 - Browsing examples/links writes nothing. Editing one creates a new document while retaining
   each personal document's latest revision. Restoring from browsing preserves that example
   too. A canonical `.geo` backup uses the existing printer and a narrow reusable web download
