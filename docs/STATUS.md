@@ -109,6 +109,9 @@ Chromium 141.0.7390.37.
   failure was the strict editor subpath inventory missing the newly exported persistence
   module. Added its exact surface to the inventory without modifying existing assertions;
   the completed suite is rerun below.
+- The new migration browser flow initially asserted public worker/Claims absence in an
+  explicitly enabled internal build. It now checks both build contracts: unchanged absence
+  assertions publicly, and a working worker/Claims tab internally (ADR-0065).
 - Shared-browser creation failed with “could not read requirements”; automatic review rejected
   a full shared-desktop screenshot because it could expose unrelated browser content.
   Isolated Playwright screenshots of only the local app were inspected instead, including

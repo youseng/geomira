@@ -235,8 +235,13 @@ test('legacy migration and keyboard recovery preserve the full figure and canoni
   await page.getByRole('button', { name: 'Download .geo backup', exact: true }).click();
   const file = await (await downloading).path();
   expect(await readFile(file, 'utf8')).toBe(original);
-  expect(page.workers()).toEqual([]);
-  await expect(page.getByRole('tab', { name: 'Claims', exact: true })).toHaveCount(0);
+  if (process.env['GEOMIRA_ENGINE_E2E'] === '1') {
+    expect(page.workers()).toHaveLength(1);
+    await expect(page.getByRole('tab', { name: 'Claims', exact: true })).toBeVisible();
+  } else {
+    expect(page.workers()).toEqual([]);
+    await expect(page.getByRole('tab', { name: 'Claims', exact: true })).toHaveCount(0);
+  }
   await page.reload();
   await expectLines(page, '@title "Recovery fixture"', 'claim collinear(A, M, B) [name=saved]');
 });
