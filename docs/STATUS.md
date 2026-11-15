@@ -68,6 +68,8 @@ flush/switch and denied-storage behavior:
 
 `apps/web/e2e/pwa.spec.ts` gains an add-only wait for Saved locally before its explicit offline
 reload, plus an update-abort/retry regression. Existing figure assertions remain intact.
+`packages/editor/test/exports.test.ts` gains an add-only entry for the new persistence
+subpath and its exact runtime names; all existing surface assertions remain intact.
 No pure slot tests, mathematical tests, screenshot tolerances, coverage or count floors change.
 
 ### Acceptance command output
@@ -101,6 +103,10 @@ Chromium 141.0.7390.37.
 - Initial broader browser run: 21 passed / 4 failed. It exposed the in-flight-save state
   bug and recovery overlapping the phone drawer tabs; both have regression fixes. The PWA
   offline flow needed the explicit completed-save boundary described above. Final runs follow.
+- First complete implementation verification: 4,896 passed / 1 failed in 534 files. The
+  failure was the strict editor subpath inventory missing the newly exported persistence
+  module. Added its exact surface to the inventory without modifying existing assertions;
+  the completed suite is rerun below.
 - Shared-browser creation failed with “could not read requirements”; automatic review rejected
   a full shared-desktop screenshot because it could expose unrelated browser content.
   Isolated Playwright screenshots of only the local app were inspected instead, including
