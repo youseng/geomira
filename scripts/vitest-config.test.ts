@@ -19,7 +19,13 @@ describe('vitest configuration (ADR-0055)', () => {
   it('the reporters list every test slower than 2.5 s (a root option: it covers every project)', () => {
     expect(SLOW_TEST_MS).toBe(2500);
     expect(config.test?.slowTestThreshold).toBe(SLOW_TEST_MS);
-    expect(projects.map((p) => p.test?.name)).toEqual(['packages', 'web', 'scripts']);
+    // ADR-0065: both public and internal web projects inherit the same reporting threshold.
+    expect(projects.map((p) => p.test?.name)).toEqual([
+      'packages',
+      'web-engine',
+      'web-public',
+      'scripts',
+    ]);
   });
 
   it('the packages project has the 15 s hang guard', () => {
