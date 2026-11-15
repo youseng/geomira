@@ -240,3 +240,22 @@ test('legacy migration and keyboard recovery preserve the full figure and canoni
   await page.reload();
   await expectLines(page, '@title "Recovery fixture"', 'claim collinear(A, M, B) [name=saved]');
 });
+
+test('editing while startup storage is delayed never replaces the current figure', async ({
+  page,
+  baseURL,
+}) => {
+  await holdConnections(page, true);
+  await openApp(page, baseURL?.startsWith('file:') ? 'index.html' : './');
+  await expect(page.locator('html')).toHaveAttribute('data-held-storage', 'yes');
+  await command(page, 'A = (123, 456)');
+  await expectLines(page, 'A = (123, 456)');
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('release-storage'));
+  });
+  await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
+    'Saved locally',
+  );
+  await expectLines(page, 'A = (123, 456)');
+  expect(await currentText(page)).toContain('A = (123, 456)');
+});

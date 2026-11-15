@@ -62,8 +62,15 @@ export function openLaterLink(
 export function useStartup(store: EditorStore, runs: { clear(): void }, onReady: () => void): void {
   useEffect(() => {
     let active = true;
+    const initial = store.current().doc;
+    const openCount = store.getSnapshot().openCount;
     void store.autosave.initialize().then((text) => {
       if (!active) return;
+      // Startup I/O must never replace work entered while the database was opening.
+      if (store.current().doc !== initial || store.getSnapshot().openCount !== openCount) {
+        onReady();
+        return;
+      }
       const link = openLink(store, location.hash);
       if (!link.opened) {
         if (text === null) store.open(emptyDocument(), 'new');

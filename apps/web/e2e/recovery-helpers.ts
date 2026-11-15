@@ -35,8 +35,8 @@ export async function currentText(page: Page): Promise<string | null> {
 }
 
 /** Hold every native connection's success callback until the test releases both writers. */
-export async function holdConnections(page: Page): Promise<void> {
-  await page.evaluate(() => {
+export async function holdConnections(page: Page, startup = false): Promise<void> {
+  const install = () => {
     let release: () => void = () => undefined;
     const gate = new Promise<void>((resolve) => {
       release = resolve;
@@ -58,7 +58,9 @@ export async function holdConnections(page: Page): Promise<void> {
       });
       return request;
     };
-  });
+  };
+  if (startup) await page.addInitScript(install);
+  else await page.evaluate(install);
 }
 
 export async function failWrites(page: Page, stage: 'put' | 'complete'): Promise<void> {

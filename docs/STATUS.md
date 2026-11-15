@@ -85,7 +85,9 @@ Chromium 141.0.7390.37.
 - During iteration: two restore-capacity regressions failed before protecting the replaced
   predecessor and resolving conflicts before allocation; a stale-restore regression failed
   before keeping newly discovered conflicts. A further in-flight-save regression failed
-  before retaining newer edit dirty state. No assertions were weakened to resolve these.
+  before retaining newer edit dirty state. A delayed-startup browser regression then failed
+  when initialization replaced a figure typed before storage opened; startup now preserves
+  intervening edits/document switches. No assertions were weakened to resolve these.
 - Targeted policy/storage/integrity/legacy/lifecycle regressions: 41 passed in 7 files before
   the final boundary/missing-slot additions. Subsequent policy/storage run: 28 passed.
 - Web projects: 299 passed before final additions.
