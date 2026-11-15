@@ -1,3 +1,4 @@
+/** Legacy slot startup/restore helpers; the current web host uses persistence.ts (ADR-0067). */
 /**
  * Startup and "Restore previous figure" (SPEC §12), completing the autosave policy of
  * autosave.ts as pure functions (the web app owns storage). Run 8b: "opening a share link

@@ -32,7 +32,9 @@ listener cannot fix simultaneous writers that both read A before either writes.
 - Recovery is inspectable, with source, local time, document/session/revision identity and
   canonical text. Restore preserves the replaced figure and writes the selected contents
   in one transaction; a failed restore leaves the current editor usable. Resolving conflicts
-  is an explicit choice of version; normal restore does not unprotect conflicts.
+  is an explicit choice of version; normal restore does not unprotect conflicts. Each list
+  entry carries the head/conflict IDs that were displayed. Resolution removes only those
+  observed protections, and a newer unseen writer remains protected as a fresh conflict.
 - Keep the newest ten ordinary revisions per document, each document's latest revision,
   the global current pointer, every unresolved conflicting revision, and the replaced
   predecessor of a document whose current head is a restoration. Cap the record
@@ -74,6 +76,10 @@ The browser share test reads the revision store rather than obsolete localStorag
 The PWA offline test now waits for Saved locally before navigating away; its figure assertion
 is unchanged. Unload cannot guarantee an asynchronous transaction completes.
 PWA/update assertions stay intact; async flushing adds completion/failure regressions.
+The CI phone full-page comparison failed at 2,618 pixels against its unchanged 0.01 limit.
+After inspecting its expected, actual and diff artifacts, update only its 46-pixel header
+for the new persistent save state/Recovery controls using the CI rendering. Every body
+pixel, both desktop references, all canvas references and all tolerances remain unchanged.
 No pure slot tests, geometry assertions, thresholds or test-count floor are weakened.
 Every changed frozen file is listed in STATUS; commits cite this ADR.
 

@@ -93,6 +93,21 @@ describe('durability and recovery', () => {
     expect(autosave.getStatus().phase).toBe('saved');
   });
 
+  it('retries a failed edit as a conflict when another writer saved meanwhile', async () => {
+    const { storage, autosave } = await setup();
+    await autosave.save(A);
+    storage.failure = 'put';
+    autosave.edited();
+    expect(await autosave.save(() => AB)).toBe(false);
+    storage.failure = null;
+    const other = await reopen(storage);
+    other.edited();
+    await other.save(AC);
+    expect(await autosave.retry()).toBe(true);
+    expect(autosave.getStatus().phase).toBe('conflict');
+    expect(storage.state.revisions.map((r) => r.text)).toEqual(expect.arrayContaining([AB, AC]));
+  });
+
   it('catches serialization errors, retains the producer, and retries it', async () => {
     const { autosave, storage } = await setup();
     await autosave.save(A);
@@ -133,6 +148,18 @@ describe('durability and recovery', () => {
     expect(storage.state.revisions.map((r) => r.text)).toContain(AC);
     autosave.opened('autosave', A);
     expect(await autosave.restore(A)).toBe(AC);
+  });
+
+  it('keeps a portable pending snapshot when startup storage is denied and another figure opens', async () => {
+    installStorage();
+    const storage = new MemoryRevisions();
+    storage.failure = 'read';
+    const autosave = new Autosave({ storage });
+    await autosave.initialize();
+    expect(await autosave.save(() => A)).toBe(false);
+    autosave.opened('example', AC);
+    expect(autosave.entries().map((r) => r.text)).toContain(A);
+    expect(autosave.getStatus().phase).toBe('not-saved');
   });
 
   it('refuses invalid canonical data whole instead of acknowledging a partial parse', async () => {

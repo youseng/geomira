@@ -4,6 +4,7 @@ import { parse } from '@geomira/lang/parse';
 import { createRegistry } from '@geomira/kernel/registry';
 import { assertInvariants } from '@geomira/kernel/invariants';
 import { Autosave } from '../src/persist';
+import { commitRevision, EMPTY_RECOVERY, type Revision } from '@geomira/editor/persistence';
 import { EditorStore } from '../src/store';
 import { isRecoveryState } from '../src/recovery-format';
 import { installStorage, removeStorage, SLOT } from './fake-storage';
@@ -105,6 +106,39 @@ describe('whole-document integrity', () => {
     const invalid = autosave.entries().find((r) => r.pending);
     expect(await autosave.restore(canonical, invalid?.id)).toBeUndefined();
     expect(autosave.getStatus().phase).toBe('not-saved');
+  });
+
+  it('conflict resolution preserves a writer that committed after the recovery list was read', async () => {
+    installStorage();
+    const storage = new MemoryRevisions();
+    const version = (id: string, baseId: string | null): Revision => ({
+      id,
+      baseId,
+      documentId: 'shared',
+      sessionId: id,
+      savedAt: 1,
+      source: 'edit',
+      text: `@version 1\n# ${id}\n`,
+    });
+    let known = commitRevision(EMPTY_RECOVERY, version('root', null));
+    known = commitRevision(known, version('B', 'root'));
+    known = commitRevision(known, version('C', 'root'));
+    storage.state = { ...known, migrated: true };
+    const autosave = new Autosave({ storage, registry });
+    await autosave.initialize();
+    autosave.opened('example', canonical);
+    const selected = autosave.entries().find((r) => r.id === 'B');
+    // Another tab commits a new conflicting version while this list is stale.
+    storage.state = commitRevision(storage.state, version('unseen', 'B'));
+    await autosave.refresh();
+    expect(await autosave.restore(canonical, 'B', true, selected?.observation)).toBe(
+      version('B', 'root').text,
+    );
+    expect(storage.state.conflicts).toContain('unseen');
+    expect(storage.state.revisions.find((r) => r.id === 'unseen')?.text).toBe(
+      version('unseen', 'B').text,
+    );
+    expect(storage.state.conflicts).toContain(storage.state.currentId);
   });
 
   it('rejects unknown schemas, duplicate identities and dangling protected pointers', async () => {

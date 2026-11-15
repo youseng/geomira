@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { currentText, readRecovery, holdConnections, failWrites } from './recovery-helpers';
 import { expect, test } from '@playwright/test';
-import { command, expectLines, openApp, textArea } from './helpers';
+import { command, expectLines, openApp, textArea, tool, clickWorld } from './helpers';
 
 test('two tabs retain A+B and A+C after closing and reopening', async ({
   page,
@@ -263,4 +263,77 @@ test('editing while startup storage is delayed never replaces the current figure
   );
   await expectLines(page, 'A = (123, 456)');
   expect(await currentText(page)).toContain('A = (123, 456)');
+});
+
+test('a tool chosen during delayed startup still constructs the figure', async ({
+  page,
+  baseURL,
+}) => {
+  await holdConnections(page, true);
+  await openApp(page, baseURL?.startsWith('file:') ? 'index.html' : './');
+  await tool(page, 'Polygon');
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('release-storage'));
+  });
+  await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
+    'Saved locally',
+  );
+  await clickWorld(page, 0, 0);
+  await expectLines(page, 'A = (0, 0)');
+});
+
+test('resolving a displayed version preserves a conflict written behind the restore barrier', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const entry = baseURL?.startsWith('file:') ? 'index.html' : './';
+  await openApp(page, entry);
+  await command(page, 'A = (0, 0)');
+  await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
+    'Saved locally',
+  );
+  const other = await context.newPage();
+  await openApp(other, entry);
+  await expectLines(other, 'A = (0, 0)');
+  await command(page, 'B = (1, 0)');
+  await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
+    'Saved locally',
+  );
+  await command(other, 'C = (0, 1)');
+  await expect(other.getByRole('status', { name: 'Local save status' })).toContainText('Conflict');
+  const third = await context.newPage();
+  await openApp(third, entry);
+  await expectLines(third, 'C = (0, 1)');
+  await third.getByLabel('Example', { exact: true }).selectOption('euler-line');
+  await expect(third.getByRole('status', { name: 'Local save status' })).toContainText('Browsing');
+  await third.getByRole('button', { name: 'Recovery versions', exact: true }).click();
+  const before = (await readRecovery(third)).revisions.find(
+    (r) => r.text === '@version 1\nA = (0, 0)\nB = (1, 0)\n',
+  );
+  expect(before).toBeDefined();
+  await holdConnections(third);
+  const row = third
+    .getByRole('region', { name: 'Recovery versions' })
+    .getByRole('listitem')
+    .filter({ hasText: `revision ${before?.id ?? ''}` });
+  await row
+    .getByRole('button', {
+      name: 'Use this version and resolve this document’s conflicts',
+      exact: true,
+    })
+    .click();
+  await expect(third.locator('html')).toHaveAttribute('data-held-storage', 'yes');
+  await command(page, 'E = (3, 3)');
+  await expect.poll(async () => (await currentText(page))?.includes('E = (3, 3)')).toBe(true);
+  const unseen = (await readRecovery(page)).currentId;
+  await third.evaluate(() => {
+    window.dispatchEvent(new Event('release-storage'));
+  });
+  await expectLines(third, 'A = (0, 0)', 'B = (1, 0)');
+  await expect(third.getByRole('status', { name: 'Local save status' })).toContainText('Conflict');
+  const recovered = await readRecovery(third);
+  expect(recovered.conflicts).toContain(unseen);
+  expect(recovered.revisions.find((r) => r.id === unseen)?.text).toContain('E = (3, 3)');
+  expect(recovered.revisions.some((r) => r.text.includes('@title "Euler line"'))).toBe(true);
 });

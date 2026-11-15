@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   commitRevision,
   EMPTY_RECOVERY,
+  documentHead,
+  RETENTION,
+  type RetentionLimits,
   recoverRevision,
   type RecoveryState,
   type Revision,
@@ -17,6 +20,31 @@ const revision = (id: string, documentId = 'doc', baseId: string | null = null):
   source: 'edit',
 });
 const limits = { revisions: 4, bytes: 10000, history: 2 };
+
+function restoreKnownRevision(
+  state: RecoveryState,
+  replacing: Revision,
+  targetId: string,
+  id: string,
+  savedAt: number,
+  resolve: boolean,
+  limits: RetentionLimits = RETENTION,
+): RecoveryState {
+  const target = state.revisions.find((r) => r.id === targetId);
+  return recoverRevision(
+    state,
+    replacing,
+    targetId,
+    id,
+    savedAt,
+    resolve,
+    {
+      headId: target === undefined ? null : (documentHead(state, target.documentId)?.id ?? null),
+      conflicts: state.conflicts,
+    },
+    limits,
+  );
+}
 
 describe('transactional revision policy', () => {
   it.each([
@@ -79,7 +107,7 @@ describe('transactional revision policy', () => {
   it('restores a chosen version and the replaced figure atomically and can restore back', () => {
     let state = commitRevision(EMPTY_RECOVERY, revision('A'));
     state = commitRevision(state, revision('B', 'doc', 'A'));
-    const restored = recoverRevision(
+    const restored = restoreKnownRevision(
       state,
       revision('unsaved', 'doc', 'B'),
       'A',
@@ -89,7 +117,7 @@ describe('transactional revision policy', () => {
     );
     expect(restored.revisions.map((r) => r.id)).toContain('unsaved');
     expect(restored.revisions.at(-1)?.text).toBe(revision('A').text);
-    const back = recoverRevision(
+    const back = restoreKnownRevision(
       restored,
       { ...revision('open', 'doc', 'restore'), text: revision('A').text },
       'unsaved',
@@ -104,7 +132,7 @@ describe('transactional revision policy', () => {
     let state = commitRevision(EMPTY_RECOVERY, revision('A'));
     state = commitRevision(state, revision('B', 'doc', 'A'));
     state = commitRevision(state, revision('C', 'doc', 'A'));
-    const resolved = recoverRevision(
+    const resolved = restoreKnownRevision(
       state,
       { ...revision('open', 'doc', 'C'), text: revision('C').text },
       'B',
@@ -122,9 +150,9 @@ describe('transactional revision policy', () => {
     const state = commitRevision(EMPTY_RECOVERY, a);
     expect(commitRevision(state, a)).toBe(state);
     expect(() => commitRevision(state, { ...a, text: 'different' })).toThrow(/identity/iu);
-    expect(() => recoverRevision(state, revision('open'), 'missing', 'restore', 2, false)).toThrow(
-      /available/iu,
-    );
+    expect(() =>
+      restoreKnownRevision(state, revision('open'), 'missing', 'restore', 2, false),
+    ).toThrow(/available/iu);
   });
 
   it('keeps protected data when history and total boundaries coincide', () => {
@@ -141,7 +169,7 @@ describe('transactional revision policy', () => {
     let state = commitRevision(EMPTY_RECOVERY, revision('A'));
     state = commitRevision(state, revision('other', 'other'));
     expect(() =>
-      recoverRevision(state, revision('replaced', 'doc', 'A'), 'A', 'restored', 2, false, {
+      restoreKnownRevision(state, revision('replaced', 'doc', 'A'), 'A', 'restored', 2, false, {
         revisions: 2,
         bytes: 10000,
         history: 2,
@@ -155,7 +183,7 @@ describe('transactional revision policy', () => {
     state = commitRevision(state, revision('B', 'doc', 'A'));
     state = commitRevision(state, revision('C', 'doc', 'A'));
     state = commitRevision(state, revision('other', 'other'));
-    const chosen = recoverRevision(
+    const chosen = restoreKnownRevision(
       state,
       revision('replaced', 'doc', 'C'),
       'B',
@@ -171,7 +199,7 @@ describe('transactional revision policy', () => {
   it('a restore from a stale tab also protects the unseen writer and the figure being replaced', () => {
     let state = commitRevision(EMPTY_RECOVERY, revision('A'));
     state = commitRevision(state, revision('B', 'doc', 'A'));
-    const restored = recoverRevision(
+    const restored = restoreKnownRevision(
       state,
       revision('stale', 'doc', 'A'),
       'A',
@@ -189,5 +217,50 @@ describe('transactional revision policy', () => {
     expect(state.revisions).toHaveLength(128);
     expect(() => commitRevision(state, revision('overflow', 'new-doc'))).toThrow(/capacity/iu);
     expect(state.revisions).toHaveLength(128);
+  });
+  it('an unseen target-document writer remains protected when an older observation resolves conflicts', () => {
+    let state = commitRevision(EMPTY_RECOVERY, revision('personal', 'personal'));
+    state = commitRevision(state, revision('root'));
+    state = commitRevision(state, revision('B', 'doc', 'root'));
+    state = commitRevision(state, revision('C', 'doc', 'root'));
+    const observation = { headId: 'C', conflicts: state.conflicts };
+    state = commitRevision(state, revision('unseen', 'doc', 'B'));
+    const resolved = recoverRevision(
+      state,
+      revision('replacing', 'personal', 'personal'),
+      'B',
+      'chosen',
+      2,
+      true,
+      observation,
+      { revisions: 3, bytes: 10000, history: 2 },
+    );
+    expect(resolved.conflicts).toEqual(['unseen', 'chosen']);
+    expect(resolved.revisions.map((r) => r.id)).toEqual(['unseen', 'replacing', 'chosen']);
+    expect(() =>
+      commitRevision(resolved, revision('other', 'other'), {
+        revisions: 3,
+        bytes: 10000,
+        history: 2,
+      }),
+    ).toThrow(/capacity/iu);
+  });
+  it('resolves fully observed conflicts at capacity even when the open editor is an older branch', () => {
+    let state = commitRevision(EMPTY_RECOVERY, revision('root'));
+    state = commitRevision(state, revision('B', 'doc', 'root'));
+    state = commitRevision(state, revision('C', 'doc', 'root'));
+    state = commitRevision(state, revision('other', 'other'));
+    const resolved = recoverRevision(
+      state,
+      revision('replacing', 'doc', 'B'),
+      'B',
+      'chosen',
+      2,
+      true,
+      { headId: 'C', conflicts: state.conflicts },
+      { revisions: 3, bytes: 10000, history: 2 },
+    );
+    expect(resolved.conflicts).toEqual([]);
+    expect(resolved.revisions.map((r) => r.id)).toEqual(['other', 'replacing', 'chosen']);
   });
 });

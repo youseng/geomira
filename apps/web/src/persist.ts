@@ -2,6 +2,8 @@
 import { openSession, shouldSave, type Origin } from '@geomira/editor/autosave';
 import {
   commitRevision,
+  documentHead,
+  type RecoveryObservation,
   EMPTY_RECOVERY,
   recoverRevision,
   type LegacyEntry,
@@ -18,35 +20,8 @@ import {
   validatedText,
 } from './legacy-recovery';
 
-type Producer = string | (() => string);
-interface Editing {
-  readonly documentId: string;
-  readonly sessionId: string;
-  readonly baseId: string | null;
-  readonly origin: Origin;
-  readonly edited: boolean;
-}
-interface Pending {
-  readonly editing: Editing;
-  readonly id: string;
-  readonly savedAt: number;
-  readonly producer: Producer;
-  text: string | null;
-  error: string | null;
-}
-export interface SaveStatus {
-  readonly phase: 'saving' | 'saved' | 'not-saved' | 'conflict' | 'browsing';
-  readonly message: string | null;
-  readonly dirty: boolean;
-  readonly documentId: string;
-  readonly sessionId: string;
-  readonly revisionId: string | null;
-  readonly pendingCount: number;
-}
-export interface RecoveryEntry extends Revision {
-  readonly pending: boolean;
-  readonly conflict: boolean;
-}
+import type { Producer, Editing, Pending, SaveStatus, RecoveryEntry } from './persistence-types';
+export type { SaveStatus, RecoveryEntry } from './persistence-types';
 
 const id = () => crypto.randomUUID();
 const errorText = (e: unknown) => (e instanceof Error ? `${e.name}: ${e.message}` : String(e));
@@ -250,12 +225,12 @@ export class Autosave {
   }
   private async persist(p: Pending): Promise<boolean> {
     try {
-      await this.initialize();
-      if (!this.initialized) throw new Error(this.startupError ?? 'Storage unavailable');
       p.text = validatedText(
         typeof p.producer === 'string' ? p.producer : p.producer(),
         this.registry,
       );
+      await this.initialize();
+      if (!this.initialized) throw new Error(this.startupError ?? 'Storage unavailable');
       const revision = this.revision(p);
       this.state = await this.storage.update((s) => {
         const base = s.revisions.find((r) => r.id === revision.baseId);
@@ -303,6 +278,10 @@ export class Autosave {
       ...r,
       pending: false,
       conflict: this.state.conflicts.includes(r.id),
+      observation: {
+        headId: documentHead(this.state, r.documentId)?.id ?? null,
+        conflicts: this.state.conflicts,
+      },
     }));
     const pending = [...this.pendingSaves.values()]
       .filter((p) => p.text !== null)
@@ -311,6 +290,10 @@ export class Autosave {
         id: `pending:${p.editing.sessionId}`,
         pending: true,
         conflict: false,
+        observation: {
+          headId: documentHead(this.state, p.editing.documentId)?.id ?? null,
+          conflicts: this.state.conflicts,
+        },
       }));
     return [...durable, ...pending].reverse();
   }
@@ -322,7 +305,13 @@ export class Autosave {
   }
 
   /** Preserve the replaced document and target contents together. No editor change on failure. */
-  async restore(openText: string, targetId?: string, resolve = false): Promise<string | undefined> {
+  async restore(
+    openText: string,
+    targetId?: string,
+    resolve = false,
+    observation?: RecoveryObservation,
+  ): Promise<string | undefined> {
+    const observed = this.state;
     const editing = this.editing;
     await this.flush();
     const target = this.entries().find((r) =>
@@ -354,9 +343,19 @@ export class Autosave {
         savedAt: Date.now(),
         source: 'edit',
       };
-      const restoredId = id();
       this.state = await this.storage.update((s) =>
-        recoverRevision(s, replacing, target.id, restoredId, Date.now(), resolve),
+        recoverRevision(
+          s,
+          replacing,
+          target.id,
+          id(),
+          Date.now(),
+          resolve,
+          observation ?? {
+            headId: documentHead(observed, target.documentId)?.id ?? null,
+            conflicts: observed.conflicts,
+          },
+        ),
       );
       this.bases.set(editing.sessionId, replacing.id);
       this.publish();

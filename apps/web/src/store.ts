@@ -1,3 +1,4 @@
+import type { RecoveryObservation } from '@geomira/editor/persistence';
 import { CLAIM_TESTING, CLAIMS_UNAVAILABLE } from './features';
 /**
  * The page's editor: one packages/editor EditorState, changed ONLY through applyEdit,
@@ -227,9 +228,13 @@ export class EditorStore {
   }
 
   /** Await a recoverable restore; an edit during its transaction must not be replaced. */
-  async restoreRevision(id?: string, resolve = false): Promise<boolean> {
+  async restoreRevision(
+    id?: string,
+    resolve = false,
+    observation?: RecoveryObservation,
+  ): Promise<boolean> {
     const before = this.current().doc;
-    const text = await this.autosave.restore(print(before), id, resolve);
+    const text = await this.autosave.restore(print(before), id, resolve, observation);
     if (text === undefined) return false;
     if (this.current().doc !== before) {
       this.setNotice({

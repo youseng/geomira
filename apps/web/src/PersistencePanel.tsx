@@ -1,3 +1,4 @@
+import { assertNever } from '@geomira/num/assert';
 import { useState, useSyncExternalStore } from 'react';
 import { downloadGeo, downloadText } from './backup';
 import type { RecoveryEntry, SaveStatus } from './persist';
@@ -16,6 +17,8 @@ function statusText(phase: SaveStatus['phase']): string {
       return 'Conflict';
     case 'browsing':
       return 'Browsing';
+    default:
+      return assertNever(phase, 'local save phase');
   }
 }
 function VersionHeading({ entry }: { entry: RecoveryEntry }) {
@@ -31,7 +34,7 @@ function VersionHeading({ entry }: { entry: RecoveryEntry }) {
 function Version({ entry, store, onRestore }: PanelProps & { entry: RecoveryEntry }) {
   const [error, setError] = useState<string | null>(null);
   const restore = (resolve: boolean) => {
-    void store.restoreRevision(entry.id, resolve).then((ok) => {
+    void store.restoreRevision(entry.id, resolve, entry.observation).then((ok) => {
       if (ok) onRestore();
     });
   };

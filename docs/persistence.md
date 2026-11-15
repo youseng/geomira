@@ -30,14 +30,16 @@ clocks, storage, downloads and lifecycle events belong to the web host.
   including work pending in earlier editing sessions. Use it for explicit Retry and PWA
   updates; it refuses reload during an unfinished drag.
 - `entries()` exposes durable versions and pending in-memory text, with source/time,
-  document/session/revision IDs and conflict flags. `legacyEntries()` exposes originals,
+  document/session/revision IDs, conflict flags and an immutable observation of the displayed
+  document head/conflict IDs. `legacyEntries()` exposes originals,
   including invalid text. `refresh()` reads external commits without changing the editor's
   contents or base revision. Notifications are advisory, never a concurrency lock.
-- `EditorStore.restoreRevision(id?, resolve=false): Promise<boolean>` preserves the current
+- `EditorStore.restoreRevision(id?, resolve=false, entry.observation): Promise<boolean>` preserves the current
   figure and restores the chosen version. It refuses to replace an editor changed during
   the async operation. Normal restores keep conflict protection. Explicit resolution
-  unpins the chosen document's known conflicts; an unseen concurrent change can still
-  produce a fresh conflict. The legacy header action chooses the newest different text.
+  unpins only the chosen document's conflicts present in that observation; an unseen concurrent change can still
+  produce a fresh conflict. Pass the selected entry’s observation when restoring/resolving
+  from an inspected list; refreshing the list must not silently advance an in-flight choice. The legacy header action chooses the newest different text.
 - `downloadGeo(document)` in `apps/web/src/backup.ts` is the reusable canonical `.geo`
   action, using `@geomira/lang/print`, with no storage or document-switch side effects.
   Catch download/serialization exceptions and keep the figure open. A browser download

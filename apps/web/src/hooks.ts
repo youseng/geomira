@@ -62,12 +62,17 @@ export function openLaterLink(
 export function useStartup(store: EditorStore, runs: { clear(): void }, onReady: () => void): void {
   useEffect(() => {
     let active = true;
-    const initial = store.current().doc;
+    const initial = store.current();
     const openCount = store.getSnapshot().openCount;
     void store.autosave.initialize().then((text) => {
       if (!active) return;
       // Startup I/O must never replace work entered while the database was opening.
-      if (store.current().doc !== initial || store.getSnapshot().openCount !== openCount) {
+      if (
+        store.current().doc !== initial.doc ||
+        store.current().tool !== initial.tool ||
+        store.current().toolState !== initial.toolState ||
+        store.getSnapshot().openCount !== openCount
+      ) {
         onReady();
         return;
       }

@@ -113,6 +113,12 @@ export function commitRevision(
   );
 }
 
+/** The recovery list observed by the caller, before entering the write transaction. */
+export interface RecoveryObservation {
+  readonly headId: string | null;
+  readonly conflicts: readonly string[];
+}
+
 /** Both the replaced figure and restored contents commit together or neither does. */
 export function recoverRevision(
   state: RecoveryState,
@@ -121,17 +127,29 @@ export function recoverRevision(
   id: string,
   savedAt: number,
   resolve: boolean,
+  observation: RecoveryObservation,
   limits: RetentionLimits = RETENTION,
 ): RecoveryState {
   const target = state.revisions.find((r) => r.id === targetId);
   if (target === undefined) throw new Error('This recovery version is no longer available.');
   const conflicts = resolve
     ? state.conflicts.filter(
-        (key) => state.revisions.find((r) => r.id === key)?.documentId !== target.documentId,
+        (key) =>
+          !observation.conflicts.includes(key) ||
+          state.revisions.find((r) => r.id === key)?.documentId !== target.documentId,
       )
     : state.conflicts;
-  const saved = commitRevision({ ...state, conflicts }, replacing, limits);
-  const baseId = documentHead(saved, target.documentId)?.id ?? null;
+  // An explicit resolution acknowledges the displayed head, not a later unseen writer.
+  const source =
+    resolve && target.documentId === replacing.documentId
+      ? { ...replacing, baseId: observation.headId }
+      : replacing;
+  const saved = commitRevision({ ...state, conflicts }, source, limits);
+  // For the open document, saving its replacement has already guarded any stale base.
+  const baseId =
+    target.documentId === replacing.documentId
+      ? (documentHead(saved, target.documentId)?.id ?? null)
+      : observation.headId;
   return commitRevision(
     saved,
     {

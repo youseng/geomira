@@ -74,7 +74,10 @@ to `apps/web/e2e/file-url.spec.ts` before its explicit single-file reload; its e
 share and geometry assertions are unchanged.
 `packages/editor/test/exports.test.ts` gains an add-only entry for the new persistence
 subpath and its exact runtime names; all existing surface assertions remain intact.
-All screenshot reference images remain unchanged.
+`apps/web/e2e/design-mobile.spec.ts-snapshots/main-phone-mobile-linux.png`: after CI
+failed at 2,618 pixels against the unchanged 0.01 limit, inspected all three CI artifacts
+and updated only the 46-pixel header for save state/Recovery using that CI rendering.
+All body pixels and all other screenshot references remain unchanged.
 No pure slot tests, mathematical tests, screenshot tolerances, coverage or count floors change.
 
 ### Acceptance command output
@@ -132,12 +135,28 @@ Chromium 141.0.7390.37.
   new header differing (2,982 pixels per desktop view; 4,190 phone pixels). Inspected expected,
   actual and diff images. Playwright reports only 261 additional desktop and 352 additional
   phone mismatch pixels versus the fresh main failures; the larger body/platform differences
-  are inherited. All original references and tolerances remain intact; these are not counted
-  as local passes.
+  are inherited. CI subsequently confirmed the phone header pushes its comparison just
+  past the existing limit. The focused CI header update above preserves the original body;
+  all tolerances remain intact. Inherited local body differences are not counted as passes.
 - Firefox 142.0.1: launch timed out after 180 seconds with libpci/X-server/framebuffer and
   sandbox uid-map EROFS diagnostics. WebKit 26.0: missing GTK4, Graphene, WOFF2, HarfBuzz ICU,
   Hyphen, Manette and GLESv2 libraries. Neither local browser check passed; CI installs their
   dependencies and runs both engines. The approved package helper is absent in this host.
+- CI run 43724097528 at c8ebeb5: verification and public browser checks passed, then internal
+  browser flows had 165 passes / 2 failures / 4 dependent measurements not run. The failures
+  were the phone reference above and Firefox polygon creation during startup. A controlled
+  delayed-startup tool regression reproduced the latter before fixing startup to preserve
+  intervening tool/tool-state changes as well as document edits.
+- Final concurrency review: a failing host regression exposed resolution clearing an unseen
+  target-document writer while another figure was open. Recovery list entries now carry
+  observed head/conflict IDs. Tests preserve unseen writers even after a refresh, at the
+  capacity boundary and behind a native browser restore barrier. The original native
+  barrier/tool regressions both failed on the preceding built artifact. The completed
+  persistence browser run then passed all 30 cases across desktop, touch emulation and
+  single-file Chromium. The targeted pure/host suite passed 52 tests in 8 files, including
+  stale-editor resolution at capacity and retry after another writer committed.
+- A denied-startup producer regression failed before moving serialization ahead of storage
+  access, so a failed figure remains inspectable/downloadable after another figure opens.
 - Shared-browser creation failed with “could not read requirements”; automatic review rejected
   a full shared-desktop screenshot because it could expose unrelated browser content.
   Isolated Playwright screenshots of only the local app were inspected instead, including
