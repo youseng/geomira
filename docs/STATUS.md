@@ -67,7 +67,9 @@ flush/switch and denied-storage behavior:
   of an obsolete localStorage key; keep share/restore-back and all figure assertions.
 
 `apps/web/e2e/pwa.spec.ts` gains an add-only wait for Saved locally before its explicit offline
-reload, plus an update-abort/retry regression. Existing figure assertions remain intact.
+reload, plus an update-abort/retry regression. Existing figure assertions remain intact. The same add-only completed-save wait is added
+to `apps/web/e2e/file-url.spec.ts` before its explicit single-file reload; its exact views,
+share and geometry assertions are unchanged.
 `packages/editor/test/exports.test.ts` gains an add-only entry for the new persistence
 subpath and its exact runtime names; all existing surface assertions remain intact.
 No pure slot tests, mathematical tests, screenshot tolerances, coverage or count floors change.
