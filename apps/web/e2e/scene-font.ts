@@ -24,7 +24,11 @@ export async function pinSceneFont(page: Page): Promise<() => Promise<void>> {
       await document.fonts.load('15px "Geomira Math"');
       await document.fonts.ready;
       await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
       });
     });
   };
