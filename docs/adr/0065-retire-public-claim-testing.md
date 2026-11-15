@@ -62,6 +62,10 @@ mathematical correction; retained tests do not establish that this bug has been 
    Frozen UI assertions which required the retired public interface are replaced with
    absence and document-preservation assertions as listed in STATUS. Commits modifying
    those files cite ADR-0065 as required by the add-only guard.
+   Canvas baselines use separate public names because verdict chips overlap the canvas.
+   Preserve the six internal originals and the existing pixel tolerance. Fresh baseline
+   and public renders have identical dimensions and differ only in the chip regions;
+   existing internal snapshot drift remains visible rather than being rewritten here.
 
 ## Consequences
 
