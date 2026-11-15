@@ -28,13 +28,15 @@ function buildId(): string {
  * test worker included, for use from file://).
  */
 export default defineConfig(({ mode }) => {
-  const single = mode === 'singlefile';
+  const single = mode === 'singlefile' || mode === 'claim-engine-singlefile';
+  const claims = mode === 'claim-engine' || mode === 'claim-engine-singlefile';
   const build = buildId();
   return {
     base: single ? './' : base,
     define: {
       __GEOMIRA_BUILD__: JSON.stringify(build),
       __GEOMIRA_SINGLE_FILE__: JSON.stringify(single),
+      __GEOMIRA_CLAIM_TESTING__: JSON.stringify(claims),
     },
     plugins: single
       ? [react(), singleFileHtmlPlugin(path('public/favicon.svg')), viteSingleFile()]
@@ -48,7 +50,13 @@ export default defineConfig(({ mode }) => {
         }
       : {}),
     build: {
-      outDir: single ? 'dist-single' : 'dist',
+      outDir: claims
+        ? single
+          ? 'dist-single-claims'
+          : 'dist-claims'
+        : single
+          ? 'dist-single'
+          : 'dist',
       sourcemap: !single,
     },
   };

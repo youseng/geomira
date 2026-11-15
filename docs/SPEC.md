@@ -7,8 +7,8 @@ Users: olympiad students, trainers, problem setters, handout authors.
 
 v1 INCLUDES: construction kernel over several number fields, branch selectors,
 similarity transformations, layers including derived layers, views (data model), the
-text language, three-valued claims with local and global random-figure testing and
-hypotheses, canvas editor, exports (SVG, PNG, TikZ, Asymptote) compiled in CI, share
+text language (including saved claim and assumption data), measurements, Randomize,
+canvas editor, exports (SVG, PNG, TikZ, Asymptote) compiled in CI, share
 links, static site.
 v1.1 (Runs 12–13, before Phase 2): single-file offline build, PWA, views UI, long-tail
 tools (spiral_center, isogonal, symmedian, pole, radical_center, arc), mutation-testing
@@ -28,6 +28,20 @@ Run 16a by ADR-0040, conics to Run 16b by ADR-0042), the symbolic
 prover (the finder, special-position hunting and branch-fix diagnosis moved to Run 17 by
 ADR-0035 and ADR-0036), the problem library,
 write-ups, loci, animation, macros, accounts.
+
+### Public release boundary (ADR-0065)
+
+The maintainer has withdrawn claim testing and discovery from the public app. All requirements
+below for verdicts, claim tools, live badges, tests, finder/hunt, branch fixes and result previews
+now describe the retained internal engine only. They are not public release requirements.
+Normal hosted and single-file builds must not expose or execute them, warm their workers, or
+subscribe to their results. Only explicitly selected internal development/test build modes
+may enable them; URL parameters, persisted settings and document data cannot do so.
+
+`claim` and `assume` remain language/document data, preserved through parsing, printing, edits,
+rename, undo, saving, sharing and reopening. Randomize retains applicable assumptions and the
+shared sampling dependencies. This containment does not fix or endorse the sampler: the fixed
+radius-ratio reproduction in ADR-0065 remains a known engine issue for separate work.
 
 ## 2. Repository and dependency rules
 packages/num      tolerance, noise floor, seeded RNG, Field<T>: Float, Rational, ModP
@@ -283,7 +297,7 @@ centre), X* is NOT draggable (stated rule, tested). Inversion inherits this unch
 order, pure. `evaluateFrom` (incremental) must equal a full evaluate. The float run draws
 the figure; the Rational run is the oracle; the ModP run serves the tester (§10.5).
 
-## 10. Claims, hypotheses, random-figure testing (packages/claims)
+## 10. Retained internal claims engine and document hypotheses (packages/claims)
 ### 10.1 Claim kinds
 collinear · concyclic · concurrent · parallel · perpendicular · on(P, curve) ·
 tangent(curve, curve) · equal points · `AB = k·CD` (k exact) · `AB/CD = EF/GH` or
@@ -313,8 +327,8 @@ optional finder hints (ADR-0035); the kinds are a registry value (`claimKindRegi
 
 ### 10.2 Three-valued evaluation
 `evalClaim` → true | false | undefined(reason) for the current figure: NDG failure →
-undefined("degenerate: …"); otherwise by the rung that applies (§10.5). Live badges show
-exactly this for the current figure and never run a sampler.
+undefined("degenerate: …"); otherwise by the rung that applies (§10.5). Internal-build live badges show exactly this for the current figure and never run a sampler.
+Public builds have no live claim evaluation or badges (ADR-0065).
 
 ### 10.3 Hypotheses (`assume …`)
 Open conditions only, checked with a BAND margin: `acute(A,B,C)`, comparisons of
@@ -458,23 +472,25 @@ Panels: Text (two-way, in the short notation, ADR-0061; per-line diagnostics; ap
 over a figure changed meanwhile, ADR-0047), Objects (by layer, Undefined/Inexact
 reasons; first the Measurements: every number with its definition and value as shown, ADR-0048;
 each row has an eye that hides or shows its object, ADR-0060), Layers (shown, active, locked;
-a new layer, a layer's name and "move the selection here" from the panel, ADR-0060), Claims (live badges; local verdict line; global verdict line;
-"open counterexample"), Style. While objects are selected a selection bar floats on the canvas with what can be done to all of
+a new layer, a layer's name and "move the selection here" from the panel, ADR-0060), Help.
+Style is edited in the object card. Internal builds alone additionally offer Claims (live
+badges, local/global verdicts and counterexample documents; ADR-0065). While objects are selected a selection bar floats on the canvas with what can be done to all of
 them in one click (ADR-0060). Command bar with registry autocomplete (several statements separated by `;` are one edit,
 ADR-0061); shortcuts and help
 generated from data; mobile (390×664) pan, pinch, drag and panels work. Views UI: v1.1.
-(ADR-0051) Every claim kind is reachable from the Claim tool (a line parameter takes a line,
+(ADR-0051, internal builds only per ADR-0065) Every claim kind is reachable from the Claim tool (a line parameter takes a line,
 segment or ray, or two points: `line(A, P)`; a kind's number comes from the tool's field) and
 from the header's claim box, which lists the forms it reads, completes the word at the cursor,
 and says what it could not read (the word, its column, the form to write); the logic is in
 packages/editor (claim-tool.ts, claim-bar.ts).
 
-## 16. Worker job protocol
+## 16. Internal-build worker job protocol (ADR-0065)
 `runJob(job)` is a pure generator in packages/claims yielding progress after each sample
 (cancellable, time-sliceable). Jobs: `{ kind: 'testClaim', regime: 'local'|'global',
 docText, claim, seed, n }`; packages/discovery adds 'find', 'hunt' and 'branchFix' (Run 17,
 ADR-0035, ADR-0036; Phase 2 adds 'prove'). apps/web runs jobs in a Web
-Worker; without workers, the page runs them in ≤ 16 ms slices (tested in v1.1 from
+Worker in explicitly opted-in internal builds; public dispatch and warming are disabled.
+In internal builds without workers, the page runs them in ≤ 16 ms slices (tested in v1.1 from
 file://).
 
 ## 17. Testing laws, gates and budgets

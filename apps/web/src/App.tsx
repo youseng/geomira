@@ -1,3 +1,4 @@
+import { CLAIM_TESTING } from './features';
 import {
   Component,
   memo,
@@ -227,7 +228,7 @@ function StageTop({ app }: { app: ReturnType<typeof useApp> }) {
           });
         }}
       />
-      <ViewBanner discovery={page.discovery} />
+      {CLAIM_TESTING && <ViewBanner discovery={page.discovery} />}
       <NoticeLine
         notice={snap.notice}
         onClose={() => {
@@ -303,7 +304,7 @@ export function App() {
             times={header.times}
           />
           <SelectionBar store={store} state={settled} />
-          <ClaimChips store={store} state={state} onOpen={app.openClaims} />
+          {CLAIM_TESTING && <ClaimChips store={store} state={state} onOpen={app.openClaims} />}
           <ZoomControls onZoom={header.props.onZoom} onFit={header.props.onFit} />
           <Status state={settled} />
         </Stage>

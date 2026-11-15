@@ -1,5 +1,199 @@
 # STATUS
 
+## Release prompt 01: public claim testing removed (ADR-0065): NOT ACCEPTED, awaiting maintainer review and CI (2026-11-16)
+
+Base: review baseline 95a7c7e9ff6d64947cf0f0e0b3e89d45412b5128, then the documentation-only
+PR #37 at a761f67 incorporated intact. Branch: codex/public-claims-off. Decision:
+[ADR-0065](adr/0065-retire-public-claim-testing.md). The maintainer subsequently authorized pushing this branch and opening draft PR #38;
+merge and deployment remain prohibited. The historical offline snapshot is left to
+release prompt 11.
+
+### Done
+
+- One default-off build capability covers the header claim box, Claim palette/key/help,
+  Claims tab, live verdict chips, local/global tests, automatic follow-up, finder, special
+  positions, branch fixes and previews. Direct commands/actions and job-host dispatch are
+  gated, including worker message dispatch; warming and result subscriptions stop.
+  → `apps/web/test/public-claims-off.test.tsx`, `apps/web/e2e/public-release.spec.ts`.
+- Claim/assumption parsing, both printers, geometry, rename/undo, shares and PNG metadata
+  preserved; Randomize, measurements, exports and ordinary construction remain usable.
+  → same tests, existing pure package tests, updated PWA/page smoke tests.
+- Explicit internal modes `claim-engine` / `claim-engine-singlefile`, isolated output
+  directories and `build:claims`, `dev:claims`, `e2e:claims` scripts retain engine coverage.
+  Unit configuration separates public and internal tests; browser configuration retains
+  legacy feature flows in the internal run. Count and coverage floors are not lowered.
+- Public marketing and generated help updated; generated language documentation explains
+  preserved statements without advertising testing. SPEC and CHANGELOG record the decision.
+
+### Not done
+
+- PR #38 is awaiting green remote CI and maintainer review; see the screenshot repair below.
+- No sampler correction or regeneration/publication of releases/geomira.html in this task.
+
+### Known bugs
+
+The fixed-radius reproduction in ADR-0065 remains a retained-engine defect. This task
+contains public exposure and does not claim the sampler is repaired.
+
+The initial six internal scene screenshot failures were diagnosed as a host-font
+mismatch in the PR #38 follow-up below. Those internal originals remain intact and
+now pass with a deterministic test font. Public baselines have new names because removing verdict chips
+intentionally changes their canvas screenshots; unrelated export snapshots are untouched.
+
+### Uncertain
+
+Chromium 141.0.7390.37 runs through Playwright 1.56.1. Phone coverage is Chromium touch
+emulation (390 × 664), not a physical phone. Firefox 142.0.1 could not launch: 30-second
+timeout, libpci/X-server/framebuffer diagnostics and sandbox uid-map EROFS. WebKit 26.0
+could not launch because GTK4, Graphene, WOFF2, HarfBuzz ICU, Hyphen, Manette and GLESv2
+libraries are missing. Neither browser's local flows are counted as passing. The initial remote CI run passed
+those browser flows, but failed the mobile scene screenshot; see the follow-up below.
+
+### Changed frozen tests
+
+For [ADR-0065](adr/0065-retire-public-claim-testing.md):
+
+- `apps/web/test/design.test.tsx`: palette expects available construction tools and Measure;
+  the shell asserts no Test button, claim box or Claims tab. Icon tests still cover every tool.
+- `apps/web/e2e/pages-smoke.spec.ts`: reads saved claims from Text and asserts no public
+  Claims tab or verdict instead of expecting claim badges.
+- `apps/web/e2e/pwa.spec.ts`: the offline flow preserves claim text and verifies absent
+  verdicts/runner; offline exports and all version/update behavior remain checked.
+- `apps/web/e2e/scene.spec.ts`: selects six new `public-*` baselines for the public build;
+  the six internal originals and the 0.002 pixel tolerance remain unchanged. Fresh renders
+  of the baseline and implementation have identical canvas sizes and differ only in the
+  bottom-left claim-chip regions. All six public renders were visually reviewed.
+- `scripts/vitest-config.test.ts`: expects the two web projects in the project inventory;
+  its root slow-reporting threshold and package hang-guard assertions remain unchanged.
+
+Legacy claim/discovery/worker browser assertions are retained in the explicitly enabled
+internal configuration. No frozen mathematical tests or tolerances changed.
+
+### Acceptance command output
+
+Environment: Node v24.22.1; pinned pnpm 10.28.0 via Corepack; Playwright 1.56.1,
+Chromium 141.0.7390.37. The incompatible global pnpm 11.25.0 initially failed installation;
+its incidental workspace edit was reverted. Lockfile dependencies were not upgraded.
+Commands below used the pinned manager, including nested scripts.
+
+- `corepack pnpm install --store-dir /tmp/geomira-pnpm10-store`: passed.
+- Baseline `pnpm verify`: passed; 4,857 tests in 529 files, 658.15 seconds. Coverage:
+  statements 96.52%, branches 90.47%, functions 99.45%, lines 98.37%.
+- Final isolated `pnpm verify` at d0fae72: passed, including typecheck, lint, formatting,
+  dependency rules, frozen-test/count rules and all per-package coverage gates:
+
+  ```text
+  Test Files  530 passed (530)
+       Tests  4863 passed (4863)
+    Duration  616.55s
+  Statements   : 96.53% (18958/19639)
+  Branches     : 90.48% (15245/16849)
+  Functions    : 99.45% (4196/4219)
+  Lines        : 98.37% (15587/15845)
+  ```
+
+- `pnpm docs:lang`: passed; regeneration reproduces the committed language documentation.
+- `pnpm build` and `pnpm --filter @geomira/web build:claims`: all four final artifacts built
+  successfully (Vite chunk-size advisory only). Their build ID is 1bb15e2c, the final product
+  source commit; subsequent changes affect test expectations and this verification record.
+- `pnpm --filter @geomira/web exec playwright test --project desktop --project mobile --project file-chromium --project pages --project pwa --workers 1`:
+  99 passed / 1 failed in 6.8 minutes while coverage was running. The only failure was the
+  mobile 300-object frame median, 8.7 ms versus the unchanged 8 ms limit. All functional,
+  export/snapshot, PWA offline/update and landing-page checks passed. Isolated timing rerun
+  recorded below.
+- Final isolated `pnpm --filter @geomira/web exec playwright test public-release scene --project desktop --project mobile --project file-chromium --workers 1`:
+  20 passed in 53.6 seconds on the final product builds, including all six reviewed public
+  snapshots, worker/job counters, data compatibility, exports and frame-time checks.
+  Desktop drag median 4.7 ms; phone drag median 4.6 ms (unchanged limit: 8 ms).
+- `pnpm --filter @geomira/web e2e:claims flows-claims flows-claimtool flows-discovery file-url --project desktop --project file-chromium --workers 1 --output /tmp/geomira-internal-results`:
+  17 passed in 2.3 minutes, including actual worker jobs, automatic follow-up, discovery,
+  hunting, branch fixes, the inlined worker and the main-thread fallback.
+- `pnpm --filter @geomira/web exec playwright test public-release --project desktop --project mobile --project file-chromium --workers 1`:
+  6 passed before final review. Worker construction/job-message counters remained zero,
+  including with `?dev=1`, foreign/legacy settings and claim-bearing links. All four export
+  formats exercised; PNG metadata retained claim, assumption, title and author.
+- Baseline `pnpm --filter @geomira/web exec playwright test scene --grep 'screenshot baseline' --project desktop --project mobile --workers 1`:
+  all six stored internal snapshots mismatched. Compared fresh baseline/public renders and
+  reviewed all six public canvases before adding separate public snapshots. The first
+  broader public run was 88 passed / these six mismatches; the later run above passes all
+  six new baselines without updating unrelated export snapshots or changing tolerances.
+
+Regression/iteration evidence:
+
+- New default-off assertions before implementation: 4 failed / 1 passed. One failure was an
+  invalid assumption fixture, corrected to `greater(dist(O,F),0)`; the other failures were
+  the exposed public shell, enabled Claim tool and worker dispatch.
+- Added `test = (1,2)` regression during review: 1 failed / 5 passed before narrowing the
+  retired-action recognizer. It passes in the final suite; ordinary object names remain valid.
+- `pnpm exec vitest run --project web-public --project web-engine`: initially 284 passed in
+  60 files. A concurrent rerun had 283 passes and a 5-second scene-law timeout. The first
+  full verification had 4,861 passes, a conic-law 60-second timeout, and the stale project-name
+  inventory assertion. Updated that assertion under ADR-0065; reran full verification alone.
+  All 4,863 tests now pass, including both timed tests at their original limits. No mathematical
+  assertions, test timeouts, screenshot tolerances or coverage gates were weakened.
+
+### Requests
+
+None for the authorized scope. Maintainer review and remote CI acceptance remain separate
+from this local implementation.
+
+## PR #38 screenshot repair (ADR-0066): NOT ACCEPTED, awaiting maintainer review
+
+### Done
+
+- Inspected the failed run's expected, actual and diff PNGs. The 390 differing pixels
+  belong to italic labels. Selecting Latin Modern locally exactly reproduces expected;
+  selecting Liberation Serif exactly reproduces the CI actual. Both remain unchanged
+  after 1.5 seconds. Three repeated pre-fix assertions fail identically (390 pixels).
+- Added the licensed test-only Liberation Serif Italic fixture and explicit face/frame
+  readiness. Updated only the failing public mobile nine-point-circle baseline, whose
+  replacement equals the CI actual pixel for pixel. Product fonts and rendering unchanged.
+- All six original internal canvas baselines now pass without changing their images.
+
+### Not done
+
+- Maintainer acceptance remains separate from verification. Current full verification
+  results are tracked in [PR #38](https://github.com/youseng/geomira/pull/38).
+- Three inherited internal full-page references show pre-existing UI changes (removed
+  Style tab, expanded palette, short construction notation, discovery controls). Inspected
+  their expected/actual/diff images. Main CI run 43706723036 passes all three at the
+  existing tolerance; local platform fonts add further differences. These references and
+  their tests are left unchanged, with full internal coverage retained in CI.
+
+### Known bugs
+
+The retained-engine sampler issue in ADR-0065 is unchanged.
+
+### Uncertain
+
+The local full-page font environment differs from CI; those local mismatches are not
+counted as passes. No render bug or timing instability was found in the reported canvas.
+
+### Changed frozen tests
+
+Under [ADR-0066](adr/0066-deterministic-screenshot-font.md),
+`apps/web/e2e/scene.spec.ts` installs the fixed test face before navigation and awaits
+its load and paint. No assertion, case, timeout, coverage floor or tolerance changed.
+The sole changed canvas image is the new public phone nine-point-circle reference.
+
+### Acceptance command output
+
+- `playwright test scene --project mobile --grep 'screenshot baseline: nine-point-circle' --repeat-each 3 --workers 1`
+  before the corrected reference: 3 failed; identical 390-pixel mismatch each time.
+- `e2e:claims scene flows-design design-mobile --grep 'screenshot baseline' --project desktop --project mobile --workers 1`:
+  6 internal canvas passes, 3 stale full-page failures. The original canvas files are intact.
+
+- `playwright test scene --grep 'screenshot baseline' --project desktop --project mobile --repeat-each 3 --workers 1`:
+  18 passed in 22.7 seconds without updating snapshots.
+
+- CI Pages-base-path validation at 35047fa, run 43714587040: passed, including the
+  previously failing mobile screenshot. Actual deployment and smoke jobs were skipped.
+- TeX/Asymptote export validation at 35047fa, run 43714590785: passed.
+
+### Requests
+
+None. Push and draft PR updates are authorized; no merge or deployment.
+
 ## Maintainer request: select first, then the tool (ADR-0064): NOT ACCEPTED, awaiting the maintainer (2026-11-11)
 
 Not a kit run, no tag. The maintainer's decision (3) of 2026-11-10: select first, then the

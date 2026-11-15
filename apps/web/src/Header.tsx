@@ -1,3 +1,4 @@
+import { CLAIM_TESTING } from './features';
 import { TRIANGLE_TYPES, type TriangleType } from '@geomira/claims/randomize';
 import { FORMATS, type ExportFormat } from '@geomira/export/formats';
 import { SINGLE_FILE, SITE_URL } from './build-info';
@@ -285,7 +286,7 @@ export function Header(p: HeaderProps) {
       <Brand />
       <History {...p} />
       <Randomize {...p} />
-      <ClaimBox label="Claim to test" className="claim-form" host={p.claimBox} />
+      {CLAIM_TESTING && <ClaimBox label="Claim to test" className="claim-form" host={p.claimBox} />}
       <div className="spacer" />
       <ViewMenu {...p} />
       <Examples {...p} />

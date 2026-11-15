@@ -1,15 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
+import { pinSceneFont } from './scene-font';
 
 /** Run 7 (SPEC §13): the canvas renderer on the development page. */
 
 async function open(page: Page, example: string): Promise<void> {
+  const fontReady = await pinSceneFont(page);
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('./');
   await page.getByLabel('Example').selectOption(example);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
+  await fontReady();
   expect(errors).toEqual([]);
 }
 
@@ -18,8 +18,10 @@ const SCREENSHOTS = ['euler-line', 'nine-point-circle', 'reflection-layer'];
 for (const id of SCREENSHOTS) {
   test(`screenshot baseline: ${id}`, async ({ page }) => {
     await open(page, id);
+    // ADR-0065: retain the internal verdict snapshots; release canvases have no badges.
+    const snapshot = process.env['GEOMIRA_ENGINE_E2E'] === '1' ? id : `public-${id}`;
     // Small tolerance for anti-aliasing of text across font rasterisers; geometry must match.
-    await expect(page.getByLabel('Geometry canvas')).toHaveScreenshot(`${id}.png`, {
+    await expect(page.getByLabel('Geometry canvas')).toHaveScreenshot(`${snapshot}.png`, {
       maxDiffPixelRatio: 0.002,
     });
   });

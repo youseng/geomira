@@ -18,6 +18,8 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/dist/**',
       '**/dist-single/**',
+      '**/dist-claims/**',
+      '**/dist-single-claims/**',
       '**/coverage/**',
       '**/playwright-report/**',
       '**/test-results/**',

@@ -1,7 +1,8 @@
+import { AVAILABLE_GROUPS } from '../src/available-tools';
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { createEditor } from '@geomira/editor/state';
-import { keyCap, TOOL_GROUPS } from '@geomira/editor/tool-groups';
+import { keyCap } from '@geomira/editor/tool-groups';
 import type { ToolId } from '@geomira/editor/tool-state';
 import { TOOLS } from '@geomira/editor/tools';
 import { emptyDocument } from '@geomira/kernel/document';
@@ -23,11 +24,12 @@ describe('the tool palette', () => {
 
   it('is the toolbar "Tools" with every tool once, named by its label, in its group', () => {
     expect(html).toContain('role="toolbar" aria-label="Tools"');
-    for (const t of TOOLS) {
+    for (const t of TOOLS.filter((t) => t.id !== 'claim')) {
       expect(html.split(`<span class="sr-only">${t.label}</span>`)).toHaveLength(2);
       expect(html).toContain(`title="${t.label}: ${t.help} (key ${keyCap(t.key)})"`);
     }
-    for (const g of TOOL_GROUPS) expect(html).toContain(`role="group" aria-label="${g.label}"`);
+    for (const g of AVAILABLE_GROUPS)
+      expect(html).toContain(`role="group" aria-label="${g.label}"`);
   });
 
   it('marks the active tool pressed', () => {
@@ -105,8 +107,10 @@ describe('the page', () => {
     expect(html).not.toContain('coincident images hidden');
   });
 
-  it('never has a claim-box button whose whole text is "Test" (a claim card’s is)', () => {
+  it('has no retired claim action or tab in the public shell', () => {
     expect(html).not.toMatch(/<button[^>]*>Test<\/button>/u);
-    expect(html).toContain('Test</button>');
+    expect(html).not.toContain('Test</button>');
+    expect(html).not.toContain('>Claims<');
+    expect(html).not.toContain('Claim to test');
   });
 });

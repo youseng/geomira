@@ -1,3 +1,4 @@
+import { CLAIM_TESTING } from './features';
 /**
  * The claim tests of the page (SPEC §10.5, §16): for each claim, its LOCAL run and its
  * GLOBAL run, each running in the worker (host.ts) or finished with a verdict. A local run
@@ -129,6 +130,7 @@ export class TestRuns {
   ) {}
 
   readonly subscribe = (listener: () => void): (() => void) => {
+    if (!CLAIM_TESTING) return () => undefined;
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   };
@@ -154,11 +156,12 @@ export class TestRuns {
 
   /** Starts the worker before the first test. */
   warm(): void {
-    this.host.warm();
+    if (CLAIM_TESTING) this.host.warm();
   }
 
   /** Starts a test of `claim` in `doc`; a local run is followed by a global one when assumed. */
   start(doc: Document, claim: number, regime: Regime): void {
+    if (!CLAIM_TESTING) return;
     this.cancel(claim);
     // A local run starts the claim's runs afresh; a global one keeps the local run, and the
     // document that run tested (ADR-0028).

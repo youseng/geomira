@@ -1,3 +1,4 @@
+import { actionAvailable } from './available-tools';
 /**
  * The page's effects, each small: startup (share link or autosave, SPEC §12), autosave
  * after edits, keyboard shortcuts (from the editor's keymap), fitting the view when a
@@ -160,7 +161,7 @@ export function useShortcuts(perform: (a: KeyAction) => void): void {
         { key: e.key, ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey, alt: e.altKey },
         keyTarget(e.target),
       );
-      if (a === undefined) return;
+      if (a === undefined || !actionAvailable(a)) return;
       e.preventDefault();
       perform(a);
     };

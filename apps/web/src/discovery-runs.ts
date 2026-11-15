@@ -1,3 +1,4 @@
+import { CLAIM_TESTING } from './features';
 /**
  * The discovery jobs of the page (ADR-0035, ADR-0036): "What is special?" (find), "Special
  * positions" (hunt) and the branch fixes of a claim (branchFix), each run by the worker host
@@ -146,6 +147,7 @@ export class DiscoveryRuns {
   ) {}
 
   readonly subscribe = (listener: () => void): (() => void) => {
+    if (!CLAIM_TESTING) return () => undefined;
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   };
@@ -220,6 +222,7 @@ export class DiscoveryRuns {
 
   /** "What is special?": runs `find` on `doc`. */
   find(doc: Document): void {
+    if (!CLAIM_TESTING) return;
     const job = { kind: 'find' as const, doc, seed: freshSeed(), budget: { n: DISCOVERY_N } };
     this.run('find', job, FIND_MS, findRun, (find) => {
       this.set({ find });
@@ -228,6 +231,7 @@ export class DiscoveryRuns {
 
   /** "Special positions": runs `hunt` on `doc`. */
   hunt(doc: Document): void {
+    if (!CLAIM_TESTING) return;
     const job = { kind: 'hunt' as const, doc, seed: freshSeed() };
     this.run('hunt', job, HUNT_MS, huntRun, (hunt) => {
       this.set({ hunt });
@@ -236,6 +240,7 @@ export class DiscoveryRuns {
 
   /** The branch fixes of `claim` for its verdict in `regime` (MIXED: local; global). */
   branchFix(doc: Document, claim: number, regime: 'local' | 'global'): void {
+    if (!CLAIM_TESTING) return;
     const job = {
       ...{ kind: 'branchFix' as const, doc, claim, regime },
       ...{ seed: freshSeed(), n: DISCOVERY_N },
@@ -276,6 +281,7 @@ export class DiscoveryRuns {
 
   /** The objects to ring on the canvas (a hovered fact), or none. */
   highlight(objects: readonly number[]): void {
+    if (!CLAIM_TESTING) return;
     const h = this.snapshot.highlight;
     if (h.length === objects.length && h.every((x, i) => x === objects[i])) return;
     this.set({ highlight: objects });
@@ -283,6 +289,7 @@ export class DiscoveryRuns {
 
   /** Draws `view` on the canvas instead of the figure (null: the figure again). */
   setView(view: DraftView | null): void {
+    if (!CLAIM_TESTING) return;
     if (view !== this.snapshot.view) this.set({ view });
   }
 

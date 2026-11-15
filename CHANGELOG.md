@@ -5,6 +5,16 @@ docs/adr/; the test evidence is in docs/STATUS.md.
 
 ## Unreleased
 
+### Public release scope (ADR-0065)
+
+- The public app focuses on construction, dragging, measurements, scripting, Randomize,
+  layers and export. Claim entry tools, verdict badges, automated testing and discovery
+  are unavailable, including in offline builds and with developer readouts enabled.
+- Existing claim and assumption statements remain in documents, edits, saves, shares and
+  exports. Applicable assumptions still constrain Randomize.
+- The claim/discovery engine remains available to explicitly selected internal development
+  and test builds. This change does not repair its known sampler defects.
+
 ### GUI milestone 4: select first, then the tool (ADR-0064)
 
 - **Select, then press a tool.** Select objects (click, Shift+click, a box), then press a tool

@@ -22,3 +22,6 @@ docs/language.md
 packages/export/test/__snapshots__/
 # The maintainer's design reference (Run 9b).
 docs/design/
+
+apps/web/dist-claims/
+apps/web/dist-single-claims/

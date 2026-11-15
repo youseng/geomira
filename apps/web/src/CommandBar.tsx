@@ -1,3 +1,4 @@
+import { completionAvailable } from './available-tools';
 import { useMemo, useState, type RefObject } from 'react';
 import { acceptCompletion, completions, type Completion } from '@geomira/editor/command';
 import type { Diagnostic } from '@geomira/lang/diagnostic';
@@ -24,7 +25,8 @@ function useCommandBar(store: EditorStore, inputRef: CommandBarProps['inputRef']
   const [focused, setFocused] = useState(false);
   const state = store.current();
   const list = useMemo(
-    () => (text === '' ? [] : completions(state, text, cursor, store.env)),
+    () =>
+      text === '' ? [] : completions(state, text, cursor, store.env).filter(completionAvailable),
     [state, text, cursor, store],
   );
   const accept = (c: Completion) => {
@@ -87,7 +89,7 @@ export function CommandBar({ store, inputRef }: CommandBarProps) {
         ref={inputRef}
         type="text"
         aria-label="Command"
-        placeholder="Command, construction or claim — e.g.  points A B C  ·  M = midpoint(BC)  ·  claim AB ⟂ CD   (press /)"
+        placeholder="Command or construction — e.g.  points A B C  ·  M = midpoint(BC)   (press /)"
         spellCheck={false}
         autoComplete="off"
         value={c.text}

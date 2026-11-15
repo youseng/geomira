@@ -29,8 +29,10 @@ test('the site opens, draws an example, and its landing page leads to the app', 
       }),
     )
     .toBeGreaterThan(50);
-  await page.getByRole('tab', { name: 'Claims', exact: true }).click();
-  await expect(page.getByRole('list', { name: 'Claims' })).toContainText('collinear');
+  await page.getByRole('tab', { name: 'Text', exact: true }).click();
+  await expect(page.getByLabel('Text', { exact: true })).toHaveValue(/claim collinear/u);
+  await expect(page.getByRole('tab', { name: 'Claims', exact: true })).toHaveCount(0);
+  await expect(page.locator('.claim-chips, .verdict')).toHaveCount(0);
   expect(errors).toEqual([]);
   await page.goto('./about.html');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Geomira');

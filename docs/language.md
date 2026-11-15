@@ -166,6 +166,8 @@ Selectors are the trailing arguments of a branchable call (`intersect`, `tangent
 
 ## Claims
 
+Claim statements are preserved document data. Public builds do not evaluate them or offer claim testing or discovery (ADR-0065).
+
 Every claim kind by name (`length(A, B, C, D, 2)`) or in its notation. Examples (notation only) refer to this figure:
 
 ```

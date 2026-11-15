@@ -1,37 +1,29 @@
 # Geomira
 
 Dynamic geometry for olympiad geometry (IMO, ISL, national olympiads): build a figure with the
-mouse or in a short text language, drag it, test claims about it on many random figures, and
+mouse or in a short text language, drag it, take measurements, and
 export it for an AoPS post or a handout.
 
 **Open it:** <https://youseng.github.io/geomira/> · about page:
 <https://youseng.github.io/geomira/about.html>
 
-![Geomira with the nine-point circle: the tool palette on the left, the figure with its live claim chips in the middle, the figure's text on the right](apps/web/public/screenshots/main-desktop.png)
-
 ## Features
 
-- **The text is the figure.** Every figure is a short text (`M_a = midpoint(B, C)`,
-  `claim concyclic(M_a, M_b, M_c, D, E, F)`), edited in the Text panel or one line at a time in
+- **The text is the figure.** Every figure is a short text (`M_a = midpoint(B, C)`), edited in the Text panel or one line at a time in
   the command line; a share link holds the whole text and opens the same figure again.
 - **Tools in groups** (points, lines, circles, triangle centres, transformations, marks,
-  measures and claims), each with a one-key shortcut: click A, B, C for the circumcenter O,
+  measurements), each with a one-key shortcut: click A, B, C for the circumcenter O,
   incenter I, orthocenter H, centroid G, nine-point center N, excenter I_a, or the
   circumcircle and incircle ω, the excircle and the nine-point circle; intersections and tangents ask which of two points you mean
   and write a selector that keeps that choice when the figure moves.
 - **Honest about degeneracy.** An object that cannot be constructed is shown as undefined with
   its reason (“the circles are apart”), never drawn as garbage, and a point never jumps.
-- **Claims with three values.** Each claim has a live pill for the current figure (true, false,
-  or undefined with the reason). **Test** checks it on 200 nearby figures and says what was
-  checked, e.g. “Holds in this configuration (local test, n = 200, exact over Q)”, with its seed;
-  **Test globally** samples the whole declared configuration (`assume acute(A, B, C)`) and
-  reports orientation- or configuration-dependent claims with an example figure.
-- **Exact arithmetic.** Constructions also run over the rationals and modulo a large prime, so
-  many claims are checked exactly rather than to a tolerance.
+- **Measurements.** Display distances and angles as the figure changes. Exploring a figure
+  does not establish a general theorem.
 - **Transformations and layers.** Reflections, rotations, homotheties, translations and spiral
   similarities; a layer can hold the image of another layer and follows it.
 - **Randomize** draws a new figure of the same construction with an acute, obtuse or right
-  triangle (or any), through the claim tester's own sampler.
+  triangle (or any), while respecting applicable assumptions.
 - **Colors by name** (`color=red`, `blue`, `green`, `orange`, `purple`, `grey`, …) in
   Geomdraw's palette, the same on the canvas and in every export; hex colours as written.
   Polygons are outlines unless they are coloured.
@@ -47,7 +39,7 @@ export it for an AoPS post or a handout.
 
 ## An Asymptote export
 
-The Euler line example (`examples/euler-line.geo`, without its comments and second claim):
+The construction from the Euler line example (`examples/euler-line.geo`):
 
 ```text
 A = (1, 4)
@@ -58,7 +50,6 @@ O = circumcenter(A, B, C)
 G = centroid(A, B, C)
 H = orthocenter(A, B, C)
 e = line(O, H) [color=red, dash=dashed]
-claim collinear(O, G, H) [name=euler]
 ```
 
 exports (Export → Asymptote, standalone) as a file that compiles with `asy` on its own. Its
@@ -97,6 +88,24 @@ pnpm build    # apps/web → apps/web/dist
 pnpm e2e      # Playwright against the built app
 ```
 
-Add `?dev=1` to the address for the developer readouts (object counts, frame timing).
+Claim and assumption statements in existing documents are preserved in text, saves, shares
+and exports. The public app does not evaluate claims or offer automated testing or discovery.
+The retained engine's known sampler issue is not repaired by this change (ADR-0065).
+
+Internal engine development only (never release these output directories):
+
+```sh
+pnpm --filter @geomira/web dev:claims
+pnpm --filter @geomira/web build:claims
+pnpm --filter @geomira/web e2e:claims
+```
+
+These explicitly opted-in modes write `dist-claims/` and `dist-single-claims/`; normal
+`pnpm build` always writes disabled builds. Unit tests run both public-default assertions
+and the existing engine suite. `pnpm e2e` covers the public builds; `e2e:claims` retains the
+legacy interface and worker flows against the internal builds. See
+[ADR-0065](docs/adr/0065-retire-public-claim-testing.md).
+
+Add `?dev=1` to the address for the developer readouts (object counts, frame timing); it cannot enable claim testing.
 
 Geomira is free software under the MIT licence ([LICENSE](LICENSE)).
