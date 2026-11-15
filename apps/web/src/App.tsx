@@ -19,6 +19,7 @@ import { CommandBar } from './CommandBar';
 import { ErrorBanner, TextDialog } from './Dialogs';
 import { ExportDialog } from './ExportDialog';
 import { Header } from './Header';
+import { PersistencePanel } from './PersistencePanel';
 import { useAutosave, useFitOnOpen, useInternalErrors, useShortcuts, useStartup } from './hooks';
 import { reportOf, useFit, useHeader, useKeyActions, usePage, type Dialog } from './page';
 import { SidePanel, type Tab } from './SidePanel';
@@ -223,8 +224,8 @@ function StageTop({ app }: { app: ReturnType<typeof useApp> }) {
       )}
       <UpdateBanner
         onReload={() => {
-          page.about.pwa.applyUpdate(() => {
-            store.autosave.flush();
+          void store.retrySaving().then((saved) => {
+            if (saved) page.about.pwa.applyUpdate(() => undefined);
           });
         }}
       />
@@ -276,6 +277,22 @@ function StyleCardView({ app }: { app: ReturnType<typeof useApp> }) {
   );
 }
 
+function PageHeader({ app }: { app: ReturnType<typeof useApp> }) {
+  return (
+    <Header
+      {...app.header.props}
+      persistence={
+        <PersistencePanel
+          store={app.page.store}
+          onRestore={() => {
+            app.page.runs.clear();
+          }}
+        />
+      }
+    />
+  );
+}
+
 /**
  * Geomira (SPEC §15) in Geomdraw's layout (Run 9b): the top bar, the tool palette, the canvas
  * with its hint, status line, live claim chips and zoom buttons, the command line, the panels
@@ -292,7 +309,7 @@ export function App() {
   return (
     <AboutContext.Provider value={page.about}>
       <div className="app">
-        <Header {...header.props} />
+        <PageHeader app={app} />
         <Tools store={store} state={settled} />
         <Stage>
           <Canvas app={app} />

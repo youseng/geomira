@@ -18,7 +18,7 @@ const OWN = 'long-task|drag-frame|pages-smoke|file-url|fallback-long-task|fallba
 const INTERNAL =
   'flows-claimtool|flows-geomdraw|flows-claims|flows-review|mobile|flows-discovery|flows-keyboard|flows-design|design-mobile|drawer-notice-mobile';
 const internalOnly = engine ? '|public-release' : `|${INTERNAL}`;
-const fileSpecs = engine ? /file-url\.spec/u : /public-release\.spec/u;
+const fileSpecs = engine ? /file-url\.spec/u : /(public-release|persistence)\.spec/u;
 
 export default defineConfig({
   testDir: 'e2e',

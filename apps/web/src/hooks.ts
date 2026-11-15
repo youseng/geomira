@@ -6,7 +6,6 @@ import { actionAvailable } from './available-tools';
  */
 import { useEffect, useRef } from 'react';
 import { keyAction, type KeyAction, type KeyEventLike } from '@geomira/editor/keymap';
-import { openAtStartup } from '@geomira/editor/restore';
 import { decodeShare, SHARE_PREFIX } from '@geomira/editor/share';
 import { emptyDocument } from '@geomira/kernel/document';
 import { print } from '@geomira/lang/print';
@@ -14,7 +13,7 @@ import { assertNever } from '@geomira/num/assert';
 import type { Scene } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
 import { FIT_MARGIN, viewportFor, WIDE_FIT_MARGIN } from './figure';
-import { readSlots } from './persist';
+import { watchRecovery } from './watch-recovery';
 import type { EditorStore, Notice, Snapshot } from './store';
 
 /** Autosave this long after the last change (ms). */
@@ -62,21 +61,24 @@ export function openLaterLink(
 /** Startup: a valid share link, else the autosave, else a new figure; later links too. */
 export function useStartup(store: EditorStore, runs: { clear(): void }, onReady: () => void): void {
   useEffect(() => {
-    const link = openLink(store, location.hash);
-    if (!link.opened) {
-      const start = openAtStartup(readSlots(), null);
-      if (start.text === null) store.open(emptyDocument(), 'new');
-      else store.openText(start.text, start.origin);
-      // After the figure that opened instead, so its own notice does not hide the link's.
-      if (link.notice !== null) store.setNotice(link.notice);
-    }
-    onReady();
+    let active = true;
+    void store.autosave.initialize().then((text) => {
+      if (!active) return;
+      const link = openLink(store, location.hash);
+      if (!link.opened) {
+        if (text === null) store.open(emptyDocument(), 'new');
+        else store.openText(text, 'autosave');
+        if (link.notice !== null) store.setNotice(link.notice);
+      }
+      onReady();
+    });
     const onHash = () => {
       const notice = openLaterLink(store, runs, location.hash);
       if (notice !== null) store.setNotice(notice);
     };
     addEventListener('hashchange', onHash);
     return () => {
+      active = false;
       removeEventListener('hashchange', onHash);
     };
   }, [store, runs, onReady]);
@@ -90,37 +92,19 @@ export function useStartup(store: EditorStore, runs: { clear(): void }, onReady:
 export function useAutosave(store: EditorStore, snap: Snapshot, ready: boolean): void {
   const doc = snap.state.doc;
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || snap.state.drag !== null) return;
     // The hash of this figure: a link opened later is not removed by this figure's save.
     const hash = location.hash;
     store.autosave.schedule(() => {
-      store.autosave.save(print(doc));
+      void store.autosave.save(() => print(doc));
       if (store.autosave.wasEdited() && hash.startsWith(SHARE_PREFIX) && location.hash === hash)
         history.replaceState(null, '', location.pathname + location.search);
     }, AUTOSAVE_MS);
-  }, [store, doc, ready]);
-  useEffect(() => flushWhenHidden(store.autosave, window, document), [store]);
+  }, [store, doc, ready, snap.state.drag]);
+  useEffect(() => watchRecovery(store.autosave, window, document), [store]);
 }
 
-/** Runs the pending save when the page hides (pagehide, or hidden); returns the unsubscribe. */
-export function flushWhenHidden(
-  autosave: { flush(): void },
-  win: EventTarget,
-  doc: EventTarget & { readonly visibilityState: string },
-): () => void {
-  const flush = () => {
-    autosave.flush();
-  };
-  const onVisibility = () => {
-    if (doc.visibilityState === 'hidden') autosave.flush();
-  };
-  win.addEventListener('pagehide', flush);
-  doc.addEventListener('visibilitychange', onVisibility);
-  return () => {
-    win.removeEventListener('pagehide', flush);
-    doc.removeEventListener('visibilitychange', onVisibility);
-  };
-}
+export { flushWhenHidden } from './save-lifecycle';
 
 /**
  * What a key event's target is to the shortcuts: a `field` takes every key (typing); a

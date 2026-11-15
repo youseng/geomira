@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased: local persistence and recovery
+
+- Preserve simultaneous stale tab writers as recoverable conflicts using IndexedDB transactions.
+- Show persistent local save state and failures; retain edits for retry and canonical `.geo` backup.
+- Add inspectable recovery, safe legacy migration and bounded retention without evicting protected figures.
+- Wait for durable saving before PWA updates; public claim testing remains disabled.
+
 What changed for someone using Geomira, newest first. The decisions behind each entry are in
 docs/adr/; the test evidence is in docs/STATUS.md.
 

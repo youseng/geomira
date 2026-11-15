@@ -335,12 +335,11 @@ export function useHeader(env: HeaderEnv) {
     onStats: setStats,
     ...actions(env),
     onRestore: () => {
-      const text = store.autosave.restore(printed);
-      if (text === undefined) return;
-      setTimes(null);
-      runs.clear();
-      store.openText(text, 'autosave');
-      store.autosave.restored();
+      void store.restoreRevision().then((restored) => {
+        if (!restored) return;
+        setTimes(null);
+        runs.clear();
+      });
     },
     onMeasure: () => {
       const t = measure(env);

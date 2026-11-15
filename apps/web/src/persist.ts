@@ -1,152 +1,381 @@
-/**
- * Storage for the autosave policy (SPEC §12): the policy itself is packages/editor's
- * (autosave.ts, restore.ts: pure functions); this class only reads and writes the two slots
- * in localStorage and keeps the session. Storage can be unavailable (private modes, quota,
- * blocked site data, where even reading `localStorage` throws): reads then give empty slots
- * and writes are dropped, never an error in the page.
- */
+/** Web persistence coordinator. Policy is pure; durability is a completed IDB transaction. */
+import { openSession, shouldSave, type Origin } from '@geomira/editor/autosave';
 import {
-  afterEdit,
-  EMPTY_SLOTS,
-  openSession,
-  save,
-  shouldSave,
-  type AutosaveSlots,
-  type Origin,
-  type Session,
-} from '@geomira/editor/autosave';
-import { restoreOffer, restoredSession } from '@geomira/editor/restore';
+  commitRevision,
+  EMPTY_RECOVERY,
+  recoverRevision,
+  type LegacyEntry,
+  type RecoveryState,
+  type Revision,
+} from '@geomira/editor/persistence';
+import { createRegistry, type Registry } from '@geomira/kernel/registry';
+import { BrowserRevisions, type RevisionStorage } from './revision-storage';
+import {
+  cleanLegacy,
+  legacyStartup,
+  migrateLegacy,
+  readLegacy,
+  validatedText,
+} from './legacy-recovery';
 
-const KEYS = { current: 'geomira.autosave.current', previous: 'geomira.autosave.previous' };
-
-function read(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
+type Producer = string | (() => string);
+interface Editing {
+  readonly documentId: string;
+  readonly sessionId: string;
+  readonly baseId: string | null;
+  readonly origin: Origin;
+  readonly edited: boolean;
+}
+interface Pending {
+  readonly editing: Editing;
+  readonly id: string;
+  readonly savedAt: number;
+  readonly producer: Producer;
+  text: string | null;
+  error: string | null;
+}
+export interface SaveStatus {
+  readonly phase: 'saving' | 'saved' | 'not-saved' | 'conflict' | 'browsing';
+  readonly message: string | null;
+  readonly documentId: string;
+  readonly sessionId: string;
+  readonly revisionId: string | null;
+  readonly pendingCount: number;
+}
+export interface RecoveryEntry extends Revision {
+  readonly pending: boolean;
+  readonly conflict: boolean;
 }
 
-function write(key: string, value: string | null): void {
-  try {
-    if (value === null) localStorage.removeItem(key);
-    else localStorage.setItem(key, value);
-  } catch {
-    // Storage unavailable or full: the figure stays in the page; nothing else to do.
-  }
-}
-
-/** Whether storage exists at all. Reading `localStorage` itself throws when it is blocked. */
-function hasStorage(): boolean {
-  try {
-    return typeof localStorage !== 'undefined';
-  } catch {
-    return false;
-  }
-}
-
-export function readSlots(): AutosaveSlots {
-  if (!hasStorage()) return EMPTY_SLOTS;
-  return { current: read(KEYS.current), previous: read(KEYS.previous) };
-}
-
-function writeSlots(s: AutosaveSlots): void {
-  write(KEYS.current, s.current);
-  write(KEYS.previous, s.previous);
-}
+const id = () => crypto.randomUUID();
+const errorText = (e: unknown) => (e instanceof Error ? `${e.name}: ${e.message}` : String(e));
 
 export class Autosave {
-  private session: Session = openSession('new');
-  /** The save waiting for its timer (useAutosave schedules it after each change). */
-  private pending: {
-    readonly task: () => void;
-    readonly timer: ReturnType<typeof setTimeout>;
-  } | null = null;
+  private state: RecoveryState = EMPTY_RECOVERY;
+  private editing: Editing = {
+    documentId: id(),
+    sessionId: id(),
+    baseId: null,
+    origin: 'new',
+    edited: false,
+  };
+  private readonly storage: RevisionStorage;
+  private readonly registry: Registry;
   private readonly listeners = new Set<() => void>();
+  private readonly pendingSaves = new Map<string, Pending>();
+  private readonly bases = new Map<string, string>();
+  private scheduled: { task: () => void; timer: ReturnType<typeof setTimeout> } | null = null;
+  private queue: Promise<unknown> = Promise.resolve();
+  private ready: Promise<string | null> | null = null;
+  private initialized = false;
+  private startupError: string | null = null;
+  private legacy: readonly LegacyEntry[] = [];
+  private dirty = false;
+  private lastProducer: Producer | null = null;
   private version = 0;
 
-  /**
-   * Subscribers are told when the slots are written (the header's "Restore previous figure"
-   * depends on them, and a save writes them after the render: ADR-0028).
-   */
+  constructor(options: { storage?: RevisionStorage; registry?: Registry } = {}) {
+    this.storage = options.storage ?? new BrowserRevisions();
+    this.registry = options.registry ?? createRegistry();
+  }
   readonly subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   };
-
-  /** Changes whenever this object writes the slots. */
   readonly getVersion = (): number => this.version;
-
-  private write(slots: AutosaveSlots): void {
-    writeSlots(slots);
+  private publish(): void {
     this.version++;
-    for (const l of this.listeners) l();
+    for (const listener of this.listeners) listener();
   }
 
-  /** Runs `task` (a save) after `ms`, replacing the save pending before it. */
-  schedule(task: () => void, ms: number): void {
-    if (this.pending !== null) clearTimeout(this.pending.timer);
-    const timer = setTimeout(() => {
-      this.flush();
-    }, ms);
-    this.pending = { task, timer };
+  /** Valid legacy text is returned even if the migration transaction fails. */
+  initialize(): Promise<string | null> {
+    this.ready ??= this.load();
+    return this.ready;
+  }
+  private async load(): Promise<string | null> {
+    try {
+      this.state = await this.storage.read();
+      if (!this.state.migrated) {
+        this.legacy = readLegacy(this.registry);
+        this.state = await this.storage.update((s) =>
+          migrateLegacy(s, this.legacy, this.registry, id, Date.now()),
+        );
+        try {
+          cleanLegacy(this.legacy);
+        } catch {
+          /* Originals can safely remain beside the committed store. */
+        }
+      }
+      this.legacy = this.state.legacy;
+      this.initialized = true;
+      this.startupError = null;
+    } catch (e) {
+      this.startupError = errorText(e);
+      try {
+        this.legacy = readLegacy(this.registry);
+      } catch {
+        /* A denied legacy getter must not blank the editor. */
+      }
+    }
+    this.publish();
+    return (
+      this.state.revisions.find((r) => r.id === this.state.currentId)?.text ??
+      legacyStartup(this.legacy, this.registry)
+    );
   }
 
-  /**
-   * Runs the pending save now, if any: before another figure opens or a restore reads the
-   * slots, and when the page hides, so the last edit is never lost (ADR-0028).
-   */
-  flush(): void {
-    const p = this.pending;
-    if (p === null) return;
-    clearTimeout(p.timer);
-    this.pending = null;
-    p.task();
+  opened(origin: Origin, text: string | null = null): void {
+    const revision =
+      origin === 'autosave'
+        ? [...this.state.revisions].reverse().find((r) => r.text === text)
+        : undefined;
+    this.editing = {
+      documentId: revision?.documentId ?? id(),
+      sessionId: id(),
+      baseId: revision?.id ?? null,
+      origin,
+      edited: false,
+    };
+    this.dirty = false;
+    this.lastProducer = text;
+    this.publish();
   }
-
-  /** A document was opened (startup, example, file, link). */
-  opened(origin: Origin): void {
-    this.session = openSession(origin);
-  }
-
-  /** The open document was edited. */
   edited(): void {
-    this.session = afterEdit(this.session);
+    this.editing = { ...this.editing, edited: true };
+    this.dirty = true;
+    this.publish();
   }
-
   origin(): Origin {
-    return this.session.origin;
+    return this.editing.origin;
   }
-
   wasEdited(): boolean {
-    return this.session.edited;
+    return this.editing.edited;
   }
 
-  /** Saves `text` if the policy says so. */
-  save(text: string): void {
-    const before = readSlots();
-    const r = save(before, this.session, text);
-    const changed = r.slots.current !== before.current || r.slots.previous !== before.previous;
-    if (shouldSave(this.session) && changed) this.write(r.slots);
-    this.session = r.session;
+  getStatus(): SaveStatus {
+    const error =
+      [...this.pendingSaves.values()].find((p) => p.error !== null)?.error ?? this.startupError;
+    const baseId = this.bases.get(this.editing.sessionId) ?? this.editing.baseId;
+    const conflict = this.state.revisions.some(
+      (r) => r.documentId === this.editing.documentId && this.state.conflicts.includes(r.id),
+    );
+    const browsing = !shouldSave({
+      ...openSession(this.editing.origin),
+      edited: this.editing.edited,
+    });
+    const phase =
+      error !== null
+        ? 'not-saved'
+        : this.pendingSaves.size > 0 || this.dirty
+          ? 'saving'
+          : conflict
+            ? 'conflict'
+            : browsing
+              ? 'browsing'
+              : baseId !== null
+                ? 'saved'
+                : 'not-saved';
+    const malformed = this.legacy.some((r) => !r.valid);
+    return {
+      phase,
+      message:
+        error ??
+        (malformed
+          ? 'Some legacy text is invalid. Its original is available in Recovery versions.'
+          : null),
+      documentId: this.editing.documentId,
+      sessionId: this.editing.sessionId,
+      revisionId: baseId,
+      pendingCount: this.pendingSaves.size,
+    };
   }
 
-  /** Whether "Restore previous figure" has something to open. */
+  schedule(task: () => void, ms: number): void {
+    if (this.scheduled !== null) clearTimeout(this.scheduled.timer);
+    this.scheduled = {
+      task,
+      timer: setTimeout(() => {
+        void this.flush();
+      }, ms),
+    };
+  }
+  /** Starts pending work now; callers that can wait MUST await the returned durability result. */
+  async flush(): Promise<boolean> {
+    const scheduled = this.scheduled;
+    if (scheduled !== null) {
+      clearTimeout(scheduled.timer);
+      this.scheduled = null;
+      scheduled.task();
+    }
+    await this.queue;
+    return this.startupError === null && this.pendingSaves.size === 0 && !this.dirty;
+  }
+
+  save(producer: Producer): Promise<boolean> {
+    this.lastProducer = producer;
+    if (!shouldSave({ ...openSession(this.editing.origin), edited: this.editing.edited }))
+      return Promise.resolve(true);
+    const pending: Pending = {
+      editing: this.editing,
+      id: id(),
+      savedAt: Date.now(),
+      producer,
+      text: typeof producer === 'string' ? producer : null,
+      error: this.pendingSaves.get(this.editing.sessionId)?.error ?? null,
+    };
+    this.pendingSaves.set(pending.editing.sessionId, pending);
+    this.publish();
+    return this.enqueue(() => this.persist(pending));
+  }
+  private enqueue(action: () => Promise<boolean>): Promise<boolean> {
+    const operation = this.queue.then(action);
+    this.queue = operation.catch(() => false);
+    return operation;
+  }
+  private revision(p: Pending): Revision {
+    return {
+      id: p.id,
+      documentId: p.editing.documentId,
+      sessionId: p.editing.sessionId,
+      baseId: this.bases.get(p.editing.sessionId) ?? p.editing.baseId,
+      text: p.text ?? '',
+      savedAt: p.savedAt,
+      source: 'edit',
+    };
+  }
+  private async persist(p: Pending): Promise<boolean> {
+    try {
+      await this.initialize();
+      if (!this.initialized) throw new Error(this.startupError ?? 'Storage unavailable');
+      p.text = validatedText(
+        typeof p.producer === 'string' ? p.producer : p.producer(),
+        this.registry,
+      );
+      const revision = this.revision(p);
+      this.state = await this.storage.update((s) => {
+        const base = s.revisions.find((r) => r.id === revision.baseId);
+        return base?.text === p.text ? s : commitRevision(s, revision);
+      });
+      if (this.state.revisions.some((r) => r.id === p.id))
+        this.bases.set(p.editing.sessionId, p.id);
+      this.startupError = null;
+      if (this.pendingSaves.get(p.editing.sessionId) === p)
+        this.pendingSaves.delete(p.editing.sessionId);
+      if (this.editing === p.editing && !this.pendingSaves.has(p.editing.sessionId))
+        this.dirty = false;
+      this.publish();
+      return true;
+    } catch (e) {
+      p.error = errorText(e);
+      this.publish();
+      return false;
+    }
+  }
+
+  async retry(): Promise<boolean> {
+    await this.flush();
+    if (!this.initialized) {
+      this.ready = null;
+      await this.initialize();
+    }
+    if (
+      this.initialized &&
+      this.startupError !== null &&
+      !this.dirty &&
+      this.pendingSaves.size === 0 &&
+      this.lastProducer !== null
+    )
+      await this.save(this.lastProducer);
+    for (const pending of [...this.pendingSaves.values()])
+      await this.enqueue(() => this.persist(pending));
+    return (
+      this.initialized && this.startupError === null && this.pendingSaves.size === 0 && !this.dirty
+    );
+  }
+
+  entries(): readonly RecoveryEntry[] {
+    const durable = this.state.revisions.map((r) => ({
+      ...r,
+      pending: false,
+      conflict: this.state.conflicts.includes(r.id),
+    }));
+    const pending = [...this.pendingSaves.values()]
+      .filter((p) => p.text !== null)
+      .map((p) => ({
+        ...this.revision(p),
+        id: `pending:${p.editing.sessionId}`,
+        pending: true,
+        conflict: false,
+      }));
+    return [...durable, ...pending].reverse();
+  }
+  legacyEntries(): readonly LegacyEntry[] {
+    return this.legacy;
+  }
   canRestore(openText: string): boolean {
-    return restoreOffer(readSlots(), this.session, openText) !== undefined;
+    return this.entries().some((r) => r.text !== openText);
   }
 
-  /** Performs "Restore previous figure" on the slots: the text to open, or undefined. */
-  restore(openText: string): string | undefined {
-    this.flush();
-    const offer = restoreOffer(readSlots(), this.session, openText);
-    if (offer === undefined) return undefined;
-    this.write(offer.slots);
-    return offer.text;
+  /** Preserve the replaced document and target contents together. No editor change on failure. */
+  async restore(openText: string, targetId?: string, resolve = false): Promise<string | undefined> {
+    const editing = this.editing;
+    await this.flush();
+    const target = this.entries().find((r) =>
+      targetId === undefined ? r.text !== openText : r.id === targetId,
+    );
+    if (target === undefined) return undefined;
+    if (target.pending) {
+      // Keep the figure being replaced in memory even when storage is still unavailable.
+      const p: Pending = {
+        editing,
+        id: id(),
+        savedAt: Date.now(),
+        producer: openText,
+        text: openText,
+        error: 'This recovery version is only in memory. Retry saving or download a backup.',
+      };
+      this.pendingSaves.set(editing.sessionId, p);
+      this.publish();
+      return target.text;
+    }
+    try {
+      const replacing: Revision = {
+        id: id(),
+        documentId: editing.documentId,
+        sessionId: editing.sessionId,
+        baseId: this.bases.get(editing.sessionId) ?? editing.baseId,
+        text: validatedText(openText, this.registry),
+        savedAt: Date.now(),
+        source: 'edit',
+      };
+      const restoredId = id();
+      this.state = await this.storage.update((s) =>
+        recoverRevision(s, replacing, target.id, restoredId, Date.now(), resolve),
+      );
+      this.publish();
+      return target.text;
+    } catch (e) {
+      this.startupError = errorText(e);
+      this.publish();
+      return undefined;
+    }
   }
-
-  /** The restored text was opened: its session has saved its slot already. */
+  /** Compatibility notification; opened('autosave', text) adopts the new revision identity. */
   restored(): void {
-    this.session = restoredSession();
+    this.publish();
+  }
+
+  async refresh(): Promise<void> {
+    if (!this.initialized) return;
+    try {
+      this.state = await this.storage.read();
+      this.publish();
+    } catch (e) {
+      this.startupError = errorText(e);
+      this.publish();
+    }
   }
 }

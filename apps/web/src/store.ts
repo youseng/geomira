@@ -19,6 +19,8 @@ import { emptyDocument, type Document } from '@geomira/kernel/document';
 import type { Diagnostic } from '@geomira/lang/diagnostic';
 import { parse } from '@geomira/lang/parse';
 import { Autosave } from './persist';
+import { print } from '@geomira/lang/print';
+import type { RevisionStorage } from './revision-storage';
 
 export interface Notice {
   readonly tone: 'refusal' | 'info' | 'error';
@@ -47,12 +49,17 @@ function errorText(e: unknown): string {
 export class EditorStore {
   private snap: Snapshot;
   private readonly listeners = new Set<() => void>();
-  readonly autosave = new Autosave();
+  readonly autosave: Autosave;
 
   constructor(
     readonly env: EditorEnv,
     private readonly onInternal: (message: string) => void,
+    storage?: RevisionStorage,
   ) {
+    this.autosave = new Autosave({
+      registry: env.registry,
+      ...(storage === undefined ? {} : { storage }),
+    });
     this.snap = {
       state: createEditor(emptyDocument(), env),
       notice: null,
@@ -188,8 +195,8 @@ export class EditorStore {
 
   open(doc: Document, origin: Origin, notice: Notice | null = null): void {
     // The figure being left saves its last edit first (its save may still be pending).
-    this.autosave.flush();
-    this.autosave.opened(origin);
+    void this.autosave.flush();
+    this.autosave.opened(origin, print(doc));
     this.beforeDrag = null;
     const state = createEditor(doc, this.env);
     this.publish({
@@ -198,6 +205,32 @@ export class EditorStore {
       openCount: this.snap.openCount + 1,
       fits: this.snap.fits + 1,
     });
+  }
+
+  /** Capture the latest settled document before a deliberate retry or reload. */
+  retrySaving(): Promise<boolean> {
+    const state = this.current();
+    if (state.drag !== null) return Promise.resolve(false);
+    this.autosave.schedule(() => {
+      void this.autosave.save(() => print(state.doc));
+    }, 0);
+    return this.autosave.retry();
+  }
+
+  /** Await a recoverable restore; an edit during its transaction must not be replaced. */
+  async restoreRevision(id?: string, resolve = false): Promise<boolean> {
+    const before = this.current().doc;
+    const text = await this.autosave.restore(print(before), id, resolve);
+    if (text === undefined) return false;
+    if (this.current().doc !== before) {
+      this.setNotice({
+        tone: 'info',
+        text: 'Recovery was saved, but the figure changed while restoring. Choose the recovery version again to open it.',
+      });
+      return false;
+    }
+    this.openText(text, 'autosave');
+    return true;
   }
 
   /** Asks for the view to fit the figure once it is drawn (useFitOnOpen). */

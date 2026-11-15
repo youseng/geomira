@@ -1,0 +1,64 @@
+/* Save state lives in the header; opening recovery does not resize the canvas. */
+.persistence {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 72px;
+  max-width: 180px;
+  font-size: 11px;
+}
+.persistence > [role='status'] strong {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.persistence > button {
+  font-size: 10px;
+  margin: 0;
+  padding: 2px 4px;
+  white-space: nowrap;
+}
+.persistence p {
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+.persistence section {
+  position: fixed;
+  top: 46px;
+  left: 104px;
+  z-index: 80;
+  width: min(480px, calc(100vw - 480px));
+  max-height: 70vh;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.persistence button {
+  margin: 3px;
+}
+.persistence li {
+  margin: 12px 0;
+}
+.persistence pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .persistence section {
+    left: 8px;
+    width: calc(100vw - 16px);
+  }
+  .persistence {
+    max-width: 92px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 760px) {
+  .app:has(> .side.open) .persistence section {
+    top: 82px;
+    max-height: calc(100dvh - 220px);
+  }
+}

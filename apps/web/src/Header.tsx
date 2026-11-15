@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { CLAIM_TESTING } from './features';
 import { TRIANGLE_TYPES, type TriangleType } from '@geomira/claims/randomize';
 import { FORMATS, type ExportFormat } from '@geomira/export/formats';
@@ -8,6 +9,7 @@ import { ClaimBox, type ClaimBoxHost } from './ClaimBox';
 import { Menu, MenuItem } from './Menu';
 
 export interface HeaderProps {
+  readonly persistence?: ReactNode;
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   readonly canRestore: boolean;
@@ -288,6 +290,7 @@ export function Header(p: HeaderProps) {
       <Randomize {...p} />
       {CLAIM_TESTING && <ClaimBox label="Claim to test" className="claim-form" host={p.claimBox} />}
       <div className="spacer" />
+      {p.persistence}
       <ViewMenu {...p} />
       <Examples {...p} />
       <ExportMenu {...p} />

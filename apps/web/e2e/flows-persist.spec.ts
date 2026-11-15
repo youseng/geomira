@@ -3,7 +3,7 @@ import { command, expectLines, openApp, tab, text, textArea } from './helpers';
 
 /** Run 8b flows (SPEC §12, §15): text panel, objects, style, share links, autosave, debug report. */
 
-const CURRENT = 'geomira.autosave.current';
+import { currentText } from './recovery-helpers';
 
 test('text panel: two-way, with per-line diagnostics', async ({ page }) => {
   await openApp(page);
@@ -60,14 +60,14 @@ test('opening a share link keeps the autosave; Restore previous figure brings it
   await command(page, 'R = midpoint(P, Q)');
   await expectLines(page, 'R = midpoint(P, Q)');
   const own = await text(page);
-  await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), CURRENT)).toBe(own);
+  await expect.poll(() => currentText(page)).toBe(own);
 
   const other = await context.newPage();
   await openApp(other, link);
   await expect(await textArea(other)).toHaveValue(linked);
   // Opening the link did not overwrite the autosave.
   await other.waitForTimeout(500);
-  expect(await other.evaluate((k) => localStorage.getItem(k), CURRENT)).toBe(own);
+  expect(await currentText(other)).toBe(own);
   await other.getByRole('button', { name: 'Export', exact: true }).click();
   await other.getByRole('button', { name: 'Restore previous figure' }).click();
   await expect(await textArea(other)).toHaveValue(own);
@@ -85,7 +85,7 @@ test('a damaged share link is refused with its reason; the autosave opens instea
   await command(page, 'P = (1, 1)');
   await expectLines(page, 'P = (1, 1)');
   const own = await text(page);
-  await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), CURRENT)).toBe(own);
+  await expect.poll(() => currentText(page)).toBe(own);
   const other = await context.newPage();
   await openApp(other, './#s=not*a*link');
   await expect(

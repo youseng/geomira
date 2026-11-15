@@ -1,3 +1,4 @@
+import { failWrites } from './recovery-helpers';
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo, Socket } from 'node:net';
@@ -118,6 +119,9 @@ test('after the first visit the site opens and works offline', async ({ page, co
   for (const line of ['A = (1, 3)', 'B = (0, 0)', 'C = (4, 0)', 'H = orthocenter(A, B, C)'])
     await command(page, line);
   await expectLines(page, 'H = orthocenter(ABC)');
+  await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
+    'Saved locally',
+  );
   // The server is gone and the browser is offline.
   await site.stop();
   await context.setOffline(true);
@@ -186,4 +190,37 @@ test('Later hides the banner and keeps the running version', async ({ page }) =>
   await banner.getByRole('button', { name: 'Later' }).click();
   await expect(banner).toHaveCount(0);
   expect(await controllerBuild(page)).toBe(first);
+});
+
+test('an update waits for durable saving and leaves a failed edit usable until retry', async ({
+  page,
+}) => {
+  await openApp(page, site.url);
+  await offlineReady(page);
+  const first = await controllerBuild(page);
+  await command(page, 'A = (0, 0)');
+  const status = page.getByRole('status', { name: 'Local save status' });
+  await expect(status).toContainText('Saved locally');
+  const sw = join(site.dir, 'sw.js');
+  writeFileSync(sw, readFileSync(sw, 'utf8').replaceAll(first, 'safe0002'));
+  await page.evaluate(async () => {
+    await (await navigator.serviceWorker.getRegistration())?.update();
+  });
+  const banner = page.getByRole('status', { name: 'New version' });
+  await expect(banner).toBeVisible({ timeout: 30000 });
+  await failWrites(page, 'complete');
+  await command(page, 'B = (1, 0)');
+  await expect(status).toContainText('Not saved');
+  await banner.getByRole('button', { name: 'Reload to update' }).click();
+  await expect(status).toContainText('Not saved');
+  expect(await controllerBuild(page)).toBe(first);
+  await expectLines(page, 'A = (0, 0)', 'B = (1, 0)');
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('allow-storage'));
+  });
+  const reloaded = page.waitForEvent('load');
+  await banner.getByRole('button', { name: 'Reload to update' }).click();
+  await reloaded;
+  await expectLines(page, 'A = (0, 0)', 'B = (1, 0)');
+  expect(await controllerBuild(page)).toBe('safe0002');
 });

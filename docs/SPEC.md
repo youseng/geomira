@@ -432,9 +432,16 @@ them; the GUI selector choice follows §7. Names of what a GUI tool builds: a fr
 conventional name (ADR-0016), else, for lines, segments, rays, circles and tangents built
 from named points, a name from those points (l_AC, s_AC, r_AC, c_ABC, c_O, t_A, l_P; next
 free variant `_2`, `_3`, …; grammatical and at most 12 characters), else l, l_1, … / c, c_1,
-… (ADR-0050); existing objects are never renamed automatically. Autosave: a document opened from a link is not
-saved until the first edit; the previous autosave is kept with "Restore previous
-figure". Share link `#s=` + lz-string(text). Debug report: text, app version, last 50
+… (ADR-0050); existing objects are never renamed automatically. Local saving (ADR-0067): transactional revisions identify documents, editing sessions and
+base revisions; stale writers preserve both versions as protected conflicts. Examples and
+links are not saved until their first edit. Accessible persistent save state acknowledges
+only completed transactions; failures retain the figure/pending data with retry and a
+canonical `.geo` backup. Inspectable recovery preserves replaced figures when restoring.
+History is bounded to ten ordinary revisions per document, 128 revisions and 8 MiB overall;
+sole document copies, unresolved conflicts and restore predecessors are protected. Capacity
+failure refuses a save instead of evicting protected data. Legacy current/previous slots
+migrate together after whole-document validation, retaining originals until commit.
+See `docs/persistence.md` for the integration interface and lifecycle/platform limits. Share link `#s=` + lz-string(text). Debug report: text, app version, last 50
 edits, user agent.
 
 ## 13. Scene and rendering (packages/scene)

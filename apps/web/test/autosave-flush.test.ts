@@ -1,86 +1,83 @@
-/**
- * Bug-fix round (ADR-0028): the autosave runs 200 ms after the last change. When another
- * figure opened within those 200 ms, the pending save was dropped (the last edit was lost),
- * and nothing saved when the page was hidden or closed. The pending save now runs before a
- * figure opens, before a restore, and when the page hides.
- */
+/** ADR-0067: flush starts before switching/hiding; durability requires awaiting completion. */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { print } from '@geomira/lang/print';
 import { flushWhenHidden } from '../src/hooks';
 import { EditorStore } from '../src/store';
 import { installStorage, removeStorage, SLOT } from './fake-storage';
+import { MemoryRevisions } from './memory-revisions';
 import { registry } from './helpers';
 
 afterEach(() => {
   removeStorage();
   vi.useRealTimers();
 });
-
-/** A store with the user's figure edited and its save pending (as useAutosave schedules it). */
-function pendingEdit() {
+async function pendingEdit() {
   const data = installStorage();
   data.set(SLOT.current, '@version 1\n# yesterday\n');
-  const store = new EditorStore({ registry }, () => undefined);
+  const storage = new MemoryRevisions();
+  const store = new EditorStore({ registry }, () => undefined, storage);
+  await store.autosave.initialize();
   store.openText('@version 1\nA = (0, 0)\n', 'new');
-  store.autosave.save(print(store.current().doc));
+  await store.autosave.save(print(store.current().doc));
   store.command('B = (4, 0)');
   const edited = print(store.current().doc);
   vi.useFakeTimers();
   store.autosave.schedule(() => {
-    store.autosave.save(edited);
+    void store.autosave.save(edited);
   }, 200);
-  return { data, store, edited };
+  return { storage, store, edited };
 }
 
 describe('the pending autosave', () => {
-  it('runs before another figure opens', () => {
-    const { data, store, edited } = pendingEdit();
+  it('runs before another figure opens', async () => {
+    const { storage, store, edited } = await pendingEdit();
     store.openText('@version 1\nZ = (1, 1)\n', 'example');
-    expect(data.get(SLOT.current)).toBe(edited);
-    // It ran once: the timer does not save again over the next figure.
+    await store.autosave.flush();
+    expect(storage.state.revisions.at(-1)?.text).toBe(edited);
     vi.advanceTimersByTime(1000);
-    expect(data.get(SLOT.current)).toBe(edited);
+    await store.autosave.flush();
+    expect(storage.state.revisions.at(-1)?.text).toBe(edited);
   });
-
-  it('runs before Restore previous figure reads the slots', () => {
-    const { data, store, edited } = pendingEdit();
-    // Restoring yesterday's figure keeps the edited one as previous (not the one before it).
-    expect(store.autosave.restore(edited)).toBe('@version 1\n# yesterday\n');
-    expect(data.get(SLOT.previous)).toBe(edited);
+  it('runs before Restore previous figure reads the revisions', async () => {
+    const { storage, store, edited } = await pendingEdit();
+    const yesterday = store.autosave.entries().find((r) => r.text === '@version 1\n# yesterday\n');
+    expect(yesterday).toBeDefined();
+    expect(await store.autosave.restore(edited, yesterday?.id)).toBe('@version 1\n# yesterday\n');
+    expect(storage.state.revisions.map((r) => r.text)).toContain(edited);
   });
-
-  it('runs when the page hides (pagehide, or visibility hidden), not while visible', () => {
-    const { data, store, edited } = pendingEdit();
+  it('runs when the page hides (pagehide, or visibility hidden), not while visible', async () => {
+    const { storage, store, edited } = await pendingEdit();
     const win = new EventTarget();
     const doc = Object.assign(new EventTarget(), { visibilityState: 'visible' });
     const stop = flushWhenHidden(store.autosave, win, doc);
     doc.dispatchEvent(new Event('visibilitychange'));
-    expect(data.get(SLOT.current)).not.toBe(edited);
+    expect(storage.state.revisions.at(-1)?.text).not.toBe(edited);
     doc.visibilityState = 'hidden';
     doc.dispatchEvent(new Event('visibilitychange'));
-    expect(data.get(SLOT.current)).toBe(edited);
-    // pagehide flushes too; after stop() nothing is listened to.
+    await store.autosave.flush();
+    expect(storage.state.revisions.at(-1)?.text).toBe(edited);
     store.command('C = (1, 3)');
     const again = print(store.current().doc);
     store.autosave.schedule(() => {
-      store.autosave.save(again);
+      void store.autosave.save(again);
     }, 200);
     win.dispatchEvent(new Event('pagehide'));
-    expect(data.get(SLOT.current)).toBe(again);
+    await store.autosave.flush();
+    expect(storage.state.revisions.at(-1)?.text).toBe(again);
     stop();
     store.autosave.schedule(() => {
-      store.autosave.save('late');
+      void store.autosave.save('@version 1\n# late\n');
     }, 200);
     win.dispatchEvent(new Event('pagehide'));
-    expect(data.get(SLOT.current)).toBe(again);
+    expect(storage.state.revisions.at(-1)?.text).toBe(again);
   });
-
-  it('a timer that fires saves once; flush with nothing pending does nothing', () => {
-    const { data, store, edited } = pendingEdit();
+  it('a timer that fires saves once; flush with nothing pending does nothing', async () => {
+    const { storage, store, edited } = await pendingEdit();
     vi.advanceTimersByTime(200);
-    expect(data.get(SLOT.current)).toBe(edited);
-    data.delete(SLOT.current);
-    store.autosave.flush();
-    expect(data.get(SLOT.current)).toBeUndefined();
+    await store.autosave.flush();
+    expect(storage.state.revisions.at(-1)?.text).toBe(edited);
+    const before = structuredClone(storage.state);
+    await store.autosave.flush();
+    expect(storage.state).toEqual(before);
   });
 });

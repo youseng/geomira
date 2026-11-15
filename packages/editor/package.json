@@ -40,7 +40,8 @@
     "./claim-bar": "./src/claim-bar.ts",
     "./style-card": "./src/style-card.ts",
     "./text-draft": "./src/text-draft.ts",
-    "./measurements": "./src/measurements.ts"
+    "./measurements": "./src/measurements.ts",
+    "./persistence": "./src/persistence.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
