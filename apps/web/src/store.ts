@@ -1,3 +1,4 @@
+import { CLAIM_TESTING, CLAIMS_UNAVAILABLE } from './features';
 /**
  * The page's editor: one packages/editor EditorState, changed ONLY through applyEdit,
  * toolInput and runCommand (note A of Run 8b: the UI is a thin layer; no geometry,
@@ -105,6 +106,10 @@ export class EditorStore {
       this.setNotice({ tone: 'refusal', text: r.reason, ...d });
       return r;
     }
+    if (!CLAIM_TESTING && r.state.tool === 'claim') {
+      this.setNotice({ tone: 'info', text: CLAIMS_UNAVAILABLE });
+      return { ok: false, state: before, reason: CLAIMS_UNAVAILABLE };
+    }
     this.noteEdit(r.state, before);
     // A refusal is answered by the next document edit or tool action, not by hover, viewport
     // or selection changes (ADR-0028); errors and information stay until dismissed.
@@ -150,6 +155,11 @@ export class EditorStore {
   /** Runs a command-bar line; its errors are returned (shown under the bar), not noticed. */
   command(line: string): CommandResult | undefined {
     const s = this.current();
+    if (
+      !CLAIM_TESTING &&
+      /^(?:(?:tool\s+)?claim|test(?:\s+.*)?|find|hunt|discover|branchFix)$/iu.test(line.trim())
+    )
+      return { kind: 'error', reason: CLAIMS_UNAVAILABLE, diagnostics: [] };
     try {
       const r = runCommand(s, line, this.env);
       if (r.kind === 'edit') this.commit(r.result, s);
@@ -162,6 +172,7 @@ export class EditorStore {
 
   /** Runs the claim box's text (ADR-0051); its errors are returned, with columns of the box. */
   claim(text: string): CommandResult | undefined {
+    if (!CLAIM_TESTING) return { kind: 'error', reason: CLAIMS_UNAVAILABLE, diagnostics: [] };
     const s = this.current();
     try {
       const r = runClaimText(s, text, this.env);

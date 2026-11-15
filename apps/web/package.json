@@ -8,7 +8,10 @@
     "build": "vite build && vite build --mode singlefile",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "dev:claims": "vite --mode claim-engine",
+    "build:claims": "vite build --mode claim-engine && vite build --mode claim-engine-singlefile",
+    "e2e:claims": "GEOMIRA_ENGINE_E2E=1 playwright test"
   },
   "dependencies": {
     "@geomira/claims": "workspace:*",

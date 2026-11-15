@@ -1,3 +1,4 @@
+import { CLAIM_TESTING } from './features';
 /**
  * What this copy of the app is and how it runs (Run 12): its build, whether it works offline
  * (the PWA's service worker, or the single file that needs no network), and where claim tests
@@ -59,7 +60,7 @@ export function AboutSection() {
   const about = useContext(AboutContext);
   const pwa = about?.pwa ?? NONE;
   const state = useSyncExternalStore(pwa.subscribe, pwa.current, pwa.current);
-  const host = about?.host;
+  const host = CLAIM_TESTING ? about?.host : undefined;
   const runnerOf = () => host?.runner() ?? null;
   const runner = useSyncExternalStore(host?.subscribe ?? NONE.subscribe, runnerOf, runnerOf);
   return (

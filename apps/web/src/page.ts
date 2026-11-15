@@ -1,3 +1,4 @@
+import { CLAIM_TESTING, CLAIMS_UNAVAILABLE } from './features';
 /**
  * The page's state and actions (host code over packages/editor): the long-lived objects
  * (editor store, test worker host and runs), the scene of the current figure, and what the
@@ -83,14 +84,17 @@ export function usePage() {
   );
   useEffect(
     () =>
-      runs.onClear(() => {
-        discovery.clear();
-      }),
+      CLAIM_TESTING
+        ? runs.onClear(() => {
+            discovery.clear();
+          })
+        : undefined,
     [runs, discovery],
   );
   const pwa = useMemo(browserPwa, []);
   useEffect(() => startPwa(pwa, window, document), [pwa]);
   useEffect(() => {
+    if (!CLAIM_TESTING) return;
     // Off the critical path: the worker is ready before the first Test click.
     const id = setTimeout(() => {
       runs.warm();
@@ -203,6 +207,7 @@ export interface HeaderEnv {
  * added, else what it could not read (shown in the box, and as the notice).
  */
 function testClaim(env: HeaderEnv, text: string): ClaimFeedback | null {
+  if (!CLAIM_TESTING) return { reason: CLAIMS_UNAVAILABLE, diagnostics: [] };
   if (text.trim() === '') return { reason: 'type a claim', diagnostics: [] };
   const r = env.store.claim(text);
   if (r === undefined) return { reason: 'internal error', diagnostics: [] };

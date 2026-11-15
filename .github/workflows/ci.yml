@@ -47,6 +47,10 @@ jobs:
         run: pnpm --filter @geomira/web exec playwright install --with-deps chromium firefox webkit
       - name: End-to-end
         run: pnpm e2e
+      - name: Build internal claim engine (never uploaded as a release)
+        run: pnpm --filter @geomira/web build:claims
+      - name: Internal engine browser flows
+        run: pnpm --filter @geomira/web e2e:claims
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7

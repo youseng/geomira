@@ -1,3 +1,4 @@
+import { CLAIM_TESTING } from './features';
 import type { ClaimBoxHost } from './ClaimBox';
 import { memo, useMemo } from 'react';
 import type { EditorState } from '@geomira/editor/state';
@@ -17,8 +18,10 @@ import type { DiscoveryRuns } from './discovery-runs';
 import type { TestRuns } from './test-runs';
 
 /** The tabs; styles are edited in the style card of each object (ADR-0029), not in a tab. */
-export const TABS = ['Text', 'Objects', 'Layers', 'Claims', 'Help'] as const;
-export type Tab = (typeof TABS)[number];
+export type Tab = 'Text' | 'Objects' | 'Layers' | 'Claims' | 'Help';
+export const TABS: readonly Tab[] = CLAIM_TESTING
+  ? ['Text', 'Objects', 'Layers', 'Claims', 'Help']
+  : ['Text', 'Objects', 'Layers', 'Help'];
 
 export interface SidePanelProps {
   readonly store: EditorStore;
@@ -69,6 +72,7 @@ const Body = memo(function Body({
     case 'Layers':
       return <LayersPanel store={store} state={state} coincident={coincident} />;
     case 'Claims':
+      if (!CLAIM_TESTING) return <TextPanel state={state} applier={applier} />;
       return (
         <ClaimsPanel
           store={store}
@@ -93,7 +97,8 @@ const Body = memo(function Body({
  * shown (Run 10 audit, W4), with its pending apply (ADR-0047).
  */
 export function SidePanel(props: SidePanelProps) {
-  const { store, scene, runs, discovery, tab, onTab, open, onClose } = props;
+  const { store, scene, runs, discovery, onTab, open, onClose } = props;
+  const tab = !CLAIM_TESTING && props.tab === 'Claims' ? 'Text' : props.tab;
   const { claimBox, undrawable, onStyle } = props;
   const state = useSettled(props.state);
   const applier = useMemo(() => new TextApplier(store, timeout, () => performance.now()), [store]);

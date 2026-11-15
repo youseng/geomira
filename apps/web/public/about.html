@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Geomira: dynamic geometry for olympiad problems, with a text format, three-valued claims and TikZ / Asymptote export."
+      content="Geomira: dynamic geometry for olympiad problems, with a text format, measurements and TikZ / Asymptote export."
     />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <title>Geomira: dynamic geometry for olympiad problems</title>
@@ -145,22 +145,12 @@
       <h1>Geomira</h1>
       <p class="lead">
         Dynamic geometry for olympiad problems: build a figure with the mouse or in a short text
-        language, drag it, test your claims on many random figures, and export it for a post or a
-        handout.
+        language, drag it, take measurements, and export it for a post or a handout.
       </p>
       <p>
         <a class="open" href="./">Open Geomira</a>
         <a class="secondary" href="https://github.com/youseng/geomira">Source and documentation</a>
       </p>
-      <figure>
-        <img
-          src="./screenshots/main-desktop.png"
-          width="1280"
-          height="720"
-          alt="Geomira with the nine-point circle: tools on the left, the figure in the middle, its text on the right"
-        />
-        <figcaption>The nine-point circle, with its claims checked live in the figure.</figcaption>
-      </figure>
       <ul class="features">
         <li>
           <b>Text is the figure</b> Every figure is a short text (<code>M_a = midpoint(B, C)</code>)
@@ -171,12 +161,8 @@
           reason, never drawn as garbage; a figure never jumps.
         </li>
         <li>
-          <b>Claims tested on random figures</b> “Holds in this configuration (local test, n = 200,
-          exact over Q)”: what was checked, with its seed and any counterexample.
-        </li>
-        <li>
-          <b>Exact arithmetic</b> Constructions run over the rationals and modulo a large prime, so
-          many claims are checked exactly rather than to a tolerance.
+          <b>Explore and measure</b> Display distances and angles while dragging a figure.
+          Observations from a figure do not establish a general theorem.
         </li>
         <li>
           <b>Transformations and layers</b> Reflections, rotations, homotheties and spiral

@@ -1,4 +1,4 @@
-import { helpSections } from '@geomira/editor/keymap';
+import { availableHelp } from '../available-tools';
 import { AboutSection } from '../about';
 
 /**
@@ -8,7 +8,7 @@ import { AboutSection } from '../about';
 export function HelpPanel() {
   return (
     <div className="help">
-      {helpSections().map((s) => (
+      {availableHelp().map((s) => (
         <section key={s.title}>
           <h3>{s.title}</h3>
           <table>

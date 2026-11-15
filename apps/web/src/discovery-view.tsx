@@ -1,3 +1,4 @@
+import { CLAIM_TESTING } from './features';
 /**
  * What the canvas shows of discovery (ADR-0035, ADR-0036): the objects of a hovered fact,
  * ringed, and a viewed document (a special position, a branch fix) drawn instead of the figure
@@ -27,7 +28,7 @@ export function useDiscoveryCanvas(
   const view = snap.view;
   useEffect(() => {
     // Any edit of the figure closes the view (it was made from the figure before the edit).
-    discovery.setView(null);
+    if (CLAIM_TESTING) discovery.setView(null);
   }, [discovery, doc]);
   const shown = useMemo(() => {
     if (view === null) return scene;
@@ -48,7 +49,7 @@ export function ViewBanner({ discovery }: { discovery: DiscoveryRuns }) {
       <button
         type="button"
         onClick={() => {
-          discovery.setView(null);
+          if (CLAIM_TESTING) discovery.setView(null);
         }}
       >
         Close view

@@ -55,10 +55,20 @@ export default defineConfig({
         },
       },
       {
+        define: { __GEOMIRA_CLAIM_TESTING__: 'true' },
         esbuild: { jsx: 'automatic' },
         test: {
-          name: 'web',
+          name: 'web-engine',
           include: ['apps/web/test/**/*.test.{ts,tsx}'],
+          exclude: ['apps/web/test/public-*.test.{ts,tsx}', 'apps/web/test/design.test.tsx'],
+          environment: 'node',
+        },
+      },
+      {
+        esbuild: { jsx: 'automatic' },
+        test: {
+          name: 'web-public',
+          include: ['apps/web/test/public-*.test.{ts,tsx}', 'apps/web/test/design.test.tsx'],
           environment: 'node',
         },
       },

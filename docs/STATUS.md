@@ -1,5 +1,84 @@
 # STATUS
 
+## Release prompt 01: public claim testing removed (ADR-0065): NOT ACCEPTED, verification in progress (2026-11-16)
+
+Base: review baseline 95a7c7e9ff6d64947cf0f0e0b3e89d45412b5128, then the documentation-only
+PR #37 at a761f67 incorporated intact. Branch: codex/public-claims-off. Decision:
+[ADR-0065](adr/0065-retire-public-claim-testing.md). No push, publication, merge of this work,
+or deployment. The historical offline snapshot is left to release prompt 11.
+
+### Done
+
+- One default-off build capability covers the header claim box, Claim palette/key/help,
+  Claims tab, live verdict chips, local/global tests, automatic follow-up, finder, special
+  positions, branch fixes and previews. Direct commands/actions and job-host dispatch are
+  gated, including worker message dispatch; warming and result subscriptions stop.
+  → `apps/web/test/public-claims-off.test.tsx`, `apps/web/e2e/public-release.spec.ts`.
+- Claim/assumption parsing, both printers, geometry, rename/undo, shares and PNG metadata
+  preserved; Randomize, measurements, exports and ordinary construction remain usable.
+  → same tests, existing pure package tests, updated PWA/page smoke tests.
+- Explicit internal modes `claim-engine` / `claim-engine-singlefile`, isolated output
+  directories and `build:claims`, `dev:claims`, `e2e:claims` scripts retain engine coverage.
+  Unit configuration separates public and internal tests; browser configuration retains
+  legacy feature flows in the internal run. Count and coverage floors are not lowered.
+- Public marketing and generated help updated; generated language documentation explains
+  preserved statements without advertising testing. SPEC and CHANGELOG record the decision.
+
+### Not done
+
+- Final full verification, broader public/PWA flows and internal browser checks are running.
+- Remote CI cannot run without a push, which the shared contract explicitly prohibits.
+- No sampler correction or regeneration/publication of releases/geomira.html in this task.
+
+### Known bugs
+
+The fixed-radius reproduction in ADR-0065 remains a retained-engine defect. This task
+contains public exposure and does not claim the sampler is repaired.
+
+### Uncertain
+
+Chromium launches. Firefox startup and WebKit system dependencies are being checked;
+unavailable browsers will be reported explicitly, never counted as passing.
+
+### Changed frozen tests
+
+For [ADR-0065](adr/0065-retire-public-claim-testing.md):
+
+- `apps/web/test/design.test.tsx`: palette expects available construction tools and Measure;
+  the shell asserts no Test button, claim box or Claims tab. Icon tests still cover every tool.
+- `apps/web/e2e/pages-smoke.spec.ts`: reads saved claims from Text and asserts no public
+  Claims tab or verdict instead of expecting claim badges.
+- `apps/web/e2e/pwa.spec.ts`: the offline flow preserves claim text and verifies absent
+  verdicts/runner; offline exports and all version/update behavior remain checked.
+
+Legacy claim/discovery/worker browser assertions are retained in the explicitly enabled
+internal configuration. No frozen mathematical tests or tolerances changed.
+
+### Acceptance command output
+
+Environment: Node v24.22.1; pinned pnpm 10.28.0 via Corepack. The incompatible global pnpm
+11.25.0 initially failed installation; its incidental workspace edit was reverted before
+using the pinned manager. Lockfile dependencies were not upgraded.
+
+- `corepack pnpm install --store-dir /tmp/geomira-pnpm10-store`: passed.
+- Baseline `corepack pnpm verify`: static checks passed; coverage suite still running in the
+  unchanged baseline worktree (its final result will be recorded).
+- New default-off regression before implementation: 4 failures / 1 pass; one failure was an
+  invalid assumption fixture, corrected to `greater(dist(O,F),0)`. Observable failures were
+  the exposed public shell, enabled Claim tool and worker dispatch.
+- `corepack pnpm exec vitest run --project web-public`: 14 passed in 2 files before the
+  additional bundled-example round-trip assertion; full web rerun in progress.
+- `corepack pnpm build`: hosted and single-file builds passed (Vite size advisory only).
+- `playwright test public-release --project desktop --project mobile --project file-chromium --workers 1`:
+  6 passed. Worker construction/job-message counters remained zero, including with `?dev=1`,
+  saved settings and claim-bearing links. All four export formats exercised; PNG metadata
+  retained claim, assumption, title and author.
+
+### Requests
+
+None for the authorized scope. Maintainer review and remote CI acceptance remain separate
+from this local implementation.
+
 ## Maintainer request: select first, then the tool (ADR-0064): NOT ACCEPTED, awaiting the maintainer (2026-11-11)
 
 Not a kit run, no tag. The maintainer's decision (3) of 2026-11-10: select first, then the

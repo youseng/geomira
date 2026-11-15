@@ -1,10 +1,11 @@
+import { AVAILABLE_GROUPS } from './available-tools';
 import { chooseTool } from '@geomira/editor/selection-tool';
 import { useState } from 'react';
 import { claimToolKinds, stepsOf } from '@geomira/editor/machine';
 import { toolValue } from '@geomira/editor/claim-tool';
 import { toolPrompt } from '@geomira/editor/prompt';
 import type { EditorState } from '@geomira/editor/state';
-import { keyCap, TOOL_GROUPS } from '@geomira/editor/tool-groups';
+import { keyCap } from '@geomira/editor/tool-groups';
 import { toolUI, type ToolUI } from '@geomira/editor/tools';
 import { SrOnly, ToolIcon } from './icons';
 import type { EditorStore } from './store';
@@ -23,7 +24,7 @@ export function Palette({ store, state }: ToolBarProps) {
   return (
     <nav className="palette" aria-label="Tool palette">
       <div role="toolbar" aria-label="Tools" aria-orientation="vertical">
-        {TOOL_GROUPS.map((g) => (
+        {AVAILABLE_GROUPS.map((g) => (
           <div key={g.id} className="pgroup" role="group" aria-label={g.label}>
             <h4 aria-hidden="true">{g.label}</h4>
             <div className="pgrid">

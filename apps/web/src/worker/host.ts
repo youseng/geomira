@@ -1,3 +1,4 @@
+import { CLAIM_TESTING, CLAIMS_UNAVAILABLE } from '../features';
 /**
  * The page's side of the claim tests (SPEC §16): one Web Worker, started on first use, running
  * any number of jobs (one at a time inside the worker, in the order sent). Each job reports
@@ -214,11 +215,15 @@ export class TestHost {
 
   /** Starts the worker ahead of the first test (the page calls it once it is idle). */
   warm(): void {
-    this.ensure();
+    if (CLAIM_TESTING) this.ensure();
   }
 
   /** Starts a job; returns its id (for cancel). */
   start(job: TestClaimJob, callbacks: JobCallbacks): number {
+    if (!CLAIM_TESTING) {
+      callbacks.error(CLAIMS_UNAVAILABLE);
+      return 0;
+    }
     const id = this.next++;
     const done = (r: JobResult) => {
       this.jobs.delete(id);
@@ -239,6 +244,10 @@ export class TestHost {
 
   /** Starts a discovery job (ADR-0035, ADR-0036); returns its id (for cancel and stop). */
   startDiscovery(job: DiscoveryJob, callbacks: DiscoveryCallbacks): number {
+    if (!CLAIM_TESTING) {
+      callbacks.error(CLAIMS_UNAVAILABLE);
+      return 0;
+    }
     const id = this.next++;
     const p: Pending = {
       kind: 'discovery',

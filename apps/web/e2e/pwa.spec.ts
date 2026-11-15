@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
-import { claimItem, command, expectLines, openApp, tab } from './helpers';
+import { command, expectLines, openApp, tab } from './helpers';
 
 /**
  * Run 12 (SPEC §1 v1.1): the site as a PWA, in Chromium (project pwa). Each test serves its own
@@ -124,16 +124,13 @@ test('after the first visit the site opens and works offline', async ({ page, co
   await page.reload();
   await expect(page.getByLabel('Geometry canvas')).toBeVisible();
   await expectLines(page, 'H = orthocenter(ABC)');
-  // A local test runs in the worker, whose script also comes from the cache.
+  // Claim statements survive offline edits without creating verdicts or a worker.
   await command(page, 'claim ∠BHC + ∠BAC = 180');
-  await tab(page, 'Claims');
-  await claimItem(page, 'claim').getByRole('button', { name: 'Test', exact: true }).click();
-  await expect(page.locator('.verdict[data-regime="local"] .verdict-line')).toHaveText(
-    'Holds in this configuration (local test, n = 200, exact over Q)',
-    { timeout: 60_000 },
-  );
+  await expectLines(page, 'claim ∠BHC + ∠BAC = 180');
+  await expect(page.getByRole('tab', { name: 'Claims', exact: true })).toHaveCount(0);
+  await expect(page.locator('.claim-chips, .verdict')).toHaveCount(0);
   await tab(page, 'Help');
-  await expect(page.getByTestId('runner')).toHaveAttribute('data-runner', 'worker');
+  await expect(page.getByTestId('runner')).toHaveCount(0);
   await page.getByRole('button', { name: 'Export', exact: true }).click();
   await page.getByRole('button', { name: 'SVG', exact: true }).click();
   await expect(

@@ -1,7 +1,7 @@
 {
   "name": "Geomira",
   "short_name": "Geomira",
-  "description": "Dynamic geometry for olympiad problems: constructions, claims tested on random figures, exports for handouts.",
+  "description": "Dynamic geometry for olympiad problems: constructions, measurements, exports for handouts.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -9,6 +9,7 @@
  * choice as the branch-fix chooser and `stop` read like `cancel`.
  */
 import { runJob } from '@geomira/claims/job';
+import { CLAIM_TESTING, CLAIMS_UNAVAILABLE } from '../features';
 import { runDiscoveryJob } from '@geomira/discovery/job';
 import { branchChooser } from '@geomira/editor/discovery';
 import { createRegistry } from '@geomira/kernel/registry';
@@ -49,6 +50,10 @@ function forget(id: number): void {
 addEventListener('message', (event: MessageEvent<unknown>) => {
   const m = event.data;
   if (!isToWorker(m)) return;
+  if (!CLAIM_TESTING) {
+    post({ type: 'error', id: m.id, message: CLAIMS_UNAVAILABLE });
+    return;
+  }
   const id = m.id;
   const error = (message: string) => {
     post({ type: 'error', id, message });
