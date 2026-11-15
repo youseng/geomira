@@ -33,8 +33,9 @@ merge, publication and deployment are prohibited.
 
 ### Not done
 
-Full verification, final browser suites and remote CI results are recorded below as they
-complete. Maintainer acceptance is separate. No merge, publish or deploy is performed.
+Implementation and local functional verification are complete. Maintainer acceptance and
+remote CI remain separate; CI results are linked from draft PR #39. No merge, publish or
+deploy is performed. Final same-head verification output follows below.
 
 ### Known bugs
 
@@ -72,6 +73,10 @@ to `apps/web/e2e/file-url.spec.ts` before its explicit single-file reload; its e
 share and geometry assertions are unchanged.
 `packages/editor/test/exports.test.ts` gains an add-only entry for the new persistence
 subpath and its exact runtime names; all existing surface assertions remain intact.
+`apps/web/e2e/design-mobile.spec.ts-snapshots/main-phone-mobile-linux.png` changes only
+its 46-pixel header for persistent save state/Recovery. Fresh main versus branch comparisons
+have zero differing body pixels in all three full-page renders. The original phone body,
+both desktop references, all canvas references and all comparison tolerances are retained.
 No pure slot tests, mathematical tests, screenshot tolerances, coverage or count floors change.
 
 ### Acceptance command output
@@ -114,6 +119,24 @@ Chromium 141.0.7390.37.
 - The new migration browser flow initially asserted public worker/Claims absence in an
   explicitly enabled internal build. It now checks both build contracts: unchanged absence
   assertions publicly, and a working worker/Claims tab internally (ADR-0065).
+- Complete implementation `pnpm verify`: passed, 4,899 tests / 534 files, 335.58 seconds;
+  statements 96.53% (19010/19692), branches 90.48% (15276/16882), functions 99.45%
+  (4209/4232), lines 98.37% (15629/15887). All existing gates pass. Final repeated run below
+  checks the committed tree after documentation and the browser-test additions.
+- Full public built-app browser suite (desktop, mobile, file-chromium, pages, pwa):
+  125 passed in 2.6 minutes, including all six unchanged canvas comparisons and drag limits.
+- Full internal browser suite (desktop, mobile, file-chromium): 149 passed / 4 failed in
+  2.8 minutes. The single-file reload needed the completed-save boundary above; its corrected
+  exact views/share/geometry check and internal migration checks now pass (3 targeted passes,
+  8.5 seconds). Three full-page comparisons also fail on a freshly built main at a81917c;
+  comparing fresh main actuals to branch actuals finds 0 changed body pixels, with only the
+  new header differing (2,982 pixels per desktop view; 4,190 phone pixels). Inspected expected,
+  actual and diff images. Only the authorized phone header is updated; inherited body/platform
+  differences remain visible and are not counted as local passes.
+- Firefox 142.0.1: launch timed out after 180 seconds with libpci/X-server/framebuffer and
+  sandbox uid-map EROFS diagnostics. WebKit 26.0: missing GTK4, Graphene, WOFF2, HarfBuzz ICU,
+  Hyphen, Manette and GLESv2 libraries. Neither local browser check passed; CI installs their
+  dependencies and runs both engines. The approved package helper is absent in this host.
 - Shared-browser creation failed with “could not read requirements”; automatic review rejected
   a full shared-desktop screenshot because it could expose unrelated browser content.
   Isolated Playwright screenshots of only the local app were inspected instead, including

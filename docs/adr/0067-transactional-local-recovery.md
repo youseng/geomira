@@ -74,6 +74,11 @@ The browser share test reads the revision store rather than obsolete localStorag
 The PWA offline test now waits for Saved locally before navigating away; its figure assertion
 is unchanged. Unload cannot guarantee an asynchronous transaction completes.
 PWA/update assertions stay intact; async flushing adds completion/failure regressions.
+The phone full-page reference changes only its 46-pixel header to include persistent
+save state and Recovery. A fresh main render and branch render have exactly identical
+body pixels in all three full-page checks. Preserve the original body pixels of the phone
+reference, including its inherited drift, and keep its existing 0.01 comparison tolerance.
+Desktop references and all canvas references are untouched.
 No pure slot tests, geometry assertions, thresholds or test-count floor are weakened.
 Every changed frozen file is listed in STATUS; commits cite this ADR.
 
