@@ -37,6 +37,7 @@ interface Pending {
 export interface SaveStatus {
   readonly phase: 'saving' | 'saved' | 'not-saved' | 'conflict' | 'browsing';
   readonly message: string | null;
+  readonly dirty: boolean;
   readonly documentId: string;
   readonly sessionId: string;
   readonly revisionId: string | null;
@@ -186,6 +187,7 @@ export class Autosave {
         (malformed
           ? 'Some legacy text is invalid. Its original is available in Recovery versions.'
           : null),
+      dirty: this.dirty || this.pendingSaves.has(this.editing.sessionId),
       documentId: this.editing.documentId,
       sessionId: this.editing.sessionId,
       revisionId: baseId,

@@ -13,11 +13,13 @@ clocks, storage, downloads and lifecycle events belong to the web host.
   document ID, with a new editing-session ID. Examples, links and files have new document
   IDs. IDs are persistence metadata and do not alter the `.geo` language.
 - `edited()` marks a committed change dirty. `save(text | producer): Promise<boolean>`
-  queues a revision, retaining its text/producer on failure. Producers let serialization
+  queues a revision, retaining its text/producer on failure. Unedited examples/links return
+  true without writing; inspect their Browsing phase. A successful operation can still leave
+  a newer edit dirty, so use flush/retry when deciding whether a whole session can leave. Producers let serialization
   failures stay inside persistence error handling. Callers must not acknowledge a save
   from scheduling it, firing a timer, or receiving an IndexedDB request-success event.
 - `getStatus()` reports phase, persistent message, document/session IDs, acknowledged
-  revision ID and pending count. `subscribe` / `getVersion` notify observers; that version
+  revision ID, active-document dirty flag and global pending count. `subscribe` / `getVersion` notify observers; that version
   is a notification counter, not a durable revision. A later successful operation on
   another document does not erase a failed pending edit.
 - `schedule(task, ms)` debounces; `flush(): Promise<boolean>` starts the scheduled task and

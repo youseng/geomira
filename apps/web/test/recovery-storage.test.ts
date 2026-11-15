@@ -69,6 +69,7 @@ describe('durability and recovery', () => {
       expect(await autosave.retry()).toBe(true);
       expect(autosave.getStatus().phase).toBe('saved');
       expect(storage.state.revisions.at(-1)?.text).toBe(AB);
+      expect(autosave.getStatus()).toMatchObject({ dirty: false });
     },
   );
 
@@ -86,6 +87,7 @@ describe('durability and recovery', () => {
     release();
     await saving;
     expect(autosave.getStatus().phase).toBe('saving');
+    expect(autosave.getStatus()).toMatchObject({ dirty: true });
     expect(await autosave.flush()).toBe(false);
     await autosave.save(AC);
     expect(autosave.getStatus().phase).toBe('saved');
