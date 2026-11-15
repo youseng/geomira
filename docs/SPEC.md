@@ -407,7 +407,8 @@ outside history). The selection holds any number of objects: in the Move tool a 
 Shift or Ctrl held adds the clicked object or takes it out, Ctrl+A selects what is drawn, and
 the actions on a selection (hide, show, labels, move to a layer, remove) are one batch each
 (ADR-0060). The style card applies every change at once, one undo per control (`liveStyle`,
-ADR-0063). With the mouse, a left drag on empty canvas in the Move tool draws a selection box
+ADR-0063). Objects selected in the Move tool become the picks of the tool chosen next, in
+selection order (ADR-0064). With the mouse, a left drag on empty canvas in the Move tool draws a selection box
 (the objects wholly inside it are selected) and the right button pans (ADR-0062). Drags are coalesced (a label drag, ADR-0049, writes its offset), and so is
 the text panel's typing session (replaceText with `typing: 'start' | 'continue'`: one history
 entry until any other action; ADR-0047); at drag end values are rounded to the FINER of the

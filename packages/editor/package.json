@@ -19,6 +19,7 @@
     "./drag-edit": "./src/drag-edit.ts",
     "./ui-edit": "./src/ui-edit.ts",
     "./selection-actions": "./src/selection-actions.ts",
+    "./selection-tool": "./src/selection-tool.ts",
     "./claim-edit": "./src/claim-edit.ts",
     "./rounding": "./src/rounding.ts",
     "./names": "./src/names.ts",

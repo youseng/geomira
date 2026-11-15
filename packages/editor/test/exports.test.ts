@@ -40,6 +40,7 @@ import * as styleCardMod from '../src/style-card';
 import * as textDraftMod from '../src/text-draft';
 import * as measurementsMod from '../src/measurements';
 import * as selectionActionsMod from '../src/selection-actions';
+import * as selectionToolMod from '../src/selection-tool';
 
 const SURFACE: Record<string, { module: object; names: string[] }> = {
   './state': {
@@ -142,6 +143,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   },
   './style-card': { module: styleCardMod, names: ['cardEdit', 'cardNameProblem', 'fixedName'] },
   './measurements': { module: measurementsMod, names: ['measurementRows'] },
+  './selection-tool': { module: selectionToolMod, names: ['TOOL_ALTERNATIVES', 'chooseTool'] },
   './selection-actions': {
     module: selectionActionsMod,
     names: [

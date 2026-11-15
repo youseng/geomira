@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import type { TriangleType } from '@geomira/claims/randomize';
 import { randomizeEdit } from '@geomira/editor/randomize';
 import { selectableIds, selectionEdit } from '@geomira/editor/selection-actions';
+import { chooseTool } from '@geomira/editor/selection-tool';
 import { claimCompletions } from '@geomira/editor/claim-bar';
 import type { ClaimFeedback } from './ClaimBox';
 import { cycleView } from '@geomira/editor/views';
@@ -142,7 +143,8 @@ export function useKeyActions(
       const s = store.current();
       switch (a.kind) {
         case 'tool':
-          store.apply({ kind: 'tool', tool: a.tool });
+          // The selection becomes the tool's picks (ADR-0064).
+          store.run((st, env) => chooseTool(st, a.tool, env));
           return;
         case 'undo':
         case 'redo':

@@ -1,5 +1,74 @@
 # STATUS
 
+## Maintainer request: select first, then the tool (ADR-0064): NOT ACCEPTED, awaiting the maintainer (2026-11-11)
+
+Not a kit run, no tag. The maintainer's decision (3) of 2026-11-10: select first, then the
+tool, "acceptable"; the palette stays as it is. Decision:
+[ADR-0064](adr/0064-select-first-then-the-tool.md); SPEC §12 updated in the same commit. Base:
+main = 6de43ac (PR #35 merged: the style card below; CI green on it). Branch:
+claude/quirky-einstein-wp1t4h, restarted from main after the merge. With this, the three GUI
+decisions of 2026-11-10 are all built.
+
+### Done (each item → the tests that show it)
+
+1. **The selection becomes the chosen tool's picks**, in selection order; a full selection
+   builds at once (one undo) and the tool stays; a smaller one waits for the rest; a polygon
+   takes any number; order-free tools stay order-free (decisions 1–2). →
+   `packages/editor/test/selection-tool.test.ts`, `apps/web/e2e/flows-selecttool.spec.ts`
+   (first test).
+2. **The circle tools take each other's selections** (decision 3): three points with Circle
+   (center, point) give the circle through them. → `selection-tool.test.ts`,
+   `flows-selecttool.spec.ts` (second test).
+3. **Only a selection made in the Move tool counts** (decision 4): found while planning, before
+   the browser run: tools select what they build, so "build O, then Incircle" would have taken
+   O as a pick. → `selection-tool.test.ts` ("only a selection made in the Move tool counts");
+   the frozen flows that build one center after another (`flows-centers`) pass unchanged.
+4. **A selection that does not fit** chooses the tool with no picks and says why (decision
+   5). → `selection-tool.test.ts`.
+
+### Not done
+
+- The command bar's "tool <name>" line does not use the selection (ADR-0064, Consequences).
+- The toolbar's tooltips do not mention select-then-tool.
+
+### Known bugs
+
+None found in this work.
+
+### Uncertain
+
+- e2e in this container: 127 of 132 desktop and mobile tests pass; the 5 failures are the same
+  5 as on untouched main. The new spec is desktop-only, like the other flows (its first name
+  `flows-select-tool` slipped into the mobile project, whose pattern takes one word after
+  `flows-`; renamed).
+
+### Changed frozen tests
+
+None. `packages/editor/test/exports.test.ts` gained lines only (`./selection-tool`).
+
+### Acceptance command output
+
+```
+typecheck: every package Done; tsc -p tsconfig.tests.json clean
+lint: eslint 0 problems; prettier: All matched files use Prettier code style!
+✔ no dependency violations found (961 modules, 5645 dependencies cruised)
+ok   tolerance: 1339 files scanned, 0 violation(s)
+ok   file-length: 1339 files scanned, 0 violation(s)
+ok   test-count: 4857 tests, floor 4857, 0 violation(s)
+ok   disabled-tests: 1339 files scanned, 0 violation(s)
+ok   add-only: frozen tests compared with run-16c, 0 violation(s)
+ok   forbidden-words: 1339 files scanned, 0 violation(s)
+ Test Files  529 passed (529)
+      Tests  4857 passed (4857)
+All files          |   96.52 |    90.47 |   99.45 |   98.37 |
+```
+
+`docs/test-count.txt`: 4845 → 4857 (12 new tests in packages/editor).
+
+### Requests (decisions for the maintainer)
+
+None new.
+
 ## Maintainer request: the style card applies at once (ADR-0063): NOT ACCEPTED, awaiting the maintainer (2026-11-11)
 
 Not a kit run, no tag. The maintainer's decision (2) of 2026-11-10: "apply immediately".
