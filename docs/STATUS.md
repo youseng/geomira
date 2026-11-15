@@ -1,6 +1,6 @@
 # STATUS
 
-## Release prompt 01: public claim testing removed (ADR-0065): NOT ACCEPTED, verification in progress (2026-11-16)
+## Release prompt 01: public claim testing removed (ADR-0065): NOT ACCEPTED, awaiting maintainer review and CI (2026-11-16)
 
 Base: review baseline 95a7c7e9ff6d64947cf0f0e0b3e89d45412b5128, then the documentation-only
 PR #37 at a761f67 incorporated intact. Branch: codex/public-claims-off. Decision:
@@ -26,7 +26,6 @@ or deployment. The historical offline snapshot is left to release prompt 11.
 
 ### Not done
 
-- Final full verification, broader public/PWA flows and internal browser checks are running.
 - Remote CI cannot run without a push, which the shared contract explicitly prohibits.
 - No sampler correction or regeneration/publication of releases/geomira.html in this task.
 
@@ -35,10 +34,19 @@ or deployment. The historical offline snapshot is left to release prompt 11.
 The fixed-radius reproduction in ADR-0065 remains a retained-engine defect. This task
 contains public exposure and does not claim the sampler is repaired.
 
+The unchanged baseline fails all six stored scene screenshots (Euler line, nine-point
+circle and reflection layer, desktop and phone) in this environment. Those internal
+originals remain intact. Public baselines have new names because removing verdict chips
+intentionally changes their canvas screenshots; unrelated export snapshots are untouched.
+
 ### Uncertain
 
-Chromium launches. Firefox startup and WebKit system dependencies are being checked;
-unavailable browsers will be reported explicitly, never counted as passing.
+Chromium 141.0.7390.37 runs through Playwright 1.56.1. Phone coverage is Chromium touch
+emulation (390 × 664), not a physical phone. Firefox 142.0.1 could not launch: 30-second
+timeout, libpci/X-server/framebuffer diagnostics and sandbox uid-map EROFS. WebKit 26.0
+could not launch because GTK4, Graphene, WOFF2, HarfBuzz ICU, Hyphen, Manette and GLESv2
+libraries are missing. Neither browser's flows are counted as passing. Remote CI and
+maintainer acceptance remain unverified.
 
 ### Changed frozen tests
 
@@ -50,29 +58,78 @@ For [ADR-0065](adr/0065-retire-public-claim-testing.md):
   Claims tab or verdict instead of expecting claim badges.
 - `apps/web/e2e/pwa.spec.ts`: the offline flow preserves claim text and verifies absent
   verdicts/runner; offline exports and all version/update behavior remain checked.
+- `apps/web/e2e/scene.spec.ts`: selects six new `public-*` baselines for the public build;
+  the six internal originals and the 0.002 pixel tolerance remain unchanged. Fresh renders
+  of the baseline and implementation have identical canvas sizes and differ only in the
+  bottom-left claim-chip regions. All six public renders were visually reviewed.
+- `scripts/vitest-config.test.ts`: expects the two web projects in the project inventory;
+  its root slow-reporting threshold and package hang-guard assertions remain unchanged.
 
 Legacy claim/discovery/worker browser assertions are retained in the explicitly enabled
 internal configuration. No frozen mathematical tests or tolerances changed.
 
 ### Acceptance command output
 
-Environment: Node v24.22.1; pinned pnpm 10.28.0 via Corepack. The incompatible global pnpm
-11.25.0 initially failed installation; its incidental workspace edit was reverted before
-using the pinned manager. Lockfile dependencies were not upgraded.
+Environment: Node v24.22.1; pinned pnpm 10.28.0 via Corepack; Playwright 1.56.1,
+Chromium 141.0.7390.37. The incompatible global pnpm 11.25.0 initially failed installation;
+its incidental workspace edit was reverted. Lockfile dependencies were not upgraded.
+Commands below used the pinned manager, including nested scripts.
 
 - `corepack pnpm install --store-dir /tmp/geomira-pnpm10-store`: passed.
-- Baseline `corepack pnpm verify`: static checks passed; coverage suite still running in the
-  unchanged baseline worktree (its final result will be recorded).
-- New default-off regression before implementation: 4 failures / 1 pass; one failure was an
-  invalid assumption fixture, corrected to `greater(dist(O,F),0)`. Observable failures were
+- Baseline `pnpm verify`: passed; 4,857 tests in 529 files, 658.15 seconds. Coverage:
+  statements 96.52%, branches 90.47%, functions 99.45%, lines 98.37%.
+- Final isolated `pnpm verify` at d0fae72: passed, including typecheck, lint, formatting,
+  dependency rules, frozen-test/count rules and all per-package coverage gates:
+
+  ```text
+  Test Files  530 passed (530)
+       Tests  4863 passed (4863)
+    Duration  616.55s
+  Statements   : 96.53% (18958/19639)
+  Branches     : 90.48% (15245/16849)
+  Functions    : 99.45% (4196/4219)
+  Lines        : 98.37% (15587/15845)
+  ```
+
+- `pnpm docs:lang`: passed; regeneration reproduces the committed language documentation.
+- `pnpm build` and `pnpm --filter @geomira/web build:claims`: all four final artifacts built
+  successfully (Vite chunk-size advisory only). Their build ID is 1bb15e2c, the final product
+  source commit; subsequent changes affect test expectations and this verification record.
+- `pnpm --filter @geomira/web exec playwright test --project desktop --project mobile --project file-chromium --project pages --project pwa --workers 1`:
+  99 passed / 1 failed in 6.8 minutes while coverage was running. The only failure was the
+  mobile 300-object frame median, 8.7 ms versus the unchanged 8 ms limit. All functional,
+  export/snapshot, PWA offline/update and landing-page checks passed. Isolated timing rerun
+  recorded below.
+- Final isolated `pnpm --filter @geomira/web exec playwright test public-release scene --project desktop --project mobile --project file-chromium --workers 1`:
+  20 passed in 53.6 seconds on the final product builds, including all six reviewed public
+  snapshots, worker/job counters, data compatibility, exports and frame-time checks.
+  Desktop drag median 4.7 ms; phone drag median 4.6 ms (unchanged limit: 8 ms).
+- `pnpm --filter @geomira/web e2e:claims flows-claims flows-claimtool flows-discovery file-url --project desktop --project file-chromium --workers 1 --output /tmp/geomira-internal-results`:
+  17 passed in 2.3 minutes, including actual worker jobs, automatic follow-up, discovery,
+  hunting, branch fixes, the inlined worker and the main-thread fallback.
+- `pnpm --filter @geomira/web exec playwright test public-release --project desktop --project mobile --project file-chromium --workers 1`:
+  6 passed before final review. Worker construction/job-message counters remained zero,
+  including with `?dev=1`, foreign/legacy settings and claim-bearing links. All four export
+  formats exercised; PNG metadata retained claim, assumption, title and author.
+- Baseline `pnpm --filter @geomira/web exec playwright test scene --grep 'screenshot baseline' --project desktop --project mobile --workers 1`:
+  all six stored internal snapshots mismatched. Compared fresh baseline/public renders and
+  reviewed all six public canvases before adding separate public snapshots. The first
+  broader public run was 88 passed / these six mismatches; the later run above passes all
+  six new baselines without updating unrelated export snapshots or changing tolerances.
+
+Regression/iteration evidence:
+
+- New default-off assertions before implementation: 4 failed / 1 passed. One failure was an
+  invalid assumption fixture, corrected to `greater(dist(O,F),0)`; the other failures were
   the exposed public shell, enabled Claim tool and worker dispatch.
-- `corepack pnpm exec vitest run --project web-public`: 14 passed in 2 files before the
-  additional bundled-example round-trip assertion; full web rerun in progress.
-- `corepack pnpm build`: hosted and single-file builds passed (Vite size advisory only).
-- `playwright test public-release --project desktop --project mobile --project file-chromium --workers 1`:
-  6 passed. Worker construction/job-message counters remained zero, including with `?dev=1`,
-  saved settings and claim-bearing links. All four export formats exercised; PNG metadata
-  retained claim, assumption, title and author.
+- Added `test = (1,2)` regression during review: 1 failed / 5 passed before narrowing the
+  retired-action recognizer. It passes in the final suite; ordinary object names remain valid.
+- `pnpm exec vitest run --project web-public --project web-engine`: initially 284 passed in
+  60 files. A concurrent rerun had 283 passes and a 5-second scene-law timeout. The first
+  full verification had 4,861 passes, a conic-law 60-second timeout, and the stale project-name
+  inventory assertion. Updated that assertion under ADR-0065; reran full verification alone.
+  All 4,863 tests now pass, including both timed tests at their original limits. No mathematical
+  assertions, test timeouts, screenshot tolerances or coverage gates were weakened.
 
 ### Requests
 
