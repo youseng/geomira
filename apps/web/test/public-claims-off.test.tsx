@@ -65,6 +65,12 @@ describe('the public release contains claims as document data only', () => {
     expect(store.apply({ kind: 'tool', tool: 'claim' }).ok).toBe(false);
     expect(store.run((s, env) => chooseTool(s, 'claim', env)).ok).toBe(false);
     expect(store.current().tool).toBe('move');
+    expect(store.command('test local')).toMatchObject({
+      kind: 'error',
+      reason: CLAIMS_UNAVAILABLE,
+    });
+    // A retired action's name can still be an ordinary object identifier.
+    expect(store.command('test = (1,2)')).toMatchObject({ kind: 'edit' });
   });
 
   it('retains the reproduction through text, short text, shares, rename and undo', () => {

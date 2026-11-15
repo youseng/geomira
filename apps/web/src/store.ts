@@ -157,7 +157,9 @@ export class EditorStore {
     const s = this.current();
     if (
       !CLAIM_TESTING &&
-      /^(?:(?:tool\s+)?claim|test(?:\s+.*)?|find|hunt|discover|branchFix)$/iu.test(line.trim())
+      /^(?:(?:tool\s+)?claim|test(?:\s+(?:local|global))?|find|hunt|discover|branchFix)$/iu.test(
+        line.trim(),
+      )
     )
       return { kind: 'error', reason: CLAIMS_UNAVAILABLE, diagnostics: [] };
     try {
