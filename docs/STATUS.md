@@ -4,8 +4,9 @@
 
 Base: review baseline 95a7c7e9ff6d64947cf0f0e0b3e89d45412b5128, then the documentation-only
 PR #37 at a761f67 incorporated intact. Branch: codex/public-claims-off. Decision:
-[ADR-0065](adr/0065-retire-public-claim-testing.md). No push, publication, merge of this work,
-or deployment. The historical offline snapshot is left to release prompt 11.
+[ADR-0065](adr/0065-retire-public-claim-testing.md). The maintainer subsequently authorized pushing this branch and opening draft PR #38;
+merge and deployment remain prohibited. The historical offline snapshot is left to
+release prompt 11.
 
 ### Done
 
@@ -26,7 +27,7 @@ or deployment. The historical offline snapshot is left to release prompt 11.
 
 ### Not done
 
-- Remote CI cannot run without a push, which the shared contract explicitly prohibits.
+- PR #38 is awaiting green remote CI and maintainer review; see the screenshot repair below.
 - No sampler correction or regeneration/publication of releases/geomira.html in this task.
 
 ### Known bugs
@@ -34,9 +35,9 @@ or deployment. The historical offline snapshot is left to release prompt 11.
 The fixed-radius reproduction in ADR-0065 remains a retained-engine defect. This task
 contains public exposure and does not claim the sampler is repaired.
 
-The unchanged baseline fails all six stored scene screenshots (Euler line, nine-point
-circle and reflection layer, desktop and phone) in this environment. Those internal
-originals remain intact. Public baselines have new names because removing verdict chips
+The initial six internal scene screenshot failures were diagnosed as a host-font
+mismatch in the PR #38 follow-up below. Those internal originals remain intact and
+now pass with a deterministic test font. Public baselines have new names because removing verdict chips
 intentionally changes their canvas screenshots; unrelated export snapshots are untouched.
 
 ### Uncertain
@@ -45,8 +46,8 @@ Chromium 141.0.7390.37 runs through Playwright 1.56.1. Phone coverage is Chromiu
 emulation (390 × 664), not a physical phone. Firefox 142.0.1 could not launch: 30-second
 timeout, libpci/X-server/framebuffer diagnostics and sandbox uid-map EROFS. WebKit 26.0
 could not launch because GTK4, Graphene, WOFF2, HarfBuzz ICU, Hyphen, Manette and GLESv2
-libraries are missing. Neither browser's flows are counted as passing. Remote CI and
-maintainer acceptance remain unverified.
+libraries are missing. Neither browser's local flows are counted as passing. The initial remote CI run passed
+those browser flows, but failed the mobile scene screenshot; see the follow-up below.
 
 ### Changed frozen tests
 
@@ -135,6 +136,57 @@ Regression/iteration evidence:
 
 None for the authorized scope. Maintainer review and remote CI acceptance remain separate
 from this local implementation.
+
+## PR #38 screenshot repair (ADR-0066): NOT ACCEPTED, verification in progress
+
+### Done
+
+- Inspected the failed run's expected, actual and diff PNGs. The 390 differing pixels
+  belong to italic labels. Selecting Latin Modern locally exactly reproduces expected;
+  selecting Liberation Serif exactly reproduces the CI actual. Both remain unchanged
+  after 1.5 seconds. Three repeated pre-fix assertions fail identically (390 pixels).
+- Added the licensed test-only Liberation Serif Italic fixture and explicit face/frame
+  readiness. Updated only the failing public mobile nine-point-circle baseline, whose
+  replacement equals the CI actual pixel for pixel. Product fonts and rendering unchanged.
+- All six original internal canvas baselines now pass without changing their images.
+
+### Not done
+
+- Fresh full local verification and CI are pending on this follow-up.
+- Three inherited internal full-page references show pre-existing UI changes (removed
+  Style tab, expanded palette, short construction notation, discovery controls). Their
+  expected/actual/diff images were inspected; they need separate reconciliation before
+  claiming the entire internal browser suite passes.
+
+### Known bugs
+
+The retained-engine sampler issue in ADR-0065 is unchanged.
+
+### Uncertain
+
+Full-page references also use platform fonts; CI results will distinguish those from
+stale UI content. No render bug or timing instability was found in the reported canvas.
+
+### Changed frozen tests
+
+Under [ADR-0066](adr/0066-deterministic-screenshot-font.md),
+`apps/web/e2e/scene.spec.ts` installs the fixed test face before navigation and awaits
+its load and paint. No assertion, case, timeout, coverage floor or tolerance changed.
+The sole changed canvas image is the new public phone nine-point-circle reference.
+
+### Acceptance command output
+
+- `playwright test scene --project mobile --grep 'screenshot baseline: nine-point-circle' --repeat-each 3 --workers 1`
+  before the corrected reference: 3 failed; identical 390-pixel mismatch each time.
+- `e2e:claims scene flows-design design-mobile --grep 'screenshot baseline' --project desktop --project mobile --workers 1`:
+  6 internal canvas passes, 3 stale full-page failures. The original canvas files are intact.
+
+- `playwright test scene --grep 'screenshot baseline' --project desktop --project mobile --repeat-each 3 --workers 1`:
+  18 passed in 22.7 seconds without updating snapshots.
+
+### Requests
+
+None. Push and draft PR updates are authorized; no merge or deployment.
 
 ## Maintainer request: select first, then the tool (ADR-0064): NOT ACCEPTED, awaiting the maintainer (2026-11-11)
 

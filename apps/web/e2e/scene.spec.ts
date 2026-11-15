@@ -1,15 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
+import { pinSceneFont } from './scene-font';
 
 /** Run 7 (SPEC §13): the canvas renderer on the development page. */
 
 async function open(page: Page, example: string): Promise<void> {
+  const fontReady = await pinSceneFont(page);
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('./');
   await page.getByLabel('Example').selectOption(example);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-  });
+  await fontReady();
   expect(errors).toEqual([]);
 }
 
