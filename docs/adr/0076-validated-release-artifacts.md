@@ -170,3 +170,26 @@ recorded CI inputs; per-file paths and hashes are in `11-visual-references.json`
 five reviewed images are copied. Their required full-matrix comparisons are still pending.
 
 No production publication, merge or release was performed while implementing this decision.
+
+## Delivered static image consistency
+
+Final artifact inspection found that the unused shipped
+`apps/web/public/screenshots/main-desktop.png` still depicted retired claim entry, verdict
+chips and the old Style tab. This is a low-severity delivered-asset consistency finding,
+not an observed active install dialog: the current web manifest has no `screenshots` field.
+Under ADR-0065/0076, replace only its exact bytes with the already-reviewed public desktop
+GUI reference, preserving its public path and 1280×720 dimensions. No manifest feature,
+application code or implementation-mirroring test is added.
+
+The old 125,614-byte image SHA256 was
+`d9b1b5d2e1e9b51a7c9ad25cfd977d9bda541e7797a75a4a1f9a41ad99a7ba1c`.
+The replacement is the 121,162-byte actual from source
+`c5208237753c033b907bae52c9a949c5ab54c363`, diagnostic run `43865444969`, artifact
+`14225855788`, already committed as
+`public-layout.spec.ts-snapshots/public-workspace-desktop-linux.png`:
+SHA256 `6d17ceef7f61a3b2b6cd02c057399de88f39c6c518173d1c635b842a03e76aca`.
+It was individually reviewed by the integration owner, independent audit and implement11;
+the reference also passes the complete 404 candidate matrix. A byte comparison and PNG
+header check confirm the copy and dimensions. `releases/README.md` records the maintenance
+source and refresh procedure. The successor must build and validate this corrected asset;
+the earlier 404 archive containing the old image is not the publication candidate.

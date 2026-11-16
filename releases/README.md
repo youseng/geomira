@@ -33,3 +33,20 @@ compilation for the same source, checks the manifest after download, and uploads
 those tested bytes. Missing, failed, cancelled or unfinished prerequisite jobs cannot
 produce the Pages artifact or enter deployment. Nightly mutation campaigns retain their
 separate main/scheduled policy; they are not silently substituted for release checks.
+
+## Public screenshot maintenance
+
+`apps/web/public/screenshots/main-desktop.png` is a shipped public image. The current
+web manifest has no `screenshots` field; this file is not an active install-dialog preview.
+Keep it consistent with the reviewed public interface when that interface changes. After
+reviewing the native desktop GUI reference under the current release ADR, copy its exact
+bytes, retaining the 1280×720 dimensions and existing public path:
+
+```sh
+cp apps/web/e2e/public-layout.spec.ts-snapshots/public-workspace-desktop-linux.png apps/web/public/screenshots/main-desktop.png
+```
+
+Review the source image and record its source/run/hash provenance. Do not substitute an
+internal-engine screenshot with retired claim controls. The next ordinary candidate build
+includes the copied file in its checksum manifest and required validation; copying it alone
+does not publish a release.

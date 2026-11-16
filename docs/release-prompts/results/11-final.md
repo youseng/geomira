@@ -1,11 +1,12 @@
 # Prompt 11 final candidate validation
 
-Status: **pending complete final CI, exact downloaded candidate and independent acceptance**.
-Current candidate: `4040112d55d0d22792b654339fd96e06ed49b056`. The source correction
+Status: **application validation passes at 404; delivered-asset successor and exact final artifact pending**.
+Validated application candidate: `4040112d55d0d22792b654339fd96e06ed49b056`. The source correction
 passes genuine public/internal full-UI drag gates at 6.13/6.19 ms with exact geometry and
 history checks. The original invalid no-drag result and genuine 37.51 ms failure remain
-recorded below. The full final browser matrix and quiet verification remain pending;
-historical results are not treated as this candidate's acceptance.
+recorded below. Its complete CI matrix and quiet verification now pass. Final inspection
+found one unused stale shipped image, corrected separately under ADR-0065/0076; that asset
+successor requires its own validated candidate before publication.
 No production publication, main merge, deployment or release was performed in this phase.
 
 ## Current candidate identity and isolated measurements
@@ -41,9 +42,35 @@ explicitly **8/9**, not described as9/9. Raw annotations, errors and stage count
 `11-404-performance.json`. All measurement browsers and previews were closed before the
 independent reviewer's quiet full verification began.
 
-Required CI verification on404 passed **5,046 tests/553 files**; exports and all five GUI
-comparisons also passed. Complete supported browser CI and exact artifact validation remain
-required, as does the independently run quiet local verification.
+Required CI verification on 404 passed **5,046 tests/553 files**; exports and all five GUI
+comparisons also passed. Quiet independent local `pnpm verify` then exited 0 at the exact
+same source: **5,046/5,046 tests, 553/553 files**, 634.91 seconds in Vitest. Coverage was
+96.45% statements, 90.44% branches, 99.45% functions and 98.33% lines; static gates passed.
+
+## Complete 404 CI and static-asset successor
+
+Push run `43870309470` passed every required verification, web, export and candidate job.
+Public browsers passed **882/882 in 14.6 minutes** and internal browsers **747/747 in
+11.7 minutes**, with zero skipped tests. All supported hosted/file engine projects and
+all 33 screenshot comparisons (25 unique references) passed. Genuine CI full-UI drag app
+medians were **6.57/6.81 ms**; worker maximum **3.1 ms**, workerless maximum **8.4 ms**,
+and 150-object discovery maximum **33.1 ms**, with 3/3,434 tasks over 16 ms. None of those
+retained-engine measurements reported LongTasks. Every original limit was preserved.
+
+GitHub reports tested-web archive `14228723764`, **2,425,706 bytes**, SHA256
+`d53d7a991eb9bbce2b4b1b20bda2ea127bcdb193e1911ff074e41533cb999f5e`, and Pages
+artifact `14229062837`. These are the validated 404 artifacts, not the final publication
+candidate: final inspection found an unused stale public screenshot in their contents.
+The manifest has no `screenshots` field, so there is no observed active install-dialog bug.
+
+That low-severity image consistency finding is repaired by copying the exact already-reviewed
+1280×720 public desktop reference to `apps/web/public/screenshots/main-desktop.png`.
+Its 121,162 bytes and SHA256
+`6d17ceef7f61a3b2b6cd02c057399de88f39c6c518173d1c635b842a03e76aca` match the committed
+reference exactly. ADR-0076 records the previous hash and CI provenance; `releases/README.md`
+documents how to refresh this public image with future reviewed GUI changes. No image
+editing, manifest feature, application/test logic or threshold changed. The successor's
+required gates and exact artifact identity remain prerequisites for publication.
 
 ## Historical c540 candidate identity and builds
 
@@ -194,14 +221,12 @@ does **not** measure an edit. Native diagnosis showed a visible P1-dot offset of
 all timing assertions and now verifies the entire document and one-step Undo/Redo.
 Its first actual-drag run passed those document/history assertions but **failed** the
 unchanged 8 ms app median at **37.51 ms** (p95 58.05 ms; raster median 10.03 ms).
-This is an unresolved release performance blocker pending source diagnosis, not a passing
-benchmark or an accepted tolerance change. Original and corrected JSON/logs are retained
-separately as c520 public-performance and public-drag-corrected evidence.
+This was a genuine performance blocker at that source, not a passing benchmark or an
+accepted tolerance change. The settled-source repair now meets the original gate both
+locally and in complete 404 CI, as recorded above. Original and corrected JSON/logs remain
+separate c520 public-performance and public-drag-corrected evidence.
 
-- Compare all 25 references on the final source with the complete required CI matrix;
-  review any new mismatch individually without changing tolerances.
-- Complete isolated original performance checks after normal browser work is idle;
-  record actual measurements and unchanged limits.
-- Integration owner supplies revised-source full verification, required export compilation,
-  complete supported remote browser results and the exact downloaded CI artifact.
+- Build and validate the static-asset successor with the complete required CI matrix;
+  keep all 25 reference comparisons and original performance limits.
+- Verify the exact downloaded successor artifact's source, run, mode, base and checksums.
 - Independent prompt 12 acceptance remains required before publication.
