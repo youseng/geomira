@@ -20,7 +20,7 @@ verification, CI and the independent audit.
 - [x] 06 Tool dependencies and capabilities — integrated; ADR-0071; 108 unit / 3 browser checks.
 - [x] 07 Stable geometry numerics — integrated and independently reviewed; ADR-0072; 101 independent tests.
 - [x] 08 Randomize/shared sampler — integrated; ADR-0073; 125 unit / 3 browser checks.
-- [x] 09 Responsive/discoverable interface — audit corrections integrated, including the later supported-engine panel/focus, native draft-layout and title-boundary defects. Correctness and settled-source performance corrections are integrated. Application source frozen at `8264356`; final combined acceptance remains pending.
+- [x] 09 Responsive/discoverable interface — audit corrections integrated, including the later supported-engine panel/focus, native draft-layout and title-boundary defects. Correctness and settled-source performance corrections are integrated. Application source frozen at `a7a40e8`; final combined acceptance remains pending.
 - [x] 10 Script editor/workflow — integrated; ADR-0075; 21 new / 16 existing browser checks; 27 command tests.
 - [ ] 11 Release infrastructure/artifacts — infrastructure integrated; final candidate pending; ADR-0076.
 - [ ] 12 Independent final audit — earlier sources `9622000381c6b253067680593090624fafdff23c` and `c540412` remain rejected as release candidates. The clean `ab0c5fe` checkout passed full verification; subsequent functional corrections require a fresh combined source and artifact audit.
@@ -44,3 +44,16 @@ the existing settled-panel policy. The eight-line ownership/drag guard is integr
 `8264356`; prototype genuine public/internal medians were 7.58/5.56 ms. Final combined
 measurements, full verification, CI and independent artifact acceptance remain required.
 No threshold, history assertion or workload reduction was made.
+
+## Latest combined focus and flow corrections
+
+The image/docs-only `7f83802` push exposed a real short-screen Firefox Recovery disclosure
+failure: its focused invoker and panel scrolled above the viewport. The unchanged native
+path remains; a diagnostic reproduces its exact 162→364px scroll and -203px panel position.
+A bounded explicit-open visibility correction passed 36 focused Chromium checks. A separate
+short-grid defect let invalid Text diagnostics cover Command. All four native regressions
+failed before the intrinsic-track/specificity fix; all seven panel-control cases passed
+afterward, with raw data/caret/camera/backup/history and normal-height geometry preserved.
+Both fixes are integrated at `a7a40e8`; fresh combined builds, independent checks, full
+verification, supported-engine CI and exact artifact review remain required. See the
+Recovery and short-panel integration reports in `results/`.

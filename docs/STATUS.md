@@ -10,6 +10,31 @@ configured deployment must validate and publish its own exact merged-revision ar
 Task ledger: [PROGRESS](release-prompts/PROGRESS.md). Separate worktrees prevent concurrent
 source edits; reviewed changes are integrated before combined verification.
 
+### Latest validated checkpoint and pending successor
+
+Exact `4040112` passed fresh quiet local verification (**5,046 tests / 553 files**, 634.91s)
+and complete CI: **882 public + 747 internal browser checks**, zero skips; all 33 visual
+comparisons/25 references and required exports passed. Actual downloaded CI bytes were
+independently verified against all 15 checksums and the matching local standalone. Genuine
+CI drag medians were 6.57/6.81 ms below the unchanged 8 ms application gate. One local retained
+worker measurement failed at 60.5 ms, passed its sole unchanged isolated repeat at 8.7 ms,
+and passed CI at 3.1 ms; no cause is inferred and all observations remain recorded.
+
+The unused delivered screenshot was then replaced by the reviewed public GUI image; the
+manifest does not reference it. Its asset/docs-only `7f83802` successor passed verification,
+exports and all internal checks, but public Firefox Recovery at 390×380 scrolled its focused
+control/panel offscreen. The successful separate PR merge-SHA run does not override that
+failure. A bounded explicit-open visibility fix retains the original native assertions and
+adds the exact traced precondition. A separate short-grid minimum/specificity fix prevents
+invalid diagnostics covering Command. Source/test/metric peer reviews and focused owner
+checks pass; integrated application source is frozen at `a7a40e8`. Full fresh successor CI,
+quiet verification and independent immutable-artifact acceptance remain pending.
+
+→ [404 evidence](release-prompts/results/11-final.md),
+[7f8 failure](release-prompts/results/11-7f8-ci-results.md),
+[Recovery correction](release-prompts/results/integration-recovery-focus.md),
+[short-grid correction](release-prompts/results/integration-short-panel-flow.md).
+
 ### Done
 
 - 03: portable document actions, checked sharing and HTTPS offline links; shared draft,
@@ -48,7 +73,7 @@ source edits; reviewed changes are integrated before combined verification.
   and independent review found further functional defects after the initial focused checks.
   Source corrections and reviewed native-fixture migrations are integrated. The revised
   correctness candidate `0cace13` was extended with the settled-source performance fix
-  below. Application source is frozen at `8264356`; final acceptance remains pending.
+  below. Application source is frozen at `a7a40e8`; final acceptance remains pending.
 - Main merge and its configured deployment are authorized only after those gates pass.
   Neither has been performed. No separate tagged release was requested.
 
@@ -146,6 +171,22 @@ with the final artifact. Intermediate green tests do not establish combined acce
   actions. Worker/data/300-object/timing assertions remain unchanged. Reviewed public visual
   reference hashes are in `results/11-visual-references.json`; the next responsive correction
   requires fresh review of changed images rather than carrying forward those approvals.
+
+- ADR-0074: `style-popover.spec.ts`, `design-mobile.spec.ts` and the later panel portion
+  of `mobile.spec.ts` use exposed native targets and page-flow scroll/exposure, with exact
+  style/source/history/camera and full closed bounds retained. `flows-measurements.spec.ts`
+  keeps an independently observed raw endpoint plus exact typed coincidence/Undefined and
+  Undo/Redo. Retained claim fixtures keep complete semantics/current-tool status. New
+  Recovery/panel-control regressions are additive and preserve the original Firefox sequence.
+- ADR-0076: `drag-frame.spec.ts` presses the visible exposed P1 pixel at the same camera,
+  300 objects and original path, retaining the 120-frame/8 ms gate while strengthening exact
+  P1-only source change, whole-document Undo/Redo and one history entry. All 25 individually
+  reviewed reference hashes are recorded in `results/11-visual-references.json`; all 33
+  comparisons passed complete 404 CI. The web job budget alone changed 40→60 minutes;
+  individual test/performance/visual/numeric/coverage thresholds and retries did not change.
+- ADR-0069/0076: `pwa.test.ts`/`service-worker.test.ts` gain safe-update and scoped-download
+  assertions; no old protection is removed. Mutation-shard inventory additions under
+  ADR-0072 include extracted conic helpers without dropping prior targets.
 
 ### Acceptance command output
 
