@@ -2,8 +2,8 @@
   .app,
   .app.panel-collapsed {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto 48px minmax(80px, 1fr) 44px 76px 44px;
-    grid-template-areas: 'top' 'work' 'stage' 'side' 'pal' 'cmd';
+    grid-template-rows: max-content 48px max-content minmax(240px, 1fr) 44px 76px 44px;
+    grid-template-areas: 'top' 'work' 'alerts' 'stage' 'side' 'pal' 'cmd';
   }
   .panel-collapsed .side {
     visibility: visible;
@@ -66,20 +66,20 @@
     min-height: 44px;
     padding: 8px 7px;
   }
-  .side.open {
-    top: auto;
-    bottom: 120px;
-    height: min(
-      65%,
-      calc(
-        var(--workspace-height) - var(--panel-ceiling, 160px) - 120px -
-          var(--stage-controls-height, 64px)
-      )
-    );
-    border-top: 1px solid var(--border);
+  .app:has(> .side.open) {
+    grid-template-rows: max-content 48px max-content 240px minmax(400px, auto) 76px 44px;
   }
+  .app:has(> .side.open.compact) {
+    grid-template-rows: max-content 48px max-content 240px minmax(280px, auto) 76px 44px;
+  }
+  .side.open,
   .side.open.compact {
-    height: min(43%, calc(var(--workspace-height) - var(--panel-ceiling, 160px) - 120px));
+    position: relative;
+    top: auto;
+    bottom: auto;
+    height: auto;
+    overflow: visible;
+    border-top: 1px solid var(--border);
   }
   .side.open .text-panel > .script-editor {
     min-height: 120px;
@@ -106,7 +106,19 @@
     color: var(--text);
     font-size: 11px;
   }
+  .side.open .panel-scroll-hint {
+    display: block;
+    flex: none;
+    margin: 0;
+    padding: 4px 10px;
+    color: var(--muted);
+    font-size: 11px;
+  }
   .side.open .tabs {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: var(--panel);
     padding-right: 132px;
     min-height: 44px;
     flex: none;
@@ -145,6 +157,8 @@
     width: 44px;
     height: 44px;
   }
+  .workspace-notices button,
+  .stage-top button,
   .zoomctl button,
   .tool-hint button,
   .tool-hint input,
@@ -166,6 +180,7 @@
   }
   .stage {
     --status-h: 48px;
+    --zoom-space: 160px;
   }
   .statusbar span {
     max-height: 44px;
@@ -182,10 +197,10 @@
     padding-left: 2px;
   }
   .app.short-workspace {
-    grid-template-rows: auto 48px minmax(60px, 1fr) 44px 0 44px;
+    grid-template-rows: max-content 48px max-content minmax(240px, 1fr) 44px 0 44px;
   }
   .short-workspace.show-palette {
-    grid-template-rows: auto 48px minmax(60px, 1fr) 44px 76px 44px;
+    grid-template-rows: max-content 48px max-content minmax(240px, 1fr) 44px 76px 44px;
     overflow: auto;
   }
   .short-workspace.show-palette .palette {
@@ -197,10 +212,10 @@
   /* A short keyboard viewport needs a real editor, not a one-line overlay.
      Keep its panel in page flow so the field, diagnostics and actions can scroll. */
   .short-workspace:has(> .side.open) {
-    grid-template-rows: auto 48px 180px minmax(280px, auto) 0 44px;
+    grid-template-rows: max-content 48px max-content 240px minmax(280px, auto) 0 44px;
   }
   .short-workspace.show-palette:has(> .side.open) {
-    grid-template-rows: auto 48px 180px minmax(280px, auto) 76px 44px;
+    grid-template-rows: max-content 48px max-content 240px minmax(280px, auto) 76px 44px;
   }
   .short-workspace .side.open,
   .short-workspace .side.open.compact {

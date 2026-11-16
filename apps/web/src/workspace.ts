@@ -35,6 +35,10 @@ export function useWorkspace() {
       return next;
     });
   }, []);
+  const dismissGuide = useCallback(() => {
+    setGuide(false);
+    update({ guideDismissed: true });
+  }, [update]);
   const remember = useCallback((id: string) => {
     setPrefs((old) => {
       const next = { ...old, recent: [id, ...old.recent.filter((x) => x !== id)].slice(0, 5) };
@@ -55,6 +59,7 @@ export function useWorkspace() {
     setPan,
     guide,
     setGuide,
+    dismissGuide,
     remember,
     toolsExpanded,
     setToolsExpanded,

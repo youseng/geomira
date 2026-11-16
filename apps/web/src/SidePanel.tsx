@@ -25,6 +25,22 @@ export const TABS: readonly Tab[] = CLAIM_TESTING
   ? ['Text', 'Objects', 'Layers', 'Claims', 'Help']
   : ['Text', 'Objects', 'Layers', 'Help'];
 
+function PanelCompact({ workspace }: { workspace: Workspace | undefined }) {
+  if (workspace === undefined) return null;
+  return (
+    <button
+      type="button"
+      className="sheet-compact"
+      aria-label={workspace.prefs.compact ? 'Expand panel' : 'Compact panel'}
+      onClick={() => {
+        workspace.update({ compact: !workspace.prefs.compact });
+      }}
+    >
+      {workspace.prefs.compact ? 'Expand panel' : 'Compact panel'}
+    </button>
+  );
+}
+
 export interface SidePanelProps {
   readonly workspace?: Workspace;
   readonly store: EditorStore;
@@ -111,18 +127,7 @@ export function SidePanel(props: SidePanelProps) {
       aria-label="Figure"
     >
       {props.workspace !== undefined && <PanelResize workspace={props.workspace} />}
-      {props.workspace !== undefined && (
-        <button
-          type="button"
-          className="sheet-compact"
-          aria-label={props.workspace.prefs.compact ? 'Expand panel' : 'Compact panel'}
-          onClick={() => {
-            props.workspace?.update({ compact: !props.workspace.prefs.compact });
-          }}
-        >
-          {props.workspace.prefs.compact ? 'Expand panel' : 'Compact panel'}
-        </button>
-      )}
+      <PanelCompact workspace={props.workspace} />
       <div className="tabs" role="tablist" aria-label="Panels">
         {TABS.map((t) => (
           <button
@@ -142,6 +147,9 @@ export function SidePanel(props: SidePanelProps) {
           <span className="sr-only">Hide panels</span>
         </button>
       </div>
+      <p className="panel-scroll-hint">
+        Scroll up for the figure; down for tools and the command bar.
+      </p>
       <div className="tab-body" role="tabpanel" aria-label={`${tab} panel`}>
         <Body
           tab={tab}
