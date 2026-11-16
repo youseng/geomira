@@ -20,7 +20,7 @@ verification, CI and the independent audit.
 - [x] 06 Tool dependencies and capabilities — integrated; ADR-0071; 108 unit / 3 browser checks.
 - [x] 07 Stable geometry numerics — integrated and independently reviewed; ADR-0072; 101 independent tests.
 - [x] 08 Randomize/shared sampler — integrated; ADR-0073; 125 unit / 3 browser checks.
-- [x] 09 Responsive/discoverable interface — audit corrections integrated, including the later supported-engine panel/focus, native draft-layout and title-boundary defects. Correctness candidate `0cace13` passed affected native checks; the source freeze is lifted for the real 300-object performance blocker described below. Final acceptance remains pending.
+- [x] 09 Responsive/discoverable interface — audit corrections integrated, including the later supported-engine panel/focus, native draft-layout and title-boundary defects. Correctness and settled-source performance corrections are integrated. Application source frozen at `8264356`; final combined acceptance remains pending.
 - [x] 10 Script editor/workflow — integrated; ADR-0075; 21 new / 16 existing browser checks; 27 command tests.
 - [ ] 11 Release infrastructure/artifacts — infrastructure integrated; final candidate pending; ADR-0076.
 - [ ] 12 Independent final audit — earlier sources `9622000381c6b253067680593090624fafdff23c` and `c540412` remain rejected as release candidates. The clean `ab0c5fe` checkout passed full verification; subsequent functional corrections require a fresh combined source and artifact audit.
@@ -34,10 +34,13 @@ Final acceptance remains pending complete combined verification, CI and independ
 Per-task reports belong in `results/`; exact final commands and results will be recorded
 in STATUS. No prior test result is counted as a new check.
 
-## Current release blocker
+## Final performance validation
 
 The corrected full-UI benchmark genuinely drags P1 and retains the original 300 objects,
 camera, traced path, 120 measured frames and 8 ms application gate. Its isolated application
-median was **37.51 ms**, so release remains blocked. The previous **1.57 ms** trace performed
-no drag and is invalid. Profiling and a narrow source-presentation optimization are underway;
-no threshold, history assertion or workload reduction is authorized.
+median was **37.51 ms**, exceeding the limit. The previous **1.57 ms** trace performed
+no drag and is invalid. Profiling identified per-preview source rebuilding that bypassed
+the existing settled-panel policy. The eight-line ownership/drag guard is integrated at
+`8264356`; prototype genuine public/internal medians were 7.58/5.56 ms. Final combined
+measurements, full verification, CI and independent artifact acceptance remain required.
+No threshold, history assertion or workload reduction was made.

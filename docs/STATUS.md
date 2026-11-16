@@ -47,8 +47,8 @@ source edits; reviewed changes are integrated before combined verification.
 - Both `9622000` and `c540412` are rejected as release candidates. Full supported-engine CI
   and independent review found further functional defects after the initial focused checks.
   Source corrections and reviewed native-fixture migrations are integrated. The revised
-  correctness candidate was frozen at `0cace13`; the freeze is now lifted for the confirmed
-  300-object performance regression below. Final acceptance remains blocked.
+  correctness candidate `0cace13` was extended with the settled-source performance fix
+  below. Application source is frozen at `8264356`; final acceptance remains pending.
 - Main merge and its configured deployment are authorized only after those gates pass.
   Neither has been performed. No separate tagged release was requested.
 
@@ -82,7 +82,7 @@ afterward, that pass does not establish acceptance of the next candidate. Fresh 
 verification, all supported-engine checks and exact artifact review remain required. See
 [integration evidence](release-prompts/results/INTEGRATION.md) for failed runs and exact scope.
 
-### Current blocking performance finding
+### Performance finding: fix integrated, final combined acceptance pending
 
 A valid isolated full-UI drag of the 300-object stress figure took **37.51 ms application
 median / 58.05 ms p95**, exceeding the unchanged **8 ms** median gate. Raster median was
@@ -91,9 +91,14 @@ nearby dependent M234 rather than P1, so its **1.57 ms** no-edit trace is invali
 press one CSS pixel into the exposed P1 dot retains the camera, 300 objects, traced path,
 140 marks and 120 measured frames. The reviewed fixture now also requires coordinate-only
 P1 change, identical other source lines, exact whole-document Undo/Redo and one history
-entry. This strengthening is recorded under ADR-0076. Source highlighting/diagnostics are
-being profiled as possible causes; no causal conclusion or performance pass is assumed.
-Full quiet verification is held until the real benchmark passes after a narrow fix.
+entry. This strengthening is recorded under ADR-0076. Sampling identified per-preview
+source rebuilding that bypassed the existing settled-panel policy. The eight-line ownership/
+drag guard is integrated at `8264356`, preserving live canonical geometry and raw/IME/stale
+drafts while clean source follows at commit/cancel. Five new lifecycle tests and focused
+built-UI source/history checks pass. Genuine isolated prototype medians were 7.58 ms public
+and 5.56 ms internal; their p95/raster/total costs remain separately reported. These are
+prototype checks, not final acceptance. Combined-source measurements, fresh quiet full
+verification, complete CI and exact artifact review remain required. → [performance evidence](release-prompts/results/integration-drag-performance.md).
 
 ### Uncertain
 
