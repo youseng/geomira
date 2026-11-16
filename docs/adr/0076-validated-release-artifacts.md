@@ -139,4 +139,14 @@ override is removed before the native reference comparison. The attachment is no
 or evidence that the native viewport fits all content at once. The first CI run must collect
 the two missing references for individual review; their absence is a failed check, not a pass.
 
+A separate push-triggered `gui-review.yml` collects the two public and three internal GUI
+comparisons early. It uses the same source SHA, base path, pinned dependencies, Ubuntu runner,
+browser installation and shared browser/font recorder as required validation. Both comparison
+groups execute even when the public assertions fail, and the separate reports upload on failure;
+missing references remain failed assertions. This workflow has read-only repository permissions,
+no release artifact, no publication step and no dependency in the required release graph. The
+complete required browser matrix still executes all five comparisons and decides acceptance.
+An exact-font local reproduction remained 2.61–3.70% different from same-source CI GUI images,
+so these references must be reviewed from CI output rather than generated locally as equivalent.
+
 No production publication, merge or release was performed while implementing this decision.
