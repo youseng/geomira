@@ -1,6 +1,6 @@
 # ADR-0076: Validate and publish one identified public artifact
 
-Status: authorized by release prompt 11. Final candidate acceptance remains pending integration.
+Status: authorized by release prompt 11. Final candidate acceptance remains pending validation.
 Supersedes the independent build/deploy ordering and hand-maintained download of ADR-0030.
 
 ## Context
@@ -70,6 +70,12 @@ Refreshing that file once would repeat the same synchronization defect on the ne
   Scene screenshots keep their bundled math face; the platform UI stack is not overridden.
   This identifies the actual Ubuntu font inputs and distinguishes local platform differences
   from product changes without accepting mismatches or raising screenshot tolerances.
+- Increase the browser job's overall execution envelope from 40 to 60 minutes for the expanded
+  public/internal hosted and offline three-engine matrices. The diagnostic public phase alone
+  took 14 minutes 15 seconds in push run `43854336027`, before the internal phase. This changes only the CI job budget:
+  individual test timeouts, the 5-second scene law, 8 ms frame gate, retries, skips, screenshot
+  ratios and all numeric/coverage assertions remain unchanged. Verification and export job
+  budgets remain unchanged. A timeout or failed browser job still blocks the candidate.
 
 ## Frozen tests and remaining work
 
@@ -113,6 +119,15 @@ Known retained-engine limitation: at phone height 664, internal verdict chips ca
 reflected A′ label and triangle-base labels. This is recorded visibly rather than masked by
 test changes; independent review considers it a nonblocking reactivation limitation because
 these chips are absent from the public release. No application change is made here.
+
+The c540 diagnostic CI run `43854336027`, artifact `14221259440`, supplies 20 subsequently
+reviewed geometry references: eight exports and six scene views in each build mode. All eight
+shared exports are byte-identical across modes. The integration owner and independent audit
+reviewed every expected/actual/diff and approved the 72 px control-strip reframe without
+incidence, color or shape loss. These exact CI bytes replace only those 20 references, with
+paths, dimensions and before/after hashes in `11-visual-references.json`. Final-source
+comparisons remain required. All five whole-GUI references are deliberately pending the
+corrected panel/header source; the known covered Expand control is not accepted into a baseline.
 
 Two additional `public-layout.spec.ts` references cover the untouched public desktop and
 phone viewports with a saved nine-point figure, source editor and document controls. They

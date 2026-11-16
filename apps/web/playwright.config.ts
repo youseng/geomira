@@ -20,8 +20,8 @@ const INTERNAL =
   'flows-claimtool|flows-geomdraw|flows-claims|flows-review|flows-discovery|flows-design|design-mobile|drawer-notice-mobile';
 const internalOnly = engine ? '|public-release|public-layout' : `|${INTERNAL}`;
 const fileSpecs = engine
-  ? /(file-url|canvas-coordinates|interaction-layout|panel-controls|recovery-layout|startup-recovery-layout)\.spec/u
-  : /(public-release|persistence|modal-safety|release-download|document-files|randomize-integrity|script-editor|workspace-composed|canvas-coordinates|interaction-layout|panel-controls|recovery-layout|startup-recovery-layout)\.spec/u;
+  ? /(file-url|canvas-coordinates|draft-pointer-layout|interaction-layout|panel-controls|recovery-layout|startup-recovery-layout)\.spec/u
+  : /(public-release|persistence|modal-safety|release-download|document-files|randomize-integrity|script-editor|workspace-composed|canvas-coordinates|draft-pointer-layout|interaction-layout|panel-controls|recovery-layout|startup-recovery-layout)\.spec/u;
 
 export default defineConfig({
   testDir: 'e2e',
@@ -57,7 +57,7 @@ export default defineConfig({
         name: `desktop-${browserName}`,
         use: { browserName, viewport: { width: 1280, height: 720 } },
         testMatch:
-          /(flows-build|flows-persist|flows-keyboard|public-release|modal-safety|script-editor|workspace|workspace-composed|document-files|canvas-coordinates|interaction-layout|panel-controls|recovery-layout|startup-recovery-layout)\.spec/u,
+          /(flows-build|flows-persist|flows-keyboard|public-release|modal-safety|script-editor|workspace|workspace-composed|document-files|canvas-coordinates|draft-pointer-layout|interaction-layout|panel-controls|recovery-layout|startup-recovery-layout)\.spec/u,
       })),
       // Run 9b: the static site's smoke test (locally built, or the deployed Pages site).
       {

@@ -1,108 +1,252 @@
 {
-  "source": "86bac50eba8a824f3acf66831eaafe096e8a28f2",
-  "application_source": "9622000381c6b253067680593090624fafdff23c",
-  "run": 43838960729,
-  "artifact": 14213420787,
-  "environment": "ubuntu-24.04 / Playwright 1.56.1 Chromium",
-  "review": "Individual expected/actual/diff and CI/local comparisons; no tolerance changes. Integration owner approved product intent.",
+  "source": "c540412ec2e4d4a68c93c4e59a26343756adaf69",
+  "run": 43854336027,
+  "artifact": 14221259440,
+  "archive_sha256": "991711eb6f608e6c13ff02a684f10ac4e4d858a2811e63027d661b7c7091e87b",
+  "archive_bytes": 99594638,
+  "approved_geometry_references": 20,
+  "pending_gui_references": 5,
+  "review": "Every expected/actual/diff inspected by integration owner, independent audit12 and implement11. Only geometry references copied. Final-source comparisons remain required; no tolerance change.",
+  "browser": "Playwright 1.56.1 Chromium / Ubuntu24.04",
+  "node": "22.23.4",
+  "pnpm": "10.28.0",
+  "fonts": [
+    {
+      "fontconfig_request": "system-ui",
+      "face": "DejaVu Sans: Book",
+      "file": "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+      "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280"
+    },
+    {
+      "fontconfig_request": "sans-serif",
+      "face": "DejaVu Sans: Book",
+      "file": "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+      "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280"
+    },
+    {
+      "fontconfig_request": "ui-monospace",
+      "face": "DejaVu Sans: Book",
+      "file": "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+      "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280"
+    },
+    {
+      "fontconfig_request": "monospace",
+      "face": "DejaVu Sans Mono: Book",
+      "file": "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+      "sha256": "c805f9436dbc268644c1d9584f01a601a653e028e08fd74b9b949f6cf8304d88"
+    },
+    {
+      "fontconfig_request": "DejaVu Sans Mono",
+      "face": "DejaVu Sans Mono: Book",
+      "file": "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+      "sha256": "c805f9436dbc268644c1d9584f01a601a653e028e08fd74b9b949f6cf8304d88"
+    },
+    {
+      "fontconfig_request": "Latin Modern Roman",
+      "face": "DejaVu Sans: Book",
+      "file": "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+      "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280"
+    },
+    {
+      "fontconfig_request": "Liberation Serif",
+      "face": "Liberation Serif: Regular",
+      "file": "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
+      "sha256": "705903ae1382f0150f115d6f10a30f5b2f3d6ade649c474afe6366c39174fb65"
+    },
+    {
+      "fontconfig_request": "Liberation Serif:style=Italic",
+      "face": "Liberation Serif: Italic",
+      "file": "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf",
+      "sha256": "eaeaf7f2b12544ecde64290c1fa7ec403ff70fd58b313637b265400b20249242"
+    }
+  ],
   "references": [
     {
-      "scenario": "desktop PNG golden: euler-line",
+      "scenario": "exports: desktop PNG golden: euler-line",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/euler-line-desktop-linux.png",
-      "dimensions": [856, 534],
-      "previous_sha256": "624fed15e7d2296fa0fd8a0d665d3bf8e518566008602b971ac6ecacd4ffc827",
-      "sha256": "1f90c2750217dd46dc9e25d37ffeec33a397c3b857fee55d18f11bd5d87e38da"
+      "artifact_path": "public/data/29883ec4da7917f2b15bf61457d58c5d8bd525f4.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "1f90c2750217dd46dc9e25d37ffeec33a397c3b857fee55d18f11bd5d87e38da",
+      "sha256": "d6959c2fd54c63c8fe94998f0a31fbf09b180edb782c2bfc07848ca1dd34c194"
     },
     {
-      "scenario": "desktop PNG golden: feuerbach",
+      "scenario": "exports: desktop PNG golden: feuerbach",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/feuerbach-desktop-linux.png",
-      "dimensions": [856, 534],
-      "previous_sha256": "0d96bae7d68fae5e43dfac2dfa6e199fb749a2888de2bbc561390729a89fa8ad",
-      "sha256": "3252a14fb1ec0261d2ba2e14c431210da6252b1df932e933dbd48207564a5336"
+      "artifact_path": "public/data/75ca13da700dffe7b6af91850696bca41c866d99.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "3252a14fb1ec0261d2ba2e14c431210da6252b1df932e933dbd48207564a5336",
+      "sha256": "4bc118a670acd59772e0b337b0fabd79d8be4d107dfa620673cc4854f4eebe2a"
     },
     {
-      "scenario": "desktop PNG golden: incenter-excenter",
+      "scenario": "exports: desktop PNG golden: incenter-excenter",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/incenter-excenter-desktop-linux.png",
-      "dimensions": [856, 534],
-      "previous_sha256": "1ef27ddf239dbc9dd3e725439db7187c70a923e4b7a5a2b8960524bc97377b5c",
-      "sha256": "c293591dea6b3f214c681ffb30721e8571b0dd4b4d69d58e1879ed3fcb501655"
+      "artifact_path": "public/data/e4a2abe66249cc61586f67f07fb8e8c3103eff6c.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "c293591dea6b3f214c681ffb30721e8571b0dd4b4d69d58e1879ed3fcb501655",
+      "sha256": "4c0b935136c09ff697e15de09bf20696439e166f5922fc3de0a4c954b56aff0c"
     },
     {
-      "scenario": "desktop PNG golden: miquel",
+      "scenario": "exports: desktop PNG golden: miquel",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/miquel-desktop-linux.png",
-      "dimensions": [856, 534],
-      "previous_sha256": "095e81f0bc3039bf88a2c94bb8f2daaf0a117e80bb431bc5cbdb7753ba8584e6",
-      "sha256": "837dd8cd00bc6462623885bcbd9972dd0de0db237f2cdca5d3315d8ebda8130f"
+      "artifact_path": "public/data/c7b9e8a5c63a497893d9a2e23681739938aebbbe.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "837dd8cd00bc6462623885bcbd9972dd0de0db237f2cdca5d3315d8ebda8130f",
+      "sha256": "97913382ed0970851bf6420258cb9bcdcaf443bbd2a116172aec6b7eb53ceb3c"
     },
     {
-      "scenario": "desktop PNG golden: nine-point-circle",
+      "scenario": "exports: desktop PNG golden: nine-point-circle",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/nine-point-circle-desktop-linux.png",
-      "dimensions": [856, 534],
-      "previous_sha256": "5221f255de57db51357c6520a52868ff25afa87be8ad82de3bba7e278e81cfc0",
-      "sha256": "7c3aa60c072f57bfd0763dd0f6486909b1004715ae24e820d1a19f10ecab4f94"
+      "artifact_path": "public/data/c2d73ea603343083a9bfbb09f4be03efdabac3f6.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "7c3aa60c072f57bfd0763dd0f6486909b1004715ae24e820d1a19f10ecab4f94",
+      "sha256": "f322db8a0a4b1fd55160fb93e206c61534dcda990eef0ad0cbaca0c59b9d61d3"
     },
     {
-      "scenario": "desktop PNG golden: radical-axes",
+      "scenario": "exports: desktop PNG golden: radical-axes",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/radical-axes-desktop-linux.png",
-      "dimensions": [856, 534],
-      "previous_sha256": "216247a3f7e4e4c45f29831ef5d591252fdabfb7cc92b9a9a6982cce541e1ef5",
-      "sha256": "ed4106e8686decd74da1c6abc0011097e17d790d41de66d0cb0333d381fc2b5c"
+      "artifact_path": "public/data/9f9d5118e9e5b0b7a03bd7f248c7407c637a1657.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "ed4106e8686decd74da1c6abc0011097e17d790d41de66d0cb0333d381fc2b5c",
+      "sha256": "fec89d5467a664054d198d639a40b9e53b5facea343618f2c142b3bb79a9fde3"
     },
     {
-      "scenario": "desktop PNG golden: reflection-layer",
+      "scenario": "exports: desktop PNG golden: reflection-layer",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/reflection-layer-desktop-linux.png",
-      "dimensions": [856, 534],
-      "previous_sha256": "78d88dba560cbe1562acb9e7d52d80c1aab339d5f9c16ca2aa4e8d8e31560064",
-      "sha256": "298a6010d0925dca6596f8ef4dc773e10216c90570066d1ffeb27165755bc88d"
+      "artifact_path": "public/data/70dddac80a8af3ec27418fa8346353539203772a.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "298a6010d0925dca6596f8ef4dc773e10216c90570066d1ffeb27165755bc88d",
+      "sha256": "e5e7c54b4bfa8b281f17b1a162d7d760c8c6e406da6beb2f65a0edd2f0c356f5"
     },
     {
-      "scenario": "desktop PNG golden: simson",
+      "scenario": "exports: desktop PNG golden: simson",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/simson-desktop-linux.png",
-      "dimensions": [856, 534],
-      "previous_sha256": "f50d969bf2996dbe1134dc5415da26d876a899925b71466dbf906b7c87218c02",
-      "sha256": "8f9005cfeb8f40b97fd0ca913c75ac2268e28d6a92828f27afd36f521b94e3c2"
+      "artifact_path": "public/data/7b9517ed5e908b82a14df630c5a3baf401d272da.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "8f9005cfeb8f40b97fd0ca913c75ac2268e28d6a92828f27afd36f521b94e3c2",
+      "sha256": "139a613b9894431c2e4567708718c305fb7758fabc574350b4d7c7983d96f433"
     },
     {
-      "scenario": "mobile screenshot baseline: euler-line",
+      "scenario": "public-scenes: mobile screenshot baseline: euler-line",
       "reference": "apps/web/e2e/scene.spec.ts-snapshots/public-euler-line-mobile-linux.png",
-      "dimensions": [390, 297],
-      "previous_sha256": "3bc78cec6daa3f1380fc2224642096935be8befd794157a331dd58bde929913c",
-      "sha256": "37e595f0c49619dd992e93946e017d50ad916bcd62679d1d783a0e2d280adba9"
+      "artifact_path": "public/data/015eb4ffab6480e45131fc2eee3af2800c3ef0b5.png",
+      "dimensions": [390, 225],
+      "previous_sha256": "37e595f0c49619dd992e93946e017d50ad916bcd62679d1d783a0e2d280adba9",
+      "sha256": "2ddb1ee0f0ffe9f6ba33e9745fc3d2c01ba405ff0f228ad2d3626361ed4f158d"
     },
     {
-      "scenario": "mobile screenshot baseline: nine-point-circle",
+      "scenario": "public-scenes: mobile screenshot baseline: nine-point-circle",
       "reference": "apps/web/e2e/scene.spec.ts-snapshots/public-nine-point-circle-mobile-linux.png",
-      "dimensions": [390, 297],
-      "previous_sha256": "2ae1e8df25a5448c6b4a5bf6e9f25f4120d1eb189da8d3ec94a077721758b580",
-      "sha256": "1f07b74de9721ae8a03332c272e86ed146bc139dbb61c8ccfabee17b9f1e1cb1"
+      "artifact_path": "public/data/bbfc3da324184e21a771b56bb7a4dfa5ebde6e35.png",
+      "dimensions": [390, 225],
+      "previous_sha256": "1f07b74de9721ae8a03332c272e86ed146bc139dbb61c8ccfabee17b9f1e1cb1",
+      "sha256": "9bcba4afb79b7e4137e670c86063e9fb34a380b469455edb16ed42523f430f1f"
     },
     {
-      "scenario": "mobile screenshot baseline: reflection-layer",
+      "scenario": "public-scenes: mobile screenshot baseline: reflection-layer",
       "reference": "apps/web/e2e/scene.spec.ts-snapshots/public-reflection-layer-mobile-linux.png",
-      "dimensions": [390, 297],
-      "previous_sha256": "47522c1f0ab5f2202726c35356908ba963bf577eda04345f4fe1facbf39d31de",
-      "sha256": "87668b9a53fd9b97d0ca2628da391650b4dea740689f168b717ac37b2888029e"
+      "artifact_path": "public/data/fcea0dbff8e907ce7e88b7edd0a50afd8eb8cc68.png",
+      "dimensions": [390, 225],
+      "previous_sha256": "87668b9a53fd9b97d0ca2628da391650b4dea740689f168b717ac37b2888029e",
+      "sha256": "9c59f01a3e139fedfd3e166f2cc5dc9b1efba1dc7f090ef21dc3e6f5162fade9"
     },
     {
-      "scenario": "desktop screenshot baseline: euler-line",
+      "scenario": "public-scenes: desktop screenshot baseline: euler-line",
       "reference": "apps/web/e2e/scene.spec.ts-snapshots/public-euler-line-desktop-linux.png",
-      "dimensions": [856, 534],
-      "previous_sha256": "cf433cff5cfe65cccca7fc60c0f7759e6ee2741d2faee53e902a9b1adb860d2f",
-      "sha256": "0d6243880922a381f0b2155aa396459ae09c6dbd3366adb41c750fa12a3154f4"
+      "artifact_path": "public/data/04d7c1778fe271a7765ed973305aa5ea59a812ba.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "0d6243880922a381f0b2155aa396459ae09c6dbd3366adb41c750fa12a3154f4",
+      "sha256": "5bfe1f14d215ad83768901253723362d5b00923516aa5c95491cfbdd23031bff"
     },
     {
-      "scenario": "desktop screenshot baseline: nine-point-circle",
+      "scenario": "public-scenes: desktop screenshot baseline: nine-point-circle",
       "reference": "apps/web/e2e/scene.spec.ts-snapshots/public-nine-point-circle-desktop-linux.png",
-      "dimensions": [856, 534],
-      "previous_sha256": "cc2855ce8fcec139be48e252a88e9522a371e3d88ef9270f4de8bec81abb7ce1",
-      "sha256": "4e9501e5060666ce48e887792f5eb56b2bd69a238fd9b827a3892d4346e28afc"
+      "artifact_path": "public/data/7af9114c127ec2cf963954d29514bf5c7bc66e30.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "4e9501e5060666ce48e887792f5eb56b2bd69a238fd9b827a3892d4346e28afc",
+      "sha256": "3d4f18c7923fc300570f7a0f8eb98419f43327acdcc868329918d2077352b113"
     },
     {
-      "scenario": "desktop screenshot baseline: reflection-layer",
+      "scenario": "public-scenes: desktop screenshot baseline: reflection-layer",
       "reference": "apps/web/e2e/scene.spec.ts-snapshots/public-reflection-layer-desktop-linux.png",
-      "dimensions": [856, 534],
-      "previous_sha256": "d7f527c95601a68a24a6daa180a493cb672314ee3b09c3568b98ae0fdc668625",
-      "sha256": "dabe69edc6eded138f90ea09ddc96f24e264a91a2e636ef0abe03bf200804832"
+      "artifact_path": "public/data/3f89448a9d22e78b14bccb54a446afb1f664686b.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "dabe69edc6eded138f90ea09ddc96f24e264a91a2e636ef0abe03bf200804832",
+      "sha256": "fa98bd8e2f5d33eea97dbd669ac5e9a0f1e2e3d9fce0672139a16bf0014612af"
+    },
+    {
+      "scenario": "internal-scenes: mobile screenshot baseline: euler-line",
+      "reference": "apps/web/e2e/scene.spec.ts-snapshots/euler-line-mobile-linux.png",
+      "artifact_path": "internal/data/c0cf182fe1245721830808c443f389367010940c.png",
+      "dimensions": [390, 225],
+      "previous_sha256": "3050018001202a4be825ec0e5173e240aab137c112aa7ef3b3534a2dba3518e9",
+      "sha256": "39f2ab8d8a8683be0994d7150bce53075d78870838ee56307947b4cde68ea300"
+    },
+    {
+      "scenario": "internal-scenes: mobile screenshot baseline: nine-point-circle",
+      "reference": "apps/web/e2e/scene.spec.ts-snapshots/nine-point-circle-mobile-linux.png",
+      "artifact_path": "internal/data/3a177dbd186fc30e292ee4c3ae5c3cdf5b422a87.png",
+      "dimensions": [390, 225],
+      "previous_sha256": "de9acde9645bd761643ff27935775c7a3a5c8c6aaa845507efe23802e72876b2",
+      "sha256": "dba568a7475a9d366da7465dc9b757889b5c3fcd8d70c4dea0f95aa2c27f932b"
+    },
+    {
+      "scenario": "internal-scenes: mobile screenshot baseline: reflection-layer",
+      "reference": "apps/web/e2e/scene.spec.ts-snapshots/reflection-layer-mobile-linux.png",
+      "artifact_path": "internal/data/e1d799305199f80efe0bf0656a5eea1e65388353.png",
+      "dimensions": [390, 225],
+      "previous_sha256": "56c2dbcbad125566f9fc667ed57be150d899b1abe4eaa05e60077b1733475dd4",
+      "sha256": "3449a6e38903b067e4b7ae6bc680f56c7b7dc62e6330cfe60625a25a523fe0fc"
+    },
+    {
+      "scenario": "internal-scenes: desktop screenshot baseline: euler-line",
+      "reference": "apps/web/e2e/scene.spec.ts-snapshots/euler-line-desktop-linux.png",
+      "artifact_path": "internal/data/69419c34f35375a49fd422b9a243cfd02286a168.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "c465f32b611b8031fc69f24d63a8544a2d60f84da08b07ae9ba21fb3dd1f54af",
+      "sha256": "f4a75e1a2ce8ef1ac7fb6ff265cd9f50391eb434b9687dc10954e968cd03d3ff"
+    },
+    {
+      "scenario": "internal-scenes: desktop screenshot baseline: nine-point-circle",
+      "reference": "apps/web/e2e/scene.spec.ts-snapshots/nine-point-circle-desktop-linux.png",
+      "artifact_path": "internal/data/02c43ac97e7c4367cdbb37b493ecdc6375699d0f.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "7e30d1fec0ee767fd06e9d978bcf8f4447a7fb25ebaaddd17614d273623032b7",
+      "sha256": "a0c1da03d9312ffe5d9ba3dd6c71902f7828dec81c8403da3a88601218226737"
+    },
+    {
+      "scenario": "internal-scenes: desktop screenshot baseline: reflection-layer",
+      "reference": "apps/web/e2e/scene.spec.ts-snapshots/reflection-layer-desktop-linux.png",
+      "artifact_path": "internal/data/a6a9db823877359db37355540a262cd36cafea2f.png",
+      "dimensions": [856, 462],
+      "previous_sha256": "22cd0db665ac5777f887d8a555b6e0eca144e80c94df6a4b4ba256ec09d69a3d",
+      "sha256": "ff02ec8e1f9dc8055121ba8cc98aeee87589927dc9ac5deaaae6f153fdf3e3c8"
+    }
+  ],
+  "pending_gui": [
+    {
+      "reference": "apps/web/e2e/flows-design.spec.ts-snapshots/main-desktop-desktop-linux.png",
+      "scenario": "desktop screenshot baseline: the main screen (nine-point circle)",
+      "reason": "Require corrected final-source GUI actual after panel/header changes; c540 public-mobile has known A13."
+    },
+    {
+      "reference": "apps/web/e2e/flows-design.spec.ts-snapshots/claims-desktop-desktop-linux.png",
+      "scenario": "desktop screenshot baseline: the Claims panel after a local test (seed masked)",
+      "reason": "Require corrected final-source GUI actual after panel/header changes; c540 public-mobile has known A13."
+    },
+    {
+      "reference": "apps/web/e2e/design-mobile.spec.ts-snapshots/main-phone-mobile-linux.png",
+      "scenario": "mobile screenshot baseline: the phone layout",
+      "reason": "Require corrected final-source GUI actual after panel/header changes; c540 public-mobile has known A13."
+    },
+    {
+      "reference": "apps/web/e2e/public-layout.spec.ts-snapshots/public-workspace-mobile-linux.png",
+      "scenario": "mobile screenshot baseline: public workspace with editable source and file controls",
+      "reason": "Require corrected final-source GUI actual after panel/header changes; c540 public-mobile has known A13."
+    },
+    {
+      "reference": "apps/web/e2e/public-layout.spec.ts-snapshots/public-workspace-desktop-linux.png",
+      "scenario": "desktop screenshot baseline: public workspace with editable source and file controls",
+      "reason": "Require corrected final-source GUI actual after panel/header changes; c540 public-mobile has known A13."
     }
   ]
 }

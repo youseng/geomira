@@ -30,7 +30,8 @@ jobs:
 
   web:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    # Public and internal three-engine matrices share this job; their individual limits stay fixed.
+    timeout-minutes: 60
     env:
       GEOMIRA_BASE: /${{ github.event.repository.name }}/
       GEOMIRA_BUILD: ${{ github.sha }}

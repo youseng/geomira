@@ -1,11 +1,13 @@
 # Prompt 11 final candidate validation
 
-Candidate application source: `9622000381c6b253067680593090624fafdff23c`, after prompts
-01–10 were integrated. This report records this final-source session's checks;
-infrastructure-phase results are in `11-infrastructure.md`. No production publication,
-main merge, deployment or release was performed.
+Status: **pending final CI references, browser matrix and independent acceptance**.
+Revised application candidate: `c540412ec2e4d4a68c93c4e59a26343756adaf69`.
+Its formatting-only successor passed verification, but later independent findings require
+further source corrections. Checks below identify their actual source rather than treating
+this diagnostic candidate as a release pass.
+No production publication, main merge, deployment or release was performed in this phase.
 
-## Candidate identity
+## Revised candidate identity and builds
 
 Pinned pnpm 10.28.0; Node 24.22.1; Playwright 1.56.1 / bundled Chromium 141.
 Frozen-lockfile offline dependency installation passed. With `GEOMIRA_BASE=/geomira/`
@@ -13,125 +15,122 @@ and `GEOMIRA_BUILD` set to the full candidate SHA:
 
 - `pnpm build`: public hosted and standalone builds passed.
 - `pnpm --filter @geomira/web build:claims`: internal hosted and standalone builds passed.
-- Local public file: `apps/web/dist/geomira.html`, **1,263,779 bytes**, identical to
+- `release-candidate.ts check`: passed against source, mode, base, run/attempt and checksums.
+- Local public file: `apps/web/dist/geomira.html`, **1,270,674 bytes**, identical to
   `apps/web/dist-single/index.html`.
-- SHA-256: `3c56ce1b81df052bcf684caef19c0a88dff5d622ab768ba8897550c3d8d69f38`.
+- SHA-256: `bb48e5a9f5b72499f5d90ae080d7daaa41e0bd5353a8d28b7a2247427b99b212`.
 - `release.json`: full source SHA above, public mode, `/geomira/`, run `local`, attempt `1`.
   This local file is separate from the eventual downloaded CI candidate.
 
-## Visual review
+Logs: `/tmp/geomira-final11-c540-public-build.log` and
+`/tmp/geomira-final11-c540-internal-build.log`. The supported local public Chromium diagnostic
+matrix completed **401 passed / 9 failed / 0 skipped**, 410 tests in 1,055.7 seconds. All nine
+failures match the documented CI categories. A complete 125-failure disposition ledger is in
+`11-c540-ci-dispositions.md`; these are historical results, not revised-source acceptance.
 
-Initial screenshot-only runs used `--workers 1`, the pinned browser and existing
-thresholds. Public: **14 failures**; internal: **17 failures**. These are 23 unique
-reference files because eight PNG export goldens are shared by both modes. Every
-expected/actual/diff was inspected individually and reviewed by the integration owner.
-No blanket snapshot update or tolerance increase is authorized.
+## Visual acceptance still required
 
-The reviewed changes are:
+Twenty-five unique references need final review: eight exported example PNGs, six public
+scene canvases, six internal scene canvases, three internal full-GUI views and two new
+public full-GUI views. The final phone flow, reserved controls and relocated Zoom controls
+change the viewport again, so the first candidate's approved images are intermediate
+historical evidence and cannot be blindly reused.
 
-- Eight PNG export goldens: Euler line, Feuerbach, incenter/excenter, Miquel, nine-point
-  circle, radical axes, reflection layer and Simson. The changed workspace geometry
-  changes the export viewport from **824×612 to 856×534**. Incidence, colors, labels
-  and complete constructions remain intact.
-- Six public canvas references and six internal canvas references: Euler line,
-  nine-point circle and reflection layer on desktop and phone. Desktop becomes
-  **856×534**; phone becomes **390×297**, previously 390×468. The workspace controls,
-  bounded panel and larger touch controls intentionally reframe the view. Public
-  references contain no automated verdict chips. Internal references retain them.
-- Three internal full-page references: desktop main screen, desktop Claims panel
-  after a local test and phone main screen. The File controls, wrapping header,
-  workspace bar and source editor gutter/help are intended changes.
+The integration owner approved 20 c540 CI geometry references after individual review, also
+independently reviewed by prompt 12. They are copied byte for byte with source/run/artifact,
+font environment and per-file hash provenance in `11-visual-references.json`. All five GUI
+references remain untouched pending final panel/header source. Final-source comparisons are
+still required even where clean geometry dimensions are unchanged.
 
-Explicit retained-engine limitation: on the 390×664 internal phone layout, verdict
-chips overlay the reflected A′ label and some triangle-base labels after the new
-workspace reduces canvas height. This is visible in reviewed actual images and is
-not hidden or repaired by changing screenshot assertions. The public UI has no
-verdict chips. Independent prompt 12 review determines its release relevance.
+The two new public references capture untouched native desktop/phone viewports with a
+saved nine-point example and editable source. They explicitly reject claim tabs/chips.
+Native wheel scrolling must expose offscreen palette/command controls while preserving
+the geometry camera; the wheel target must already be inside the native viewport.
+A separate, labelled full-scroll attachment temporarily removes only overflow clipping,
+requires exactly unchanged layout boxes and restores clipping before the native comparison.
+That attachment is not a reference or evidence that all phone content fits simultaneously.
+Initial prototype runs reached only the intentionally missing references: **0 passed,
+2 failed**. Missing references remain failures pending individual CI-image review.
 
-Scene helpers inject the repository's bundled Liberation Serif Italic. The eight
-export goldens use the platform math face; CI/local differences were inspected and
-confined to label glyphs, with identical geometry and incidence.
-Full-page screenshots use the platform's actual system UI face; this container
-resolves OpenAI Sans, while the Ubuntu CI image uses its own system face. The three
-previously inherited local full-page font differences must therefore be distinguished
-from intended product changes. CI-generated actual images are the reference source.
+Scene screenshots use the repository's bundled Liberation Serif Italic. Export PNGs use
+the platform math face; full-GUI views use the actual system UI face. This container uses
+OpenAI Sans for system UI. The final CI job records Node/pnpm/Playwright/OS versions,
+fontconfig matches and font-file SHA-256 hashes. Local platform differences must remain
+reported; replacing a reference with CI bytes does not make a locally failing comparison pass.
+No blanket snapshot updates or tolerance increases are authorized. Existing scene/export
+ratios remain 0.002 and full-GUI ratios remain 0.01.
 
-The first 14 reference files now use the approved actual bytes from CI run
-43838960729, artifact 14213420787, source `86bac50eba8a824f3acf66831eaafe096e8a28f2`
-(a documentation-only descendant of the frozen application source). Six public scene
-images match the local actual images pixel for pixel. Per-file paths, dimensions and
-before/after hashes are in `11-visual-references.json`. The remaining nine internal
-CI references and final comparisons are pending.
+## Initial diagnostic results, not revised-source acceptance
 
-Focused recheck after these replacements: **17 passed / 0 failed / 0 skipped** in
-44.3 seconds: all 14 public/export comparisons at the original 0.002 limits plus
-the repaired public zero-job construction fixture on desktop, phone and file-Chromium.
+At application source `9622000381c6b253067680593090624fafdff23c`:
 
-## Browser checks
+- Initial screenshot-only runs: public **14 failed**, internal **17 failed**, representing
+  23 unique references because eight export goldens are shared. Every expected/actual/diff
+  was reviewed individually. The integration owner approved the intended workspace/header/
+  source-editor reframes; no threshold changed.
+- Fourteen approved public/export replacements came from CI run `43838960729`, artifact
+  `14213420787`, documentation-only source `86bac50eba8a824f3acf66831eaafe096e8a28f2`.
+  Six public scenes matched local images pixel for pixel; export differences were confined
+  to label glyphs. Their mapping/hashes are historical evidence in git history.
+- Focused recheck: **17 passed / 0 failed / 0 skipped**, 44.3 seconds: fourteen public/export
+  comparisons plus the repaired public zero-job fixture on desktop/phone/file-Chromium.
+- Normal local Chromium matrix: **299 passed / 7 failed / 0 skipped**, 306 tests, 896.6 seconds;
+  desktop, mobile, Pages, PWA and file-Chromium at `/geomira/` / actual standalone file.
+  Screenshot cases and inline performance cases were counted separately. Failures were
+  three recovery overlays, the guide intercepting Polygon, selection controls intercepting
+  a second style-card click and two closed-panel fixtures.
+- Initial CI public matrix: **517 passed / 35 failed / 1 dependency-skipped**, 553 total.
+  Fourteen failures were screenshots; remaining failures identified responsive overlays,
+  compact-menu fixtures, Firefox native-pointer/focus behavior and startup draft adoption.
+  Internal CI was not reached in that run. These failures were reported before repair.
 
-The initial frozen-source functional Chromium matrix completed **299 passed / 7
-failed / 0 skipped**, 306 tests in 896.6 seconds. It included desktop, mobile, Pages,
-PWA and file-Chromium projects using `/geomira/` and the actual `file://` standalone
-build. Fourteen screenshot cases and two inline 300-object frame measurements were
-excluded from this functional invocation and are counted separately. Dedicated
-measurement projects remain deferred until other CPU work is idle. The seven
-failures were three mobile recovery-overlay cases, the mobile guide intercepting
-an explicit polygon construction, the mobile selection bar intercepting a second
-style-card click, and two closed-panel fixtures (desktop/file-Chromium). These
-exact failures were reported before repairs; they are not acceptance passes.
+Subsequent integration fixes address those findings, PWA transient-draft protection and
+physical phone occlusion. Prototype checks are preliminary evidence, not substitutes for
+the revised-source full matrix. Two fixture migrations retain all original assertions:
+reopen Show panels before inspecting tabs, and open More actions before compact Settings.
+The pointer helper now scrolls an offscreen canvas into view before applying the unchanged
+CSS inverse projection. A real wheel repro previously projected to negative coordinates;
+after correction, native input reaches canvas and the exact invalid source remains intact.
 
-Command, with the pinned manager/browser environment and public preview port 4203:
+## Gate and provenance evidence
 
-```sh
-pnpm --filter @geomira/web exec playwright test \
-  --project desktop --project mobile --project pages --project pwa --project file-chromium \
-  --grep-invert 'screenshot baseline|PNG golden|frame time at 300 objects' --workers 1
-```
+The workflow retains separate public/internal HTML reports and environment evidence.
+Internal tests run after an actually executed public suite succeeds or fails, never after
+cancellation/skipped prerequisites. Public failure still fails the web job; integrity checks,
+tested-artifact upload and packaging retain success-only gates. No `continue-on-error` is used.
+Actionlint and the eight-outcome structural dry run passed; candidate dependencies remain
+`[verify, web, exports]`. Scheduled mutation policy is unchanged.
 
-Firefox/WebKit runtime and physical-device/screen-reader limits remain separate
-from Chromium emulation results.
+The expanded three-engine public/internal coverage receives a **60-minute web-job envelope**,
+previously 40 minutes. Push run `43854336027` spent 14 minutes 15 seconds on public browsers
+before starting the internal matrix. Individual test timeouts, the 5-second scene law,
+8 ms frame limit, retries, skips and screenshot/coverage assertions remain unchanged.
+Verification/export job budgets are unchanged. The running diagnostic still has its original
+40-minute budget; this change applies only after the evidence/reference commit.
 
-Initial CI public matrix on the documentation-only `86bac50` revision: **517 passed,
-35 failed, 1 dependency-skipped**. Fourteen failures are the reviewed screenshots.
-The 21 nonvisual failures include stale closed-panel and compact Settings fixtures,
-responsive recovery/guide/selection overlays, Firefox coordinate/focus behaviors and
-a Firefox file-download path. They remain reported failures, with separate owners
-investigating; none is treated as a final acceptance pass. Internal CI was not reached
-in that run. The subsequent diagnostic workflow preserves both report folders even
-if public validation fails.
+Actual CI run `43838960729`: verification and export compilation succeeded, browser validation
+failed, and candidate/deployment/smoke jobs were skipped. Only export and failure-report
+artifacts existed; no tested web or Pages candidate was uploaded. This is executed failure-gate
+evidence, not a production deployment experiment.
 
-Two deliberately migrated fixtures retain all original assertions: reopen Show panels
-after the public construction test hides it, and open More actions before compact
-Settings in the 300-object measurement. Focused ESLint and `git diff --check` passed.
-The original failures precede these changes; the repaired public fixture passed in
-all three supported local Chromium projects. The Settings setup will be exercised
-with the isolated measurement after the new source freeze.
+## Explicit nonblocking limits
 
-Independent prompt 12 found an additional PWA update risk: unapplied invalid source
-could be dropped on reload. A separate owner is implementing the guarded update. The
-candidate requires a new source freeze and re-audit before final acceptance.
-
-## Failure evidence and release gates
-
-The workflow now retains separate `playwright-report/public` and
-`playwright-report/internal` evidence. After an actually executed public suite,
-internal tests run on public success or failure; they do not run after cancellation
-or skipped prerequisites. A public failure still fails the web job. Integrity checks,
-tested artifact upload and the candidate graph retain their normal success-only gates.
-No `continue-on-error` is used.
-
-Actionlint 1.7.11 passed for the workflow. A structural dry run checked all eight
-public-outcome/cancellation combinations, distinct report paths and unchanged
-`candidate.needs = [verify, web, exports]`; failed/skipped/cancelled public outcomes
-cannot package a candidate. Scheduled mutation policy remains unchanged.
+- On a phone with Text open, the intentionally retained 120 px canvas fits the nine-point
+  figure into roughly 40 px of drawing height, crowding labels. Closing the panel and using
+  Fit/Zoom provides the larger construction view. Adaptive fit margins or a larger portrait
+  split remain future usability improvements; this interface is not described as perfect.
+- Internal-only verdict chips can overlay reflected A-prime or triangle-base labels in the
+  compact phone view. The public build has no such chips; retained-engine reactivation requires
+  separate UI acceptance. Final images must keep any overlap visible rather than mask it.
+- Local Firefox/WebKit availability, emulated versus physical devices, real screen-reader
+  checks and final CI/downloaded-artifact results must be reported separately.
 
 ## Remaining acceptance
 
-- Retrieve and individually compare CI screenshots; replace only approved references
-  under ADR-0076, then repeat comparisons.
-- Complete public/internal supported local Chromium projects and isolated performance
-  checks; record exact counts and any failures.
-- Integration owner supplies full verification, required export compilation, complete
-  supported remote browser results and exact downloaded CI artifact evidence.
-- Independent prompt 12 acceptance and real-device/screen-reader limitations remain
-  explicitly separate.
+- Retrieve final CI images, compare every expected/actual/diff, replace only individually
+  approved references under ADR-0076, format the manifest and repeat comparisons.
+- Complete supported public/internal local Chromium projects and isolated performance
+  checks after quiet verification; record exact counts and actual measurements.
+- Integration owner supplies revised-source full verification, required export compilation,
+  complete supported remote browser results and the exact downloaded CI artifact.
+- Independent prompt 12 acceptance remains required before publication.
