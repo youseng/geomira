@@ -16,11 +16,13 @@ an empty document has little guidance. Source screenshots confirm these problems
 
 - Let the header wrap at intermediate widths. Keep File, undo/redo, Randomize, View,
   Examples, Export, help and recovery reachable; narrow headers expose triangle type
-  and Settings through More actions. Primary phone targets are at least 44 CSS pixels.
+  and Settings through More actions. Primary phone targets are at least 44 CSS pixels,
+  including source Apply/Revert, conversion, diagnostic buttons and Editor help.
 - Put tool search, Pan, panel restoration and the first-use guide in a named workspace
   bar. Search uses the existing filtered tool catalog, readable labels/IDs, registry
   operation names and spelling normalization; it selects through the same `chooseTool`
-  path as palette buttons. Recent tools are filtered through that catalog, so stale or
+  path as palette buttons. Keyboard selection scrolls the active result into the bounded
+  list before the next paint. Recent tools are filtered through that catalog, so stale or
   hostile preferences cannot expose retired public tools.
 - Keep the complete grouped palette. Use one roving tab stop; Home/End go to its ends
   and arrows follow its desktop vertical or phone horizontal orientation. Tool selection
@@ -58,13 +60,14 @@ keyboard/touch/modal/file tests stay enabled. Changed full-page/canvas dimension
 individual composed visual review; do not regenerate references blindly or loosen limits.
 The shared Tab type lives in dependency-free panel-types, avoiding a component/hooks cycle.
 Hosted Firefox/WebKit run both workspace suites; offline Chromium also runs the composed
-newcomer, source and keyboard workflows. Actual locally available engines are reported below.
+newcomer, source and keyboard workflows. Actual locally available engines are reported in the result file.
 
 Deliberate interaction-fixture migrations retain all existing semantic assertions:
 
 - Property dismissal chooses View → Fit when the floating card covers the canvas Fit button.
   Its canvas path chooses a genuinely exposed canvas point rather than hitting a larger phone
-  swatch; re-entry after canonical-text inspection uses visible Properties. Rename persistence,
+  swatch; re-entry after canonical-text inspection uses visible Properties. Another-card
+  entry uses the Objects-row right-click when the current card covers the canvas target. Rename persistence,
   exact source and the one-Undo restoration remain unchanged.
 - Dependency drags hide the phone Objects sheet through its visible control before targeting
   the canvas. The dependent parent/child coordinate assertions remain unchanged.
