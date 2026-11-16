@@ -93,6 +93,21 @@ with the final artifact. Intermediate green tests do not establish combined acce
   coverage and the composed file workflow. Individually reviewed visual-reference changes,
   if needed, will be listed below. No disabled test, lower count, weaker numerical/screenshot
   tolerance or reduced coverage threshold is authorized.
+- ADR-0074: `apps/web/e2e/helpers.ts` inverse-projects through the actual CSS rectangle.
+  `flows-build.spec.ts`, `workspace.spec.ts` and the delayed-startup case in
+  `persistence.spec.ts` use an independent oracle for delivered native pointer coordinates:
+  Firefox truncates requested fractional client coordinates. Canonical comparisons remain
+  exact, Undo still restores the exact previous point, and an additional typed-coordinate
+  test preserves the original exact triangle/Redo contract. No widened tolerance or forced
+  even-pixel layout substitutes for correct mapping.
+- ADR-0069: PWA helpers moved unchanged to `pwa-site.ts` for the file-length limit; all old
+  offline/update/write-failure/download assertions remain. New raw-draft/IME/command and
+  delayed-save cancellation cases guard safe update transitions.
+- ADR-0076: `public-release.spec.ts` restores a deliberately closed panel through its visible
+  control before checking every tab; `scene.spec.ts` opens compact Settings through More
+  actions. Worker/data/300-object/timing assertions remain unchanged. Reviewed public visual
+  reference hashes are in `results/11-visual-references.json`; the next responsive correction
+  requires fresh review of changed images rather than carrying forward those approvals.
 
 ### Acceptance command output
 

@@ -18,10 +18,10 @@ verification, CI and the independent audit.
 - [x] 06 Tool dependencies and capabilities — integrated; ADR-0071; 108 unit / 3 browser checks.
 - [x] 07 Stable geometry numerics — integrated and independently reviewed; ADR-0072; 101 independent tests.
 - [x] 08 Randomize/shared sampler — integrated; ADR-0073; 125 unit / 3 browser checks.
-- [x] 09 Responsive/discoverable interface — integrated and composed phone screenshots reviewed; ADR-0074; final release-wide checks below remain pending.
+- [ ] 09 Responsive/discoverable interface — initial implementation integrated; final audit found recovery/guide/control placement and coordinate bugs; narrow corrections and composed revalidation are in progress under ADR-0074.
 - [x] 10 Script editor/workflow — integrated; ADR-0075; 21 new / 16 existing browser checks; 27 command tests.
 - [ ] 11 Release infrastructure/artifacts — infrastructure integrated; final candidate pending; ADR-0076.
-- [ ] 12 Independent final audit — running against frozen source `9622000381c6b253067680593090624fafdff23c` in a clean detached worktree.
+- [ ] 12 Independent final audit — first source `9622000381c6b253067680593090624fafdff23c` rejected; revised source and exact final artifact require fresh checks.
 
 ## Verification
 
