@@ -1,5 +1,94 @@
 # STATUS
 
+## Integrated release repairs (prompts 03, 05–12): NOT ACCEPTED, combined validation and independent audit pending
+
+Base: `f95e0056c9e2cb73d23c6dac900acaf9e7f1a06a` (main after PR #40).
+Branch: `codex/release-integration`, draft PR #41. The maintainer authorized autonomous
+implementation, subagents and an integration draft; no main merge or production publication.
+Task ledger: [PROGRESS](release-prompts/PROGRESS.md). Separate worktrees prevent concurrent
+source edits; reviewed changes are integrated before combined verification.
+
+### Done
+
+- 03: portable document actions, checked sharing and HTTPS offline links; shared draft,
+  explicit commit phase, cancelled-read protection and unapplied-draft status. Independent
+  review reproduced two cancellation defects; both were fixed and re-reviewed.
+  → [03 evidence](release-prompts/results/03.md), ADR-0069.
+- 05: outside-close rename, synchronized property fields after undo/redo, effective inherited
+  visibility shared with the scene. → [05](release-prompts/results/05.md), ADR-0070.
+- 06: construction-aware tangent/intersection reuse, semantic selection-first consumption,
+  complete supported transformation inputs and immediate finish-refusal feedback.
+  → [06](release-prompts/results/06.md), ADR-0071.
+- 07: origin-relative area and stable local conic charts across consumers. Independent
+  source/probe review found no actionable introduced bug and ran 101 targeted tests.
+  → [07](release-prompts/results/07.md), ADR-0072.
+- 08: exact common radius scaling, domain refusals and structured invalid outcomes; no
+  public testing reactivation. → [08](release-prompts/results/08.md), ADR-0073.
+- 10: atomic singleton batching, source-preserving blur, accessible script assistance,
+  IME suspension and native completion undo. Ordinary batches parse once; repeated
+  singleton overwrites validate their earlier prefix before it can disappear.
+  → [10](release-prompts/results/10.md), ADR-0075.
+- 11 infrastructure: same-revision verify/browser/export graph, exact artifact packaging,
+  public offline path and provenance. Independent review found PWA app-shell interception
+  of the download; a scoped route correction now has a controlled-browser byte/hash test.
+  → [11 infrastructure](release-prompts/results/11-infrastructure.md),
+  [11 download](release-prompts/results/11-download.md), ADR-0076.
+
+### Not done
+
+- 09 responsive/workspace implementation is awaiting composed integration and validation.
+- Final candidate builds, full integrated verification, complete browser/visual/export
+  validation, green final-head CI and prompt 12 independent audit remain pending.
+- Main merge, production deployment and release publication are not performed here.
+
+### Known bugs
+
+Retained-engine-only discovery freshness and expensive live evaluation remain explicit
+[reactivation gates](claims-reactivation.md). The public tester remains disabled. Further
+integration findings will be fixed or recorded before final acceptance.
+
+### Uncertain
+
+Physical phones, actual mobile software keyboards and real screen readers are unavailable.
+Browser touch/viewport/IME simulation is not evidence of those real-device sessions.
+Local Firefox/WebKit availability and final supported-engine CI results will be reported
+with the final artifact. Intermediate green tests do not establish combined acceptance.
+
+### Changed frozen tests
+
+- ADR-0069: `apps/web/test/share-url.test.ts`, `apps/web/e2e/file-url.spec.ts`,
+  `apps/web/e2e/public-release.spec.ts` migrate obsolete sender-local URLs to portable HTTPS
+  links while retaining valid payload/recipient assertions.
+- ADR-0071: discovery export-surface additions only; no removed assertions.
+- ADR-0072: inspected last-digit changes in `packages/export/test/__snapshots__/fixture-conics/`
+  `aops.asy`, `standalone.asy`, `figure.svg`; no tolerance change. The SVG change is at the
+  existing .001-pixel rounding boundary; complete diffs were inspected independently.
+- ADR-0075: `apps/web/test/text-apply.test.ts` replaces implicit blur-formatting expectations
+  with verbatim source and unchanged apply/history guarantees; explicit Apply still formats.
+  `packages/lang/test/exports.test.ts` adds the existing lexer's public subpath coverage.
+- 09 changes, if needed, will be listed after integration. No disabled test, lower count,
+  weaker numerical/screenshot tolerance or reduced coverage threshold is authorized.
+
+### Acceptance command output
+
+Pinned pnpm 10.28.0, Node 24.22.1. Frozen lockfile installation; no runtime dependency upgrade.
+
+- Immutable base checkout `pnpm verify`: **passed**, 4,904 tests / 534 files. Vitest duration
+  764.17 seconds under concurrent work. Coverage: statements 96.53%, branches 90.49%,
+  functions 99.45%, lines 98.37%; all static/dependency/rules/coverage gates passed.
+  Earlier in-place attempts were invalidated by scratch/integration changes and are not
+  counted as baseline passes.
+- Initial combined regression check: **57 passed / 9 files**, 40.39 seconds.
+- Intermediate CI found a genuine store/draft/gesture dependency cycle. Extracted a shared
+  timer primitive; `pnpm depcruise` then passed, 990 modules / 5,781 dependencies.
+  Affected timer/text suites: **30 passed / 3 files**, 8.46 seconds.
+- Per-task commands, before-fix failures, browser versions and limits are linked above.
+  Final combined commands/results are pending and must not be inferred from these counts.
+
+### Requests
+
+None for the authorized repair scope. Production approval remains separate from this draft.
+
 ## Release prompt 04: modal and keyboard safety (ADR-0068): NOT ACCEPTED, awaiting maintainer review
 
 Base: `8535d51097af931a9bdd6fd924d3a5acbba12a20`, latest main including merged PR #39.
