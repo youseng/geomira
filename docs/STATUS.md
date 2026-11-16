@@ -55,6 +55,13 @@ existing large-scale ellipse regression was found in combined CI and corrected w
 physical-length chord decision; all 425 required degeneracy/baseline/inventory checks and
 43 close regressions then passed. Further integration findings remain subject to final checks.
 
+The first independent audit and complete browser run found additional blockers: PWA update
+loses unfinished Text/Command drafts; phone recovery/warning panels cover controls; guide and
+selection overlays intercept construction; save-status resizing loses an outside-close click;
+fractional canvas coordinates and startup adoption need correction. Narrow fixes and fresh
+review are in progress. The candidate remains NOT ACCEPTED. See
+[integration evidence](release-prompts/results/INTEGRATION.md) for failed runs and exact scope.
+
 ### Uncertain
 
 Physical phones, actual mobile software keyboards and real screen readers are unavailable.
