@@ -53,6 +53,8 @@ export class TextApplier {
   private draft: TextDraft;
   private parsed: ParsedText | null = null;
   private sourceMessage: string | null = null;
+  private shownDoc: Document | null = null;
+  private shownText = '';
   private cancel: (() => void) | null = null;
   private readonly listeners = new Set<() => void>();
 
@@ -70,7 +72,11 @@ export class TextApplier {
    * same document as the canonical text that files and links hold.
    */
   private shown(doc: Document): string {
-    return printShort(doc, this.host.env.registry);
+    if (this.shownDoc !== doc) {
+      this.shownDoc = doc;
+      this.shownText = printShort(doc, this.host.env.registry);
+    }
+    return this.shownText;
   }
 
   readonly subscribe = (listener: () => void): (() => void) => {
@@ -141,10 +147,14 @@ export class TextApplier {
     return this.sourceMessage;
   }
 
-  follow(doc: Document): void {
-    if (doc !== this.draft.doc && !hasEdits(this.draft))
-      this.sourceMessage =
-        'The figure changed; this source was regenerated. Unapplied drafts are preserved.';
+  follow(doc: Document, replacement = false): void {
+    if (replacement) this.sourceMessage = null;
+    else if (
+      doc !== this.draft.doc &&
+      !hasEdits(this.draft) &&
+      this.draft.text !== this.shown(this.draft.doc)
+    )
+      this.sourceMessage = 'Figure edit reformatted your source.';
     if (doc !== this.draft.doc) this.stop();
     this.set(follow(this.draft, doc, () => this.shown(doc)));
   }

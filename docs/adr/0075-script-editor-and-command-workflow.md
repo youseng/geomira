@@ -84,3 +84,11 @@ and move the caret back into that character's prefix. The effect runs before pai
 source has superseded the expected value, the pending placement is discarded. Text and Command
 share this policy while retaining native insertion/undo. The regression deliberately delivers
 queued frames after immediate typing, rather than delaying user typing to conceal the race.
+
+The phone editor keeps only a short completion hint by default. Keyboard/formatting guidance
+lives in a native, initially collapsed “Editor help” disclosure; the conversion action appears
+when top-level separators are present. Actionable diagnostics remain visible. The source notice
+is compact and appears only when a figure edit actually normalizes clean user-authored source
+that differs from the printer output. Canonical/generated source does not trigger it, and an
+explicit document replacement clears it. Dirty source continues through the original stale-draft
+path. A one-document printer cache avoids adding a second print to every drag update.

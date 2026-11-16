@@ -26,3 +26,25 @@ describe('script source remains deliberate', () => {
     expect(applier.getSnapshot().text).toContain('# keep this explanation');
   });
 });
+
+it('only explains actual reformatting of clean user source, and clears it when opening a document', () => {
+  vi.useFakeTimers();
+  const store = new EditorStore({ registry: createRegistry() }, (m) => {
+    throw new Error(m);
+  });
+  store.openText('A=(1,2)', 'example');
+  expect(store.textDraft.sourceNotice()).toBeNull();
+  store.command('B=(4,0)');
+  expect(store.textDraft.sourceNotice()).toBeNull();
+  store.textDraft.type('# custom spacing\nA=(1,2)\nB=(4,0)\n');
+  store.textDraft.leave();
+  store.command('C=(0,4)');
+  expect(store.textDraft.sourceNotice()).toBe('Figure edit reformatted your source.');
+  expect(store.textDraft.getSnapshot().text).toContain('# custom spacing');
+  store.openText('X=(9,8)', 'example');
+  expect(store.textDraft.sourceNotice()).toBeNull();
+  store.textDraft.type('broken(');
+  store.command('Y=(0,0)');
+  expect(store.textDraft.getSnapshot().text).toBe('broken(');
+  expect(store.textDraft.sourceNotice()).toBeNull();
+});

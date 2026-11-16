@@ -19,6 +19,7 @@ test('source assistance highlights and numbers exact text; blur preserves source
   await openApp(page, './index.html');
   const value = '# geometry 🟢\nA=(0,0)\nB=(4,0)\nω=circle(A,2)\n';
   const field = await source(page, value);
+  await expect(page.locator('.editor-help')).toHaveJSProperty('open', false);
   await expect(page.locator('.script-gutter')).toHaveText('1\n2\n3\n4\n5');
   await expect(page.locator('.script-highlight')).toContainText('# geometry 🟢');
   await expect(field).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
@@ -31,6 +32,14 @@ test('source assistance highlights and numbers exact text; blur preserves source
   await field.press('Control+Enter');
   await expect(field).toHaveValue(/A = \(0, 0\)/u);
   await expect(field).toHaveValue(/# geometry 🟢/u);
+  const help = page.locator('.editor-help');
+  const summary = help.locator('summary');
+  await summary.focus();
+  await summary.press('Enter');
+  await expect(help).toHaveJSProperty('open', true);
+  await expect(help).toContainText('Ctrl+Enter applies and formats valid source');
+  await summary.press('Enter');
+  await expect(help).toHaveJSProperty('open', false);
 });
 
 test('diagnostic activation scrolls to and selects the exact Unicode source span', async ({
@@ -188,7 +197,7 @@ test('completion is one normal source edit with one undo; construction regenerat
   await expect(field).toHaveValue(/M=midpoint\(A,B\)/u);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(field).toHaveValue(before);
-  await expect(page.locator('.source-regeneration')).toContainText('source was regenerated');
+  await expect(page.locator('.source-regeneration')).toContainText('reformatted your source');
   await page.getByRole('button', { name: 'Redo', exact: true }).click();
   await expect(field).toHaveValue(/midpoint\(A, B\)/u);
 });

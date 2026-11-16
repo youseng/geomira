@@ -95,7 +95,7 @@ export function ScriptEditor(p: EditorProps) {
           spellCheck={false}
           wrap="off"
           value={text}
-          aria-describedby="script-help script-signature"
+          aria-describedby={signature === null ? 'script-help' : 'script-help script-signature'}
           aria-autocomplete="list"
           aria-controls={c.list.length > 0 ? 'script-completions' : undefined}
           aria-activedescendant={
@@ -105,12 +105,13 @@ export function ScriptEditor(p: EditorProps) {
         />
       </div>
       <p id="script-help" className="muted">
-        Ctrl+Space: completions · arrows: choose · Tab: accept · Escape: dismiss · Ctrl+Enter: apply
-        and format
+        Ctrl+Space: completions
       </p>
-      <p id="script-signature" className="script-signature" role="status">
-        {signature}
-      </p>
+      {signature !== null && (
+        <p id="script-signature" className="script-signature" role="status">
+          {signature}
+        </p>
+      )}
       {!composing && <Choices c={c} field={p.field} />}
     </>
   );
