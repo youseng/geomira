@@ -72,4 +72,26 @@ reopen it with the visible Show panels control before inspecting its tabs. A clo
 panel is now absent rather than merely offscreen. All tab-content, keyboard-navigation,
 document-compatibility and retired-job assertions are retained.
 
+## Individually reviewed final references
+
+The integration owner reviewed every expected/actual/diff for eight exported example PNGs,
+six public and six internal scene canvases, and three internal full-page views. The intended
+changes follow ADR-0074/0075: wrapping File/header controls, the workspace bar, a bounded
+sidebar/source editor and larger phone controls change the available canvas and its fitted
+viewport. Geometry, incidence, colors and labels remain the reference contract; the pixel
+ratio and time/coverage limits are unchanged. The public UI has no automated verdict chips.
+
+The first 14 public/export replacements use actual bytes from CI run `43838960729`, artifact
+`14213420787`, source `86bac50eba8a824f3acf66831eaafe096e8a28f2` (documentation-only descendant
+of frozen application source `9622000381c6b253067680593090624fafdff23c`). The per-file names,
+dimensions and before/after hashes are in `docs/release-prompts/results/11-visual-references.json`.
+Six CI scene canvases match the independently reviewed local images pixel for pixel. Export
+differences between local and CI are confined to label font rendering; CI bytes remain the
+reference. Internal CI reference replacement is still pending failure evidence.
+
+Known retained-engine limitation: at phone height 664, internal verdict chips can cover the
+reflected A′ label and triangle-base labels. This is recorded visibly rather than masked by
+test changes; independent review considers it a nonblocking reactivation limitation because
+these chips are absent from the public release. No application change is made here.
+
 No production publication, merge or release was performed while implementing this decision.
