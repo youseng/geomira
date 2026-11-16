@@ -214,3 +214,75 @@ test('native undo and redo preserve the exact source around completions in both 
   await input.press('Control+Shift+z');
   await expect(input).toHaveValue('M=midpoint(');
 });
+
+// Delay frames, not typing: an old RAF selection reset must not run after the first new key.
+async function delayCompletionFrames(page: Page) {
+  await page.evaluate(() => {
+    const callbacks: FrameRequestCallback[] = [];
+    const original = window.requestAnimationFrame.bind(window);
+    Object.defineProperty(window, '__flushCompletionFrames', {
+      configurable: true,
+      value: () => {
+        window.requestAnimationFrame = original;
+        for (const callback of callbacks) callback(performance.now());
+      },
+    });
+    window.requestAnimationFrame = (callback) => {
+      callbacks.push(callback);
+      return callbacks.length;
+    };
+  });
+}
+async function flushCompletionFrames(page: Page) {
+  await page.evaluate(() => {
+    const flush = Reflect.get(window, '__flushCompletionFrames') as (() => void) | undefined;
+    if (typeof flush !== 'function') throw new Error('Missing frame fixture');
+    flush();
+  });
+}
+
+test('immediate typing after keyboard or pointer completion never receives an old caret reset', async ({
+  page,
+}) => {
+  await openApp(page, './index.html');
+  for (let repeat = 0; repeat < 2; repeat++) {
+    for (const pointer of [false, true]) {
+      const prefix = 'ω_1=(0,0)\nB=(4,0)\nM=midp\n# suffix 🟢';
+      const field = await source(page, prefix);
+      await caret(field, prefix.indexOf('midp') + 4);
+      await field.press('Control+Space');
+      await delayCompletionFrames(page);
+      if (pointer)
+        await page
+          .getByRole('option')
+          .filter({ hasText: 'midpoint' })
+          .dispatchEvent('pointerdown', { button: 0 });
+      else await field.press('Tab');
+      await page.keyboard.type('ω_1');
+      await flushCompletionFrames(page);
+      await page.keyboard.type(',B)');
+      await expect(field).toHaveValue('ω_1=(0,0)\nB=(4,0)\nM=midpoint(ω_1,B)\n# suffix 🟢');
+
+      const input = page.getByLabel('Command', { exact: true });
+      await input.fill('M=midp # suffix');
+      await caret(input, 6);
+      await input.press('ArrowLeft');
+      await input.press('ArrowRight');
+      await expect(page.getByRole('listbox', { name: 'Completions', exact: true })).toContainText(
+        'midpoint',
+      );
+      await delayCompletionFrames(page);
+      if (pointer)
+        await page
+          .getByRole('listbox', { name: 'Completions', exact: true })
+          .getByRole('option')
+          .filter({ hasText: 'midpoint' })
+          .dispatchEvent('mousedown', { button: 0 });
+      else await input.press('Tab');
+      await page.keyboard.type('ω_1');
+      await flushCompletionFrames(page);
+      await page.keyboard.type(',B)');
+      await expect(input).toHaveValue('M=midpoint(ω_1,B) # suffix');
+    }
+  }
+});

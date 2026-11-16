@@ -5,6 +5,7 @@ import type { Diagnostic } from '@geomira/lang/diagnostic';
 import { DiagnosticList } from './panels/TextPanel';
 import type { EditorStore } from './store';
 import { insertCompletion } from './native-completion';
+import { useCompletionCaret } from './completion-caret';
 
 export interface CommandBarProps {
   readonly store: EditorStore;
@@ -19,6 +20,7 @@ interface Feedback {
 /** The command bar's state: the line, its cursor, the completions and the last error. */
 function useCommandBar(store: EditorStore, inputRef: CommandBarProps['inputRef']) {
   const [text, setText] = useState('');
+  const restoreCaret = useCompletionCaret(text, inputRef);
   const [cursor, setCursor] = useState(0);
   const [active, setActive] = useState(0);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -33,12 +35,9 @@ function useCommandBar(store: EditorStore, inputRef: CommandBarProps['inputRef']
   const accept = (c: Completion) => {
     const r = acceptCompletion(text, cursor, c);
     insertCompletion(inputRef.current, r.cursor - c.insert.length, cursor, c.insert);
+    restoreCaret(r.text, r.cursor);
     setText(r.text);
     setCursor(r.cursor);
-    requestAnimationFrame(() => {
-      inputRef.current?.setSelectionRange(r.cursor, r.cursor);
-      setCursor(r.cursor);
-    });
   };
   const run = () => {
     const r = store.command(text);

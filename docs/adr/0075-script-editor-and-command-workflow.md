@@ -77,3 +77,10 @@ command because plain value assignments corrupt or bypass native undo. Before th
 Text Undo inserted old text at an invalid offset; Command Undo did nothing. The narrow lint
 exception documents this browser API limitation. Native Undo/Redo in both fields is explicitly
 covered in the supported-engine browser projects; no parser or document-history guard is bypassed.
+
+Completion caret placement is now a shared layout effect bound to the exact requested source.
+The former unconditional animation-frame callback could run after the next typed character
+and move the caret back into that character's prefix. The effect runs before paint; if newer
+source has superseded the expected value, the pending placement is discarded. Text and Command
+share this policy while retaining native insertion/undo. The regression deliberately delivers
+queued frames after immediate typing, rather than delaying user typing to conceal the race.

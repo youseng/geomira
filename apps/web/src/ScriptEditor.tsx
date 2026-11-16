@@ -81,7 +81,7 @@ function Choices({ c, field }: { c: ScriptCompletion; field: EditorProps['field'
 export function ScriptEditor(p: EditorProps) {
   const ime = useScriptComposition(p.applier, p.text);
   const text = ime.value ?? p.text;
-  const c = useScriptCompletion(p.state, p.applier, text);
+  const c = useScriptCompletion(p.state, p.applier, text, p.field);
   const input = useScriptField(c, ime, p.onLeave, p.onApply);
   const composing = ime.value !== null;
   const signature = signatureAt(text, c.cursor, p.applier.env.registry);
