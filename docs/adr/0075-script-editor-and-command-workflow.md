@@ -97,3 +97,26 @@ Explicit separator conversion uses the same native insertion transaction over th
 range. Native Undo restores the original command text in one step and Redo restores the lines.
 If the undone command-style source is invalid file syntax, the last valid figure remains intact
 under the existing draft guard. The conversion button retains its blur-preventing pointer policy.
+
+## Restore settled source presentation during dragging
+
+Final real-drag profiling exposed a bypass of ADR-0014's existing settled-panel policy:
+the shared draft followed every preview document, invalidating its parse and rerendering
+the full source editor despite `SidePanel` keeping its pre-drag state. The corrected
+300-object benchmark measured 37.51 ms application median against the unchanged 8 ms gate.
+
+`TextApplier.follow` now accepts only the host's current document and defers presentation
+while a drag is active. It immediately cancels a pending text pause without changing raw
+drafts, their original document association, transient composition or the parse cache.
+The editor document, canvas, history and persistence continue to use the live state.
+The existing End/Cancel store publication follows the final document immediately, so no
+timer or later edit is needed to release the clean source. Cancel retains clean user
+formatting when it restores the original document. A late settled-panel effect cannot
+roll the source back to an older document. Native blur still applies valid pending source
+before pointer-down, and dirty stale drafts retain the explicit Apply/Revert decision.
+
+This restores the established panel contract; it is not time-based throttling or a
+benchmark-specific rendering mode. Highlighting, diagnostics, completion, all 300 objects,
+the camera, frame count and measurement thresholds remain unchanged. Evidence and lifecycle
+regressions are recorded in the [performance evidence](../release-prompts/results/integration-drag-performance.md) and
+`apps/web/test/text-drag-presentation.test.ts`.

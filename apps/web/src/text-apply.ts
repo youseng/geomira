@@ -159,6 +159,14 @@ export class TextApplier {
   }
 
   follow(doc: Document, replacement = false): void {
+    const current = this.host.current();
+    // Settled panels (ADR-0014): the canvas/document stay live, but clean source is
+    // published once at drag end/cancel. A late effect cannot follow an older figure.
+    if (doc !== current.doc) return;
+    if (current.drag !== null) {
+      this.stop();
+      return;
+    }
     if (replacement) this.sourceMessage = null;
     else if (
       doc !== this.draft.doc &&
