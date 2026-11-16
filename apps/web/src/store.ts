@@ -1,3 +1,4 @@
+import type { RecoveryObservation } from '@geomira/editor/persistence';
 import { CLAIM_TESTING, CLAIMS_UNAVAILABLE } from './features';
 /**
  * The page's editor: one packages/editor EditorState, changed ONLY through applyEdit,
@@ -19,6 +20,8 @@ import { emptyDocument, type Document } from '@geomira/kernel/document';
 import type { Diagnostic } from '@geomira/lang/diagnostic';
 import { parse } from '@geomira/lang/parse';
 import { Autosave } from './persist';
+import { print } from '@geomira/lang/print';
+import type { RevisionStorage } from './revision-storage';
 
 export interface Notice {
   readonly tone: 'refusal' | 'info' | 'error';
@@ -47,12 +50,17 @@ function errorText(e: unknown): string {
 export class EditorStore {
   private snap: Snapshot;
   private readonly listeners = new Set<() => void>();
-  readonly autosave = new Autosave();
+  readonly autosave: Autosave;
 
   constructor(
     readonly env: EditorEnv,
     private readonly onInternal: (message: string) => void,
+    storage?: RevisionStorage,
   ) {
+    this.autosave = new Autosave({
+      registry: env.registry,
+      ...(storage === undefined ? {} : { storage }),
+    });
     this.snap = {
       state: createEditor(emptyDocument(), env),
       notice: null,
@@ -186,10 +194,19 @@ export class EditorStore {
     }
   }
 
-  open(doc: Document, origin: Origin, notice: Notice | null = null): void {
-    // The figure being left saves its last edit first (its save may still be pending).
-    this.autosave.flush();
-    this.autosave.opened(origin);
+  open(doc: Document, origin: Origin, notice: Notice | null = null, preserveCurrent = true): void {
+    // Capture committed edits even if React's debounce effect has not run yet.
+    const before = this.current();
+    if (
+      preserveCurrent &&
+      before.drag === null &&
+      (this.snap.openCount > 0 || this.autosave.wasEdited())
+    )
+      this.autosave.schedule(() => {
+        void this.autosave.save(() => print(before.doc));
+      }, 0);
+    void this.autosave.flush();
+    this.autosave.opened(origin, print(doc));
     this.beforeDrag = null;
     const state = createEditor(doc, this.env);
     this.publish({
@@ -200,20 +217,50 @@ export class EditorStore {
     });
   }
 
+  /** Capture the latest settled document before a deliberate retry or reload. */
+  retrySaving(): Promise<boolean> {
+    const state = this.current();
+    if (state.drag !== null) return Promise.resolve(false);
+    this.autosave.schedule(() => {
+      void this.autosave.save(() => print(state.doc));
+    }, 0);
+    return this.autosave.retry();
+  }
+
+  /** Await a recoverable restore; an edit during its transaction must not be replaced. */
+  async restoreRevision(
+    id?: string,
+    resolve = false,
+    observation?: RecoveryObservation,
+  ): Promise<boolean> {
+    const before = this.current().doc;
+    const text = await this.autosave.restore(print(before), id, resolve, observation);
+    if (text === undefined) return false;
+    if (this.current().doc !== before) {
+      this.setNotice({
+        tone: 'info',
+        text: 'Recovery was saved, but the figure changed while restoring. Choose the recovery version again to open it.',
+      });
+      return false;
+    }
+    this.openText(text, 'autosave', false);
+    return true;
+  }
+
   /** Asks for the view to fit the figure once it is drawn (useFitOnOpen). */
   requestFit(): void {
     this.publish({ fits: this.snap.fits + 1 });
   }
 
   /** Opens a text (parse is total: lines with errors are left out and listed). */
-  openText(text: string, origin: Origin): void {
+  openText(text: string, origin: Origin, preserveCurrent = true): void {
     const r = parse(text, this.env.registry);
     const errors = r.diagnostics.filter((d) => d.severity === 'error');
     const notice: Notice | null =
       errors.length === 0
         ? null
         : { tone: 'error', text: 'Some lines had errors and were left out.', diagnostics: errors };
-    this.open(r.doc, origin, notice);
+    this.open(r.doc, origin, notice, preserveCurrent);
   }
 }
 

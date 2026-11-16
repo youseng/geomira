@@ -1,4 +1,8 @@
 /**
+ * Shared origin/edit eligibility and legacy two-slot helpers. The web host now uses the
+ * transactional revision policy in persistence.ts (ADR-0067); slot helpers remain compatible.
+ */
+/**
  * The autosave POLICY as pure functions (SPEC §12): the web app owns the storage and the
  * timers, these functions decide what to write. Two slots: `current` (the figure being
  * edited) and `previous` (the autosave that the current session replaced, offered as

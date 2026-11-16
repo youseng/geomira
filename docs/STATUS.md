@@ -1,5 +1,173 @@
 # STATUS
 
+## Release prompt 02: transactional persistence and recovery (ADR-0067): NOT ACCEPTED, verification and maintainer review pending
+
+Base: `a81917cd862c9c9083e8fa85a6ca44c4cf01bc5b`, latest main including merged PR #38.
+Fresh clone; no existing checkout or edits were overwritten. Branch:
+`codex/persistence-and-recovery`. Decision: [ADR-0067](adr/0067-transactional-local-recovery.md).
+Integration contract: [persistence.md](persistence.md). Push and draft PR are authorized;
+merge, publication and deployment are prohibited.
+
+### Done
+
+- Native IndexedDB read/compare/write transactions preserve simultaneous stale writers
+  as protected conflicting revisions. Notifications never advance an editor's base.
+  Reversed commits, delayed/disabled notifications, resumed writers and a third tab:
+  `packages/editor/test/persistence.test.ts`, `apps/web/test/recovery-storage.test.ts`,
+  `apps/web/e2e/persistence.spec.ts`.
+- Persistent accessible save state acknowledges only transaction completion. Quota,
+  denial, serialization and abort-after-put preserve memory and pending retries.
+  Older in-flight writes cannot acknowledge newer edits awaiting their debounce.
+  → same tests, `persistence-regressions.test.ts`, `persist-blocked.test.ts`.
+- Inspectable recovery and atomic restore preserve replaced content. Retain protected
+  conflicts and each document's latest copy; refuse excess capacity instead of silent
+  eviction. Explicit conflict resolution remains available at the retention boundary.
+  → pure policy tests, `recovery-integrity.test.ts`.
+- Validate/migrate both legacy slots together; keep originals until commit and retain
+  raw malformed text for download. Canonical text preserves geometry, styles, layers,
+  views, viewport, metadata, claims and assumptions. Public testing stays disabled.
+  → recovery storage/integrity tests and browser migration/keyboard/backup flow.
+- Preserve browsing of unedited examples and links, pending work across document changes,
+  lifecycle flushing and PWA update failure handling. Expose reusable `downloadGeo` and
+  async persistence interface for prompt 03; no full file manager or sharing changes.
+
+### Not done
+
+Implementation and local functional verification are complete. Maintainer acceptance and
+remote CI remain separate; CI results are linked from draft PR #39. No merge, publish or
+deploy is performed. The final committed-tree repeat and remote CI are also reported in PR #39; GitHub checks
+are authoritative for results produced after this documentation commit.
+
+### Known bugs
+
+The retained claim-engine sampler defect in ADR-0065 remains outside this task.
+
+### Uncertain
+
+Browser eviction/clearing and asynchronous termination can lose pending edits; only a
+completed transaction is durable. File-origin policies differ by browser. More than 128
+protected document versions can exhaust capacity; explicit document removal belongs to a
+later document manager. Already running old builds do not use the new transaction protocol.
+Phone checks are touch emulation, not a physical device or a real screen-reader session.
+
+### Changed frozen tests
+
+Under ADR-0067, five files migrate synchronous slot assertions to completed transactional
+revision assertions, retaining notification/unsubscribe, browsing, restore-back, pending
+flush/switch and denied-storage behavior:
+
+- `apps/web/test/autosave-notify.test.ts`: await completion; assert notifications and
+  unsubscribe without equating notification counts to durable revisions. Invalid placeholder
+  data becomes valid commented `.geo` text; all recoverable versions are now visible.
+- `apps/web/test/autosave-flush.test.ts`: retain all four lifecycle/timer/switch regressions;
+  await completion and inspect revisions, preserving the replaced figure on restore.
+- `apps/web/test/autosave-examples.test.ts`: retain personal work through browsing and edits
+  using revision contents rather than obsolete slot writes.
+- `apps/web/test/persist-blocked.test.ts`: retain usable startup and no thrown storage error;
+  additionally require persistent Not saved status and retained pending text.
+- `apps/web/e2e/flows-persist.spec.ts`: read current canonical revision from IndexedDB instead
+  of an obsolete localStorage key; keep share/restore-back and all figure assertions.
+
+`apps/web/e2e/pwa.spec.ts` gains an add-only wait for Saved locally before its explicit offline
+reload, plus an update-abort/retry regression. Existing figure assertions remain intact. The same add-only completed-save wait is added
+to `apps/web/e2e/file-url.spec.ts` before its explicit single-file reload; its exact views,
+share and geometry assertions are unchanged.
+`packages/editor/test/exports.test.ts` gains an add-only entry for the new persistence
+subpath and its exact runtime names; all existing surface assertions remain intact.
+`apps/web/e2e/design-mobile.spec.ts-snapshots/main-phone-mobile-linux.png`: after CI
+failed at 2,618 pixels against the unchanged 0.01 limit, inspected all three CI artifacts
+and updated only the 46-pixel header for save state/Recovery using that CI rendering.
+All body pixels and all other screenshot references remain unchanged.
+No pure slot tests, mathematical tests, screenshot tolerances, coverage or count floors change.
+
+### Acceptance command output
+
+Environment: Node v24.22.1; pinned pnpm 10.28.0 through a temporary Corepack shim (global
+pnpm is 11.25.0 and was not used). Lockfile dependencies unchanged. Playwright 1.56.1,
+Chromium 141.0.7390.37.
+
+- `pnpm install --frozen-lockfile --store-dir /tmp/geomira-pnpm10-store`: passed.
+- Baseline `pnpm verify`: passed, 4,863 tests / 530 files, 303.87 seconds. Coverage:
+  statements 96.52%, branches 90.47%, functions 99.45%, lines 98.37%.
+- Before implementation: two unit regressions failed (lost A+B; quota acknowledged as
+  version 2 while storage still held version 1). Built-app browser regressions both failed:
+  no recovery action and no denied-storage status/backup. Policy tests initially had no module.
+- During iteration: two restore-capacity regressions failed before protecting the replaced
+  predecessor and resolving conflicts before allocation; a stale-restore regression failed
+  before keeping newly discovered conflicts. A further in-flight-save regression failed
+  before retaining newer edit dirty state. A delayed-startup browser regression then failed
+  when initialization replaced a figure typed before storage opened; startup now preserves
+  intervening edits/document switches. Two additional boundary regressions failed before
+  capturing a committed edit on an immediate document switch and rejecting invalid pending
+  recovery text whole. No assertions were weakened to resolve these.
+- Targeted policy/storage/integrity/legacy/lifecycle regressions: 41 passed in 7 files before
+  the final boundary/missing-slot additions. Subsequent policy/storage run: 28 passed.
+- Web projects: 299 passed before final additions.
+- Focused built-app persistence plus old share/restore flows: 17 passed (36.0 seconds).
+- Final focused persistence, repeated three times across desktop, phone emulation and
+  file-chromium: 63 passed (2.1 minutes), with actual native aborted transactions and
+  downloaded `.geo` contents checked against canonical stored text.
+- `pnpm build` and `pnpm --filter @geomira/web build:claims`: passed (Vite chunk advisory).
+- Typecheck, lint and dependency rules passed during iteration. Frozen-test guard requires
+  the implementation commit to cite ADR-0067; it correctly rejects uncommitted modifications.
+- Initial broader browser run: 21 passed / 4 failed. It exposed the in-flight-save state
+  bug and recovery overlapping the phone drawer tabs; both have regression fixes. The PWA
+  offline flow needed the explicit completed-save boundary described above. Final runs follow.
+- First complete implementation verification: 4,896 passed / 1 failed in 534 files. The
+  failure was the strict editor subpath inventory missing the newly exported persistence
+  module. Added its exact surface to the inventory without modifying existing assertions;
+  the completed suite is rerun below.
+- The new migration browser flow initially asserted public worker/Claims absence in an
+  explicitly enabled internal build. It now checks both build contracts: unchanged absence
+  assertions publicly, and a working worker/Claims tab internally (ADR-0065).
+- Complete implementation `pnpm verify`: passed, 4,899 tests / 534 files, 335.58 seconds;
+  statements 96.53% (19010/19692), branches 90.48% (15276/16882), functions 99.45%
+  (4209/4232), lines 98.37% (15629/15887). All existing gates pass. Final repeated run below
+  checks the committed tree after documentation and the browser-test additions; subsequent
+  results are reported in PR #39 without claiming that pending checks have passed.
+- Full public built-app browser suite (desktop, mobile, file-chromium, pages, pwa):
+  125 passed in 2.6 minutes, including all six unchanged canvas comparisons and drag limits.
+- Full internal browser suite (desktop, mobile, file-chromium): 149 passed / 4 failed in
+  2.8 minutes. The single-file reload needed the completed-save boundary above; its corrected
+  exact views/share/geometry check and internal migration checks now pass (3 targeted passes,
+  8.5 seconds). Three full-page comparisons also fail on a freshly built main at a81917c;
+  comparing fresh main actuals to branch actuals finds 0 changed body pixels, with only the
+  new header differing (2,982 pixels per desktop view; 4,190 phone pixels). Inspected expected,
+  actual and diff images. Playwright reports only 261 additional desktop and 352 additional
+  phone mismatch pixels versus the fresh main failures; the larger body/platform differences
+  are inherited. CI subsequently confirmed the phone header pushes its comparison just
+  past the existing limit. The focused CI header update above preserves the original body;
+  all tolerances remain intact. Inherited local body differences are not counted as passes.
+- Firefox 142.0.1: launch timed out after 180 seconds with libpci/X-server/framebuffer and
+  sandbox uid-map EROFS diagnostics. WebKit 26.0: missing GTK4, Graphene, WOFF2, HarfBuzz ICU,
+  Hyphen, Manette and GLESv2 libraries. Neither local browser check passed; CI installs their
+  dependencies and runs both engines. The approved package helper is absent in this host.
+- CI run 43724097528 at c8ebeb5: verification and public browser checks passed, then internal
+  browser flows had 165 passes / 2 failures / 4 dependent measurements not run. The failures
+  were the phone reference above and Firefox polygon creation during startup. A controlled
+  delayed-startup tool regression reproduced the latter before fixing startup to preserve
+  intervening tool/tool-state changes as well as document edits.
+- Final concurrency review: a failing host regression exposed resolution clearing an unseen
+  target-document writer while another figure was open. Recovery list entries now carry
+  observed head/conflict IDs. Tests preserve unseen writers even after a refresh, at the
+  capacity boundary and behind a native browser restore barrier. The original native
+  barrier/tool regressions both failed on the preceding built artifact. The completed
+  persistence browser run then passed all 30 cases across desktop, touch emulation and
+  single-file Chromium. The targeted pure/host suite passed 52 tests in 8 files, including
+  stale-editor resolution at capacity and retry after another writer committed.
+- A denied-startup producer regression failed before moving serialization ahead of storage
+  access, so a failed figure remains inspectable/downloadable after another figure opens.
+- Shared-browser creation failed with “could not read requirements”; automatic review rejected
+  a full shared-desktop screenshot because it could expose unrelated browser content.
+  Isolated Playwright screenshots of only the local app were inspected instead, including
+  the corrected phone save notice, accessible header and unobstructed drawer controls.
+
+### Requests
+
+None for the authorized implementation. Draft PR: https://github.com/youseng/geomira/pull/39.
+Remote CI and maintainer review remain required. The Pages validation workflow passed with
+its deployment and smoke jobs skipped; TeX validation passed. No deployment was performed.
+
 ## Release prompt 01: public claim testing removed (ADR-0065): NOT ACCEPTED, awaiting maintainer review and CI (2026-11-16)
 
 Base: review baseline 95a7c7e9ff6d64947cf0f0e0b3e89d45412b5128, then the documentation-only

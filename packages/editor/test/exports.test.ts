@@ -22,6 +22,7 @@ import * as claimEditMod from '../src/claim-edit';
 import * as roundingMod from '../src/rounding';
 import * as namesMod from '../src/names';
 import * as autosaveMod from '../src/autosave';
+import * as persistenceMod from '../src/persistence';
 import * as shareMod from '../src/share';
 import * as reportMod from '../src/report';
 import * as commandMod from '../src/command';
@@ -95,6 +96,17 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './autosave': {
     module: autosaveMod,
     names: ['EMPTY_SLOTS', 'afterEdit', 'openSession', 'restorePrevious', 'save', 'shouldSave'],
+  },
+  './persistence': {
+    module: persistenceMod,
+    names: [
+      'EMPTY_RECOVERY',
+      'RETENTION',
+      'commitRevision',
+      'documentHead',
+      'recoverRevision',
+      'retainRevisions',
+    ],
   },
   './share': { module: shareMod, names: ['SHARE_PREFIX', 'decodeShare', 'encodeShare'] },
   './report': { module: reportMod, names: ['debugReport'] },

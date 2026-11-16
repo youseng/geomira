@@ -166,6 +166,9 @@ test('views from the file: save and switch; the share link and a reload keep the
   await expect(await textArea(page)).toHaveValue(/^@view whole \[layers=main,aux\] /mu);
   await expect(await textArea(page)).toHaveValue(/^@view bare \[layers=main,-aux\] /mu);
   const figure = await text(page);
+  await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
+    'Saved locally',
+  );
   // A reload of the file opens the autosaved figure with its views (before another page
   // edits, which would save its own figure).
   await page.reload();
