@@ -43,3 +43,13 @@ returns a release callback for a pending automatic apply while file choices are 
 coordinates intent, validation and explicit replacement; `replaceDocument` awaits existing
 recovery and checks the figure did not change. `encodeShareChecked` is the public offer API;
 `downloadGeo` is shared with storage-error backup. New file dialogs reuse Modal.
+
+PWA updates also protect transient source and unfinished commands. **Reload to update**
+pauses if there is an unapplied/stale/invalid draft, active IME composition, an unfinished
+command, failed saving or an unresolved recovery conflict. Download the exact draft text,
+then explicitly Apply/Revert source or finish/clear the command and retry. The update checks
+again after asynchronous saving, so work entered while saving cannot be silently dropped.
+
+Save As downloads a portable copy and starts a new local editing identity. Its completion
+alone does not acknowledge the duplicate's local durability: wait for **Saved locally** to
+confirm that independent write. Storage-denied sessions can still keep the downloaded copy.

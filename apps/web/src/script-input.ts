@@ -60,9 +60,16 @@ export type ScriptCompletion = ReturnType<typeof useScriptCompletion>;
 export function useScriptComposition(applier: TextApplier, text: string) {
   const [value, setValue] = useState<string | null>(null);
   const release = useRef<(() => void) | null>(null);
-  useEffect(() => () => release.current?.(), []);
+  useEffect(
+    () => () => {
+      applier.compose(null);
+      release.current?.();
+    },
+    [applier],
+  );
   const end = (text: string) => {
     setValue(null);
+    applier.compose(null);
     applier.type(text);
     release.current?.();
     release.current = null;
@@ -72,12 +79,16 @@ export function useScriptComposition(applier: TextApplier, text: string) {
     start: () => {
       release.current?.();
       release.current = applier.hold();
+      applier.compose(text);
       setValue(text);
     },
     end,
     change: (text: string) => {
       if (value === null) applier.type(text);
-      else setValue(text);
+      else {
+        applier.compose(text);
+        setValue(text);
+      }
     },
   };
 }

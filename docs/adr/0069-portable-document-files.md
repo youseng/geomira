@@ -48,3 +48,22 @@ Portable files preserve language metadata, styles, layers, views, viewport, clai
 assumptions. Browser download APIs acknowledge only a request, not a filesystem write.
 Local recovery remains constrained by ADR-0067's browser storage limits. Invalid draft
 text is a distinct raw backup and is never silently called a valid `.geo` figure.
+
+## Final audit follow-up: safe PWA updates
+
+The final audit reproduced a reload discarding an invalid Text draft and an unfinished
+Command draft even though the last valid document saved successfully. The update action
+now refuses that transition and offers exact raw-text/command downloads plus review actions.
+It never silently applies, executes or discards transient input. The editor exposes active
+IME text to the same guard, including before compositionend. The Reload button preserves
+editing focus on mouse activation so it does not finalize composition as a side effect.
+
+The guard checks transient input and recovery conflicts before saving, then checks them
+again after the awaited operation together with document identity and active dragging.
+New work entered while IndexedDB is pending therefore blocks the reload as well. Failed
+saving keeps its existing actionable state; settled saved documents still update normally.
+Users explicitly Apply/Revert source or finish/clear a command and retry when ready.
+
+Frozen `pwa.spec.ts` retains all five previous PWA/download contracts and adds four actual
+controlled-worker transition regressions. Its unchanged serving/control helpers move to
+pwa-site.ts to keep the file within 400 lines. No assertions, budgets or screenshots weaken.

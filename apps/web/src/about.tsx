@@ -90,9 +90,16 @@ export function UpdateBanner({ onReload }: { onReload: () => void }) {
     <div className="notice notice-info update-banner" role="status" aria-label="New version">
       <div className="notice-text">
         A new version of Geomira is available (build {state.update.build}; this page runs build{' '}
-        {BUILD}). Reloading keeps your figure.
+        {BUILD}). Reload checks saving and unapplied text before updating.
       </div>
-      <button type="button" className="small-tb tb" onClick={onReload}>
+      <button
+        type="button"
+        className="small-tb tb"
+        onMouseDown={(event) => {
+          event.preventDefault();
+        }}
+        onClick={onReload}
+      >
         Reload to update
       </button>
       <button

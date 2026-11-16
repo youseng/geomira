@@ -12,13 +12,14 @@ import {
 } from 'react';
 import type { Scene, Undrawable } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
-import { AboutContext, UpdateBanner } from './about';
+import { AboutContext } from './about';
 import { Board } from './Board';
 import { useDiscoveryCanvas, ViewBanner } from './discovery-view';
 import { CommandBar } from './CommandBar';
 import { ErrorBanner, TextDialog } from './Dialogs';
 import { ExportDialog } from './ExportDialog';
 import { Header, type HeaderProps } from './Header';
+import { SafeUpdate } from './SafeUpdate';
 import { DocumentFiles } from './DocumentFiles';
 import { ShareDialog } from './ShareDialog';
 import { PersistencePanel } from './PersistencePanel';
@@ -240,11 +241,12 @@ function StageTop({ app }: { app: ReturnType<typeof useApp> }) {
           }}
         />
       )}
-      <UpdateBanner
-        onReload={() => {
-          void store.retrySaving().then((saved) => {
-            if (saved) page.about.pwa.applyUpdate(() => undefined);
-          });
+      <SafeUpdate
+        store={store}
+        pwa={page.about.pwa}
+        command={app.commandRef}
+        onReviewText={() => {
+          app.panels.showTab('Text');
         }}
       />
       {CLAIM_TESTING && <ViewBanner discovery={page.discovery} />}

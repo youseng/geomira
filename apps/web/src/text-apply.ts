@@ -52,6 +52,7 @@ export interface TextHost {
 export class TextApplier {
   private draft: TextDraft;
   private parsed: ParsedText | null = null;
+  private composition: string | null = null;
   private sourceMessage: string | null = null;
   private shownDoc: Document | null = null;
   private shownText = '';
@@ -100,6 +101,16 @@ export class TextApplier {
 
   hasErrors(): boolean {
     return this.parse().result.diagnostics.some((d) => d.severity === 'error');
+  }
+
+  /** Transient IME source is user work even before compositionend commits it to the draft. */
+  compose(text: string | null): void {
+    this.composition = text;
+  }
+
+  /** Exact uncommitted source, including an active IME transaction. */
+  unappliedText(): string | null {
+    return this.composition ?? (hasEdits(this.draft) ? this.draft.text : null);
   }
 
   /** Whether a pause is running (an apply may follow). */
