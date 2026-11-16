@@ -1,12 +1,49 @@
 # Prompt 11 final candidate validation
 
-Status: **pending real performance repair, revised-source validation and independent acceptance**.
-The complete cross-engine diagnostic at `6723eace46ec559a116d8dc83d1d05e84e35086f`
-passes all nonperformance scenarios and all 25 reviewed references, but its full-UI drag
-fixture does not perform a drag. The corrected pickup reveals a real 37.51 ms failure.
-Detailed current diagnostic counts are in `11-6723-ci-results.md`. Historical checks below
-identify their actual source rather than treating an earlier candidate as a release pass.
+Status: **pending complete final CI, exact downloaded candidate and independent acceptance**.
+Current candidate: `4040112d55d0d22792b654339fd96e06ed49b056`. The source correction
+passes genuine public/internal full-UI drag gates at 6.13/6.19 ms with exact geometry and
+history checks. The original invalid no-drag result and genuine 37.51 ms failure remain
+recorded below. The full final browser matrix and quiet verification remain pending;
+historical results are not treated as this candidate's acceptance.
 No production publication, main merge, deployment or release was performed in this phase.
+
+## Current candidate identity and isolated measurements
+
+The integration owner built all four public/internal hosted/standalone modes with the
+full 404 SHA and `/geomira/`, then checked every one of the 15 public manifest hashes.
+The independent reviewer checked those hashes and exact standalone equivalence too.
+Immutable local candidate: `/workspace/geomira-final-audit/candidate-404/public/geomira.html`,
+**1,272,357 bytes**, SHA256
+`6a495f5ff81ee17d78dd30ca685d88ec4a9753a5474297b83d805d216d060448`.
+This is the local candidate, not the eventual downloaded validated CI artifact.
+
+After every other local browser/build was closed, original performance projects ran
+sequentially with worker1 and unchanged limits on these exact built bytes. Public passed
+**3/3 in 23.7 seconds**; internal initially passed **5/6 in 70.9 seconds**. The one worker
+failure and its sole isolated repeat are preserved separately:
+
+| Original gate                   | Public result | Internal result                                  | Unchanged gate            |
+| ------------------------------- | ------------- | ------------------------------------------------ | ------------------------- |
+| Scene desktop drag/pan medians  | 4.1/2.2 ms    | 4.7/2.8 ms                                       | Each ≤8 ms                |
+| Scene phone drag/pan medians    | 4.6/2.8 ms    | 5.5/2.8 ms                                       | Each ≤8 ms                |
+| Genuine full-UI drag app median | 6.13 ms       | 6.19 ms                                          | ≤8 ms;120 measured frames |
+| Worker main-thread maximum      | Not public    | First60.5 ms failed;isolated repeat8.7 ms passed | ≤16 ms,no LongTasks       |
+| Workerless local/global maximum | Not public    | 13.9 ms,no LongTasks                             | ≤16 ms                    |
+| Workerless discovery150objects  | Not public    | 46.1 ms maximum;14/3,979 tasks over16 ms         | ≤150 ms;<1% over16 ms     |
+
+Both genuine drags pass coordinate-only P1 mutation, unchanged other source lines and
+complete one-step Undo/Redo/no older history. The first worker attempt recorded 24,485
+tasks and LongTasks `[60]`; the single isolated repeat recorded 19,020 tasks and no
+LongTasks, passing in6.8 seconds. No scheduling or GC cause is inferred from that difference.
+Every original gate has a successful final-source result, while the initial invocation is
+explicitly **8/9**, not described as9/9. Raw annotations, errors and stage counts are in
+`11-404-performance.json`. All measurement browsers and previews were closed before the
+independent reviewer's quiet full verification began.
+
+Required CI verification on404 passed **5,046 tests/553 files**; exports and all five GUI
+comparisons also passed. Complete supported browser CI and exact artifact validation remain
+required, as does the independently run quiet local verification.
 
 ## Historical c540 candidate identity and builds
 
