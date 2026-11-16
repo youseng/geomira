@@ -44,8 +44,8 @@ an empty document has little guidance. Source screenshots confirm these problems
   Existing box selection, right/middle pan, touch pan/pinch, wheel zoom and Escape remain.
 - A visible Properties action opens the existing selected object's card. Its position and
   maximum height follow the visible viewport. Keep right-click/long-press entry points.
-  Stack selection actions with notices and tool controls; reserve their measured height
-  above expanded sheets so a refusal and Properties cannot overlap one another.
+  Keep tool, selection and Zoom controls in a constant reserved strip above the drawable
+  canvas. Critical notices remain in a separate normal-flow region, as specified below.
 - A small dismissible guide offers points, a starter triangle, tool search, Move, text and
   export. Starting a triangle requires both an empty construction and a clean draft at
   click time. Other guide actions choose or focus existing controls. No existing document
@@ -124,3 +124,42 @@ Frozen fixture changes for this correction: `apps/web/e2e/helpers.ts`,
 construction, history, mapping and delayed-startup assertions remain active in all
 supported browser projects. Local Firefox still cannot launch due graphics/sandbox
 constraints; CI remains authoritative for the actual Firefox event delivery.
+
+## Integration correction: native control targets and exposed drawing space
+
+Final native-browser review found four failures that bounding-box-only checks missed:
+Recovery overlapped its header toggle, save-label reflow moved View between pointer down
+and click, selection/Zoom controls covered existing points, and an undisposed guide caught
+construction clicks. The interaction contract is now:
+
+- Reserve 72px before the drawable canvas for tool/selection/Zoom controls, independent of
+  selection state. Zoom occupies the right side; Properties remains visible at the start
+  of the horizontally scrollable selection row. Neither a card opening/closing nor a
+  selection changes the canvas rectangle. The box-selection outline adds the same canvas
+  offset; physical-to-logical projection and raster scaling stay unchanged.
+- Keep long notices, PWA update/refusal copy and their native backup/review actions fully
+  in normal page flow. They never enter the bounded tool-controls strip. Recovery uses a
+  dedicated DOM outlet in that flow region, retaining its native header disclosure, focus,
+  version inspection/restore/resolve and backup behavior. This is not a modal or a new
+  persistence state machine. Its revision list can scroll within a viewport-bounded region.
+- Phone panels use page flow at every height. Compact/expanded choices retain useful source
+  space, while the stage reserves at least 120 actually exposed drawable pixels. Source has
+  at least 120 visible pixels. A page-scroll hint and panel header controls make the figure,
+  tools and command bar reachable. Desktop short windows also preserve the drawing minimum.
+- Header and message grid tracks use their full intrinsic height; flex wrapping cannot paint
+  a second header row over the workspace bar. Header menus anchor below the measured live
+  header/workspace ceiling, update after scrolling and stay bounded by the visible viewport.
+  Clicking the same More/View invoker closes it without executing an obscured menu entry.
+- Reserve the longest save-label width invisibly so a rename's outside-pointerdown commit
+  cannot move a later header click target between Saving and Saved locally.
+- Every explicit palette, search, shortcut or Pan choice dismisses the first-use guide.
+  Successful command-bar edits also dismiss it, including `tool point` and `tool polygon`,
+  without re-parsing commands in the UI or connecting pure editor packages to preferences.
+  Fresh initialization still shows the guide; existing geometry/raw-draft safeguards remain.
+
+Additive regressions in `interaction-layout.spec.ts` and `recovery-layout.spec.ts` exercise
+native clicks/keys, unchanged pointer-target geometry, delivered-pointer selection outlines,
+actual `elementFromPoint` exposure, source visibility and recovery/blocked-storage controls.
+The exposure matrix includes 320/390/760×664, 390×420 and 820×390. No existing mathematical
+assertion, tolerance, screenshot reference or test-count floor is weakened by this correction.
+Final visual references are reviewed separately by the release-artifact owner.

@@ -1,10 +1,11 @@
 import { assertNever } from '@geomira/num/assert';
 import { useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { downloadGeo, downloadText } from './backup';
 import type { RecoveryEntry, SaveStatus } from './persist';
 import type { EditorStore } from './store';
 
-type PanelProps = { store: EditorStore; onRestore: () => void };
+type PanelProps = { store: EditorStore; onRestore: () => void; outlet?: HTMLElement | null };
 function statusText(phase: SaveStatus['phase']): string {
   switch (phase) {
     case 'saving':
@@ -155,7 +156,12 @@ function RecoveryPanel({
   open,
 }: PanelProps & { status: SaveStatus; open: boolean }) {
   return (
-    <section id="recovery-versions" role="region" aria-label="Recovery versions">
+    <section
+      className="recovery-panel"
+      id="recovery-versions"
+      role="region"
+      aria-label="Recovery versions"
+    >
       <BackupActions store={store} status={status} />
       {open && (
         <>
@@ -203,7 +209,12 @@ export function PersistencePanel(props: PanelProps) {
       >
         Recovery
       </button>
-      {show && <RecoveryPanel {...props} status={status} open={open} />}
+      {show &&
+        (props.outlet === undefined || props.outlet === null ? (
+          <RecoveryPanel {...props} status={status} open={open} />
+        ) : (
+          createPortal(<RecoveryPanel {...props} status={status} open={open} />, props.outlet)
+        ))}
     </div>
   );
 }

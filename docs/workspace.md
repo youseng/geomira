@@ -15,13 +15,12 @@ Drag its left edge or focus the **Resize panels** separator and use arrow keys, 
 The width is constrained to preserve drawing space. Collapse and resize preserve text drafts
 and do not add geometry undo entries.
 
-On phones, a tab opens a compact panel. **Expand panel** and **Compact panel** switch how
-much of the figure remains visible. At short heights, **Tools** reveals the complete palette;
-search remains available. Panels follow the visible viewport's height and keep their contents
-scrollable. Very short phone/landscape windows put an expanded-height editor panel in page
-flow: scroll between the drawing, source and controls instead of editing a single clipped line.
-**Editor help** expands shortcut/formatting details; errors remain visible and selectable.
-Native keyboard behavior depends on the actual browser/device.
+On phones, a tab opens a panel in the scrollable page. **Expand panel** and **Compact
+panel** change its editing space. The figure stays above it; scroll down to tools and the
+command bar, or use **Hide panels** to return to drawing. At short heights, **Tools** reveals
+the complete palette. Source and exposed drawing space each retain at least 120 pixels;
+**Editor help** expands shortcut/formatting details. Native keyboard behavior depends on
+the actual browser/device.
 
 **Pan** drags the view, including over points; switch it off to resume construction and Move.
 The existing gestures remain: left-drag empty canvas in Move to box-select, right/middle-drag
@@ -38,3 +37,9 @@ Panel layout, recent tools and guide dismissal are best-effort preferences in th
 They are separate from saved constructions, downloads and geometry history. If preference
 storage is unavailable, the controls still work during the session. Use File actions and
 the persistent local save/recovery state for document protection.
+
+Tool, selection and Zoom controls occupy a reserved row above the drawing: selecting a
+point cannot put a button over it. Long warnings and update/recovery actions appear in a
+separate page section with their full messages. Header menus open below the wrapped header
+and workspace bar; use the same menu button to close them. Explicit tool choices and
+successful command-bar actions dismiss the first-use guide.

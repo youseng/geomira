@@ -8,26 +8,29 @@ function usePanelCeiling(ref: RefObject<HTMLElement | null>) {
     const bar = ref.current;
     const app = bar?.closest<HTMLElement>('.app');
     if (bar === null || app === null || app === undefined) return;
+    const header = app.querySelector('.topbar');
     const measure = () => {
-      app.style.setProperty(
-        '--panel-ceiling',
-        `${String(Math.max(0, bar.getBoundingClientRect().bottom + 4))}px`,
-      );
-      const controls = app.querySelector('.stage-top');
-      app.style.setProperty(
-        '--stage-controls-height',
-        `${String((controls?.getBoundingClientRect().height ?? 0) + 12)}px`,
-      );
+      const height =
+        bar.getBoundingClientRect().height + (header?.getBoundingClientRect().height ?? 0);
+      app.style.setProperty('--top-controls-height', `${String(height)}px`);
+      const bottom =
+        Math.max(
+          0,
+          bar.getBoundingClientRect().bottom,
+          header?.getBoundingClientRect().bottom ?? 0,
+        ) + 4;
+      app.style.setProperty('--panel-ceiling', `${String(bottom)}px`);
     };
     const observer = new ResizeObserver(measure);
     observer.observe(bar);
-    const header = app.querySelector('.topbar');
     if (header !== null) observer.observe(header);
-    const controls = app.querySelector('.stage-top');
-    if (controls !== null) observer.observe(controls);
     measure();
+    app.addEventListener('scroll', measure, { passive: true });
+    window.addEventListener('scroll', measure, { passive: true });
     return () => {
       observer.disconnect();
+      app.removeEventListener('scroll', measure);
+      window.removeEventListener('scroll', measure);
     };
   }, [ref]);
 }
@@ -76,6 +79,7 @@ export function WorkspaceBar({
         title="Pan by dragging, including over objects. Drawing and scrolling preferences are unchanged."
         onClick={() => {
           workspace.setPan(!workspace.pan);
+          workspace.dismissGuide();
           if (workspace.view.width <= 760) hidePanels();
         }}
       >

@@ -1,9 +1,10 @@
 /* ADR-0074: workspace preferences and responsive controls do not enter figure history. */
 .app {
   grid-template-columns: 104px minmax(300px, 1fr) var(--sidebar-width, 320px);
-  grid-template-rows: auto 48px minmax(0, 1fr) 44px;
-  grid-template-areas: 'top top top' 'work work work' 'pal stage side' 'pal cmd side';
+  grid-template-rows: max-content 48px max-content minmax(230px, 1fr) 44px;
+  grid-template-areas: 'top top top' 'work work work' 'alerts alerts alerts' 'pal stage side' 'pal cmd side';
   height: var(--workspace-height, 100dvh);
+  overflow: auto;
 }
 .topbar {
   flex-wrap: wrap;
@@ -20,7 +21,14 @@
   max-width: min(260px, 30vw);
 }
 .topbar .menu {
-  max-height: min(60dvh, 400px);
+  position: fixed;
+  top: var(--panel-ceiling, 96px);
+  right: 6px;
+  max-height: min(
+    400px,
+    max(0px, calc(var(--workspace-height, 100dvh) - var(--panel-ceiling, 96px) - 8px))
+  );
+  overscroll-behavior: contain;
   overflow: auto;
   max-width: calc(100vw - 12px);
 }
@@ -149,10 +157,18 @@
 .panel-resizer:focus {
   background: var(--accent-soft);
 }
+.panel-scroll-hint {
+  display: none;
+}
 .sheet-compact {
   display: none;
 }
 .getting-started {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  right: 10px;
+  z-index: 10;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -183,6 +199,47 @@
 }
 .stage {
   --status-h: 38px;
+  --controls-h: 72px;
+  --zoom-space: 116px;
+}
+.stage::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--controls-h);
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  pointer-events: none;
+}
+.stage > .selbox {
+  margin-top: var(--controls-h);
+}
+.board {
+  top: var(--controls-h);
+  height: calc(100% - var(--status-h) - var(--controls-h));
+}
+.zoomctl {
+  top: 8px;
+  bottom: auto;
+  height: 56px;
+  align-items: center;
+  flex-direction: row;
+}
+.stage-top {
+  right: var(--zoom-space);
+  height: calc(var(--controls-h) - 16px);
+  overflow: auto;
+  pointer-events: auto;
+}
+.stage-top > * {
+  flex-shrink: 0;
+}
+.stage-top .tool-hint {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+.stage-top .tool-hint > * {
+  flex-shrink: 0;
 }
 .statusbar {
   white-space: normal;
@@ -195,22 +252,45 @@
   position: static;
   transform: none;
   max-width: 100%;
+  width: max-content;
+  overflow-x: auto;
 }
-.persistence section {
-  left: 8px;
-  width: min(480px, calc(100vw - 16px));
+.stage-top > .selbar > * {
+  flex-shrink: 0;
+}
+.stage-top .selbar-what {
+  max-width: min(30vw, 140px);
+}
+.workspace-notices {
+  grid-area: alerts;
+  display: none;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.workspace-notices:has(.notice, .error-banner, .recovery-panel, .view-banner) {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+}
+.recovery-outlet:empty {
+  display: none;
+}
+.workspace-notices .notice-text {
+  min-width: 0;
+}
+.text-panel > .script-editor {
+  min-height: 120px;
+  flex-shrink: 0;
 }
 @media (max-width: 1100px) {
   .topbar .tb {
     min-width: 36px;
   }
-  .topbar .menu {
-    position: fixed;
-    top: 50px;
-    right: 6px;
-  }
   .topbar .menu .menu {
     position: static;
+    max-height: none;
+    overflow: visible;
     box-shadow: none;
     min-width: 0;
   }
