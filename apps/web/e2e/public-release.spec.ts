@@ -1,3 +1,4 @@
+import { recipientUrl } from './share-recipient';
 import { readFileSync } from 'node:fs';
 import { pngFigureText } from '@geomira/export/png';
 import { expect, test, type Page } from '@playwright/test';
@@ -171,7 +172,7 @@ test('release: claim-bearing shares and exports preserve data; Randomize, measur
     .getByRole('textbox')
     .inputValue();
   const other = await context.newPage();
-  const otherErrors = await prepare(other, link);
+  const otherErrors = await prepare(other, recipientUrl(link));
   await expect(await textArea(other)).toHaveValue(before);
   await idle(other);
   await idle(page);

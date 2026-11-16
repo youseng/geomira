@@ -447,7 +447,14 @@ History is bounded to ten ordinary revisions per document, 128 revisions and 8 M
 sole document copies, unresolved conflicts and restore predecessors are protected. Capacity
 failure refuses a save instead of evicting protected data. Legacy current/previous slots
 migrate together after whole-document validation, retaining originals until commit.
-See `docs/persistence.md` for the integration interface and lifecycle/platform limits. Share link `#s=` + lz-string(text). Debug report: text, app version, last 50
+See `docs/persistence.md` for the integration interface and lifecycle/platform limits. Portable documents (ADR-0069):
+File offers named New/Open/Save/Save As with canonical `.geo` input/download fallback.
+Complete file validation precedes replacement; unapplied drafts and failed recovery require
+explicit user choices. Duplicate documents have separate recovery identities. Downloads
+acknowledge a request independently of local save state. Checked share offers respect both
+existing decoder limits; offline senders link to the configured canonical HTTPS application.
+See `docs/document-files.md` for limits, draft behavior and privacy.
+ Share link `#s=` + lz-string(text). Debug report: text, app version, last 50
 edits, user agent.
 
 ## 13. Scene and rendering (packages/scene)

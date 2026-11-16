@@ -19,6 +19,8 @@ import { CommandBar } from './CommandBar';
 import { ErrorBanner, TextDialog } from './Dialogs';
 import { ExportDialog } from './ExportDialog';
 import { Header } from './Header';
+import { DocumentFiles } from './DocumentFiles';
+import { ShareDialog } from './ShareDialog';
 import { PersistencePanel } from './PersistencePanel';
 import { useAutosave, useFitOnOpen, useInternalErrors, useShortcuts, useStartup } from './hooks';
 import { reportOf, useFit, useHeader, useKeyActions, usePage, type Dialog } from './page';
@@ -71,13 +73,16 @@ function DialogView(p: {
         onError={p.onError}
       />
     );
-  const share = dialog.kind === 'share';
+  if (dialog.kind === 'share')
+    return (
+      <ShareDialog text={dialog.text} problem={dialog.problem} store={p.store} onClose={onClose} />
+    );
   return (
     <TextDialog
-      title={share ? 'Share link' : 'Debug report'}
+      title="Debug report"
       text={dialog.text}
-      copyLabel={share ? 'Copy link' : 'Copy debug report'}
-      multiline={!share}
+      copyLabel="Copy debug report"
+      multiline
       onClose={onClose}
     />
   );
@@ -281,6 +286,7 @@ function PageHeader({ app }: { app: ReturnType<typeof useApp> }) {
   return (
     <Header
       {...app.header.props}
+      documents={<DocumentFiles store={app.page.store} />}
       persistence={
         <PersistencePanel
           store={app.page.store}

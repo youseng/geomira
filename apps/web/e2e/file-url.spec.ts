@@ -1,3 +1,4 @@
+import { recipientUrl } from './share-recipient';
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import {
@@ -143,7 +144,7 @@ test('a share link from the file opens the same figure', async ({ page, context 
   expect(link.startsWith(`${self}#s=`)).toBe(true);
   expect(link).toMatch(/#s=[A-Za-z0-9+\-$]+$/u);
   const other = await context.newPage();
-  const errors = await openApp(other, link);
+  const errors = await openApp(other, recipientUrl(link));
   await expect(await textArea(other)).toHaveValue(figure);
   expect(errors).toEqual([]);
 });
@@ -181,7 +182,7 @@ test('views from the file: save and switch; the share link and a reload keep the
     .getByRole('textbox')
     .inputValue();
   const other = await context.newPage();
-  const otherErrors = await openApp(other, link);
+  const otherErrors = await openApp(other, recipientUrl(link));
   await expect(await textArea(other)).toHaveValue(figure);
   await tab(other, 'Layers');
   await other.getByRole('button', { name: 'Show view bare', exact: true }).click();

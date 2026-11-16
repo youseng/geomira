@@ -9,6 +9,9 @@ export it for an AoPS post or a handout.
 
 ## Features
 
+- **Portable documents.** File offers named New/Open/Save/Save As using `.geo` files.
+  [Document and sharing guide](docs/document-files.md) explains drafts, local recovery and link limits.
+
 - **The text is the figure.** Every figure is a short text (`M_a = midpoint(B, C)`), edited in the Text panel or one line at a time in
   the command line; a share link holds the whole text and opens the same figure again.
 - **Tools in groups** (points, lines, circles, triangle centres, transformations, marks,

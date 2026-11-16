@@ -43,13 +43,22 @@ export interface TextDialogProps {
   readonly copyLabel: string;
   readonly onClose: () => void;
   readonly multiline: boolean;
+  readonly description?: string;
 }
 
 /** A dialog showing a text to copy (share link, debug report). */
-export function TextDialog({ title, text, copyLabel, onClose, multiline }: TextDialogProps) {
+export function TextDialog({
+  title,
+  text,
+  copyLabel,
+  onClose,
+  multiline,
+  description,
+}: TextDialogProps) {
   return (
     <Modal title={title} onClose={onClose}>
       <h2>{title}</h2>
+      {description !== undefined && <p>{description}</p>}
       {multiline ? (
         <textarea readOnly value={text} aria-label={`${title} content`} rows={12} />
       ) : (

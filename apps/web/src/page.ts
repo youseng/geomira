@@ -1,3 +1,4 @@
+import { applyValidDraft } from './file-actions';
 import { CLAIM_TESTING, CLAIMS_UNAVAILABLE } from './features';
 /**
  * The page's state and actions (host code over packages/editor): the long-lived objects
@@ -15,7 +16,7 @@ import { cycleView } from '@geomira/editor/views';
 import type { ExportFormat } from '@geomira/export/formats';
 import type { KeyAction } from '@geomira/editor/keymap';
 import { debugReport } from '@geomira/editor/report';
-import { encodeShare } from '@geomira/editor/share';
+import { encodeShareChecked } from '@geomira/editor/share';
 import { VERSION } from '@geomira/kernel';
 import { createRegistry } from '@geomira/kernel/registry';
 import { print } from '@geomira/lang/print';
@@ -43,7 +44,8 @@ const BENCH_FRAMES = 120;
 const WARM_MS = 300;
 
 export type Dialog =
-  | { readonly kind: 'share' | 'report'; readonly text: string }
+  | { readonly kind: 'share'; readonly text: string; readonly problem?: string }
+  | { readonly kind: 'report'; readonly text: string }
   | { readonly kind: 'export'; readonly format: ExportFormat }
   | null;
 
@@ -278,8 +280,17 @@ function actions(env: HeaderEnv) {
     onUndo: () => store.apply({ kind: 'undo' }),
     onRedo: () => store.apply({ kind: 'redo' }),
     onShare: () => {
-      const url = shareUrl(location.href, encodeShare(store.current().doc));
-      env.setDialog({ kind: 'share', text: url });
+      try {
+        applyValidDraft(store);
+        const offer = encodeShareChecked(store.current().doc);
+        env.setDialog(
+          offer.ok
+            ? { kind: 'share', text: shareUrl(location.href, offer.fragment) }
+            : { kind: 'share', text: '', problem: offer.reason },
+        );
+      } catch (e) {
+        env.setDialog({ kind: 'share', text: '', problem: String(e) });
+      }
     },
     onReport: () => {
       env.setDialog({ kind: 'report', text: reportOf(store) });

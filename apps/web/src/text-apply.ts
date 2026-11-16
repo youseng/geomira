@@ -134,6 +134,19 @@ export class TextApplier {
     this.set(follow(this.draft, doc, () => this.shown(doc)));
   }
 
+  /** A file picker/modal must not apply a draft behind a Cancel choice. */
+  hold(): () => void {
+    const pending = this.pending();
+    this.stop();
+    return () => {
+      if (!pending || this.cancel !== null) return;
+      this.cancel = this.schedule(() => {
+        this.cancel = null;
+        this.run(atPause(this.draft, this.facts(), this.now(), TEXT_MERGE_MS));
+      }, TEXT_APPLY_PAUSE_MS);
+    };
+  }
+
   private stop(): void {
     this.cancel?.();
     this.cancel = null;
