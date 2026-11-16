@@ -49,7 +49,10 @@ function useClaimBox(host: ClaimBoxHost) {
   const submit = () => {
     const f = host.test(text);
     setFeedback(f);
-    if (f === null) edit('', 0);
+    if (f === null) {
+      edit('', 0);
+      setFocused(false);
+    }
   };
   const clear = () => {
     setFeedback(null);
@@ -123,7 +126,10 @@ export function ClaimBox(p: {
   const b = useClaimBox(p.host);
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const chosen = b.list[b.active];
-    if (e.key === 'Tab' && chosen !== undefined && b.text.trim() !== '') b.accept(chosen);
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      b.setFocused(false);
+    } else if (e.key === 'Tab' && chosen !== undefined && b.text.trim() !== '') b.accept(chosen);
     else if (e.key === 'ArrowDown') b.setActive((a) => Math.min(a + 1, b.list.length - 1));
     else if (e.key === 'ArrowUp') b.setActive((a) => Math.max(a - 1, 0));
     else return;
@@ -145,6 +151,7 @@ export function ClaimBox(p: {
         autoComplete="off"
         value={b.text}
         onChange={(e) => {
+          b.setFocused(true);
           b.edit(e.target.value, e.target.selectionStart ?? e.target.value.length);
         }}
         onSelect={(e) => {

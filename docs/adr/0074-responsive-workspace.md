@@ -195,3 +195,15 @@ it changes no pre-existing mathematical assertions, tolerances or test floor. Th
 fractional/native projection correction and its existing-fixture list are recorded above.
 Startup-recovery coverage and the independent native Point oracle belong to their linked
 integration records. Screenshot reference changes are reviewed by prompt 11 under ADR-0076.
+
+## Integration correction: retained claim suggestions
+
+The internal claim box successfully submitted a claim, cleared its text, and immediately
+reopened its empty-input forms list over the panel tabs. Native clicks could not reach Text.
+Successful submission now closes that list. Typing or refocusing opens suggestions again;
+Escape closes suggestions while retaining the exact text and consuming that dismissal key.
+The public build still excludes the claim box. An additive browser regression first failed
+on the reopened forms list, then passed with the existing claim-box, claim-tool, claim-chip
+and Geomdraw functional flows. The claim-tool fixture now asserts the full exact current-tool
+status, including the deliberately added picked names, instead of expecting its old suffix.
+This changes `apps/web/e2e/flows-claimtool.spec.ts`; no claim semantics or numeric laws change.

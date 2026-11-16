@@ -41,9 +41,11 @@ test('the Claim tool: concurrent cevians by their points, then Finish', async ({
   const status = page.locator('.statusbar [role="status"]');
   await expect(status).toHaveText('Claim: concurrent: line (or two points)');
   await pick(page, 'A');
-  await expect(status).toHaveText('Claim: concurrent: the second point of the line');
+  await expect(status).toHaveText('Claim: concurrent: the second point of the line · Picked: A');
   await pick(page, 'P', 'B', 'Q', 'C', 'R');
-  await expect(status).toHaveText('Claim: concurrent: line (or two points), or Finish');
+  await expect(status).toHaveText(
+    'Claim: concurrent: line (or two points), or Finish · Picked: A, P, B, Q, C, R',
+  );
   await page.getByRole('button', { name: 'Finish', exact: true }).click();
   await tab(page, 'Claims');
   const item = claimItem(page, 'concurrent');
@@ -89,4 +91,28 @@ test('the claim box: its forms, completions, and what it could not read', async 
   await box.press('Enter');
   await expect(box).toHaveValue('');
   await expect(claimItem(page, 'concurrent').locator('.badge')).toHaveText('true in this figure');
+});
+
+// ADR-0074 integration: the retained claim box must not cover navigation after submission.
+test('successful claim submission and Escape dismiss suggestions without losing input', async ({
+  page,
+}) => {
+  await openApp(page);
+  for (const line of FIGURE) await command(page, line);
+  const box = page.getByLabel('Claim to test');
+  await box.fill('collinear(A, B, C)');
+  await box.press('Enter');
+  await expect(box).toHaveValue('');
+  await expect(page.getByRole('listbox', { name: 'Forms it reads' })).toHaveCount(0);
+  await tab(page, 'Text');
+  await expectLines(page, 'claim collinear(A, B, C)');
+  await box.fill('coll');
+  await expect(page.getByRole('listbox', { name: 'Suggestions' })).toBeVisible();
+  await box.press('Escape');
+  await expect(box).toHaveValue('coll');
+  await expect(page.getByRole('listbox', { name: 'Suggestions' })).toHaveCount(0);
+  await box.press('End');
+  await box.press('i');
+  await expect(box).toHaveValue('colli');
+  await expect(page.getByRole('listbox', { name: 'Suggestions' })).toBeVisible();
 });
