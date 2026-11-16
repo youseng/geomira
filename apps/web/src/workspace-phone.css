@@ -106,9 +106,6 @@
   }
   .side.open .sheet-compact {
     display: block;
-    position: absolute;
-    top: 0;
-    right: 44px;
     height: 44px;
     border: 0;
     background: var(--panel);
@@ -123,19 +120,20 @@
     color: var(--muted);
     font-size: 11px;
   }
-  .side.open .tabs {
+  .side.open .panel-heading {
     position: sticky;
     top: 0;
     z-index: 4;
-    background: var(--panel);
-    padding-right: 132px;
     min-height: 44px;
+  }
+  .panel-heading .tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .panel-heading .tabs [role='tab'] {
     flex: none;
   }
   .side.open .drawer-close {
-    position: absolute;
-    right: 0;
-    top: 0;
     width: 44px;
     justify-content: center;
     margin: 0;
@@ -201,9 +199,6 @@
   }
   .app:has(> .side.open) .stage-top > .tool-hint {
     display: flex;
-  }
-  .sheet-compact + .tabs {
-    padding-left: 2px;
   }
   .app.short-workspace {
     grid-template-rows:

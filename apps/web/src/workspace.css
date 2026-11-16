@@ -134,6 +134,21 @@
 .tabs {
   padding-left: 12px;
 }
+.panel-heading {
+  display: flex;
+  min-width: 0;
+  flex: none;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.panel-heading .tabs {
+  flex: 1;
+  min-width: 0;
+  border-bottom: 0;
+}
+.panel-heading > button {
+  flex: none;
+}
 .drawer-close {
   display: inline-flex;
   align-items: center;

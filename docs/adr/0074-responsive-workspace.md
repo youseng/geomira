@@ -207,3 +207,25 @@ on the reopened forms list, then passed with the existing claim-box, claim-tool,
 and Geomdraw functional flows. The claim-tool fixture now asserts the full exact current-tool
 status, including the deliberately added picked names, instead of expecting its old suffix.
 This changes `apps/web/e2e/flows-claimtool.spec.ts`; no claim semantics or numeric laws change.
+
+## Supported-engine panel controls and native focus
+
+Final supported-engine CI and independent audit A13 exposed a panel-header layering defect:
+the sticky tab strip intercepted Expand/Compact's center at both 320px and 390px. The header
+now owns three separate flex cells: a horizontally scrollable tab list, the panel-size
+control and Close. The whole header is sticky. Size/Close controls cannot overlap Help or
+be covered by the tab list, and native focus/scroll makes every tab reachable at 320px.
+
+WebKit also left only 62px of source visible after native Text focus at 390×420, despite
+the app's scroll padding. On phone Text focus, the panel host now measures source, canvas
+and the visual viewport and makes the smallest feasible app scroll that exposes at least
+120px of both. It repeats after native focus scrolling settles, rounds inward for native
+CSS-pixel scroll quantization, and does not change focus, caret, draft or geometry. If the
+viewport cannot contain both minima, it leaves native focus behavior intact; users retain
+ordinary page scrolling. This does not claim physical-device keyboard verification.
+
+Additive `panel-controls.spec.ts` checks real center hit targets, native pointer/keyboard
+Expand/Compact, every public tab, Close/reopen, exact raw draft preservation and geometry
+Undo/Redo. Its focus case injects the traced partly visible native-focus placement and
+retains the 120px exposure and caret assertions. The existing cross-engine exposure matrix
+remains unchanged. No frozen assertion, tolerance or reference is weakened.

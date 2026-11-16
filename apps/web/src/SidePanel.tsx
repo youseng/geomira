@@ -17,6 +17,7 @@ import type { EditorStore } from './store';
 import type { TextApplier } from './text-apply';
 import type { DiscoveryRuns } from './discovery-runs';
 import type { TestRuns } from './test-runs';
+import { keepPanelFocusVisible } from './panel-focus';
 
 /** The tabs; styles are edited in the style card of each object (ADR-0029), not in a tab. */
 import type { Tab } from './panel-types';
@@ -125,23 +126,26 @@ export function SidePanel(props: SidePanelProps) {
     <aside
       className={`side${open ? ' open' : ''}${props.workspace?.prefs.compact === true ? ' compact' : ''}`}
       aria-label="Figure"
+      onFocusCapture={keepPanelFocusVisible}
     >
       {props.workspace !== undefined && <PanelResize workspace={props.workspace} />}
-      <PanelCompact workspace={props.workspace} />
-      <div className="tabs" role="tablist" aria-label="Panels">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            type="button"
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => {
-              onTab(t);
-            }}
-          >
-            {t}
-          </button>
-        ))}
+      <div className="panel-heading">
+        <div className="tabs" role="tablist" aria-label="Panels">
+          {TABS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              role="tab"
+              aria-selected={tab === t}
+              onClick={() => {
+                onTab(t);
+              }}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+        <PanelCompact workspace={props.workspace} />
         <button type="button" className="drawer-close" title="Hide the panels" onClick={onClose}>
           <span aria-hidden="true">{'✕'}</span>
           <span className="sr-only">Hide panels</span>
