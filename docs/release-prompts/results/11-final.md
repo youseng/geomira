@@ -1,6 +1,12 @@
 # Prompt 11 final candidate validation
 
-Status: **exact 56 browser validation blocked by four WebKit ownership-test setup failures**.
+**Historical integration record. Current accepted-candidate checkpoint:**
+[Exact e0e completion ledger](11-e0e-final.md), with complete same-source CI,
+downloaded-artifact verification and independent GO. Publication and validation of the
+documentation-only successor remain separate. Pending/rejected statements below describe
+their historical source, not the current candidate verdict.
+
+Historical status at 56: browser validation was blocked by four WebKit ownership-test setup failures.
 Validated application candidate: `4040112d55d0d22792b654339fd96e06ed49b056`. The source correction
 passes genuine public/internal full-UI drag gates at 6.13/6.19 ms with exact geometry and
 history checks. The original invalid no-drag result and genuine 37.51 ms failure remain

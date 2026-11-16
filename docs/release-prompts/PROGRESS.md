@@ -1,59 +1,68 @@
 # Integrated release work
 
 Base: `f95e0056c9e2cb73d23c6dac900acaf9e7f1a06a` (main after PR #40).
-Branch: `codex/release-integration`.
+Branch: `codex/release-integration`, PR #41.
+Accepted checkpoint: **`e0ef71fb8d695ed37fb98c65568de44119757d17`**, 2026-11-16.
 
-The maintainer authorized autonomous implementation and subagent delegation for the
-remaining prompts. Each task is developed in a separate worktree, reviewed and
-integrated here. Pushes and a draft integration PR were authorized first; the maintainer
-subsequently authorized merge commits. The release PR may merge only after the remaining
-checks and independent audit pass; main's configured deployment then validates and publishes
-its own exact merged-revision artifact. Completion below requires integration and
-task evidence, not merely a subagent's report. Final acceptance requires combined
-verification, CI and the independent audit.
+The maintainer authorized autonomous implementation, subagents, pushes, an integration PR
+and later merge commits. All numbered repair/audit prompts are complete for the accepted
+checkpoint below. Independent prompt 12 returned **GO** after complete current-source CI
+and exact downloaded-artifact review. Main merge and production deployment have not been
+performed at this checkpoint. The final documentation-only successor must pass its own
+required CI before merge; main validates and publishes its own exact merged-revision bytes.
 
-- [x] 01 Public claim testing removed — merged PR #38.
+- [x] 01 Public claim testing removed — merged PR #38; public testing remains disabled.
 - [x] 02 Transactional persistence/recovery — merged PR #39.
 - [x] 04 Modal/keyboard safety — merged PR #40.
-- [x] 03 Document files and reliable sharing — integrated and cancellation fixes re-reviewed; ADR-0069; 46 unit / 27 browser checks.
-- [x] 05 Properties and inherited visibility — integrated; ADR-0070; 48 unit / 20 browser checks.
-- [x] 06 Tool dependencies and capabilities — integrated; ADR-0071; 108 unit / 3 browser checks.
-- [x] 07 Stable geometry numerics — integrated and independently reviewed; ADR-0072; 101 independent tests.
-- [x] 08 Randomize/shared sampler — integrated; ADR-0073; 125 unit / 3 browser checks.
-- [x] 09 Responsive/discoverable interface — audit corrections integrated, including the later supported-engine panel/focus, native draft-layout and title-boundary defects. Correctness and settled-source performance corrections are integrated. Application source frozen at `a7a40e8`; final combined acceptance remains pending.
-- [x] 10 Script editor/workflow — integrated; ADR-0075; 21 new / 16 existing browser checks; 27 command tests.
-- [ ] 11 Release infrastructure/artifacts — infrastructure integrated; final candidate pending; ADR-0076.
-- [ ] 12 Independent final audit — earlier sources `9622000381c6b253067680593090624fafdff23c` and `c540412` remain rejected as release candidates. The clean `ab0c5fe` checkout passed full verification; subsequent functional corrections require a fresh combined source and artifact audit.
+- [x] 03 Document files/sharing — integrated and cancellation fixes re-reviewed; ADR-0069.
+- [x] 05 Properties/inherited visibility — integrated; ADR-0070.
+- [x] 06 Tool dependencies/capabilities — integrated; ADR-0071.
+- [x] 07 Stable geometry numerics — integrated and independently reviewed; ADR-0072.
+- [x] 08 Randomize/shared sampler — integrated without public tester reactivation; ADR-0073.
+- [x] 09 Responsive/discoverable interface — composed Recovery, focus, short-grid, menu, guide, overlay and native-coordinate corrections pass the complete supported-engine matrix; ADR-0074.
+- [x] 10 Script editor/workflow — atomic batching, source preservation, accessible assistance, IME safety and native undo integrated; ADR-0075.
+- [x] 11 Release infrastructure/artifacts — same-source gates, current public download, exact-byte provenance, all 25 reviewed references and full supported-engine validation accepted; ADR-0076; [final ledger](results/11-e0e-final.md).
+- [x] 12 Independent final audit — **GO** for exact e0e and its downloaded artifact; [independent report](results/12-final-audit.md).
 
-## Verification
+## Current acceptance evidence
 
-Fresh baseline installation: pinned pnpm 10.28.0, frozen lockfile, existing local store.
-Immutable base `pnpm verify` passed: 4,904 tests / 534 files, with all static and coverage
-gates preserved. Earlier invalidated in-place attempts are not counted as passes.
-Final acceptance remains pending complete combined verification, CI and independent audit.
-Per-task reports belong in `results/`; exact final commands and results will be recorded
-in STATUS. No prior test result is counted as a new check.
+Exact push run [43891722770](https://github.com/youseng/geomira/actions/runs/43891722770)
+passed every required verification, browser, export and candidate job:
 
-## Final performance validation
+- `pnpm verify`: **5,046 tests / 553 files**, all static and coverage gates.
+- Public **924/924** and internal **789/789** browser checks, zero skips; all three
+  supported hosted/file engines. All six additive Recovery/short-source cases ran and
+  passed in every selected project and mode: **84/84**.
+- **33/33** visual comparisons representing **25** individually reviewed references.
+- Nine early diagnostics passed; they supplement rather than replace the complete matrix.
+- Genuine CI 300-object full-UI application medians **4.99/4.13 ms** meet the unchanged
+  8 ms gate. Worker/fallback/discovery gates passed with their original limits.
+- All four builds and required exports passed. The exact downloaded artifact and all
+  15 manifest payload hashes were independently checked; the public standalone is
+  **1,273,190 bytes**, SHA256
+  `2b6ac1c2ea0b3c8f5ee360b5fd108fdf6dd3dc020087715198284867f7555a16`.
 
-The corrected full-UI benchmark genuinely drags P1 and retains the original 300 objects,
-camera, traced path, 120 measured frames and 8 ms application gate. Its isolated application
-median was **37.51 ms**, exceeding the limit. The previous **1.57 ms** trace performed
-no drag and is invalid. Profiling identified per-preview source rebuilding that bypassed
-the existing settled-panel policy. The eight-line ownership/drag guard is integrated at
-`8264356`; prototype genuine public/internal medians were 7.58/5.56 ms. Final combined
-measurements, full verification, CI and independent artifact acceptance remain required.
-No threshold, history assertion or workload reduction was made.
+The independent quiet local `pnpm verify` on application source `56fbd30` passed
+5,046 tests / 553 files in 663.24 s. Its six relevant local timing gates passed once,
+with genuine app medians 7.16/6.81 ms. The 56→e0e delta is only tests, diagnostic workflows
+and documentation; these local results are not relabelled as executions on e0e. Exact
+e0e CI and downloaded-artifact results are separate in the final ledger.
 
-## Latest combined focus and flow corrections
+## Historical results and remaining boundaries
 
-The image/docs-only `7f83802` push exposed a real short-screen Firefox Recovery disclosure
-failure: its focused invoker and panel scrolled above the viewport. The unchanged native
-path remains; a diagnostic reproduces its exact 162→364px scroll and -203px panel position.
-A bounded explicit-open visibility correction passed 36 focused Chromium checks. A separate
-short-grid defect let invalid Text diagnostics cover Command. All four native regressions
-failed before the intrinsic-track/specificity fix; all seven panel-control cases passed
-afterward, with raw data/caret/camera/backup/history and normal-height geometry preserved.
-Both fixes are integrated at `a7a40e8`; fresh combined builds, independent checks, full
-verification, supported-engine CI and exact artifact review remain required. See the
-Recovery and short-panel integration reports in `results/`.
+Immutable base verification passed 4,904 tests / 534 files. Earlier `9622000` and
+`c540412` candidates were rejected; their focused passes are not substituted for final
+acceptance. The later `7f83802` Firefox Recovery failure was repaired. At 56, all six
+new cases executed, but four WebKit ownership-test setup assumptions failed; the portable
+native-scroll setup retains the active-control, raw-data and history checks. A disposable
+guard-removal mutation independently confirmed the corrected test detects stolen scrolling.
+All 84 current executions pass. Historical reports remain linked from the final ledger.
+
+The invalid 1.57 ms no-drag result, genuine 37.51 ms failure and 404 worker 60.5 ms failure /
+single 8.7 ms repeat remain recorded. No timing limit, history assertion, workload,
+numerical/visual tolerance, test-count floor or coverage gate was weakened.
+
+Physical devices, mobile software keyboards and real screen readers were unavailable.
+The compact Text-open canvas can crowd complex labels; internal-only verdict-chip overlap
+and deferred engine work remain reactivation limits. These remain explicit in the
+independent report and final ledger. No separate tagged release was requested.

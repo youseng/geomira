@@ -1,136 +1,124 @@
 # STATUS
 
-## Integrated release repairs (prompts 03, 05–12): NOT ACCEPTED, combined validation and independent audit pending
+## Integrated release repairs (prompts 03, 05–12): ACCEPTED CANDIDATE; publication pending
 
+Accepted checkpoint: **`e0ef71fb8d695ed37fb98c65568de44119757d17`**, 2026-11-16.
 Base: `f95e0056c9e2cb73d23c6dac900acaf9e7f1a06a` (main after PR #40).
-Branch: `codex/release-integration`, draft PR #41. The maintainer authorized autonomous
-implementation, subagents and an integration draft, then authorized merge commits. The
-release PR may merge only after remaining checks and the independent audit pass. Main's
-configured deployment must validate and publish its own exact merged-revision artifact.
-Task ledger: [PROGRESS](release-prompts/PROGRESS.md). Separate worktrees prevent concurrent
-source edits; reviewed changes are integrated before combined verification.
+Branch: `codex/release-integration`, PR #41.
 
-### Latest validated checkpoint and pending successor
+The maintainer authorized autonomous implementation, subagents, an integration PR and later
+merge commits. All repair prompts and independent prompt 12 are complete for this accepted
+checkpoint. The independent review returned **GO** after full current-source validation and
+exact downloaded-artifact review. [Task ledger](release-prompts/PROGRESS.md),
+[accepted-candidate evidence](release-prompts/results/11-e0e-final.md) and
+[independent report](release-prompts/results/12-final-audit.md) record the scope and limits.
 
-Exact `4040112` passed fresh quiet local verification (**5,046 tests / 553 files**, 634.91s)
-and complete CI: **882 public + 747 internal browser checks**, zero skips; all 33 visual
-comparisons/25 references and required exports passed. Actual downloaded CI bytes were
-independently verified against all 15 checksums and the matching local standalone. Genuine
-CI drag medians were 6.57/6.81 ms below the unchanged 8 ms application gate. One local retained
-worker measurement failed at 60.5 ms, passed its sole unchanged isolated repeat at 8.7 ms,
-and passed CI at 3.1 ms; no cause is inferred and all observations remain recorded.
+### Current accepted checkpoint
 
-The unused delivered screenshot was then replaced by the reviewed public GUI image; the
-manifest does not reference it. Its asset/docs-only `7f83802` successor passed verification,
-exports and all internal checks, but public Firefox Recovery at 390×380 scrolled its focused
-control/panel offscreen. The successful separate PR merge-SHA run does not override that
-failure. A bounded explicit-open visibility fix retains the original native assertions and
-adds the exact traced precondition. A separate short-grid minimum/specificity fix prevents
-invalid diagnostics covering Command. Source/test/metric peer reviews and focused owner
-checks pass; integrated application source is frozen at `a7a40e8`. Full fresh successor CI,
-quiet verification and independent immutable-artifact acceptance remain pending.
+Exact push run [43891722770](https://github.com/youseng/geomira/actions/runs/43891722770)
+passed required verification, web, exports and candidate packaging:
 
-→ [404 evidence](release-prompts/results/11-final.md),
-[7f8 failure](release-prompts/results/11-7f8-ci-results.md),
-[Recovery correction](release-prompts/results/integration-recovery-focus.md),
-[short-grid correction](release-prompts/results/integration-short-panel-flow.md).
+- CI `pnpm verify`: **5,046 tests / 553 files**, all static gates; Vitest 436.79 s.
+  Coverage: **96.45% statements / 90.45% branches / 99.45% functions / 98.33% lines**.
+- Public **924 passed** and internal **789 passed**, **zero skipped**; Chromium
+  desktop/phone, hosted Firefox/WebKit and file Chromium/Firefox/WebKit, plus public
+  Pages/PWA. All six additive Recovery/short-source cases actually pass each selected
+  project and mode: **84/84**.
+- All **33 visual comparisons / 25 reviewed references** pass. The separate five-GUI
+  and four-WebKit-focus diagnostic also passes; it is not a substitute for the full matrix.
+- All four public/internal hosted/standalone builds and required exports pass.
+- The downloaded tested-web ZIP `14239416633` is **2,422,057 bytes**, SHA256
+  `31b965ae03da94c97c5bed230d371ff3fe8954a8fc81b67df69cb85bc3393b4e`.
+  Full source, run `43891722770`, attempt `1`, public mode, `/geomira/` and all 15 payload
+  checksums were independently checked. Every payload matches the exact local e0e build.
+- The offline HTML is **1,273,190 bytes**, SHA256
+  `2b6ac1c2ea0b3c8f5ee360b5fd108fdf6dd3dc020087715198284867f7555a16`, identical to the
+  standalone. Pages artifact `14238862856` packages those validated bytes rather than a rebuild.
+
+The quiet independent local `pnpm verify` on application source `56fbd30` passed
+5,046 tests / 553 files in 663.24 s; all six relevant local scene/full-UI timing checks
+passed once. The later e0e source changes only tests, diagnostic workflows and docs.
+Those local results retain their actual source; the complete CI result above is exact e0e.
 
 ### Done
 
-- 03: portable document actions, checked sharing and HTTPS offline links; shared draft,
-  explicit commit phase, cancelled-read protection and unapplied-draft status. Independent
-  review reproduced two cancellation defects; both were fixed and re-reviewed.
-  → [03 evidence](release-prompts/results/03.md), ADR-0069.
-- 05: outside-close rename, synchronized property fields after undo/redo, effective inherited
-  visibility shared with the scene. → [05](release-prompts/results/05.md), ADR-0070.
-- 06: construction-aware tangent/intersection reuse, semantic selection-first consumption,
-  complete supported transformation inputs and immediate finish-refusal feedback.
-  → [06](release-prompts/results/06.md), ADR-0071.
-- 07: origin-relative area and stable local conic charts across consumers. Independent
-  source/probe review found no actionable introduced bug and ran 101 targeted tests.
+- 01/02/04: public tester removal, transactional recovery and modal safety were merged in
+  PRs #38–40 and preserved by the combined candidate.
+- 03: document actions, checked sharing, HTTPS offline links, shared/raw draft protection,
+  cancelled-read handling and explicit durability phase. → [03](release-prompts/results/03.md), ADR-0069.
+- 05: outside-close rename, synchronized undo fields and effective inherited visibility.
+  → [05](release-prompts/results/05.md), ADR-0070.
+- 06: construction-aware reuse, semantic selection-first consumption, complete supported
+  transformation inputs and immediate finish refusals. → [06](release-prompts/results/06.md), ADR-0071.
+- 07: stable origin-relative area, conic charts and physical-length degeneracy decisions.
   → [07](release-prompts/results/07.md), ADR-0072.
-- 08: exact common radius scaling, domain refusals and structured invalid outcomes; no
-  public testing reactivation. → [08](release-prompts/results/08.md), ADR-0073.
-- 09: wrapping headers, registry search with visible keyboard choices, roving palette,
-  Pan, Properties, safe guide and bounded panel preferences. Composed screenshot review
-  exposed an unusably small phone editor; compact guidance and a scrollable short-screen
-  panel now reserve at least 120 visible pixels of source. → [09](release-prompts/results/09.md), ADR-0074.
-- 10: atomic singleton batching, source-preserving blur, accessible script assistance,
-  IME suspension and native completion undo. Ordinary batches parse once; repeated
-  singleton overwrites validate their earlier prefix before it can disappear.
+- 08: exact common radius scaling, safe domains and structured invalid outcomes; public
+  testing stays disabled. → [08](release-prompts/results/08.md), ADR-0073.
+- 09: discoverable tools and responsive controls, with composed Recovery, focus, short-grid,
+  menu, guide, selection/zoom, header/title and native-coordinate corrections accepted in all
+  supported engines. → [09](release-prompts/results/09.md), ADR-0074.
+- 10: atomic singleton batches, source-preserving blur, diagnostic navigation, script
+  assistance, IME suspension and native completion/conversion undo.
   → [10](release-prompts/results/10.md), ADR-0075.
-- 11 infrastructure: same-revision verify/browser/export graph, exact artifact packaging,
-  public offline path and provenance. Independent review found PWA app-shell interception
-  of the download; a scoped route correction now has a controlled-browser byte/hash test.
-  → [11 infrastructure](release-prompts/results/11-infrastructure.md),
-  [11 download](release-prompts/results/11-download.md), ADR-0076.
+- 11: same-revision gates, exact artifact packaging, current public offline path, controlled
+  visual inputs and reviewed references. The stale unused shipped screenshot is now the
+  exact reviewed public GUI image; the manifest has no screenshots field.
+  → [11](release-prompts/results/11-e0e-final.md), ADR-0076.
+- 12: independent **GO** for exact e0e source, complete gates and immutable downloaded bytes.
+  → [12](release-prompts/results/12-final-audit.md).
 
 ### Not done
 
-- All four local builds passed at `c540412`; final-head browser/visual/export validation,
-  fresh combined verification and independent acceptance remain pending.
-- Both `9622000` and `c540412` are rejected as release candidates. Full supported-engine CI
-  and independent review found further functional defects after the initial focused checks.
-  Source corrections and reviewed native-fixture migrations are integrated. The revised
-  correctness candidate `0cace13` was extended with the settled-source performance fix
-  below. Application source is frozen at `a7a40e8`; final acceptance remains pending.
-- Main merge and its configured deployment are authorized only after those gates pass.
-  Neither has been performed. No separate tagged release was requested.
+Main merge, production deployment, deployed smoke and any separate tagged release have not
+been performed at this evidence checkpoint. The documentation-only successor must first
+pass its own required CI; the authorized main merge then triggers validation and publication
+of its own exact merged-revision artifact. No future SHA's success is presumed here.
 
-### Known bugs
+### Known bugs and resolved historical findings
 
-Retained-engine-only discovery freshness and expensive live evaluation remain explicit
-[reactivation gates](claims-reactivation.md). The public tester remains disabled. An additional
-existing large-scale ellipse regression was found in combined CI and corrected with a
-physical-length chord decision; all 425 required degeneracy/baseline/inventory checks and
-43 close regressions then passed. Further integration findings remain subject to final checks.
+No identified release-blocking defect remains in the accepted review scope. Public claim
+testing remains disabled; retained-engine discovery freshness, expensive live evaluation
+and phone verdict-chip label overlap remain [reactivation gates](claims-reactivation.md).
 
-The first independent audit and complete browser run found additional blockers: PWA update
-lost unfinished Text/Command drafts; phone recovery/warning panels covered controls; guide,
-selection and zoom overlays intercepted construction; save-status resizing lost a click;
-fractional canvas coordinates and startup adoption needed correction. These findings were
-corrected, including native menu-invoker closure, short-viewport focus and first-save layout
-stability. The composed native regression run passed **56/56** and peer visual review passed.
-The `c540412ec2e4d4a68c93c4e59a26343756adaf69` implementation freeze was lifted after
-full CI and independent review found an already-active-worker Reload stall in a second tab,
-covered Expand/Compact controls, insufficient WebKit source exposure and draft-indicator
-reflow during canvas input. The internal retained claim entry also left its suggestion list
-open after submission. Source fixes are integrated with failing-first regressions; public testing remains disabled.
-A later independent title-boundary repro found another header-wrap shift during a native
-drag at 1024/1032/1040px. Inline-size containment now keeps the title within the reserved
-caption budget. Public/internal seven-case native checks and independent boundary probes
-pass; supported-engine CI and final-byte review remain required. The suspected download
-status shift did not reproduce over 673 sampled desktop widths; its real feedback remains
-unchanged and gains a native history guard. → [title evidence](release-prompts/results/integration-title-identity.md). `ab0c5fe` changed CSS/JSON formatting only and passed a
-clean full `pnpm verify` with **5,036 tests / 552 files**. Because functional source changed
-afterward, that pass does not establish acceptance of the next candidate. Fresh combined
-verification, all supported-engine checks and exact artifact review remain required. See
-[integration evidence](release-prompts/results/INTEGRATION.md) for failed runs and exact scope.
+The rejected `9622000`/`c540412` candidates and all 125 c540 browser failures remain in the
+[historical disposition ledger](release-prompts/results/11-c540-ci-dispositions.md).
+Later PWA raw-draft/two-client update, overlay, guide, panel-control, native-coordinate,
+startup-adoption, header/draft/title and retained suggestion-popup findings were repaired.
+`4040112` passed its complete checks, but its unused shipped screenshot was subsequently
+refreshed. The `7f83802` Firefox Recovery failure was a real offscreen disclosure and was
+fixed. The later 56 WebKit ownership setup assumed native focus must scroll; its portable
+native-scroll setup retains the original ownership/data/history checks. Removing only the
+active-owner guard makes that same corrected test fail (642→0 scroll). All 84 current
+A18/A19 executions pass. → [7f8](release-prompts/results/11-7f8-ci-results.md),
+[56](release-prompts/results/11-56-ci-results.md).
 
-### Performance finding: fix integrated, final combined acceptance pending
+### Performance: genuine workload accepted
 
-A valid isolated full-UI drag of the 300-object stress figure took **37.51 ms application
-median / 58.05 ms p95**, exceeding the unchanged **8 ms** median gate. Raster median was
-**10.03 ms** and is reported separately under ADR-0014. The original center press selected
-nearby dependent M234 rather than P1, so its **1.57 ms** no-edit trace is invalid. A native
-press one CSS pixel into the exposed P1 dot retains the camera, 300 objects, traced path,
-140 marks and 120 measured frames. The reviewed fixture now also requires coordinate-only
-P1 change, identical other source lines, exact whole-document Undo/Redo and one history
-entry. This strengthening is recorded under ADR-0076. Sampling identified per-preview
-source rebuilding that bypassed the existing settled-panel policy. The eight-line ownership/
-drag guard is integrated at `8264356`, preserving live canonical geometry and raw/IME/stale
-drafts while clean source follows at commit/cancel. Five new lifecycle tests and focused
-built-UI source/history checks pass. Genuine isolated prototype medians were 7.58 ms public
-and 5.56 ms internal; their p95/raster/total costs remain separately reported. These are
-prototype checks, not final acceptance. Combined-source measurements, fresh quiet full
-verification, complete CI and exact artifact review remain required. → [performance evidence](release-prompts/results/integration-drag-performance.md).
+The original **1.57 ms** trace performed no drag and is invalid. Its corrected native P1
+pickup exposed a real **37.51 ms** application median / 58.05 ms p95 failure against the
+unchanged **8 ms** gate. The settled-source ownership/drag guard at `8264356` restored the
+existing presentation policy without stopping live canonical geometry or losing raw/IME/
+stale drafts. The strengthened fixture retains 300 objects, the camera/path, 120 measured
+frames, P1-only source changes, exact whole-document Undo/Redo and one history entry.
 
-### Uncertain
+Exact e0e CI genuine app medians are **4.99 ms public / 4.13 ms internal**; raster and total
+costs remain separately reported under ADR-0014. The retained worker maximum is **2.8 ms**,
+workerless local/global maximum **8 ms**, and 150-object discovery maximum **28.7 ms**,
+with 1/2,394 tasks over 16 ms and no LongTasks. All original gates pass. A prior 404 worker
+run failed at 60.5 ms and passed its sole unchanged isolated repeat at 8.7 ms; both remain
+recorded, without an inferred scheduling/GC cause. → [final metrics](release-prompts/results/11-e0e-final.md),
+[raw local 56 measurements](release-prompts/results/11-56-performance.json).
 
-Physical phones, actual mobile software keyboards and real screen readers are unavailable.
-Browser touch/viewport/IME simulation is not evidence of those real-device sessions.
-Local Firefox/WebKit availability and final supported-engine CI results will be reported
-with the final artifact. Intermediate green tests do not establish combined acceptance.
+### Uncertain and nonblocking limits
+
+Physical phones, actual mobile software keyboards and real screen-reader sessions were
+unavailable. Simulated touch, viewport and IME checks do not establish those sessions.
+Local Firefox/WebKit limitations are separate from the successful supported-engine CI.
+A 120 px Text-open phone canvas can crowd complex labels; Hide panels and Fit/Zoom provide
+a larger drawing view. Adaptive compact fitting remains future work. Internal verdict-chip
+overlap is absent from the public release and remains a reactivation concern. Browser
+clearing/eviction, asynchronous unload and file-origin storage policies still favor portable
+`.geo` backups. No claim of a perfect interface or universal device verification is made.
 
 ### Changed frozen tests
 
@@ -153,8 +141,8 @@ with the final artifact. Intermediate green tests do not establish combined acce
   it retains the same expected final coordinates. Existing property/dependency tests added
   during this release use reachable controls after the responsive layout changes; exact
   rename, history and dependency assertions remain. Playwright projects add hosted workspace
-  coverage and the composed file workflow. Individually reviewed visual-reference changes,
-  if needed, will be listed below. No disabled test, lower count, weaker numerical/screenshot
+  coverage and the composed file workflow. Individually reviewed visual-reference changes
+  are recorded in the final ledger and per-file hash manifest. No disabled test, lower count, weaker numerical/screenshot
   tolerance or reduced coverage threshold is authorized.
 - ADR-0074: `apps/web/e2e/helpers.ts` inverse-projects through the actual CSS rectangle.
   `flows-build.spec.ts`, `workspace.spec.ts` and the delayed-startup case in
@@ -169,8 +157,7 @@ with the final artifact. Intermediate green tests do not establish combined acce
 - ADR-0076: `public-release.spec.ts` restores a deliberately closed panel through its visible
   control before checking every tab; `scene.spec.ts` opens compact Settings through More
   actions. Worker/data/300-object/timing assertions remain unchanged. Reviewed public visual
-  reference hashes are in `results/11-visual-references.json`; the next responsive correction
-  requires fresh review of changed images rather than carrying forward those approvals.
+  reference hashes are in `results/11-visual-references.json`; all final comparisons passed; each actual reference change required individual review.
 
 - ADR-0074: `style-popover.spec.ts`, `design-mobile.spec.ts` and the later panel portion
   of `mobile.spec.ts` use exposed native targets and page-flow scroll/exposure, with exact
@@ -182,51 +169,47 @@ with the final artifact. Intermediate green tests do not establish combined acce
   300 objects and original path, retaining the 120-frame/8 ms gate while strengthening exact
   P1-only source change, whole-document Undo/Redo and one history entry. All 25 individually
   reviewed reference hashes are recorded in `results/11-visual-references.json`; all 33
-  comparisons passed complete 404 CI. The web job budget alone changed 40→60 minutes;
+  comparisons passed complete accepted e0e CI. The web job budget alone changed 40→60 minutes;
   individual test/performance/visual/numeric/coverage thresholds and retries did not change.
 - ADR-0069/0076: `pwa.test.ts`/`service-worker.test.ts` gain safe-update and scoped-download
   assertions; no old protection is removed. Mutation-shard inventory additions under
   ADR-0072 include extracted conic helpers without dropping prior targets.
 
+- ADR-0074/0076: the additive Recovery ownership regression now establishes a distinct
+  native Command scroll explicitly instead of assuming WebKit focus scrolls synchronously.
+  Positive displacement, unchanged later scroll, active target, raw draft and history
+  checks remain. The same corrected test detects deletion of the production owner guard.
+
 ### Acceptance command output
 
-The rejected `c540412` push run `43854336027` completed with public **755 passed / 55 failed /
-1 dependency-not-run**, internal **604 passed / 70 failed / 4 dependency-not-run**. Verification
-failed at formatting only (corrected by `ab0c5fe`); exports passed: **80 inputs, 74 compiled
-and checked, 6 precision-guard refusals, 0 failed**. All 125 browser failures are accounted
-for in the [disposition ledger](release-prompts/results/11-c540-ci-dispositions.md). The
-local c540 functional diagnostic was **401 passed / 9 failed / 0 skipped**; all nine failures
-match those known categories. None is counted as acceptance of the revised source. Twenty
-individually reviewed canvas/export references match their recorded SHA-256 values; five
-whole-GUI references await fresh corrected-source CI images. Final counts follow below.
+Exact e0e required CI ran `pnpm verify`, all public/internal builds and browser projects,
+and required export compilation. Results are the current checkpoint above and in the
+[final ledger](release-prompts/results/11-e0e-final.md). Browser inputs were Node 22.23.4,
+pnpm 10.28.0, Playwright 1.56.1 with Chromium 141.0.7390.37, Firefox 142.0.1 and WebKit 26.0
+on Ubuntu 24.04. Recorded font hashes match the individually reviewed CI references.
+Scene/export ratios remain 0.002 and full-GUI ratio 0.01; individual test/performance,
+coverage and numeric limits and retries remain unchanged. The overall web-job envelope
+alone increased from 40 to 60 minutes under ADR-0076 for the expanded matrix.
 
-Pinned pnpm 10.28.0, Node 24.22.1. Frozen lockfile installation; no runtime dependency upgrade.
-
-- Immutable base checkout `pnpm verify`: **passed**, 4,904 tests / 534 files. Vitest duration
-  764.17 seconds under concurrent work. Coverage: statements 96.53%, branches 90.49%,
-  functions 99.45%, lines 98.37%; all static/dependency/rules/coverage gates passed.
-  Earlier in-place attempts were invalidated by scratch/integration changes and are not
-  counted as baseline passes.
-- Initial combined regression check: **57 passed / 9 files**, 40.39 seconds.
-- Intermediate CI found a genuine store/draft/gesture dependency cycle. Extracted a shared
-  timer primitive; `pnpm depcruise` then passed, 990 modules / 5,781 dependencies.
-  Affected timer/text suites: **30 passed / 3 files**, 8.46 seconds.
-- Per-task commands, before-fix failures, browser versions and limits are linked above.
-  Final combined commands/results are pending and must not be inferred from these counts.
-- Intermediate push CI at `d180883f8235caf485c0e28bf77ee9fd2fbe392f`: verification passed,
-  **5,016 tests / 548 files**, all static and coverage gates; exports compiled. Browser
-  result was **418 passed / 5 failed / 1 not run**: the pre-09 phone header scrolled the
-  body horizontally, making a modal-fixture canvas click leave the viewport; property-card
-  and dependency-drag fixtures also targeted covered controls. Composed 09 fixes restore
-  reachable controls and all original semantic assertions. Failed browser validation
-  correctly prevented candidate packaging, deployment and smoke. This intermediate run
-  is not final-candidate acceptance.
+The immutable main baseline passed 4,904 tests / 534 files; rejected/intermediate passes
+are not reused as current acceptance. Per-task before/after evidence and failed complete
+runs remain in `release-prompts/results/`. Failed browser runs actually prevented tested-site
+upload and candidate packaging; the accepted run produced the exact verified artifacts.
+Nightly mutation policy remains separate and unchanged.
 
 ### Requests
 
-None for the authorized repair scope. The maintainer authorized merge commits; main merge
-and its configured deployment remain conditional on successful final checks and independent
-audit. No additional production approval is pending for that explicitly authorized sequence.
+No additional maintainer authorization is pending for the already authorized merge/deploy
+sequence after the documentation-only successor's required checks pass. No separate tagged
+release was requested. Main merge/deployment remain pending at this checkpoint.
+
+---
+
+## Historical task records — not the current release verdict
+
+The records below retain their statuses and commands as written at their original source.
+Their NOT ACCEPTED/pending labels are historical; the accepted integrated checkpoint above
+supersedes them. They do not describe the current status of merged PRs #38–40.
 
 ## Release prompt 04: modal and keyboard safety (ADR-0068): NOT ACCEPTED, awaiting maintainer review
 
