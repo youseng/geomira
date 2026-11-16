@@ -107,6 +107,9 @@ test('release: load, edit, drag, examples and legacy preferences never run retir
   await tool(page, 'Move');
   await dragWorld(page, [1, 4], [2, 4]);
   await idle(page);
+  // ADR-0074/0076: a closed responsive panel is absent; reopen it through its control.
+  const panels = page.getByRole('button', { name: 'Show panels', exact: true });
+  if (await panels.isVisible()) await panels.click();
   // Every displayed tab has content; help has no retired shortcut hints.
   for (const name of ['Objects', 'Layers', 'Help', 'Text']) {
     await tab(page, name);

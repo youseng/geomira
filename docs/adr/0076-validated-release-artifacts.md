@@ -66,4 +66,10 @@ selection adds coverage; existing browser scenarios remain. Final visual inspect
 builds and all release checks follow integration of prompts 01–10. Any reviewed product snapshot
 updates require their own recorded evidence; this ADR does not authorize blanket regeneration.
 
+The final integration review also migrates the public-release construction scenario to the
+ADR-0074 responsive panel contract: after deliberately hiding the panel to drag the canvas,
+reopen it with the visible Show panels control before inspecting its tabs. A closed desktop
+panel is now absent rather than merely offscreen. All tab-content, keyboard-navigation,
+document-compatibility and retired-job assertions are retained.
+
 No production publication, merge or release was performed while implementing this decision.
