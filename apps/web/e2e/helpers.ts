@@ -57,6 +57,8 @@ export async function screenOf(
   y: number,
 ): Promise<{ x: number; y: number }> {
   const canvas = page.getByLabel('Geometry canvas');
+  // ADR-0074/0076: editing a phone panel can scroll the page past the canvas.
+  await canvas.scrollIntoViewIfNeeded();
   const box = await canvas.boundingBox();
   if (box === null) throw new Error('no canvas box');
   // The display uses logical client pixels; CSS can stretch them into fractional bounds.

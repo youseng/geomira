@@ -85,6 +85,10 @@ panel is now absent rather than merely offscreen. All tab-content, keyboard-navi
 document-compatibility and retired-job assertions are retained.
 The 300-object scene measurement opens the visible More actions disclosure before Settings
 on compact headers, retaining the existing measurement, object count and 8 ms limit.
+The shared world-pointer fixture scrolls its canvas into view before projecting a native
+mouse action. With the phone's panel in page flow, source/footer interaction can leave the
+canvas above the viewport; a user first scrolls back to that surface. This preserves the
+existing world-coordinate, native-event, text and undo assertions and the CSS inverse mapping.
 
 ## Individually reviewed final references
 
