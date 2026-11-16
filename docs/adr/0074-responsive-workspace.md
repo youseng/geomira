@@ -174,6 +174,29 @@ both before and after the click. All other reflow, outline and history assertion
 This changes only fixture expectations; no application code, synthetic events, coordinate
 tolerances, input rounding, screenshot references or typed-coordinate assertions change.
 
+## Integration correction: draft identity must not resize native input
+
+Applying a focused raw draft on canvas pointer-down removed an inline `Unapplied text draft`
+badge. In the internal build at 1280px this collapsed a wrapped header by 36px, moving the
+canvas up 36px and growing its logical height by 36px. The unchanged zoom/view then mapped
+the same physical drop to B=(5,0.6396), instead of the intended B=(5,1). The old source-blur
+and pending-pause audit tests correctly exposed this real layout error; their literal
+coordinate and Undo assertions remain unchanged.
+
+Keep the document title and draft feedback in a compact stacked identity group. Reserve
+the draft line's layout in both states; show and announce its full text only while raw
+source is unapplied. Its hidden state has no status role and is aria-hidden. Phone text
+wraps within the existing 140px File group, instead of adding a long inline blank slot.
+Ordinary Saving/Saved locally/Not saved feedback stays separate and truthful.
+
+Native regressions cover exact header/canvas bounds across source application at
+320/390/768/1280px, the delivered-pointer canonical drag, and separate source/drag Undo
+and Redo. A baseline native regression failed on the exact 36px rectangle change. Both
+public and internal clean/saved header/canvas rectangles match the prior artifact at all
+four widths, so no extra default row or canvas loss is introduced. Whole-GUI references
+still require final-source review of the title/status placement; no reference is changed
+here. Commands, measurements and CI limitations are in `integration-draft-identity.md`.
+
 ## Frozen-test accounting for prompt 09
 
 The original workspace migration changed these existing browser fixtures deliberately:

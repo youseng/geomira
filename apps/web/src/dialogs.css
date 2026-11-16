@@ -90,6 +90,22 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.document-caption {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  max-width: 130px;
+}
+.document-caption .document-name {
+  line-height: 16px;
+}
+.document-draft {
+  font-size: 11px;
+  line-height: 13px;
+}
+.document-draft[data-active='false'] {
+  visibility: hidden;
+}
 @media (max-width: 800px) {
   .document-name {
     max-width: 70px;

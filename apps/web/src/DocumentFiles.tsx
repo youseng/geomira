@@ -36,14 +36,7 @@ export function DocumentFiles({ store }: { store: EditorStore }) {
       >
         File
       </button>
-      <span className="document-name" title={current.meta.title ?? 'Untitled'}>
-        {current.meta.title ?? 'Untitled'}
-      </span>
-      {unapplied && (
-        <span className="document-draft" role="status">
-          Unapplied text draft
-        </span>
-      )}
+      <DocumentCaption title={current.meta.title ?? 'Untitled'} unapplied={unapplied} />
       {state.downloaded !== null && (
         <span className="document-download" role="status">
           {unapplied
@@ -63,6 +56,25 @@ export function DocumentFiles({ store }: { store: EditorStore }) {
       <FilePicker input={input} session={session} />
       <FileDialog session={session} state={state} />
     </div>
+  );
+}
+
+/** Keep identity/status geometry stable when canvas input applies a focused draft. */
+function DocumentCaption({ title, unapplied }: { title: string; unapplied: boolean }) {
+  return (
+    <span className="document-caption">
+      <span className="document-name" title={title}>
+        {title}
+      </span>
+      <span
+        className="document-draft"
+        data-active={unapplied}
+        role={unapplied ? 'status' : undefined}
+        aria-hidden={!unapplied}
+      >
+        Unapplied text draft
+      </span>
+    </span>
   );
 }
 
