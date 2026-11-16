@@ -1,3 +1,4 @@
+import { nativeWorldPoint, pointText } from './native-pointer';
 import { readFile } from 'node:fs/promises';
 import { currentText, readRecovery, holdConnections, failWrites } from './recovery-helpers';
 import { expect, test } from '@playwright/test';
@@ -278,8 +279,8 @@ test('a tool chosen during delayed startup still constructs the figure', async (
   await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
     'Saved locally',
   );
-  await clickWorld(page, 0, 0);
-  await expectLines(page, 'A = (0, 0)');
+  const actual = await nativeWorldPoint(page, () => clickWorld(page, 0, 0));
+  await expectLines(page, `A = ${pointText(actual)}`);
 });
 
 test('resolving a displayed version preserves a conflict written behind the restore barrier', async ({

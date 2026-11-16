@@ -1,3 +1,4 @@
+import { nativeWorldPoint, pointText } from './native-pointer';
 import { expect, test } from '@playwright/test';
 import { clickWorld, command, dragWorld, expectLines, openApp, tab, text, tool } from './helpers';
 import { screenOf } from './helpers';
@@ -12,13 +13,16 @@ test('triangle and circumcircle by mouse and by command bar give the identical t
 }) => {
   const errors = await openApp(page);
   await tool(page, 'Polygon');
-  for (const [x, y] of [
-    [0, 0],
-    [4, 0],
-    [1, 3],
-    [0, 0],
-  ] as const)
-    await clickWorld(page, x, y);
+  const actualTriangle: string[] = [];
+  for (const [name, x, y] of [
+    ['A', 0, 0],
+    ['B', 4, 0],
+    ['C', 1, 3],
+  ] as const) {
+    const point = await nativeWorldPoint(page, () => clickWorld(page, x, y));
+    actualTriangle.push(`${name} = ${pointText(point)}`);
+  }
+  await clickWorld(page, 0, 0);
   await tool(page, 'Circle (3 points)');
   for (const [x, y] of [
     [0, 0],
@@ -32,13 +36,13 @@ test('triangle and circumcircle by mouse and by command bar give the identical t
   // A separate browser context: its own storage, so it does not open page 1's autosave.
   const other = await (await browser.newContext()).newPage();
   await openApp(other);
-  for (const line of [...TRIANGLE, 'poly = polygon(A, B, C)', 'c_ABC = circle(A, B, C)'])
+  for (const line of [...actualTriangle, 'poly = polygon(A, B, C)', 'c_ABC = circle(A, B, C)'])
     await command(other, line);
   await expectLines(other, 'c_ABC = circle(ABC)');
   const byCommand = await text(other);
   expect(byMouse).toBe(byCommand);
   // The text panel shows the short notation (ADR-0061): what was typed long reads the same.
-  for (const line of [...TRIANGLE, 'poly = polygon(ABC)', 'c_ABC = circle(ABC)'])
+  for (const line of [...actualTriangle, 'poly = polygon(ABC)', 'c_ABC = circle(ABC)'])
     expect(byMouse.split('\n')).toContain(line);
   expect(errors).toEqual([]);
 });
@@ -47,8 +51,8 @@ test('dragging a free point moves it, rounds it at the end, and undo returns', a
   await openApp(page);
   for (const line of [...TRIANGLE, 'M = midpoint(B, C)']) await command(page, line);
   await tool(page, 'Move');
-  await dragWorld(page, [4, 0], [5, 1]);
-  await expectLines(page, 'B = (5, 1)', 'M = midpoint(B, C)');
+  const moved = await nativeWorldPoint(page, () => dragWorld(page, [4, 0], [5, 1]));
+  await expectLines(page, `B = ${pointText(moved)}`, 'M = midpoint(B, C)');
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expectLines(page, 'B = (4, 0)');
   // A point that is not free is not dragged: the left press draws a selection box instead
@@ -136,8 +140,8 @@ test('a derived layer from a transform, its images, and dragging an image moves 
   await expect(page.getByLabel('image', { exact: true })).toBeChecked();
   // C* = (1, -3), the mirror image of C in AB; dragging it moves C (drag-through, SPEC §8.4).
   await tool(page, 'Move');
-  await dragWorld(page, [1, -3], [2, -2]);
-  await expectLines(page, 'C = (2, 2)');
+  const image = await nativeWorldPoint(page, () => dragWorld(page, [1, -3], [2, -2]));
+  await expectLines(page, `C = ${pointText({ x: image.x, y: -image.y })}`);
   await tab(page, 'Objects');
   await expect(page.getByText('reflect(l)')).toBeVisible();
 });
@@ -164,4 +168,15 @@ test('command bar: completions from the registry; shortcuts and help from the ke
   await tab(page, 'Help');
   await expect(page.getByRole('tabpanel')).toContainText('Circle (center, point)');
   await expect(page.getByRole('tabpanel')).toContainText('Ctrl+Shift+Z');
+});
+
+test('typed exact world coordinates keep their canonical values', async ({ page }) => {
+  await openApp(page);
+  for (const line of [...TRIANGLE, 'poly=polygon(A,B,C)', 'c_ABC=circle(A,B,C)'])
+    await command(page, line);
+  await expectLines(page, ...TRIANGLE, 'poly = polygon(ABC)', 'c_ABC = circle(ABC)');
+  const before = await text(page);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  expect(await text(page)).toBe(before);
 });

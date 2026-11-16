@@ -84,3 +84,43 @@ Unavailable preference storage affects persistence of those choices only. Browse
 simulations and accessibility assertions do not constitute real iOS/Android keyboard or
 screen-reader testing. Final device/engine limits and exact commands are recorded in the
 result file and integrated STATUS. No runtime dependency or new mathematical tool is added.
+
+## Integration correction: fractional canvas projection
+
+The new responsive layout can place the canvas on fractional CSS bounds. The display
+has whole logical client dimensions; its backing bitmap has independently rounded
+width and height after multiplying by the device ratio. Treating CSS offsets as logical
+pixels misaligns pointer hits with the rendered image. Keep the logical display size,
+map delivered pointer/wheel coordinates by `logicalSize / actualCSSRect`, and use the
+inverse for long-press anchors and selection-box overlays. Rasterization uses separate
+`backingWidth / logicalWidth` and `backingHeight / logicalHeight` scales, including tool
+previews. Logical sizes are positive, as supplied by `useSurface`; empty CSS rectangles
+receive no input. No layout is forced onto an even-pixel grid. The render path reads the
+CSS rectangle for an overlay only while an actual selection box exists.
+
+A Chromium regression with fractional width/height failed before this correction:
+it expected canonical `A = (-0.016, 0)` from an independent physical-to-logical projection,
+but received `A = (-0.02, -0.0022)`. The corrected input contract passes at ordinary and
+fractional device ratios. Unit checks assert inverse projection and the exact independent
+raster scales used by both figure and preview. Renderer assertions and tolerances remain.
+
+Firefox adds a separate native-driver input limitation: CI trace requested y=371.4000015
+at canvas top104.3999939 and height533.583374 (logical height534), while the delivered
+integer client y=371 explains the original 0.008-world offset at zoom50. Neither the app
+nor a test can recover a fractional request absent from the delivered browser event.
+World-coordinate fixtures now independently calculate expectations from the actual native
+pointerup's client position and the displayed rectangle/logical metrics. They use the
+existing documented 10^-4 construction grid for their scale<10/zoom50 figures. They do
+not import the production projection or rounding implementation and do not accept a
+coordinate tolerance. Mouse-versus-command canonical text still compares byte for byte;
+free-drag undo still restores exactly B=(4,0); the reflected image uses the independent
+inverse reflection formula. A separate exact typed-coordinate test retains the original
+triangle coordinates and exact canonical undo/redo comparison. Workspace resize and delayed
+startup assert the exact point corresponding to delivered native input. No pointer events
+are fabricated or replaced with synthetic DOM dispatch, and no snapshot references change.
+
+Frozen fixture changes for this correction: `apps/web/e2e/helpers.ts`,
+`flows-build.spec.ts`, `workspace.spec.ts`, and `persistence.spec.ts`. Their meaningful
+construction, history, mapping and delayed-startup assertions remain active in all
+supported browser projects. Local Firefox still cannot launch due graphics/sandbox
+constraints; CI remains authoritative for the actual Firefox event delivery.

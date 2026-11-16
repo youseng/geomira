@@ -1,3 +1,4 @@
+import { nativeWorldPoint, pointText } from './native-pointer';
 /** ADR-0074: the ordinary workspace remains usable across input modes and sizes. */
 import { expect, test, type Page } from '@playwright/test';
 import { clickWorld, command, openApp, screenOf, tab, text, tool } from './helpers';
@@ -48,6 +49,9 @@ test('sidebar collapse and resize preserve drafts; reload restores layout and ma
   await page.setViewportSize({ width: 1280, height: 800 });
   await openApp(page);
   await command(page, 'A=(0,0)');
+  await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
+    'Saved locally',
+  );
   const area = page.getByLabel('Text', { exact: true });
   await area.fill('A=(0,0)\nthis is an invalid draft');
   const before = await area.inputValue();
@@ -65,9 +69,9 @@ test('sidebar collapse and resize preserve drafts; reload restores layout and ma
   await expect(page.getByRole('button', { name: 'Show panels', exact: true })).toBeVisible();
   await tool(page, 'Point');
   const at = await screenOf(page, 2, 1);
-  await page.mouse.click(at.x, at.y);
+  const actual = await nativeWorldPoint(page, () => page.mouse.click(at.x, at.y));
   await page.getByRole('button', { name: 'Show panels', exact: true }).click();
-  expect(await text(page)).toContain('(2, 1)');
+  expect(await text(page)).toContain(`B = ${pointText(actual)}`);
 });
 
 test('search and recent tools use selection inputs; hidden tools never appear', async ({

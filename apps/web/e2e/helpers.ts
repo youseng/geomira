@@ -59,7 +59,7 @@ export async function screenOf(
   const canvas = page.getByLabel('Geometry canvas');
   const box = await canvas.boundingBox();
   if (box === null) throw new Error('no canvas box');
-  // The page maps with the canvas's client size (whole CSS px), from its box's corner.
+  // The display uses logical client pixels; CSS can stretch them into fractional bounds.
   const vp = await canvas.evaluate((c) => ({
     cx: Number(c.getAttribute('data-cx')),
     cy: Number(c.getAttribute('data-cy')),
@@ -68,8 +68,8 @@ export async function screenOf(
     height: c.clientHeight,
   }));
   return {
-    x: box.x + (x - vp.cx) * vp.zoom + vp.width / 2,
-    y: box.y + vp.height / 2 - (y - vp.cy) * vp.zoom,
+    x: box.x + (((x - vp.cx) * vp.zoom + vp.width / 2) * box.width) / vp.width,
+    y: box.y + ((vp.height / 2 - (y - vp.cy) * vp.zoom) * box.height) / vp.height,
   };
 }
 
