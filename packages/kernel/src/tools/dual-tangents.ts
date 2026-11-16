@@ -1,3 +1,4 @@
+import { numericCoeffs } from '../conic-form';
 /**
  * Common tangents when a conic is among the two curves (internal; ADR-0045): the dual problem of
  * ADR-0043's conic ∩ conic. The tangent lines of a conic with matrix M are the points of its dual
@@ -43,11 +44,6 @@ import type { Cand, Pair } from './pairs';
 
 type N = number;
 
-function num6<T>(F: Field<T>, q: Coeffs<T>): Coeffs<N> {
-  const [a, b, c, d, e, f] = q.map((v) => F.toNumber(v));
-  return [a ?? 0, b ?? 0, c ?? 0, d ?? 0, e ?? 0, f ?? 0];
-}
-
 function coeffsOfCurve<T>(F: Field<T>, k: Curve2<T>): Coeffs<T> {
   return k.kind === 'conic' ? coeffsOf(k) : circleCoeffs(F, k);
 }
@@ -76,9 +72,10 @@ function asNumbers<T>(F: Field<T>, k: Curve2<T>): Curve2<N> {
   const n = (x: T) => F.toNumber(x);
   if (k.kind === 'circle')
     return { kind: 'circle', c: { x: n(k.c.x), y: n(k.c.y) }, r2: n(k.r2), arc: null };
-  const [a, b, c, d, e, f] = num6(F, coeffsOf(k));
+  const q = numericCoeffs(F, coeffsOf(k));
+  const [a, b, c, d, e, f] = q;
   const out: Conic<N> = { kind: 'conic', a, b, c, d, e, f };
-  return out;
+  return q.chart === undefined ? out : { ...out, chart: q.chart };
 }
 
 /** The pencil's reasons, read in the dual. */

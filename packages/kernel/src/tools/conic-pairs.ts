@@ -21,6 +21,7 @@
  * cross(mid − P, d) (Run 16c audit: the sign of Q(P) was used, which gave the opposite labels);
  * other(T): the other point of the polar by Vieta.
  */
+import { fromNumber } from '@geomira/num/rational';
 import { isInexact, type Field, type FieldSign, type Inexact } from '@geomira/num/field';
 import { signNormalized, two, vAdd, vCross, vDot, vRot90, vScale, vSub } from '../geom';
 import {
@@ -69,7 +70,13 @@ function quadratic<T>(F: Field<T>, q: Coeffs<T>, p: Vec<T>, d: Vec<T>) {
 }
 
 type Meet<T> =
-  | { readonly kind: 'two'; readonly mid: Vec<T>; readonly rad: T; readonly sign: 1 | -1 | 'none' }
+  | {
+      readonly kind: 'two';
+      readonly mid: Vec<T>;
+      readonly rad: T;
+      readonly direction: Vec<T>;
+      readonly sign: 1 | -1 | 'none';
+    }
   | { readonly kind: 'one'; readonly at: Vec<T> }
   | Undefined;
 
@@ -78,6 +85,11 @@ type Meet<T> =
  * finite point (α = 0), or why not. `sign` is α's sign (mod p: 'none').
  */
 function meet<T>(F: Field<T>, q: Coeffs<T>, p: Vec<T>, d: Vec<T>, ctx: EvalContext): Meet<T> {
+  // A positive direction rescaling preserves low-level labels while avoiding tiny quadratics.
+  const largest =
+    F.kind === 'float' ? Math.max(Math.abs(F.toNumber(d.x)), Math.abs(F.toNumber(d.y))) : 0;
+  const size = largest > 0 ? F.fromRational(fromNumber(largest)) : F.one;
+  if (!isInexact(size)) d = { x: F.div(d.x, size), y: F.div(d.y, size) };
   const { alpha, beta, gamma } = quadratic(F, q, p, d);
   const dd = vDot(F, d, d);
   const sa = alphaSign(F, alpha, dd, q, ctx);
@@ -93,7 +105,7 @@ function meet<T>(F: Field<T>, q: Coeffs<T>, p: Vec<T>, d: Vec<T>, ctx: EvalConte
   const four = F.mul(two(F), two(F));
   const disc = F.sub(F.mul(beta, beta), F.mul(four, F.mul(alpha, gamma)));
   const rad = F.div(disc, F.mul(four, F.mul(alpha, alpha)));
-  return { kind: 'two', mid, rad, sign: sa === 'none' ? 'none' : sa };
+  return { kind: 'two', mid, rad, direction: d, sign: sa === 'none' ? 'none' : sa };
 }
 
 /** The count of a 'two' meet: the gap −sign(α)·Q(mid)/|∇Q(mid)| as a length. */
@@ -164,7 +176,7 @@ export function lineConicPair<T>(
     list: (n) => {
       if (m.kind === 'undefined') return m;
       const list: Cand<T>[] | Inexact =
-        m.kind === 'one' ? [{ at: m.at, side: 0 }] : midOff(F, n, m.mid, m.rad, l.d, false);
+        m.kind === 'one' ? [{ at: m.at, side: 0 }] : midOff(F, n, m.mid, m.rad, m.direction, false);
       return isInexact(list) ? list : onRange(F, l, list, ctx);
     },
     other: {
@@ -201,9 +213,9 @@ export function conicTangentAt<T>(F: Field<T>, k: Conic<T>, T0: Vec<T>): Line<T>
  * with direction rot90(−g) (chiral, a quarter turn; for a circle the direction of polar(P, c)).
  */
 export function conicPolarLine<T>(F: Field<T>, k: Conic<T>, P: Vec<T>): Line<T> {
-  const [gx, gy, h] = polarCovector(F, coeffsOf(k), P);
+  const [gx, gy] = polarCovector(F, coeffsOf(k), P);
   const g = { x: gx, y: gy };
-  const value = F.add(vDot(F, g, P), h);
+  const value = qValue(F, coeffsOf(k), P);
   const foot = vSub(F, P, vScale(F, g, F.div(value, vDot(F, g, g))));
   return {
     kind: 'line',
@@ -267,7 +279,7 @@ export function conicTangentPair<T>(
     noun: tool === 'tangent_point' ? 'touch point' : 'tangent',
     low: { kind: 'orient', from: P, to: m.mid },
     count: () => countTwo(F, q, m, ctx, `${none} (P is inside it)`),
-    list: (n) => midOff(F, n, m.mid, m.rad, polar.d, flip),
+    list: (n) => midOff(F, n, m.mid, m.rad, m.direction, flip),
     other: {
       curves: [
         { obj: k, name: 'the conic' },
@@ -302,6 +314,6 @@ export function lineConicMeet<T>(
   if (m.kind === 'one') return { points: [m.at], double: false };
   const n = countTwo(F, q, m, ctx, 'misses');
   if (typeof n !== 'number') return { points: [], double: false };
-  const list = midOff(F, n, m.mid, m.rad, d, false);
+  const list = midOff(F, n, m.mid, m.rad, m.direction, false);
   return isInexact(list) ? list : { points: list.map((c) => c.at), double: n === 1 };
 }

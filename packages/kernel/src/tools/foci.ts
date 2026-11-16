@@ -93,8 +93,39 @@ function parabolaFocus<T>(F: Field<T>, d: Quad<T>): Vec<T> | undefined {
   return { x: F.div(f.x, n2), y: F.div(f.y, n2) };
 }
 
+/** Focal geometry is computed in the same stable local chart as incidence. */
+function chartFociPair<T>(F: Field<T>, k: Conic<T>, ctx: EvalContext): Pair<T> | Undefined {
+  if (k.chart === undefined) return fociPair(F, k, ctx);
+  const { origin, q } = k.chart;
+  const [a, b, c, d, e, f] = q;
+  const pair = fociPair(F, { kind: 'conic', a, b, c, d, e, f }, ctx);
+  if ('kind' in pair) return pair;
+  return {
+    ...pair,
+    list: (n) => {
+      const points = pair.list(n);
+      return isInexact(points) || 'kind' in points
+        ? points
+        : points.map((p) => ({ ...p, at: vAdd(F, p.at, origin) }));
+    },
+    other: {
+      curves: [],
+      check: (P) => pair.other?.check?.(vSub(F, P, origin)),
+      point: (P) => {
+        const other = pair.other?.point(vSub(F, P, origin));
+        return other === undefined
+          ? undef('focus unavailable')
+          : 'kind' in other
+            ? other
+            : vAdd(F, other, origin);
+      },
+    },
+  };
+}
+
 /** The pair of foci of a valid conic (module comment). */
 function fociPair<T>(F: Field<T>, k: Conic<T>, ctx: EvalContext): Pair<T> | Undefined {
+  if (k.chart !== undefined) return chartFociPair(F, k, ctx);
   const bad = conicProblem(F, k, ctx);
   if (bad !== undefined) return undef(bad.reason);
   const d = quadOf(F, k);

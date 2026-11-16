@@ -1,3 +1,4 @@
+import { numericCoeffs } from '../conic-form';
 /**
  * Conic ∩ conic and conic ∩ circle (internal; ADR-0043), as a Pair for select.ts with up to four
  * candidates. In floats the candidates come from the pencil of the two curves (conic-pencil.ts);
@@ -86,6 +87,11 @@ const dist2 = (p: Vec<number>, q: Vec<number>) => (p.x - q.x) ** 2 + (p.y - q.y)
  * vertex (t not finite) → undefined.
  */
 function vertexNear(q: Coeffs<number>, toward: Vec<number>): Vec<number> | undefined {
+  if (q.chart !== undefined) {
+    const o = q.chart.origin;
+    const v = vertexNear(q.chart.q, { x: toward.x - o.x, y: toward.y - o.y });
+    return v === undefined ? undefined : { x: v.x + o.x, y: v.y + o.y };
+  }
   const [a, b, c, d, e, f] = q;
   const w = a * c - b * b;
   const C = { x: (b * e - c * d) / w, y: (b * d - a * e) / w };
@@ -115,11 +121,7 @@ function vertexNear(q: Coeffs<number>, toward: Vec<number>): Vec<number> | undef
  * can be far from the curve: Run 16c audit), or the other curve's point when it has no vertex.
  */
 function pencilInput<T>(F: Field<T>, a: Round<T>, b: Round<T>, ctx: EvalContext): PencilInput {
-  const num = (q: Coeffs<T>): Coeffs<number> => {
-    const [c0, c1, c2, c3, c4, c5] = q.map((v) => F.toNumber(v));
-    return [c0 ?? 0, c1 ?? 0, c2 ?? 0, c3 ?? 0, c4 ?? 0, c5 ?? 0];
-  };
-  const [q1, q2] = [num(coeffs(F, a)), num(coeffs(F, b))];
+  const [q1, q2] = [numericCoeffs(F, coeffs(F, a)), numericCoeffs(F, coeffs(F, b))];
   const [k1, k2] = [knownRef(F, a), knownRef(F, b)];
   const origin = { x: 0, y: 0 };
   const r1 = k1 ?? vertexNear(q1, k2 ?? origin) ?? k2 ?? origin;

@@ -6,7 +6,7 @@ defaultpen(fontsize(11pt) + roundcap + roundjoin);
 labelmargin = 0;
 pen gm_paper = rgb("FBFBF8");
 // The region the screen draws (the view and a margin): lines are cut to it.
-pair gm_lo = (-5.735714285714286, -4.950000000000002), gm_hi = (6.735714285714291, 4.950000000000002);
+pair gm_lo = (-5.735714285714286, -4.95), gm_hi = (6.735714285714286, 4.95);
 pen gmc0 = rgb("00897B");
 pen gmc1 = rgb("FF8C00");
 pen gmc2 = rgb("7B3FA0");
@@ -51,12 +51,12 @@ pair H2 = (2, 0.5);
 pair H3 = (-1, -1);
 pair H4 = (4, 0.25);
 pair H5 = (0.5, 2);
-pair G = (5.000000000000004, 0.19999999999999996); // numeric
+pair G = (5, 0.19999999999999996); // numeric
 pair P = (3, 2);
-gmline t_1 = gm_mkline((-0.9864242223858681, 0.8699090833947006), (-3.697113604427477, -1.0480757362849846), false, 0, false, 0); // numeric
-gmline t_2 = gm_mkline((1.946424222385869, -0.22990908339470073), (0.9771136044274779, 2.0680757362849853), false, 0, false, 0); // numeric
-gmline p = gm_mkline((2.136986301369863, -0.3013698630136985), (-8.499999999999998, 3.187499999999999), false, 0, false, 0); // numeric
-pair T = (1.333333333333333, 0.6666666666666667); // numeric
+gmline t_1 = gm_mkline((-0.9864242223858692, 0.8699090833947005), (-3.6971136044274773, -1.0480757362849862), false, 0, false, 0); // numeric
+gmline t_2 = gm_mkline((1.9464242223858688, -0.22990908339470129), (0.9771136044274804, 2.0680757362849858), false, 0, false, 0); // numeric
+gmline p = gm_mkline((2.1369863013698627, -0.30136986301369895), (-8.5, 3.1875), false, 0, false, 0); // numeric
+pair T = (1.3333333333333333, 0.6666666666666666); // numeric
 pair X = (0.7320508075688772, 1.3660254037844386); // numeric
 pair V = (0, -3);
 gmcircle w = gm_mkcircle((-3, 2), 1);

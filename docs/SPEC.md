@@ -146,7 +146,10 @@ Generic over the number type T:
   symmetric 3×3 matrix), so one point set has one value; only non-degenerate real conics; the
   type (ellipse, parabola, hyperbola) is derived, never stored; `anchor` a known point (gliders,
   conic_to_circle). A circle is never a conic: circle tools keep returning circles; a projective
-  map's image of a circle or conic is a conic.
+  map's image of a circle or conic is a conic. Float values may additionally retain an immutable
+  local polynomial chart `Q(origin + Y)` (ADR-0072) so translation does not discard useful
+  precision. Numeric consumers preserve/use this chart; document syntax and the canonical
+  six-coefficient exact representation remain unchanged.
 - `Undefined { kind:'undefined', reason }` and `Inexact { kind:'inexact', reason }`.
 Reserved kinds (documented only): Locus. Capabilities: point; curve
 (line | circle); linear; round; number; transform; polygon; and (ADR-0040) ideal, ppoint (a

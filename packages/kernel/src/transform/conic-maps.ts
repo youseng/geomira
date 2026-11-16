@@ -25,6 +25,7 @@ import { undef, type Value, type ValueKind } from '../value';
 import { badArgs, circleAt, conicAt, degenerateCircle, pointAt } from '../tools/args';
 import { ELLIPSE } from '../tools/conics';
 import { mapProblem } from './mobius';
+import { preciseMul3 } from './precise-matrix';
 import { adj3, mul3, projective, type Mat3 } from './projective';
 
 /**
@@ -70,7 +71,10 @@ function conicToCircle<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalConte
     F.neg(F.div(F.one, F.mul(two, alpha))),
   ];
   const s: Mat3<T> = [t.x, e.x, A.x, t.y, e.y, A.y, z, z, F.one];
-  const m = mul3(F, mul3(F, s, n), adj3(F, s));
+  const sn = preciseMul3(F, s, n);
+  if (isInexact(sn)) return sn;
+  const m = preciseMul3(F, sn, adj3(F, s));
+  if (isInexact(m)) return m;
   const map = projective(m);
   return mapProblem(F, map, 'conic_to_circle') ?? { kind: 'transform', t: map };
 }

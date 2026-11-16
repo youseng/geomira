@@ -1,3 +1,4 @@
+import { rangeNumbersOf } from './value-numbers';
 /**
  * Evaluation (SPEC §9): evaluate(doc, registry, F, ctx) over any field, in construction
  * order, pure and TOTAL (it never throws: every degenerate case is a Value). The float run
@@ -18,7 +19,6 @@ import type { EvalContext } from './tool';
 import {
   isKnownKind,
   isUnavailable,
-  numbersOf,
   numOf,
   undef,
   type Inexact,
@@ -231,7 +231,7 @@ function inFloatRange<T>(F: Field<T>, v: Value<T>, limit: number): boolean {
   return (
     F.kind !== 'float' ||
     !isKnownKind(v) ||
-    numbersOf(v).every((x) => {
+    rangeNumbersOf(v).every((x) => {
       const n = F.toNumber(x);
       return Number.isFinite(n) && Math.abs(n) <= limit;
     })

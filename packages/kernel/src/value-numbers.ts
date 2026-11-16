@@ -1,5 +1,5 @@
 /**
- * Every field element inside a value (internal; re-exported by value.ts as `numbersOf`): the
+ * Canonical field elements inside a value (internal; re-exported by value.ts as `numbersOf`): the
  * evaluator's range checks, the L3 oracle and the baselines read them in a fixed order.
  */
 import { assertNever } from '@geomira/num/assert';
@@ -24,7 +24,7 @@ function transformNumbers<T>(t: TransformData<T>): T[] {
   }
 }
 
-/** Every field element inside a value (coordinates, bounds, radii…), in a fixed order. */
+/** Canonical coordinates/bounds in fixed order; derived float charts are checked separately. */
 export function numbersOf<T>(v: Value<T>): T[] {
   switch (v.kind) {
     case 'point':
@@ -68,4 +68,12 @@ export function numbersOf<T>(v: Value<T>): T[] {
     default:
       return assertNever(v, 'value');
   }
+}
+
+/** All stored field elements, including derived chart data, for evaluator range checks. */
+export function rangeNumbersOf<T>(v: Value<T>): T[] {
+  const canonical = numbersOf(v);
+  return v.kind !== 'conic' || v.chart === undefined
+    ? canonical
+    : [...canonical, v.chart.origin.x, v.chart.origin.y, ...v.chart.q];
 }

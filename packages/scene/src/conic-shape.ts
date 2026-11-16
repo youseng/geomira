@@ -79,6 +79,13 @@ function parabola(k: Conic<number>): ConicShape | undefined {
  * when its centre is at infinity for the figure; within the band, drawn as the central conic.
  */
 export function conicShapeOf(k: Conic<number>, ctx: ToleranceContext): ConicShape | undefined {
+  if (k.chart !== undefined) {
+    const [a, b, c, d, e, f] = k.chart.q;
+    const shape = conicShapeOf({ kind: 'conic', a, b, c, d, e, f }, ctx);
+    return shape === undefined
+      ? undefined
+      : { ...shape, c: { x: shape.c.x + k.chart.origin.x, y: shape.c.y + k.chart.origin.y } };
+  }
   const xs = [k.a, k.b, k.c, k.d, k.e, k.f];
   if (!finite(xs)) return undefined;
   const n = k.a * k.a + 2 * k.b * k.b + k.c * k.c;
