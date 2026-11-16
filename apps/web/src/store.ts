@@ -86,7 +86,8 @@ export class EditorStore {
 
   private publish(patch: Partial<Snapshot>): void {
     this.snap = { ...this.snap, ...patch };
-    if (patch.state !== undefined) this.textDraft.follow(this.snap.state.doc);
+    if (patch.state !== undefined)
+      this.textDraft.follow(this.snap.state.doc, patch.openCount !== undefined);
     for (const l of this.listeners) l();
   }
 

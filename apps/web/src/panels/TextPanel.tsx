@@ -211,23 +211,32 @@ function SourceActions({
   const converted = commandLines(text);
   return (
     <div className="text-source-actions">
-      <button
-        type="button"
-        disabled={converted === text}
-        onMouseDown={(e) => {
-          e.preventDefault();
-        }}
-        onClick={() => {
-          applier.type(converted);
-          field.current?.focus();
-        }}
-      >
-        Convert command separators to lines
-      </button>
-      <p className="muted">
-        Leaving the editor keeps your source. Apply text formats valid source. Construction edits
-        regenerate clean text; unapplied drafts stay available with a warning.
-      </p>
+      {converted !== text && (
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+          }}
+          onClick={() => {
+            applier.type(converted);
+            field.current?.focus();
+          }}
+        >
+          Convert command separators to lines
+        </button>
+      )}
+      <details className="editor-help">
+        <summary>Editor help</summary>
+        <p className="muted">
+          Ctrl+Space opens completions. Arrow keys choose, Tab or Enter accepts, Escape dismisses.
+          Ctrl+Enter applies and formats valid source.
+        </p>
+        <p className="muted">
+          Leaving the editor keeps your source. Apply text formats valid source. Construction edits
+          regenerate clean text; unapplied drafts stay available with a warning. Pasting command
+          separators reveals an explicit conversion to separate lines.
+        </p>
+      </details>
     </div>
   );
 }
