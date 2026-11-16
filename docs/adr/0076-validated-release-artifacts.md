@@ -160,6 +160,16 @@ complete required browser matrix still executes all five comparisons and decides
 An exact-font local reproduction remained 2.61–3.70% different from same-source CI GUI images,
 so these references must be reviewed from CI output rather than generated locally as equivalent.
 
+The required web job also uploads a diagnostic-only public report immediately after an
+actually executed public failure, before collecting the internal suite. This responds to
+the observed roughly 12-minute wait for the combined report while official active-job logs
+returned BlobNotFound. The early archive contains only the public HTML report and shared
+environment record, identified by full source SHA, run and attempt, retained 14 days.
+Cancellation and skipped prerequisites do not upload it. The public failure remains fatal;
+the existing internal diagnostic condition, complete final report upload, least-privilege
+permissions and candidate dependency graph are unchanged. No `continue-on-error`, new gate,
+privileged follow-up or publication path is introduced.
+
 The five final GUI references use exact actual images from diagnostic run `43865444969`,
 artifact `14225855788`, source `c5208237753c033b907bae52c9a949c5ab54c363`. The integration
 owner and implement11 inspected both new public images and all three internal

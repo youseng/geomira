@@ -58,6 +58,16 @@ jobs:
         env:
           PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/public
         run: pnpm e2e
+      - name: Early public browser failure evidence
+        if: ${{ !cancelled() && steps.public_browsers.outcome == 'failure' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-public-failure-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/web/playwright-report/public
+            apps/web/playwright-report/environment.txt
+          if-no-files-found: error
+          retention-days: 14
       - name: Internal engine (never copied to the release)
         # Collect independent diagnostics without erasing a failed public gate. Do not
         # run after cancellation or an earlier prerequisite skipped the public suite.
