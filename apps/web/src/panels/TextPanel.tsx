@@ -142,8 +142,8 @@ function TextActions(p: {
  * shows the diagnostics of every line as you type, and the text applies as you type
  * (ADR-0047, text-apply.ts): after a pause, a text without errors becomes the figure (one
  * replaceText; a typing session is one undo), and the field keeps the text as typed, caret
- * and scroll included. Apply text, Ctrl+Enter and leaving the field apply at once and show the
- * printed figure. A text with errors is not applied: the figure stays and the errors stay
+ * and scroll included. Apply text and Ctrl+Enter apply at once and show the printed figure;
+ * leaving the field applies current valid text while preserving its source (ADR-0075). A text with errors is not applied: the figure stays and the errors stay
  * listed. A change of the figure from elsewhere updates the text, unless the text holds edits
  * that were not applied: they are kept, with a note, and applied only by Apply text (also
  * while another tab is shown; Run 10 audit, W4).

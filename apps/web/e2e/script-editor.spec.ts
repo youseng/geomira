@@ -16,7 +16,7 @@ async function caret(field: Locator, at: number) {
 test('source assistance highlights and numbers exact text; blur preserves source until explicit formatting', async ({
   page,
 }, testInfo) => {
-  await openApp(page);
+  await openApp(page, './index.html');
   const value = '# geometry 🟢\nA=(0,0)\nB=(4,0)\nω=circle(A,2)\n';
   const field = await source(page, value);
   await expect(page.locator('.script-gutter')).toHaveText('1\n2\n3\n4\n5');
@@ -36,7 +36,7 @@ test('source assistance highlights and numbers exact text; blur preserves source
 test('diagnostic activation scrolls to and selects the exact Unicode source span', async ({
   page,
 }) => {
-  await openApp(page);
+  await openApp(page, './index.html');
   const value = `A=(0,0)\n${Array.from({ length: 45 }, (_, i) => `# line ${String(i)} 🟢`).join('\n')}\nω=midpoint(A,Missing)\n`;
   const field = await source(page, value);
   const diagnostic = page
@@ -61,7 +61,7 @@ test('diagnostic activation scrolls to and selects the exact Unicode source span
 test('registry completion works in a middle line and after Greek names without changing surrounding source', async ({
   page,
 }) => {
-  await openApp(page);
+  await openApp(page, './index.html');
   const value = 'A=(0,0)\nω=circle(A,2)\nM = midp\n# keep suffix\n';
   const field = await source(page, value);
   await caret(field, value.indexOf('midp') + 4);
@@ -90,7 +90,7 @@ test('registry completion works in a middle line and after Greek names without c
 test('explicit command conversion preserves strings and nested separators, and completion supports pointer choice', async ({
   page,
 }) => {
-  await openApp(page);
+  await openApp(page, './index.html');
   const value = '@title "a;b"; A=(0,0); B=(4,0) # comment; keep';
   const field = await source(page, value);
   await page.getByRole('button', { name: 'Convert command separators to lines' }).click();
@@ -105,7 +105,7 @@ test('explicit command conversion preserves strings and nested separators, and c
 test('IME composition cannot apply partial text or accept a completion until composition ends', async ({
   page,
 }) => {
-  await openApp(page, './?dev=1');
+  await openApp(page, './index.html?dev=1');
   await command(page, 'A=(0,0)');
   const field = await textArea(page);
   const before = await field.inputValue();
@@ -126,7 +126,7 @@ test('IME composition cannot apply partial text or accept a completion until com
 test('completion is one normal source edit with one undo; construction regeneration is explained', async ({
   page,
 }) => {
-  await openApp(page);
+  await openApp(page, './index.html');
   await command(page, 'A=(0,0)');
   await command(page, 'B=(4,0)');
   const field = await textArea(page);
@@ -143,4 +143,26 @@ test('completion is one normal source edit with one undo; construction regenerat
   await expect(page.locator('.source-regeneration')).toContainText('source was regenerated');
   await page.getByRole('button', { name: 'Redo', exact: true }).click();
   await expect(field).toHaveValue(/midpoint\(A, B\)/u);
+});
+
+test('native undo and redo preserve the exact source around completions in both entry fields', async ({
+  page,
+}) => {
+  await openApp(page, './index.html');
+  const area = await source(page, 'A=(0,0)\nB=(4,0)\nM=midp');
+  await area.press('Control+Space');
+  await area.press('Tab');
+  await expect(area).toHaveValue('A=(0,0)\nB=(4,0)\nM=midpoint(');
+  await area.press('Control+z');
+  await expect(area).toHaveValue('A=(0,0)\nB=(4,0)\nM=midp');
+  await area.press('Control+Shift+z');
+  await expect(area).toHaveValue('A=(0,0)\nB=(4,0)\nM=midpoint(');
+  const input = page.getByLabel('Command', { exact: true });
+  await input.fill('M=midp');
+  await input.press('Tab');
+  await expect(input).toHaveValue('M=midpoint(');
+  await input.press('Control+z');
+  await expect(input).toHaveValue('M=midp');
+  await input.press('Control+Shift+z');
+  await expect(input).toHaveValue('M=midpoint(');
 });

@@ -46,7 +46,9 @@ rollback. A separate parser would duplicate the language contract.
 - Use the existing registry/command completion data against source before the current line;
   do not offer forward-reference objects or GUI Claim actions. Completion supports Ctrl+Space,
   arrows, Tab/Enter, pointer choice, Escape and an explicit no-match state. Signature help uses
-  the innermost open registry call. A completion is one normal shared-draft change. Native keys
+  the innermost open registry call. A completion is one normal shared-draft change, inserted through a native insertText transaction
+  so field Undo/Redo retains valid source offsets before React follows its value. Both the Text
+  editor and command bar share this insertion boundary. Native keys
   remain native when assistance is inactive; comments and quoted text do not auto-open it.
 - Native IME composition holds automatic apply and completion until its final text is committed.
   Unicode, primes and ordinary textarea selection are retained. The shared `TextApplier` and

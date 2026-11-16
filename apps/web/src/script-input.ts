@@ -5,6 +5,7 @@ import type { EditorState } from '@geomira/editor/state';
 import type { TextApplier } from './text-apply';
 import { lineAt, sourceCompletionsAllowed } from './script-source';
 import { parseText } from '@geomira/lang/parse-text';
+import { insertCompletion } from './native-completion';
 
 export function useScriptCompletion(state: EditorState, applier: TextApplier, text: string) {
   const [cursor, setCursor] = useState(0);
@@ -32,8 +33,14 @@ export function useScriptCompletion(state: EditorState, applier: TextApplier, te
     const result = acceptCompletion(line.text, line.cursor, completion);
     const next =
       text.slice(0, line.start) + result.text + text.slice(line.start + line.text.length);
-    applier.type(next);
     const at = line.start + result.cursor;
+    insertCompletion(
+      field,
+      at - completion.insert.length,
+      line.start + line.cursor,
+      completion.insert,
+    );
+    applier.type(next);
     setCursor(at);
     offer(false);
     requestAnimationFrame(() => {

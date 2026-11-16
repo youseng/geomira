@@ -4,6 +4,7 @@ import { acceptCompletion, completions, type Completion } from '@geomira/editor/
 import type { Diagnostic } from '@geomira/lang/diagnostic';
 import { DiagnosticList } from './panels/TextPanel';
 import type { EditorStore } from './store';
+import { insertCompletion } from './native-completion';
 
 export interface CommandBarProps {
   readonly store: EditorStore;
@@ -31,9 +32,13 @@ function useCommandBar(store: EditorStore, inputRef: CommandBarProps['inputRef']
   );
   const accept = (c: Completion) => {
     const r = acceptCompletion(text, cursor, c);
+    insertCompletion(inputRef.current, r.cursor - c.insert.length, cursor, c.insert);
     setText(r.text);
     setCursor(r.cursor);
-    requestAnimationFrame(() => inputRef.current?.setSelectionRange(r.cursor, r.cursor));
+    requestAnimationFrame(() => {
+      inputRef.current?.setSelectionRange(r.cursor, r.cursor);
+      setCursor(r.cursor);
+    });
   };
   const run = () => {
     const r = store.command(text);

@@ -11,8 +11,8 @@
  *   redo, the style card, the claim bar, the command bar, Randomize, an example or a link), wins:
  *   the pending apply is dropped, never applied over the newer figure, and the typed text stays
  *   with a note (stale) until Apply text or Revert text.
- * - Apply text and Ctrl+Enter apply now; leaving the field applies like the end of a pause.
- *   Each ends the typing session and shows the printed figure (unless the text was not applied).
+ * - Apply text and Ctrl+Enter apply now and format the source. Leaving the field applies
+ *   like the end of a pause and preserves source (ADR-0075). Each ends the typing session.
  * - The text is parsed once per text: the diagnostics' parse is handed on to the apply.
  */
 import type { Edit } from '@geomira/editor/edit';

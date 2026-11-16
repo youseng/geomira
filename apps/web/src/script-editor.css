@@ -2,8 +2,8 @@
   display: grid;
   grid-template-columns: 3.2em minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
-  flex: 1;
-  min-height: 16rem;
+  flex: 1 1 8rem;
+  min-height: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
@@ -111,4 +111,8 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.text-panel > .script-editor {
+  flex-shrink: 1;
 }
