@@ -17,7 +17,7 @@ verification, CI and the independent audit.
 - [x] 05 Properties and inherited visibility — integrated; ADR-0070; 48 unit / 20 browser checks.
 - [x] 06 Tool dependencies and capabilities — integrated; ADR-0071; 108 unit / 3 browser checks.
 - [ ] 07 Stable geometry numerics — in progress; ADR-0072.
-- [ ] 08 Randomize/shared sampler — in progress; ADR-0073.
+- [x] 08 Randomize/shared sampler — integrated; ADR-0073; 125 unit / 3 browser checks.
 - [ ] 09 Responsive/discoverable interface — in progress on integrated 03/05/06; ADR-0074.
 - [ ] 10 Script editor/workflow — in progress; atomic command regressions pass; ADR-0075.
 - [ ] 11 Release infrastructure/artifacts — infrastructure integrated; final candidate pending; ADR-0076.

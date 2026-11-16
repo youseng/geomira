@@ -21,7 +21,7 @@ const INTERNAL =
 const internalOnly = engine ? '|public-release' : `|${INTERNAL}`;
 const fileSpecs = engine
   ? /file-url\.spec/u
-  : /(public-release|persistence|modal-safety|release-download|document-files)\.spec/u;
+  : /(public-release|persistence|modal-safety|release-download|document-files|randomize-integrity)\.spec/u;
 
 export default defineConfig({
   testDir: 'e2e',
