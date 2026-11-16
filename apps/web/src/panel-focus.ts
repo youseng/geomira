@@ -17,7 +17,7 @@ export function keepPanelFocusVisible(event: FocusEvent<HTMLElement>): void {
   if (!(app instanceof HTMLElement) || canvas === null || canvas === undefined) return;
   const align = () => {
     if (!field.isConnected || document.activeElement !== field) return;
-    const view = visualViewport;
+    const view = window.visualViewport;
     const top = view?.offsetTop ?? 0;
     const bottom = top + (view?.height ?? innerHeight);
     const source = field.getBoundingClientRect();
@@ -36,6 +36,8 @@ export function keepPanelFocusVisible(event: FocusEvent<HTMLElement>): void {
     if (minimum <= maximum) app.scrollTop += Math.max(minimum, Math.min(0, maximum));
   };
   align();
+  // The focus() algorithm may scroll after dispatching its synchronous focus events.
+  queueMicrotask(align);
   // Native focus scrolling and viewport updates can finish after the focus event.
   requestAnimationFrame(() => {
     requestAnimationFrame(align);

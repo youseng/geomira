@@ -223,11 +223,16 @@ and the visual viewport and makes the smallest feasible app scroll that exposes 
 CSS-pixel scroll quantization, and does not change focus, caret, draft or geometry. If the
 viewport cannot contain both minima, it leaves native focus behavior intact; users retain
 ordinary page scrolling. This does not claim physical-device keyboard verification.
+Alignment also runs in a post-focus microtask, after the focus algorithm's synchronous
+default scroll, and uses `window.visualViewport` with the inner-height fallback when absent.
+Short-panel bodies retain their intrinsic content height and a 220px minimum rather than
+shrinking a 260px editor into a smaller body with overflowing controls.
 
 Additive `panel-controls.spec.ts` checks real center hit targets, native pointer/keyboard
 Expand/Compact, every public tab, Close/reopen, exact raw draft preservation and geometry
 Undo/Redo. Its focus case injects the traced partly visible native-focus placement and
-retains the 120px exposure and caret assertions. The existing cross-engine exposure matrix
+retains the 120px exposure and caret assertions, including without the optional visual-viewport
+API. The existing cross-engine exposure matrix
 remains unchanged. No frozen assertion, tolerance or reference is weakened.
 
 ## Integration correction: native traversal and page-flow fixtures

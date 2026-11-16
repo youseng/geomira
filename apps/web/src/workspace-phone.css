@@ -238,6 +238,8 @@
     min-height: 280px;
   }
   .short-workspace .side.open .tab-body {
+    flex: none;
+    min-height: 220px;
     overflow: visible;
   }
   .short-workspace .side.open .text-panel {

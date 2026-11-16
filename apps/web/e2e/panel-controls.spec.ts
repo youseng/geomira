@@ -16,7 +16,7 @@ test('a partially visible native Text focus exposes source and figure without ch
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 420 });
-  await openApp(page, './index.html');
+  const errors = await openApp(page, './index.html');
   await command(page, 'A=(0,0)');
   await page.getByRole('tab', { name: 'Text', exact: true }).click();
   const field = page.getByLabel('Text', { exact: true });
@@ -27,6 +27,8 @@ test('a partially visible native Text focus exposes source and figure without ch
   // synthetic focus/pointer event or a changed viewport/layout assertion.
   await field.evaluate((element: HTMLTextAreaElement) => {
     element.blur();
+    // Older browsers have no visualViewport global; the host still uses innerHeight.
+    Reflect.deleteProperty(window, 'visualViewport');
     const app = element.closest('.app');
     if (!(app instanceof HTMLElement)) throw new Error('no workspace scroll host');
     app.scrollTop += element.getBoundingClientRect().top - (innerHeight - 62);
@@ -40,6 +42,7 @@ test('a partially visible native Text focus exposes source and figure without ch
     })
     .toBeGreaterThanOrEqual(120);
   await expect(field).toHaveValue(draft);
+  expect(errors).toEqual([]);
   expect(await field.evaluate((element: HTMLTextAreaElement) => element.selectionStart)).toBe(17);
   const figure = await page.getByLabel('Geometry canvas').boundingBox();
   if (figure === null) throw new Error('no figure');
