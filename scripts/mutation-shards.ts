@@ -133,6 +133,9 @@ export const PROJECTIVE_D: readonly string[] = [`${K}/tools/harmonic.ts`];
  */
 export const CONIC_A: readonly string[] = [
   `${K}/conic.ts`,
+  `${K}/conic-form.ts`,
+  `${K}/conic-image.ts`,
+  `${T}/precise-matrix.ts`,
   `${K}/conic-glider.ts`,
   `${T}/conic-maps.ts`,
 ];

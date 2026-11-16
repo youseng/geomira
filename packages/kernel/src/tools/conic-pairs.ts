@@ -121,6 +121,16 @@ function countTwo<T>(
   const g = halfGradient(F, q, m.mid);
   const n = F.mul(F.mul(two(F), two(F)), vDot(F, g, g));
   const gap = m.sign === 1 ? F.neg(value) : value;
+  // At a stationary midpoint, Q/|gradient Q| is undefined, not a length-valued Q.
+  // The signed half-chord length is scale-covariant and decides the same root count.
+  if (F.kind === 'float' && F.eq(n, F.zero)) {
+    const r2 = F.mul(m.rad, vDot(F, m.direction, m.direction));
+    const negative = F.toNumber(r2) < 0;
+    const r = F.sqrt(negative ? F.neg(r2) : r2);
+    if (isInexact(r)) return undef(r.reason);
+    const side = F.sign(negative ? F.neg(r) : r, 'length', ctx);
+    return side === -1 ? undef(missing) : side === 1 ? 2 : 1;
+  }
   const s = signNormalized(F, gap, n, 'length', ctx);
   if (s === -1) return undef(missing);
   return s === 1 ? 2 : 1;

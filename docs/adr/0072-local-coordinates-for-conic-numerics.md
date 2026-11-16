@@ -77,3 +77,29 @@ No point is snapped onto a curve and no input name receives special membership.
 Increasing EPS/BAND or accepting a named point unconditionally would hide the defect;
 compensating world polynomial evaluation alone cannot restore coefficients already lost
 at construction. No dependency or general exact-field extension is introduced.
+
+## Integration follow-up: stationary chord midpoint
+
+Combined CI exposed a missed scale-free decision in the existing full degeneracy
+suite: a center-crossing ellipse scaled by 100000000 returned its midpoint as a
+single intersection. Stable chart arithmetic now produces an exactly zero gradient
+there. The previous `Q/|gradient Q|` helper fell back to raw dimensionless Q when the
+denominator was zero, then compared Q=4.25 to a length band of 60. This incorrectly
+classified two intersections as one. When the midpoint gradient is zero, decide the
+count using signed physical half-chord length `sign(rad)*sqrt(abs(rad)*|direction|²)`.
+The zero-gradient fallback is now scale-covariant; the unchanged EPS/BAND thresholds
+and ordinary tangency decisions continue to apply. A real missing chord through a
+hyperbola's stationary center is rejected rather than invented as a double point.
+
+The new scale regression failed before this follow-up. All original degeneracy
+assertions remain intact. The figure-baseline fixture changes only two inspected
+coefficient strings in its conic fixture: the hyperbola's e=2.52201258114e-16 and
+parabola's c=-1.28273163696e-16 become exactly zero. A new independent RationalField
+oracle regression requires both mathematical coefficients to be exactly zero and
+requires FloatField to produce zero too. Add this fourth frozen data file to the
+record: `packages/editor/test/fixtures/run-16a-baseline.json`.
+
+Mutation scope includes the extracted `conic-form.ts`, `conic-image.ts` and the new
+`transform/precise-matrix.ts` in the existing conic-core shard. Their code remains
+inside the full kernel mutation configuration and its exact partition; extraction
+must not silently remove mutation coverage. This does not change any mutation gate.

@@ -204,3 +204,78 @@ it('translated conic/conic intersections and common tangents keep their branches
     }
   }
 });
+
+it('a center-crossing chord keeps two intersections at a very large conic scale', () => {
+  for (const scale of [1, 100000000]) {
+    const b = new Builder();
+    const P = (x: number, y: number) => pt(x * scale, y * scale);
+    b.add('k', {
+      kind: 'call',
+      tool: 'conic',
+      args: [P(2, 0), P(0, 1), P(-2, 0), P(0, -1), P(1.2, 0.8)],
+      selectors: [],
+    });
+    b.call('l', 'line', P(-3, 0), P(3, 0));
+    for (const sign of [1, -1] as const)
+      b.add(sign === 1 ? 'X' : 'Y', {
+        kind: 'call',
+        tool: 'intersect',
+        args: [b.ref('l'), b.ref('k')],
+        selectors: [{ kind: 'along', sign }],
+      });
+    b.add('Z', {
+      kind: 'call',
+      tool: 'other',
+      args: [b.ref('l'), b.ref('k'), P(2, 0)],
+      selectors: [],
+    });
+    const ev = evalDoc(b.doc, FloatField);
+    for (const [name, wanted] of [
+      ['X', 2],
+      ['Y', -2],
+      ['Z', -2],
+    ] as const) {
+      const p = valueOf(b.doc, ev, name);
+      expect(p.kind).toBe('point');
+      if (p.kind !== 'point') throw new Error('missing chord point');
+      expect(p.x / scale).toBeCloseTo(wanted, 12);
+      expect(p.y).toBe(0);
+    }
+  }
+});
+
+it('binary local construction retains exact zero coefficients of rational conics', () => {
+  const b = new Builder();
+  b.call('h', 'conic', pt(1, 1), pt(2, 0.5), pt(-1, -1), pt(4, 0.25), pt(0.5, 2));
+  b.call('p', 'conic', pt(0, -3), pt(1, -2), pt(-1, -2), pt(2, 1), pt(-2, 1));
+  const exact = evalDoc(b.doc, RationalField),
+    approximate = evalDoc(b.doc, FloatField);
+  for (const name of ['h', 'p']) {
+    const q = valueOf(b.doc, exact, name),
+      k = valueOf(b.doc, approximate, name);
+    if (q.kind !== 'conic' || k.kind !== 'conic') throw new Error('missing conic');
+    const exactZero = name === 'h' ? q.e : q.c;
+    const approximateZero = name === 'h' ? k.e : k.c;
+    expect(RationalField.eq(exactZero, RationalField.zero)).toBe(true);
+    expect(approximateZero).toBe(0);
+  }
+});
+
+it('a stationary midpoint in a hyperbola gap does not create a false double intersection', () => {
+  for (const scale of [1, 100000000]) {
+    const b = new Builder();
+    const P = (x: number, y: number) => pt(x * scale, y * scale);
+    b.call('h', 'conic', P(1, 1), P(2, 0.5), P(-1, -1), P(4, 0.25), P(0.5, 2));
+    b.call('l', 'line', P(-2, 2), P(2, -2));
+    b.add('X', {
+      kind: 'call',
+      tool: 'intersect',
+      args: [b.ref('l'), b.ref('h')],
+      selectors: [{ kind: 'along', sign: 1 }],
+    });
+    const v = valueOf(b.doc, evalDoc(b.doc, FloatField), 'X');
+    expect(v.kind).toBe('undefined');
+    if (v.kind !== 'undefined') throw new Error('expected a missing intersection');
+    expect(v.reason).toContain('misses');
+  }
+});
