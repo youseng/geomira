@@ -87,7 +87,12 @@ test('opening another card commits the previous object, and numeric partial inpu
   await setup(page);
   let c = await card(page);
   await c.getByLabel('Name', { exact: true }).fill('P');
-  c = await card(page, 0, 0);
+  await page.getByRole('tab', { name: 'Objects', exact: true }).click();
+  await page
+    .getByRole('tabpanel')
+    .getByRole('button', { name: 'A', exact: true })
+    .click({ button: 'right' });
+  c = page.getByRole('dialog', { name: /^Style of/u });
   await expect(c).toHaveAccessibleName('Style of A');
   await c.locator('summary').click();
   const z = c.getByLabel('Drawing order z', { exact: true });
