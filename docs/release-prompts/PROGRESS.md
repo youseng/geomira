@@ -20,7 +20,7 @@ verification, CI and the independent audit.
 - [x] 06 Tool dependencies and capabilities — integrated; ADR-0071; 108 unit / 3 browser checks.
 - [x] 07 Stable geometry numerics — integrated and independently reviewed; ADR-0072; 101 independent tests.
 - [x] 08 Randomize/shared sampler — integrated; ADR-0073; 125 unit / 3 browser checks.
-- [x] 09 Responsive/discoverable interface — audit corrections integrated; the first 56 combined native checks passed, then full supported-engine CI and independent review found further panel, draft-layout and two-client-update defects. Corrections and native fixture review are in progress; final acceptance below remains pending.
+- [x] 09 Responsive/discoverable interface — audit corrections integrated, including the later supported-engine panel/focus, native draft-layout and title-boundary defects. Application source frozen at `0cace13`; final combined acceptance below remains pending.
 - [x] 10 Script editor/workflow — integrated; ADR-0075; 21 new / 16 existing browser checks; 27 command tests.
 - [ ] 11 Release infrastructure/artifacts — infrastructure integrated; final candidate pending; ADR-0076.
 - [ ] 12 Independent final audit — earlier sources `9622000381c6b253067680593090624fafdff23c` and `c540412` remain rejected as release candidates. The clean `ab0c5fe` checkout passed full verification; subsequent functional corrections require a fresh combined source and artifact audit.

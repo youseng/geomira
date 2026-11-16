@@ -46,7 +46,8 @@ source edits; reviewed changes are integrated before combined verification.
   fresh combined verification and independent acceptance remain pending.
 - Both `9622000` and `c540412` are rejected as release candidates. Full supported-engine CI
   and independent review found further functional defects after the initial focused checks.
-  Source corrections and reviewed native-fixture migrations are being integrated.
+  Source corrections and reviewed native-fixture migrations are integrated. The revised
+  application source is frozen at `0cace13`; final combined checks and artifact review follow.
 - Main merge and its configured deployment are authorized only after those gates pass.
   Neither has been performed. No separate tagged release was requested.
 
@@ -68,8 +69,13 @@ The `c540412ec2e4d4a68c93c4e59a26343756adaf69` implementation freeze was lifted 
 full CI and independent review found an already-active-worker Reload stall in a second tab,
 covered Expand/Compact controls, insufficient WebKit source exposure and draft-indicator
 reflow during canvas input. The internal retained claim entry also left its suggestion list
-open after submission. Source fixes are being integrated with failing-first regressions;
-public testing remains disabled. `ab0c5fe` changed CSS/JSON formatting only and passed a
+open after submission. Source fixes are integrated with failing-first regressions; public testing remains disabled.
+A later independent title-boundary repro found another header-wrap shift during a native
+drag at 1024/1032/1040px. Inline-size containment now keeps the title within the reserved
+caption budget. Public/internal seven-case native checks and independent boundary probes
+pass; supported-engine CI and final-byte review remain required. The suspected download
+status shift did not reproduce over 673 sampled desktop widths; its real feedback remains
+unchanged and gains a native history guard. → [title evidence](release-prompts/results/integration-title-identity.md). `ab0c5fe` changed CSS/JSON formatting only and passed a
 clean full `pnpm verify` with **5,036 tests / 552 files**. Because functional source changed
 afterward, that pass does not establish acceptance of the next candidate. Fresh combined
 verification, all supported-engine checks and exact artifact review remain required. See
@@ -123,6 +129,16 @@ with the final artifact. Intermediate green tests do not establish combined acce
   requires fresh review of changed images rather than carrying forward those approvals.
 
 ### Acceptance command output
+
+The rejected `c540412` push run `43854336027` completed with public **755 passed / 55 failed /
+1 dependency-not-run**, internal **604 passed / 70 failed / 4 dependency-not-run**. Verification
+failed at formatting only (corrected by `ab0c5fe`); exports passed: **80 inputs, 74 compiled
+and checked, 6 precision-guard refusals, 0 failed**. All 125 browser failures are accounted
+for in the [disposition ledger](release-prompts/results/11-c540-ci-dispositions.md). The
+local c540 functional diagnostic was **401 passed / 9 failed / 0 skipped**; all nine failures
+match those known categories. None is counted as acceptance of the revised source. Twenty
+individually reviewed canvas/export references match their recorded SHA-256 values; five
+whole-GUI references await fresh corrected-source CI images. Final counts follow below.
 
 Pinned pnpm 10.28.0, Node 24.22.1. Frozen lockfile installation; no runtime dependency upgrade.
 
