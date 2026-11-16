@@ -78,7 +78,9 @@ The final audit found that a second client retained its draft safely after anoth
 activated the offered worker, but its later explicit Reload could wait forever for an
 already-delivered controllerchange. Pwa.applyUpdate now handles that explicit action using
 an available fresh waiting candidate, or reloads directly when its retained offer is already
-activating, activated or redundant. The beforeReload callback still runs before either path.
+activated or redundant, or already controls that client. An activating worker that has
+not yet claimed the client retains the pending controllerchange path without another
+skip-waiting message. The beforeReload callback still runs before either path.
 A waiting installed worker keeps the existing skip-waiting/controllerchange sequence, with
 its pending reload request consumed once. Passive controller changes still never reload a
 non-initiating page. SafeUpdate's draft, conflict and durable-save guards remain ahead of

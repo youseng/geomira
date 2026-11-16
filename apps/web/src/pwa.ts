@@ -141,13 +141,15 @@ export class Pwa {
     beforeReload();
     // Another client may have activated this offer before this tab chose Reload.
     // Its controllerchange is already past; only this explicit action may reload the tab.
-    if (['activating', 'activated', 'redundant'].includes(w.state)) {
+    const c = this.env.container;
+    const controlsPage = hasContainer(c) && c.controller === w;
+    if (controlsPage || w.state === 'activated' || w.state === 'redundant') {
       this.reloading = false;
       this.env.reload();
       return;
     }
     this.reloading = true;
-    w.postMessage({ type: 'skip-waiting' }, []);
+    if (w.state !== 'activating') w.postMessage({ type: 'skip-waiting' }, []);
   }
 
   /** The banner's Later: hidden until another version installs. */

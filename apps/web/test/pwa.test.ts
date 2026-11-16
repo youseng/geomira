@@ -184,7 +184,9 @@ for (const phase of ['activating', 'activated', 'redundant']) {
     await tick();
     c.reg.waiting = null;
     next.to(phase);
-    c.takeOver(next);
+    const controller = phase === 'redundant' ? new FakeWorker() : next;
+    if (phase === 'redundant') controller.to('activated');
+    c.takeOver(controller);
     expect(reloads()).toBe(0);
     let saved = false;
     pwa.applyUpdate(() => {
@@ -194,7 +196,7 @@ for (const phase of ['activating', 'activated', 'redundant']) {
     expect(saved).toBe(true);
     expect(reloads()).toBe(1);
     expect(next.messages).toEqual([]);
-    c.takeOver(next);
+    c.takeOver(controller);
     expect(reloads()).toBe(1);
   });
 }
@@ -223,5 +225,29 @@ it('a stale redundant offer uses a newer waiting candidate before an explicit up
   c.takeOver(fresh);
   expect(reloads()).toBe(1);
   c.takeOver(fresh);
+  expect(reloads()).toBe(1);
+});
+
+it('an activating offer that does not yet control the client waits for adoption', async () => {
+  const c = new FakeContainer();
+  c.controller = new FakeWorker();
+  const next = new FakeWorker();
+  next.to('installed');
+  c.reg.waiting = next;
+  const { pwa, reloads } = setup(c);
+  await pwa.start();
+  await tick();
+  c.reg.waiting = null;
+  next.to('activating');
+  let saved = 0;
+  pwa.applyUpdate(() => {
+    saved++;
+  });
+  expect(saved).toBe(1);
+  expect(reloads()).toBe(0);
+  expect(next.messages).toEqual([]);
+  c.takeOver(next);
+  expect(reloads()).toBe(1);
+  c.takeOver(next);
   expect(reloads()).toBe(1);
 });
