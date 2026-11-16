@@ -3,10 +3,9 @@
   .app.panel-collapsed {
     --phone-stage-height: 240px;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: max-content 48px max-content minmax(
-        var(--phone-stage-height),
-        1fr
-      ) 44px 76px 44px;
+    grid-template-rows:
+      max-content 48px max-content minmax(var(--phone-stage-height), 1fr)
+      44px 76px 44px;
     grid-template-areas: 'top' 'work' 'alerts' 'stage' 'side' 'pal' 'cmd';
   }
   .panel-collapsed .side {
@@ -73,16 +72,14 @@
   .app:has(> .side.open) {
     /* Native text focus must leave room above it for the exposed figure. */
     scroll-padding-block-start: var(--phone-stage-height);
-    grid-template-rows: max-content 48px max-content var(--phone-stage-height) minmax(
-        400px,
-        auto
-      ) 76px 44px;
+    grid-template-rows:
+      max-content 48px max-content var(--phone-stage-height) minmax(400px, auto)
+      76px 44px;
   }
   .app:has(> .side.open.compact) {
-    grid-template-rows: max-content 48px max-content var(--phone-stage-height) minmax(
-        280px,
-        auto
-      ) 76px 44px;
+    grid-template-rows:
+      max-content 48px max-content var(--phone-stage-height) minmax(280px, auto)
+      76px 44px;
   }
   .side.open,
   .side.open.compact {
@@ -209,16 +206,14 @@
     padding-left: 2px;
   }
   .app.short-workspace {
-    grid-template-rows: max-content 48px max-content minmax(
-        var(--phone-stage-height),
-        1fr
-      ) 44px 0 44px;
+    grid-template-rows:
+      max-content 48px max-content minmax(var(--phone-stage-height), 1fr)
+      44px 0 44px;
   }
   .short-workspace.show-palette {
-    grid-template-rows: max-content 48px max-content minmax(
-        var(--phone-stage-height),
-        1fr
-      ) 44px 76px 44px;
+    grid-template-rows:
+      max-content 48px max-content minmax(var(--phone-stage-height), 1fr)
+      44px 76px 44px;
     overflow: auto;
   }
   .short-workspace.show-palette .palette {
@@ -230,16 +225,14 @@
   /* A short keyboard viewport needs a real editor, not a one-line overlay.
      Keep its panel in page flow so the field, diagnostics and actions can scroll. */
   .short-workspace:has(> .side.open) {
-    grid-template-rows: max-content 48px max-content var(--phone-stage-height) minmax(
-        280px,
-        auto
-      ) 0 44px;
+    grid-template-rows:
+      max-content 48px max-content var(--phone-stage-height) minmax(280px, auto)
+      0 44px;
   }
   .short-workspace.show-palette:has(> .side.open) {
-    grid-template-rows: max-content 48px max-content var(--phone-stage-height) minmax(
-        280px,
-        auto
-      ) 76px 44px;
+    grid-template-rows:
+      max-content 48px max-content var(--phone-stage-height) minmax(280px, auto)
+      76px 44px;
   }
   .short-workspace .side.open,
   .short-workspace .side.open.compact {

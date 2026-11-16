@@ -9,140 +9,98 @@
     {
       "scenario": "desktop PNG golden: euler-line",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/euler-line-desktop-linux.png",
-      "dimensions": [
-        856,
-        534
-      ],
+      "dimensions": [856, 534],
       "previous_sha256": "624fed15e7d2296fa0fd8a0d665d3bf8e518566008602b971ac6ecacd4ffc827",
       "sha256": "1f90c2750217dd46dc9e25d37ffeec33a397c3b857fee55d18f11bd5d87e38da"
     },
     {
       "scenario": "desktop PNG golden: feuerbach",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/feuerbach-desktop-linux.png",
-      "dimensions": [
-        856,
-        534
-      ],
+      "dimensions": [856, 534],
       "previous_sha256": "0d96bae7d68fae5e43dfac2dfa6e199fb749a2888de2bbc561390729a89fa8ad",
       "sha256": "3252a14fb1ec0261d2ba2e14c431210da6252b1df932e933dbd48207564a5336"
     },
     {
       "scenario": "desktop PNG golden: incenter-excenter",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/incenter-excenter-desktop-linux.png",
-      "dimensions": [
-        856,
-        534
-      ],
+      "dimensions": [856, 534],
       "previous_sha256": "1ef27ddf239dbc9dd3e725439db7187c70a923e4b7a5a2b8960524bc97377b5c",
       "sha256": "c293591dea6b3f214c681ffb30721e8571b0dd4b4d69d58e1879ed3fcb501655"
     },
     {
       "scenario": "desktop PNG golden: miquel",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/miquel-desktop-linux.png",
-      "dimensions": [
-        856,
-        534
-      ],
+      "dimensions": [856, 534],
       "previous_sha256": "095e81f0bc3039bf88a2c94bb8f2daaf0a117e80bb431bc5cbdb7753ba8584e6",
       "sha256": "837dd8cd00bc6462623885bcbd9972dd0de0db237f2cdca5d3315d8ebda8130f"
     },
     {
       "scenario": "desktop PNG golden: nine-point-circle",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/nine-point-circle-desktop-linux.png",
-      "dimensions": [
-        856,
-        534
-      ],
+      "dimensions": [856, 534],
       "previous_sha256": "5221f255de57db51357c6520a52868ff25afa87be8ad82de3bba7e278e81cfc0",
       "sha256": "7c3aa60c072f57bfd0763dd0f6486909b1004715ae24e820d1a19f10ecab4f94"
     },
     {
       "scenario": "desktop PNG golden: radical-axes",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/radical-axes-desktop-linux.png",
-      "dimensions": [
-        856,
-        534
-      ],
+      "dimensions": [856, 534],
       "previous_sha256": "216247a3f7e4e4c45f29831ef5d591252fdabfb7cc92b9a9a6982cce541e1ef5",
       "sha256": "ed4106e8686decd74da1c6abc0011097e17d790d41de66d0cb0333d381fc2b5c"
     },
     {
       "scenario": "desktop PNG golden: reflection-layer",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/reflection-layer-desktop-linux.png",
-      "dimensions": [
-        856,
-        534
-      ],
+      "dimensions": [856, 534],
       "previous_sha256": "78d88dba560cbe1562acb9e7d52d80c1aab339d5f9c16ca2aa4e8d8e31560064",
       "sha256": "298a6010d0925dca6596f8ef4dc773e10216c90570066d1ffeb27165755bc88d"
     },
     {
       "scenario": "desktop PNG golden: simson",
       "reference": "apps/web/e2e/flows-export.spec.ts-snapshots/simson-desktop-linux.png",
-      "dimensions": [
-        856,
-        534
-      ],
+      "dimensions": [856, 534],
       "previous_sha256": "f50d969bf2996dbe1134dc5415da26d876a899925b71466dbf906b7c87218c02",
       "sha256": "8f9005cfeb8f40b97fd0ca913c75ac2268e28d6a92828f27afd36f521b94e3c2"
     },
     {
       "scenario": "mobile screenshot baseline: euler-line",
       "reference": "apps/web/e2e/scene.spec.ts-snapshots/public-euler-line-mobile-linux.png",
-      "dimensions": [
-        390,
-        297
-      ],
+      "dimensions": [390, 297],
       "previous_sha256": "3bc78cec6daa3f1380fc2224642096935be8befd794157a331dd58bde929913c",
       "sha256": "37e595f0c49619dd992e93946e017d50ad916bcd62679d1d783a0e2d280adba9"
     },
     {
       "scenario": "mobile screenshot baseline: nine-point-circle",
       "reference": "apps/web/e2e/scene.spec.ts-snapshots/public-nine-point-circle-mobile-linux.png",
-      "dimensions": [
-        390,
-        297
-      ],
+      "dimensions": [390, 297],
       "previous_sha256": "2ae1e8df25a5448c6b4a5bf6e9f25f4120d1eb189da8d3ec94a077721758b580",
       "sha256": "1f07b74de9721ae8a03332c272e86ed146bc139dbb61c8ccfabee17b9f1e1cb1"
     },
     {
       "scenario": "mobile screenshot baseline: reflection-layer",
       "reference": "apps/web/e2e/scene.spec.ts-snapshots/public-reflection-layer-mobile-linux.png",
-      "dimensions": [
-        390,
-        297
-      ],
+      "dimensions": [390, 297],
       "previous_sha256": "47522c1f0ab5f2202726c35356908ba963bf577eda04345f4fe1facbf39d31de",
       "sha256": "87668b9a53fd9b97d0ca2628da391650b4dea740689f168b717ac37b2888029e"
     },
     {
       "scenario": "desktop screenshot baseline: euler-line",
       "reference": "apps/web/e2e/scene.spec.ts-snapshots/public-euler-line-desktop-linux.png",
-      "dimensions": [
-        856,
-        534
-      ],
+      "dimensions": [856, 534],
       "previous_sha256": "cf433cff5cfe65cccca7fc60c0f7759e6ee2741d2faee53e902a9b1adb860d2f",
       "sha256": "0d6243880922a381f0b2155aa396459ae09c6dbd3366adb41c750fa12a3154f4"
     },
     {
       "scenario": "desktop screenshot baseline: nine-point-circle",
       "reference": "apps/web/e2e/scene.spec.ts-snapshots/public-nine-point-circle-desktop-linux.png",
-      "dimensions": [
-        856,
-        534
-      ],
+      "dimensions": [856, 534],
       "previous_sha256": "cc2855ce8fcec139be48e252a88e9522a371e3d88ef9270f4de8bec81abb7ce1",
       "sha256": "4e9501e5060666ce48e887792f5eb56b2bd69a238fd9b827a3892d4346e28afc"
     },
     {
       "scenario": "desktop screenshot baseline: reflection-layer",
       "reference": "apps/web/e2e/scene.spec.ts-snapshots/public-reflection-layer-desktop-linux.png",
-      "dimensions": [
-        856,
-        534
-      ],
+      "dimensions": [856, 534],
       "previous_sha256": "d7f527c95601a68a24a6daa180a493cb672314ee3b09c3568b98ae0fdc668625",
       "sha256": "dabe69edc6eded138f90ea09ddc96f24e264a91a2e636ef0abe03bf200804832"
     }
