@@ -40,8 +40,8 @@ may enable them; URL parameters, persisted settings and document data cannot do 
 
 `claim` and `assume` remain language/document data, preserved through parsing, printing, edits,
 rename, undo, saving, sharing and reopening. Randomize retains applicable assumptions and the
-shared sampling dependencies. This containment does not fix or endorse the sampler: the fixed
-radius-ratio reproduction in ADR-0065 remains a known engine issue for separate work.
+shared sampling dependencies. ADR-0073 preserves fixed-radius ratios and validates sampled
+domains; unresolved retained-engine reactivation gates are in `docs/claims-reactivation.md`.
 
 ## 2. Repository and dependency rules
 packages/num      tolerance, noise floor, seeded RNG, Field<T>: Float, Rational, ModP
@@ -146,7 +146,10 @@ Generic over the number type T:
   symmetric 3×3 matrix), so one point set has one value; only non-degenerate real conics; the
   type (ellipse, parabola, hyperbola) is derived, never stored; `anchor` a known point (gliders,
   conic_to_circle). A circle is never a conic: circle tools keep returning circles; a projective
-  map's image of a circle or conic is a conic.
+  map's image of a circle or conic is a conic. Float values may additionally retain an immutable
+  local polynomial chart `Q(origin + Y)` (ADR-0072) so translation does not discard useful
+  precision. Numeric consumers preserve/use this chart; document syntax and the canonical
+  six-coefficient exact representation remain unchanged.
 - `Undefined { kind:'undefined', reason }` and `Inexact { kind:'inexact', reason }`.
 Reserved kinds (documented only): Locus. Capabilities: point; curve
 (line | circle); linear; round; number; transform; polygon; and (ADR-0040) ideal, ppoint (a
@@ -347,6 +350,13 @@ otherwise by rejection, with a retry budget of 50·N and a "hard to satisfy" rep
 5% acceptance (never silently testing fewer figures).
 For exact rungs, samples are rounded to a coarse rational grid (denominators ≈ 2^10) and
 glider parameters to coarse rationals.
+
+Fixed literal radii are construction constants, multiplied by one exact rational common
+similarity scale; neither the sampler nor Randomize rounds them independently onto the
+coordinate grid. Invalid sampled inputs (including unrelated ones) refuse Randomize and
+return structured invalid retained jobs before any RNG domain call. Do not repair zero or
+negative radii, swap bounds or discard objects. Strict circular order requires distinct
+points using the existing BAND margin. Public claim testing remains disabled.
 
 ### 10.5 Verdict rungs and verdicts
 Per sample, the first rung that applies:
@@ -578,3 +588,13 @@ The stable public `geomira.html` download is copied from the tested public singl
 and delivered with the website. `release.json` records the full source SHA, run, base and
 checksums; deployment consumes those bytes without rebuilding. The source repository does not
 carry a separately maintained executable snapshot. Nightly mutation remains a separate policy.
+
+### Source editing assistance (ADR-0075)
+
+The Text panel keeps a native accessible textarea, synchronized line numbers and decorative
+lexer highlighting. Registry-based completion and signature help do not execute document
+statements. Diagnostics select their source spans. IME input commits only its final composition;
+valid text keeps the existing 500 ms apply/coalescing policy and stale-draft protection.
+Blur applies valid current text while preserving its formatting; explicit Apply text/Ctrl+Enter
+may format it. Construction edits regenerate clean text with an explanation, preserving pending
+stale drafts. Command-style semicolon conversion is explicit and does not alter file grammar.

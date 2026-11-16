@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createRegistry } from '@geomira/kernel/registry';
 import { print } from '@geomira/lang/print';
 import {
+  readDocumentFile,
   readDocumentText,
   namedDocument,
   documentFileName,
@@ -24,6 +25,16 @@ describe('portable document files', () => {
     expect(print(readDocumentText(print(doc), registry))).toBe(print(doc));
     expect(doc.claims).toHaveLength(1);
     expect(doc.assumptions).toHaveLength(1);
+  });
+  it('preserves read errors and checks the native file size before reading', async () => {
+    const denied = new File([], 'denied.geo');
+    Object.defineProperty(denied, 'text', {
+      value: () => Promise.reject(new DOMException('Permission denied', 'NotReadableError')),
+    });
+    await expect(readDocumentFile(denied, registry)).rejects.toThrow('Permission denied');
+    const huge = new File([], 'huge.geo');
+    Object.defineProperty(huge, 'size', { value: MAX_FILE_BYTES + 1 });
+    await expect(readDocumentFile(huge, registry)).rejects.toThrow(/large/u);
   });
   it('names a duplicate without mutating the original and creates a safe filename', () => {
     const original = readDocumentText('A=(1,2)', registry);

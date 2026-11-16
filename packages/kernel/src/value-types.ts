@@ -81,6 +81,11 @@ export interface Conic<T> {
   readonly e: T;
   readonly f: T;
   readonly anchor?: Vec<T>;
+  /** Optional local polynomial Q(origin + Y); immutable FloatField precision data (ADR-0072). */
+  readonly chart?: {
+    readonly origin: Vec<T>;
+    readonly q: readonly [T, T, T, T, T, T];
+  };
 }
 
 /** A number; `exact` is its exact value when it comes from exact literals (ADR-0003). */

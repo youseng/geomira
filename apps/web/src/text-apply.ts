@@ -11,8 +11,8 @@
  *   redo, the style card, the claim bar, the command bar, Randomize, an example or a link), wins:
  *   the pending apply is dropped, never applied over the newer figure, and the typed text stays
  *   with a note (stale) until Apply text or Revert text.
- * - Apply text and Ctrl+Enter apply now; leaving the field applies like the end of a pause.
- *   Each ends the typing session and shows the printed figure (unless the text was not applied).
+ * - Apply text and Ctrl+Enter apply now and format the source. Leaving the field applies
+ *   like the end of a pause and preserves source (ADR-0075). Each ends the typing session.
  * - The text is parsed once per text: the diagnostics' parse is handed on to the apply.
  */
 import type { Edit } from '@geomira/editor/edit';
@@ -23,6 +23,7 @@ import {
   atPause,
   draftOf,
   follow,
+  hasEdits,
   onApplyNow,
   settled,
   typedInto,
@@ -33,7 +34,7 @@ import {
 import type { Document } from '@geomira/kernel/document';
 import { parseText, type ParsedText } from '@geomira/lang/parse-text';
 import { printShort } from '@geomira/lang/print-short';
-import type { Schedule } from './long-press';
+import type { Schedule } from './schedule';
 
 /** The pause after the last keystroke before the text applies. */
 export const TEXT_APPLY_PAUSE_MS = 500;
@@ -51,6 +52,7 @@ export interface TextHost {
 export class TextApplier {
   private draft: TextDraft;
   private parsed: ParsedText | null = null;
+  private sourceMessage: string | null = null;
   private cancel: (() => void) | null = null;
   private readonly listeners = new Set<() => void>();
 
@@ -85,6 +87,11 @@ export class TextApplier {
     return this.parsed;
   }
 
+  /** Registry and editor environment used by source assistance; never a second registry. */
+  get env(): EditorEnv {
+    return this.host.env;
+  }
+
   hasErrors(): boolean {
     return this.parse().result.diagnostics.some((d) => d.severity === 'error');
   }
@@ -96,6 +103,7 @@ export class TextApplier {
 
   /** The field's text changed: the pause starts again. */
   type(text: string): void {
+    this.sourceMessage = null;
     this.set(typedInto(this.draft, text));
     this.stop();
     this.cancel = this.schedule(() => {
@@ -111,11 +119,11 @@ export class TextApplier {
     this.settle();
   }
 
-  /** The field loses the focus: apply as at the end of a pause; settle. */
+  /** Blur applies valid current text and ends coalescing, preserving source (ADR-0075). */
   leave(): void {
     this.stop();
     this.run(atPause(this.draft, this.facts(), this.now(), TEXT_MERGE_MS));
-    this.settle();
+    this.set({ ...this.draft, session: null });
   }
 
   /** Revert text: the figure's text, the typed edits dropped. */
@@ -129,7 +137,14 @@ export class TextApplier {
    * The figure shown is `doc`: a draft without edits of its own follows it; a pause on an older
    * figure is dropped (its text stays, stale).
    */
+  sourceNotice(): string | null {
+    return this.sourceMessage;
+  }
+
   follow(doc: Document): void {
+    if (doc !== this.draft.doc && !hasEdits(this.draft))
+      this.sourceMessage =
+        'The figure changed; this source was regenerated. Unapplied drafts are preserved.';
     if (doc !== this.draft.doc) this.stop();
     this.set(follow(this.draft, doc, () => this.shown(doc)));
   }

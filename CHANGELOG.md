@@ -12,6 +12,12 @@ docs/adr/; the test evidence is in docs/STATUS.md.
 
 ## Unreleased
 
+### Sampling integrity (ADR-0073)
+
+- Preserve exact fixed-radius ratios through sampling and Randomize, including tiny circles beside distant geometry.
+- Refuse invalid circle radii and parameter domains with actionable feedback instead of silently repairing them or throwing.
+- Require distinct points for strict circular order; public claim testing remains disabled.
+
 ### Modal and keyboard safety (ADR-0068)
 
 - Export, Share and Debug report isolate the figure from keyboard shortcuts and background clicks.

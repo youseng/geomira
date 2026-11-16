@@ -200,6 +200,16 @@ function inOrder(p: readonly f.V[], curve: Value<number>, ctx: ToleranceContext)
     return sameSign(ts.slice(1).map((t, i) => sign3(t - (ts[i] ?? t), 'length', ctx)));
   }
   if (curve.kind === 'circle') {
+    // A two-point cyclic order is meaningful only for distinct points. The same strict
+    // margin also rejects repeated points later in longer cyclic sequences.
+    const distinct: Sign3[] = [];
+    for (let i = 0; i < p.length; i++)
+      for (let j = i + 1; j < p.length; j++) {
+        const [a, b] = [p[i], p[j]];
+        if (a !== undefined && b !== undefined) distinct.push(sign3(f.dist(a, b), 'length', ctx));
+      }
+    const separated = allPositive(distinct);
+    if (separated !== 'holds') return separated;
     const first = p[0];
     const fan: Sign3[] = [];
     for (let i = 1; i + 1 < p.length && first !== undefined; i++) {

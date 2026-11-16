@@ -5,16 +5,10 @@
  */
 import { fromNumber } from '@geomira/num/rational';
 import { isInexact, type Field, type Inexact } from '@geomira/num/field';
-import {
-  CONIC_BEYOND,
-  coeffsOf,
-  finite,
-  halfGradient,
-  mapConicBy,
-  qValue,
-  type Coeffs,
-} from './conic';
-import { mul3, type Mat3 } from './transform/projective';
+import { CONIC_BEYOND, coeffsOf, finite, halfGradient, qValue, type Coeffs } from './conic-form';
+import { mapConicRaw } from './conic-image';
+import { preciseMul3 } from './transform/precise-matrix';
+import type { Mat3 } from './transform/projective';
 import type { Conic, Undefined, Vec } from './value';
 
 /** The coefficients of Y ↦ Q(P + Y): the conic in coordinates centred at P (a, b, c unchanged). */
@@ -49,7 +43,8 @@ function unitScale<T>(F: Field<T>, m: Mat3<T>): Mat3<T> {
  * coordinates centred at A, the map conjugated by the two translations, the image translated back.
  * The same value in exact fields; in floats it avoids the cancellation of adj(m)ᵀ·M·adj(m) in
  * world coordinates (Run 16c's audit: conic_to_circle(k) of an eccentric conic far from the
- * origin lost fourteen digits there). Degenerate cases: as mapConicBy.
+ * origin lost fourteen digits there). With knownPoint=false, A is merely a chart origin:
+ * its polynomial constant is preserved and no anchor is advertised. Degenerate cases: as mapConicBy.
  */
 export function mapConicAround<T>(
   F: Field<T>,
@@ -57,19 +52,26 @@ export function mapConicAround<T>(
   m: Mat3<T>,
   A: Vec<T>,
   B: Vec<T>,
+  knownPoint = true,
 ): Conic<T> | Undefined | Inexact {
   const [z, o] = [F.zero, F.one];
   const to: Mat3<T> = [o, z, A.x, z, o, A.y, z, z, o];
   const back: Mat3<T> = [o, z, F.neg(B.x), z, o, F.neg(B.y), z, z, o];
-  const local = mapConicBy(
+  const left = preciseMul3(F, back, m);
+  if (isInexact(left)) return left;
+  const centered = preciseMul3(F, left, to);
+  if (isInexact(centered)) return centered;
+  const local = mapConicRaw(
     F,
-    atKnownPoint(F, q, A),
-    unitScale(F, mul3(F, mul3(F, back, m), to)),
+    knownPoint ? atKnownPoint(F, q, A) : translateCoeffs(F, q, A),
+    unitScale(F, centered),
     undefined,
   );
   if (local.kind !== 'conic') return local;
   const minusB = { x: F.neg(B.x), y: F.neg(B.y) };
   const [a, b, c, d, e, f] = translateCoeffs(F, coeffsOf(local), minusB);
   if (!finite(F, [d, e, f])) return CONIC_BEYOND;
-  return { kind: 'conic', a, b, c, d, e, f, anchor: { x: B.x, y: B.y } };
+  const plain: Conic<T> = { kind: 'conic', a, b, c, d, e, f };
+  const base = knownPoint ? { ...plain, anchor: { x: B.x, y: B.y } } : plain;
+  return F.kind !== 'float' ? base : { ...base, chart: { origin: B, q: coeffsOf(local) } };
 }

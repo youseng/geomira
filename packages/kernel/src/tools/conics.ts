@@ -3,12 +3,14 @@
  * conic_center(k). The conic through A, B, C, D, E is a member of the pencil of the two line
  * pairs AB·CD and AC·BD (each through A, B, C, D): λ·AB·CD + μ·AC·BD with
  * (λ, μ) = (AC·BD(E), −AB·CD(E)), computed in coordinates relative to A (scaled by the points'
- * spread when its square root is representable, so floats keep their digits; exact fields do
- * not scale) and put in normal form, which is unique: every order of the five points gives the
+ * spread with an exact binary scale in floats; exact fields retain the previous
+ * representable-square-root scale) and put in normal form, which is unique: every order of the five points gives the
  * same coefficients. Rational: exact over Q and mod p.
  */
+import { fromNumber } from '@geomira/num/rational';
 import { isInexact, type Field } from '@geomira/num/field';
-import { makeConic, mapCoeffs, pencilCoeffs } from '../conic';
+import { coeffsOf, makeConic, mapCoeffs, pencilCoeffs } from '../conic';
+import { mapConicAround } from '../conic-around';
 import { isZeroNormalized, isZeroVec, vCross, vDot, vSub } from '../geom';
 import type { ArgSymmetry, EvalContext, ExampleArg, ToolSpec } from '../tool';
 import { undef, type Undefined, type Value, type Vec } from '../value';
@@ -76,7 +78,12 @@ function conic<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Val
   const rel = pts.map((P) => vSub(F, P, A));
   const spread = rel.reduce((s, w) => F.add(s, vDot(F, w, w)), F.zero);
   const r = F.sqrt(spread);
-  const scale = isInexact(r) ? F.one : r;
+  // A binary scale is exact in FloatField; sqrt(spread) needlessly rounds every local point.
+  const binary =
+    F.kind === 'float' && !isInexact(r)
+      ? F.fromRational(fromNumber(2 ** Math.floor(Math.log2(F.toNumber(r)))))
+      : r;
+  const scale = isInexact(binary) ? F.one : binary;
   const [, b, c, d, e] = rel.map((w) => ({ x: F.div(w.x, scale), y: F.div(w.y, scale) }));
   const o = { x: F.zero, y: F.zero };
   if (b === undefined || c === undefined || d === undefined || e === undefined)
@@ -84,8 +91,15 @@ function conic<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Val
   const local = pencilCoeffs(F, o, b, c, d, e);
   // Back to world coordinates: the point map w ↦ A + scale·w takes the local conic to the conic.
   const z = F.zero;
-  const q = mapCoeffs(F, local, [scale, z, A.x, z, scale, A.y, z, z, F.one]);
-  return makeConic(F, q, A, ctx);
+  if (F.kind !== 'float') {
+    const q = mapCoeffs(F, local, [scale, z, A.x, z, scale, A.y, z, z, F.one]);
+    return makeConic(F, q, A, ctx);
+  }
+  const q = mapCoeffs(F, local, [scale, z, z, z, scale, z, z, z, F.one]);
+  const k = makeConic(F, q, o, ctx);
+  return k.kind !== 'conic'
+    ? k
+    : mapConicAround(F, coeffsOf(k), [F.one, z, A.x, z, F.one, A.y, z, z, F.one], o, A);
 }
 
 function center<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Value<T> {

@@ -7,6 +7,8 @@ import type { Diagnostic } from '@geomira/lang/diagnostic';
 import { parseText } from '@geomira/lang/parse-text';
 import { lineColumnOf, offsetOf, type LineColumn } from '../caret';
 import type { TextApplier } from '../text-apply';
+import { ScriptEditor } from '../ScriptEditor';
+import { commandLines, diagnosticRange } from '../script-source';
 
 export interface TextPanelProps {
   readonly state: EditorState;
@@ -22,7 +24,13 @@ export function diagnosticsOf(text: string, registry: Registry): readonly Diagno
   return parseText(text, registry).result.diagnostics;
 }
 
-export function DiagnosticList({ items }: { items: readonly Diagnostic[] }) {
+export function DiagnosticList({
+  items,
+  onChoose,
+}: {
+  items: readonly Diagnostic[];
+  onChoose?: (diagnostic: Diagnostic) => void;
+}) {
   if (items.length === 0) return null;
   return (
     <ul className="diagnostics" aria-label="Diagnostics">
@@ -31,7 +39,23 @@ export function DiagnosticList({ items }: { items: readonly Diagnostic[] }) {
           key={`${String(d.line)}:${String(d.column)}:${d.message}`}
           className={`diag-${d.severity}`}
         >
-          Line {d.line}, column {d.column}: {d.message}. <span className="hint">{d.hint}</span>
+          {onChoose === undefined ? (
+            <>
+              Line {d.line}, column {d.column}: {d.message}. <span className="hint">{d.hint}</span>
+            </>
+          ) : (
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onClick={() => {
+                onChoose(d);
+              }}
+            >
+              Line {d.line}, column {d.column}: {d.message}. <span className="hint">{d.hint}</span>
+            </button>
+          )}
         </li>
       ))}
     </ul>
@@ -118,8 +142,8 @@ function TextActions(p: {
  * shows the diagnostics of every line as you type, and the text applies as you type
  * (ADR-0047, text-apply.ts): after a pause, a text without errors becomes the figure (one
  * replaceText; a typing session is one undo), and the field keeps the text as typed, caret
- * and scroll included. Apply text, Ctrl+Enter and leaving the field apply at once and show the
- * printed figure. A text with errors is not applied: the figure stays and the errors stay
+ * and scroll included. Apply text and Ctrl+Enter apply at once and show the printed figure;
+ * leaving the field applies current valid text while preserving its source (ADR-0075). A text with errors is not applied: the figure stays and the errors stay
  * listed. A change of the figure from elsewhere updates the text, unless the text holds edits
  * that were not applied: they are kept, with a note, and applied only by Apply text (also
  * while another tab is shown; Run 10 audit, W4).
@@ -135,32 +159,75 @@ export function TextPanel({ state, applier }: TextPanelProps) {
   const errors = diagnostics.some((d) => d.severity === 'error');
   return (
     <div className="text-panel">
-      <textarea
-        ref={field}
-        aria-label="Text"
-        spellCheck={false}
-        value={draft.text}
-        onChange={(e) => {
-          applier.type(e.target.value);
-        }}
-        onBlur={(event) => {
-          if (
-            event.relatedTarget instanceof Element &&
-            event.relatedTarget.closest('[data-document-files]') !== null
-          )
-            return;
+      <ScriptEditor
+        state={state}
+        applier={applier}
+        field={field}
+        text={draft.text}
+        onLeave={(target) => {
+          if (target instanceof Element && target.closest('[data-document-files]') !== null) return;
           applier.leave();
         }}
-        onKeyDown={(e) => {
-          if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey)) return;
-          keepAcross(e.currentTarget, () => {
+        onApply={(element) => {
+          keepAcross(element, () => {
             applier.applyNow();
             return applier.getSnapshot().text;
           });
         }}
       />
+      {applier.sourceNotice() !== null && (
+        <p className="muted source-regeneration" role="status">
+          {applier.sourceNotice()}
+        </p>
+      )}
+      <SourceActions applier={applier} field={field} text={draft.text} />
       <TextActions applier={applier} draft={draft} doc={doc} errors={errors} />
-      <DiagnosticList items={diagnostics} />
+      <DiagnosticList
+        items={diagnostics}
+        onChoose={(d) => {
+          const element = field.current;
+          if (element === null) return;
+          const [start, end] = diagnosticRange(draft.text, d);
+          element.focus();
+          element.setSelectionRange(start, end);
+          const height = parseFloat(getComputedStyle(element).lineHeight);
+          element.scrollTop = Math.max(0, (d.line - 1) * height - element.clientHeight / 2);
+          element.dispatchEvent(new Event('scroll', { bubbles: true }));
+        }}
+      />
+    </div>
+  );
+}
+
+function SourceActions({
+  applier,
+  field,
+  text,
+}: {
+  applier: TextApplier;
+  field: React.RefObject<HTMLTextAreaElement | null>;
+  text: string;
+}) {
+  const converted = commandLines(text);
+  return (
+    <div className="text-source-actions">
+      <button
+        type="button"
+        disabled={converted === text}
+        onMouseDown={(e) => {
+          e.preventDefault();
+        }}
+        onClick={() => {
+          applier.type(converted);
+          field.current?.focus();
+        }}
+      >
+        Convert command separators to lines
+      </button>
+      <p className="muted">
+        Leaving the editor keeps your source. Apply text formats valid source. Construction edits
+        regenerate clean text; unapplied drafts stay available with a warning.
+      </p>
     </div>
   );
 }

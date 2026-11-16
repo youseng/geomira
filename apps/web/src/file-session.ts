@@ -13,6 +13,7 @@ import type { EditorStore } from './store';
 
 export type FileChoice = { kind: 'new' | 'open' | 'save-as' | 'save'; doc?: Document };
 export interface FileState {
+  readonly busy: boolean;
   readonly menu: boolean;
   readonly choice: FileChoice | null;
   readonly name: string;
@@ -22,6 +23,7 @@ export interface FileState {
 }
 export class FileSession {
   private state: FileState = {
+    busy: false,
     menu: false,
     choice: null,
     name: '',
@@ -29,6 +31,7 @@ export class FileSession {
     downloaded: null,
     failedRecovery: false,
   };
+  private operation = 0;
   private release: (() => void) | null = null;
   private readonly listeners = new Set<() => void>();
   constructor(readonly store: EditorStore) {}
@@ -44,11 +47,15 @@ export class FileSession {
     for (const listener of this.listeners) listener();
   }
   readonly finish = (): void => {
+    if (this.state.busy) return;
+    this.operation++;
     this.patch({ choice: null, menu: false, error: null, failedRecovery: false });
     this.release?.();
     this.release = null;
   };
   toggle(): void {
+    if (this.state.busy) return;
+    this.operation++;
     if (this.state.menu) {
       this.finish();
       return;
@@ -57,6 +64,8 @@ export class FileSession {
     this.patch({ menu: true });
   }
   start(choice: FileChoice): void {
+    if (this.state.busy) return;
+    this.operation++;
     this.patch({
       choice,
       menu: false,
@@ -69,17 +78,23 @@ export class FileSession {
     });
   }
   async read(file: File): Promise<void> {
+    if (this.state.busy) return;
+    const operation = ++this.operation;
     try {
-      this.start({ kind: 'open', doc: await readDocumentFile(file, this.store.env.registry) });
+      const doc = await readDocumentFile(file, this.store.env.registry);
+      if (operation === this.operation) this.start({ kind: 'open', doc });
     } catch (e) {
+      if (operation !== this.operation) return;
       this.start({ kind: 'open' });
       this.patch({ error: String(e) });
     }
   }
   save(): void {
+    if (this.state.busy) return;
     try {
       applyValidDraft(this.store);
       if (this.backup()) this.finish();
+      else this.patch({ choice: { kind: 'save' }, menu: false });
     } catch (e) {
       this.start({ kind: 'save' });
       this.patch({ error: String(e) });
@@ -96,13 +111,15 @@ export class FileSession {
   }
   async confirm(discard = false): Promise<void> {
     const choice = this.state.choice;
-    if (choice === null) return;
-    const active = () => this.state.choice === choice;
+    if (choice === null || this.state.busy) return;
+    const operation = this.operation;
+    const active = () => this.state.choice === choice && operation === this.operation;
     try {
       if (choice.kind === 'save') {
         if (this.backup()) this.finish();
         return;
       }
+      this.patch({ busy: true });
       if (choice.kind === 'save-as') namedDocument(this.store.current().doc, this.state.name);
       if (choice.kind === 'save-as' && draftIssue(this.store) === null) applyValidDraft(this.store);
       const ok =
@@ -118,18 +135,22 @@ export class FileSession {
             );
       if (!active()) return;
       if (!ok) {
-        this.patch({ failedRecovery: true });
+        this.patch({ busy: false, failedRecovery: true });
         return;
       }
       this.patch({
+        busy: false,
         downloaded: choice.kind === 'save-as' ? print(this.store.current().doc) : null,
       });
       this.finish();
     } catch (e) {
-      this.patch({ error: String(e) });
+      this.patch({ busy: false, error: String(e) });
+    } finally {
+      this.patch({ busy: false });
     }
   }
   dispose(): void {
+    this.operation++;
     this.release?.();
   }
 }

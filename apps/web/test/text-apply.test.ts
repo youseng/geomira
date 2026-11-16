@@ -106,8 +106,8 @@ describe('the text applies after a pause (ADR-0047)', () => {
     applier.leave();
     expect(applier.pending()).toBe(false);
     expect(hasLine(store, 'C = (2, 3)')).toBe(true);
-    // Settled: the field shows the printed figure.
-    expect(applier.getSnapshot().text).toBe(print(store.current().doc));
+    // ADR-0075: blur ends the session without silently formatting the source.
+    expect(applier.getSnapshot().text).toBe(typed);
     applier.type(print(store.current().doc).replace('C = (2, 3)', 'C = (2, 5)'));
     vi.advanceTimersByTime(TEXT_APPLY_PAUSE_MS);
     expect(store.current().history.past).toHaveLength(2);

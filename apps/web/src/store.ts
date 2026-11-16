@@ -1,5 +1,5 @@
 import { TextApplier } from './text-apply';
-import { timeout } from './long-press';
+import { timeout } from './schedule';
 import type { RecoveryObservation } from '@geomira/editor/persistence';
 import { CLAIM_TESTING, CLAIMS_UNAVAILABLE } from './features';
 /**
