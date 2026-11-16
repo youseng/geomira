@@ -3,7 +3,9 @@
 [Download the public offline HTML](https://youseng.github.io/geomira/geomira.html).
 Save the file, then open it directly in Chromium, Firefox or Safari. It needs no account,
 network or server after download. Browser file-origin storage policies still apply;
-keep portable `.geo` backups of important work.
+keep portable `.geo` backups of important work. The initial download and its provenance
+manifest use the network; the PWA does not precache these files or substitute its app shell
+when their URLs are opened. Once saved, the standalone HTML works without the network.
 
 The download is copied byte for byte from the public single-file build tested by the
 website's validation run. The same immutable Pages artifact contains the hosted app,
@@ -16,10 +18,10 @@ behind the website and still exposed retired claim testing. Do not distribute a 
 an old Git commit as the current release. The public URL changes only with an authorized,
 validated deployment; a branch's preview artifact is not a published release.
 
-For an unpublished candidate, use pinned pnpm and `pnpm build`, then package it with:
+For an unpublished candidate under the Pages base, use pinned pnpm and
+`GEOMIRA_BASE=/geomira/ pnpm build`, then verify it with:
 
 ```sh
-pnpm exec tsx scripts/release-candidate.ts prepare apps/web/dist apps/web/dist-single/index.html "$(git rev-parse HEAD)" local 1 /geomira/
 pnpm exec tsx scripts/release-candidate.ts check apps/web/dist apps/web/dist-single/index.html "$(git rev-parse HEAD)" local 1 /geomira/
 ```
 

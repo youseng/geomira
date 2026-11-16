@@ -39,6 +39,24 @@ describe('planFetch', () => {
       });
   });
 
+  it('never replaces the public download or provenance navigation with the app shell', () => {
+    for (const path of ['geomira.html', 'release.json']) {
+      for (const query of ['', '?download=1#source']) {
+        const request = { url: `${SCOPE}${path}${query}`, method: 'GET', mode: 'navigate' };
+        expect(planFetch(request, SCOPE, FILES)).toBeNull();
+        expect(planFetch(request, SCOPE, new Set([...FILES, path]))).toBeNull();
+      }
+    }
+    // The exception names only these public files, not arbitrary HTML or nested routes.
+    expect(
+      planFetch(
+        { url: `${SCOPE}geomira.html/child`, method: 'GET', mode: 'navigate' },
+        SCOPE,
+        FILES,
+      ),
+    ).toEqual({ kind: 'cache', key: 'index.html' });
+  });
+
   it('leaves other methods, other origins, out-of-scope paths and unknown files alone', () => {
     const plan = (url: string, method = 'GET', mode = 'cors') =>
       planFetch({ url, method, mode }, SCOPE, FILES);

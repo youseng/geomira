@@ -36,6 +36,13 @@ Refreshing that file once would repeat the same synchronization defect on the ne
   as the site and manifest. Remove the stale executable from the source repository and explain
   the replacement in `releases/README.md`. A CI artifact with authentication/expiry is useful
   review evidence, not the public download endpoint.
+- The PWA navigation fallback explicitly passes only the scope-relative `geomira.html` and
+  `release.json` paths through to the network, with their queries. They are assembled after
+  the normal precache list and must never receive cached `index.html` in response. Download
+  availability initially requires a network; the saved standalone HTML then runs offline.
+  Existing app routes still open offline from the app-shell cache. A controlled hosted
+  browser test claims/reloads the PWA, navigates to the public file and verifies its exact
+  bytes/SHA-256, then verifies the provenance response.
 - Add interactive hosted Firefox/WebKit projects for construction, persistence, command and
   keyboard flows, modal isolation and the public boundary. Keep single-file coverage in all
   three engines. The exact distributed HTML also has a file-mode compatibility/zero-job test.
@@ -46,7 +53,8 @@ Refreshing that file once would repeat the same synchronization defect on the ne
 ## Frozen tests and remaining work
 
 No frozen test assertions, timeouts, screenshots or tolerances are changed by this infrastructure
-phase. New tests check artifact identity/integrity and the exact offline file. Playwright project
+phase. Additive service-worker and PWA regressions for the download exception preserve
+existing assertions. New tests check artifact identity/integrity and the exact offline file. Playwright project
 selection adds coverage; existing browser scenarios remain. Final visual inspection, candidate
 builds and all release checks follow integration of prompts 01–10. Any reviewed product snapshot
 updates require their own recorded evidence; this ADR does not authorize blanket regeneration.

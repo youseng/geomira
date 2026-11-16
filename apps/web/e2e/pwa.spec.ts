@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { failWrites } from './recovery-helpers';
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
@@ -28,6 +29,7 @@ const TYPES: Record<string, string> = {
   '.png': 'image/png',
   '.webmanifest': 'application/manifest+json',
   '.map': 'application/json',
+  '.json': 'application/json',
 };
 
 interface Site {
@@ -223,4 +225,41 @@ test('an update waits for durable saving and leaves a failed edit usable until r
   await reloaded;
   await expectLines(page, 'A = (0, 0)', 'B = (1, 0)');
   expect(await controllerBuild(page)).toBe('safe0002');
+});
+
+test('the public download keeps its exact bytes after the PWA claims and reloads the page', async ({
+  page,
+}) => {
+  await openApp(page, site.url);
+  await offlineReady(page);
+  await page.reload();
+  await offlineReady(page);
+  const original = readFileSync(join(site.dir, 'geomira.html'));
+  const manifestText = readFileSync(join(site.dir, 'release.json'), 'utf8');
+  const manifest: unknown = JSON.parse(manifestText);
+  const response = await page.goto(new URL('geomira.html', site.url).href);
+  if (response === null) throw new Error('the public download returned no response');
+  const received = await response.body();
+  expect(response.fromServiceWorker()).toBe(false);
+  expect(received.equals(original)).toBe(true);
+  expect(received.equals(readFileSync(new URL('../dist-single/index.html', import.meta.url)))).toBe(
+    true,
+  );
+  if (
+    typeof manifest !== 'object' ||
+    manifest === null ||
+    !('files' in manifest) ||
+    typeof manifest.files !== 'object' ||
+    manifest.files === null
+  )
+    throw new Error('release manifest has no file checksums');
+  expect(createHash('sha256').update(received).digest('hex')).toBe(
+    Reflect.get(manifest.files, 'geomira.html'),
+  );
+  await expect(page.getByLabel('Geometry canvas')).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Claims', exact: true })).toHaveCount(0);
+  const provenance = await page.goto(new URL('release.json', site.url).href);
+  if (provenance === null) throw new Error('provenance returned no response');
+  expect(await provenance.text()).toBe(manifestText);
+  expect(provenance.fromServiceWorker()).toBe(false);
 });
