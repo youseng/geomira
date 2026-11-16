@@ -95,7 +95,9 @@ test('Recovery activation reveals its focused control after a retained native Te
   await expect(input).toHaveValue('C=midpoint(');
 });
 
-test('Recovery queued visibility yields to a later native Command focus', async ({ page }) => {
+test('Recovery queued visibility yields to later native Command focus and scrolling', async ({
+  page,
+}) => {
   const { field, draft, toggle, input } = await seededTextHandoff(page);
   await toggle.evaluate((element) => {
     const outlet = element.closest('.app')?.querySelector('.recovery-outlet');
@@ -108,7 +110,10 @@ test('Recovery queued visibility yields to a later native Command focus', async 
       const command = document.querySelector('input[aria-label="Command"]');
       if (!(command instanceof HTMLInputElement)) throw new Error('no command');
       command.focus();
-      command.dataset['nativeFocusScroll'] = String(command.closest('.app')?.scrollTop);
+      // Native focus scrolls asynchronously in WebKit. Establish the visible scroll
+      // precondition explicitly before measuring whether Recovery later steals it.
+      command.scrollIntoView({ block: 'end', inline: 'nearest' });
+      command.dataset['nativeCommandScroll'] = String(command.closest('.app')?.scrollTop);
     });
     observer.observe(outlet, { childList: true, subtree: true });
   });
@@ -125,13 +130,22 @@ test('Recovery queued visibility yields to a later native Command focus', async 
   );
   await expect(input).toBeFocused();
   const scroll = await input.evaluate((element) => ({
-    before: Number(element.dataset['nativeFocusScroll']),
+    before: Number(element.dataset['nativeCommandScroll']),
     after: element.closest('.app')?.scrollTop,
   }));
   expect(scroll.before).toBeGreaterThan(0);
   expect(scroll.after).toBe(scroll.before);
+  expect(
+    await input.evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      return element.contains(
+        document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2),
+      );
+    }),
+  ).toBe(true);
   await expect(input).toHaveValue('C=midpoint(');
   await expect(field).toHaveValue(draft);
+  expect(await field.evaluate((element: HTMLTextAreaElement) => element.selectionStart)).toBe(17);
 });
 
 for (const viewport of [

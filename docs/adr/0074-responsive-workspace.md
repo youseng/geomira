@@ -386,3 +386,25 @@ native traversal helper. These are explicit interaction/layout migrations, not c
 numeric tolerances, screenshot thresholds, timeouts or mathematical assertions. Shared
 file tests also assert the explicit build capability: public Claims count is exactly zero;
 internal engine Claims count is exactly one. Public claim testing stays retired by ADR-0065.
+
+## Ownership-probe native scroll precondition
+
+Supported-engine CI found that the added Recovery ownership probe recorded a premature
+baseline in WebKit. In each hosted/file public/internal trace, `Command.focus()` recorded
+app scroll0 immediately, while the final focused Command was visibly at scroll635. Native
+focus scrolling had not completed when the probe read its baseline. All original Recovery
+placement cases, including the Firefox sequence, passed; this did not establish a new
+application defect.
+
+After observing panel insertion, the probe now focuses Command and explicitly uses native
+`scrollIntoView` before recording its scroll. The distinct positive baseline, exact no-reset,
+focus and raw-input assertions remain. Command center hit testing and Text caret17 are added.
+This setup tests ownership independently of engine-specific default focus-scroll timing;
+it does not accept zero scroll or delay/retry an application assertion. No production code,
+original Recovery placement test, timeout, tolerance or screenshot reference changes.
+
+A disposable source copy removing only Recovery's active-focus guard makes the corrected
+test fail with scroll642→0. The candidate and mutant use byte-identical test files. Thus
+the explicit native scroll setup still detects deferred Recovery work stealing the new
+focus owner's viewport. Exact commands and the required fresh supported-engine CI proof
+are recorded in the integration result.
