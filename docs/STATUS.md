@@ -24,6 +24,10 @@ source edits; reviewed changes are integrated before combined verification.
   → [07](release-prompts/results/07.md), ADR-0072.
 - 08: exact common radius scaling, domain refusals and structured invalid outcomes; no
   public testing reactivation. → [08](release-prompts/results/08.md), ADR-0073.
+- 09: wrapping headers, registry search with visible keyboard choices, roving palette,
+  Pan, Properties, safe guide and bounded panel preferences. Composed screenshot review
+  exposed an unusably small phone editor; compact guidance and a scrollable short-screen
+  panel now reserve at least 120 visible pixels of source. → [09](release-prompts/results/09.md), ADR-0074.
 - 10: atomic singleton batching, source-preserving blur, accessible script assistance,
   IME suspension and native completion undo. Ordinary batches parse once; repeated
   singleton overwrites validate their earlier prefix before it can disappear.
@@ -36,9 +40,11 @@ source edits; reviewed changes are integrated before combined verification.
 
 ### Not done
 
-- 09 responsive/workspace implementation is awaiting composed integration and validation.
 - Final candidate builds, full integrated verification, complete browser/visual/export
   validation, green final-head CI and prompt 12 independent audit remain pending.
+- Application source froze at `9622000381c6b253067680593090624fafdff23c`; the independent
+  reviewer runs in a clean detached checkout. Final visual references and evidence may
+  follow as explicitly identified validation/documentation changes.
 - Main merge, production deployment and release publication are not performed here.
 
 ### Known bugs
@@ -62,6 +68,8 @@ with the final artifact. Intermediate green tests do not establish combined acce
   `apps/web/e2e/public-release.spec.ts` migrate obsolete sender-local URLs to portable HTTPS
   links while retaining valid payload/recipient assertions.
 - ADR-0071: discovery export-surface additions only; no removed assertions.
+- ADR-0069/0070: editor/scene export-surface inventories include checked sharing and
+  effective document styles. All prior expected exports remain.
 - ADR-0072: inspected last-digit changes in `packages/export/test/__snapshots__/fixture-conics/`
   `aops.asy`, `standalone.asy`, `figure.svg`; no tolerance change. The SVG change is at the
   existing .001-pixel rounding boundary; complete diffs were inspected independently.
@@ -71,8 +79,13 @@ with the final artifact. Intermediate green tests do not establish combined acce
 - ADR-0075: `apps/web/test/text-apply.test.ts` replaces implicit blur-formatting expectations
   with verbatim source and unchanged apply/history guarantees; explicit Apply still formats.
   `packages/lang/test/exports.test.ts` adds the existing lexer's public subpath coverage.
-- 09 changes, if needed, will be listed after integration. No disabled test, lower count,
-  weaker numerical/screenshot tolerance or reduced coverage threshold is authorized.
+- ADR-0074: `apps/web/e2e/mobile.spec.ts` zooms out before its exact outward point drag;
+  it retains the same expected final coordinates. Existing property/dependency tests added
+  during this release use reachable controls after the responsive layout changes; exact
+  rename, history and dependency assertions remain. Playwright projects add hosted workspace
+  coverage and the composed file workflow. Individually reviewed visual-reference changes,
+  if needed, will be listed below. No disabled test, lower count, weaker numerical/screenshot
+  tolerance or reduced coverage threshold is authorized.
 
 ### Acceptance command output
 
@@ -89,6 +102,14 @@ Pinned pnpm 10.28.0, Node 24.22.1. Frozen lockfile installation; no runtime depe
   Affected timer/text suites: **30 passed / 3 files**, 8.46 seconds.
 - Per-task commands, before-fix failures, browser versions and limits are linked above.
   Final combined commands/results are pending and must not be inferred from these counts.
+- Intermediate push CI at `d180883f8235caf485c0e28bf77ee9fd2fbe392f`: verification passed,
+  **5,016 tests / 548 files**, all static and coverage gates; exports compiled. Browser
+  result was **418 passed / 5 failed / 1 not run**: the pre-09 phone header scrolled the
+  body horizontally, making a modal-fixture canvas click leave the viewport; property-card
+  and dependency-drag fixtures also targeted covered controls. Composed 09 fixes restore
+  reachable controls and all original semantic assertions. Failed browser validation
+  correctly prevented candidate packaging, deployment and smoke. This intermediate run
+  is not final-candidate acceptance.
 
 ### Requests
 
