@@ -19,7 +19,7 @@ verification, CI and the independent audit.
 - [x] 07 Stable geometry numerics — integrated and independently reviewed; ADR-0072; 101 independent tests.
 - [x] 08 Randomize/shared sampler — integrated; ADR-0073; 125 unit / 3 browser checks.
 - [ ] 09 Responsive/discoverable interface — in progress on integrated 03/05/06; ADR-0074.
-- [ ] 10 Script editor/workflow — in progress; atomic command regressions pass; ADR-0075.
+- [x] 10 Script editor/workflow — integrated; ADR-0075; 21 new / 16 existing browser checks; 27 command tests.
 - [ ] 11 Release infrastructure/artifacts — infrastructure integrated; final candidate pending; ADR-0076.
 - [ ] 12 Independent final audit — pending final candidate.
 
