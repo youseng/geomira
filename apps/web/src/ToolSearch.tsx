@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent, type RefObject } from 'react';
+import { useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import type { ToolId } from '@geomira/editor/tool-state';
 import { matchingTools, SEARCH_TOOLS } from './tool-search';
 
@@ -44,6 +44,10 @@ function useSearch(onChoose: ToolSearchProps['onChoose']) {
 }
 type Search = ReturnType<typeof useSearch>;
 function Results({ search: s }: { search: Search }) {
+  const active = useRef<HTMLLIElement>(null);
+  useLayoutEffect(() => {
+    active.current?.scrollIntoView({ block: 'nearest' });
+  }, [s.index]);
   if (!s.open || s.query === '') return null;
   return (
     <div className="tool-results">
@@ -56,6 +60,7 @@ function Results({ search: s }: { search: Search }) {
         {s.matches.map((tool, i) => (
           <li
             key={tool.id}
+            ref={i === s.index ? active : undefined}
             id={`tool-result-${String(i)}`}
             role="option"
             aria-selected={i === s.index}
