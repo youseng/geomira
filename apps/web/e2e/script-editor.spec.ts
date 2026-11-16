@@ -109,16 +109,64 @@ test('IME composition cannot apply partial text or accept a completion until com
   await command(page, 'A=(0,0)');
   const field = await textArea(page);
   const before = await field.inputValue();
+  await field.focus();
+  await field.evaluate((element) => {
+    const events: string[] = [];
+    Object.defineProperty(element, '__compositionEvents', { value: events });
+    for (const type of ['compositionstart', 'compositionend'])
+      element.addEventListener(type, () => events.push(type));
+  });
   await field.dispatchEvent('compositionstart');
-  await field.fill(`${before}ω=(2,3)\n`);
+  // Firefox's Playwright fill uses commitCompositionWith, which ends native IME.
+  // Model an intermediate composing input instead; no commit is allowed yet.
+  await field.evaluate((element: HTMLTextAreaElement, value: string) => {
+    const before = new InputEvent('beforeinput', {
+      bubbles: true,
+      cancelable: true,
+      data: 'ω',
+      isComposing: true,
+      inputType: 'insertCompositionText',
+    });
+    if (!element.dispatchEvent(before)) throw new Error('Composing input was unexpectedly blocked');
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+    if (descriptor?.set === undefined) throw new Error('No native textarea value setter');
+    descriptor.set.call(element, value);
+    element.dispatchEvent(
+      new InputEvent('input', {
+        bubbles: true,
+        data: 'ω',
+        isComposing: true,
+        inputType: 'insertCompositionText',
+      }),
+    );
+  }, `${before}ω=(2,3)\n`);
   await field.dispatchEvent('compositionupdate', { data: 'ω' });
   await field.press('Control+Enter');
   await page.waitForTimeout(650);
   await expect(page.getByRole('listbox', { name: 'Text completions' })).toHaveCount(0);
   await expect(page.getByTestId('object-counts')).toContainText('1');
-  await field.dispatchEvent('compositionend', { data: 'ω' });
+  expect(
+    await field.evaluate((element) => {
+      const events: unknown = Reflect.get(element, '__compositionEvents');
+      return events;
+    }),
+  ).toEqual(['compositionstart']);
+  await field.evaluate((element) => {
+    element.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: 'ω' }));
+    // Engines can deliver the final non-composing input immediately after compositionend.
+    element.dispatchEvent(
+      new InputEvent('input', {
+        bubbles: true,
+        data: 'ω',
+        isComposing: false,
+        inputType: 'insertText',
+      }),
+    );
+  });
   await page.waitForTimeout(650);
   await expect(field).toHaveValue(/ω=\(2,3\)/u);
+  await field.press('Control+Enter');
+  await expect(field).toHaveValue(/ω = \(2, 3\)/u);
   await tab(page, 'Objects');
   await expect(page.getByRole('button', { name: 'ω', exact: true })).toBeVisible();
 });
