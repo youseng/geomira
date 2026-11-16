@@ -89,7 +89,7 @@ export const APPLY_MAP_TOOL: ToolUI = anyOrder(
     'point',
     [
       { pick: 'transform', prompt: 'the transformation (from the objects panel)' },
-      { pick: 'figure', prompt: 'object to map' },
+      { pick: 'mapped_figure', prompt: 'object to map (ideal points from the objects panel)' },
     ],
     'The image of an object under a transformation built alone (a map tool’s “Transformation only”), chosen in the objects panel; in either order.',
   ),

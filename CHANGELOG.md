@@ -1,5 +1,12 @@
 # Changelog
 
+## Release repair 06
+
+- Preserve dependent tangent/intersection constructions beside independent coincident objects.
+- Accept semantic line pairs in selection-first tools and report failed automatic finishes.
+- Apply transformations to conics, annotations and panel-selected ideal points without
+  expanding unsupported image-sugar inputs (ADR-0071).
+
 What changed for someone using Geomira, newest first. The decisions behind each entry are in
 docs/adr/; the test evidence is in docs/STATUS.md.
 

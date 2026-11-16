@@ -5,6 +5,7 @@
  * every new intersection of two curves) adds them as ONE batch: one history entry, undone
  * together (ADR-0024).
  */
+import { constructionFacts } from '@geomira/discovery/construction';
 import type { DocumentEdit } from './edit';
 import { sameConstruction } from '@geomira/kernel/construction-key';
 import { exprKinds, objectKinds } from '@geomira/kernel/derived';
@@ -164,16 +165,26 @@ function addAll(
   return r.ok && reused.length > 0 ? { ...r, notice: alreadyThere(state, reused) } : r;
 }
 
-/** Whether a point object of the figure is at `at` (within the decision band). */
-function pointAt(state: EditorState, at: Vec<number>): boolean {
-  for (const v of state.values.values.values())
-    if (v.kind === 'point' && pointsCoincide(v, at, state.values.ctx)) return true;
+/** Reuse a current point only when its incidence with both curves follows from definitions. */
+function pointAt(
+  state: EditorState,
+  at: Vec<number>,
+  curves: readonly number[],
+  follows: ReturnType<typeof constructionFacts>,
+): boolean {
+  for (const [id, v] of state.values.values)
+    if (
+      v.kind === 'point' &&
+      pointsCoincide(v, at, state.values.ctx) &&
+      curves.every((curve) => follows('on', id, curve))
+    )
+      return true;
   return false;
 }
 
 /**
- * Every branch of a branchable call: for intersect, each common point that is not a point of
- * the figure yet (one that is there makes the other `other(P)`, tier 1 of the GUI choice); for
+ * Every branch of a branchable call: for intersect, each common point not already incident by
+ * construction (a known point makes the other `other(P)`, tier 1 of the GUI choice); for
  * tangent_from, both tangents. Each is written with the selectors of the GUI choice for its
  * candidate (SPEC §7), so each keeps its branch when the figure moves (ADR-0024).
  */
@@ -200,7 +211,9 @@ function branches(
         ? 'the curves do not meet here'
         : `the point is inside the ${known[1]?.kind === 'conic' ? 'conic' : 'circle'}: there is no tangent from it`,
     );
-  const fresh = tool === 'intersect' ? cands.filter((c) => !pointAt(state, c)) : cands;
+  const follows = tool === 'intersect' ? constructionFacts(state.doc, env.registry) : undefined;
+  const fresh =
+    follows === undefined ? cands : cands.filter((c) => !pointAt(state, c, args, follows));
   if (fresh.length === 0)
     return refuse(state, 'every intersection of these curves is a point already');
   const defs: Expr[] = [];

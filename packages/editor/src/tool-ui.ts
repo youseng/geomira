@@ -22,6 +22,8 @@ export type PickKind =
   | 'oval'
   | 'curve'
   | 'figure'
+  /** apply(T, X), including conics, annotations and ideal points chosen in the panel. */
+  | 'mapped_figure'
   | 'mirror'
   | 'transform';
 
