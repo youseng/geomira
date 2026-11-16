@@ -142,6 +142,10 @@ for (const height of [844, 380]) {
     expect(input.y).toBeGreaterThanOrEqual(0);
     const visibleHeight = Math.min(height, input.y + input.height) - Math.max(0, input.y);
     expect(visibleHeight).toBeGreaterThanOrEqual(120);
+    for (const name of ['Apply text', 'Revert text']) {
+      const target = await page.getByRole('button', { name, exact: true }).boundingBox();
+      expect(target?.height ?? 0).toBeGreaterThanOrEqual(44);
+    }
     await field.fill('A=(0,0)\nB=(4,0)\nM=midpoint(A,Z)');
     const diagnostic = page.getByRole('list', { name: 'Diagnostics' }).getByRole('button').first();
     await diagnostic.click();

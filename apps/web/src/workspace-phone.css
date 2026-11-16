@@ -213,6 +213,10 @@
   .short-workspace .side.open .tab-body {
     overflow: visible;
   }
+  .short-workspace .side.open .text-panel {
+    height: auto;
+    min-height: 260px;
+  }
   .short-workspace .getting-started {
     max-height: 120px;
   }
@@ -223,6 +227,10 @@
 }
 
 @media (max-width: 760px) {
+  .text-actions button,
+  .text-source-actions button,
+  .text-source-actions summary,
+  .diagnostics button,
   .menu button,
   .menu label,
   .menu .menu-link {
