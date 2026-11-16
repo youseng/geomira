@@ -13,10 +13,11 @@
  *   - any: the document's hypotheses only (no triangle needed).
  * Every type but `any` also asks each other angle of the triangle to exceed SHAPE_MIN_DEG,
  * as the `triangle` sugar does (ADR-0009 decision 11), so the new triangle is readable.
- * Free inputs are then rounded to short exact decimals (points and radii to 10^(⌊log10 size⌋
+ * Free coordinates are then rounded to short exact decimals (points to 10^(⌊log10 size⌋
  * − 2), size the figure's diameter (ADR-0017); line parameters and (u : v) to 0.001, angles
  * to 0.1°, params to a thousandth of their range), so the text shows "A = (1.23, -0.5)"; the
- * hypotheses are checked after that.
+ * hypotheses are checked after that. Fixed literal radii keep their shared exact similarity
+ * scale (ADR-0073); independently rounding them would change construction ratios.
  * A sample is accepted only when every object that is defined in the current figure stays
  * defined (a new figure, not a degenerate one). Degenerate cases: no free input, fewer than
  * three free points for a typed choice, an invalid figure or assumption, or no accepted
@@ -142,10 +143,9 @@ function roundInput(x: FreeInput, v: readonly Rational[], e: number): Assignment
   switch (x.kind) {
     case 'point':
       return out(all(e));
-    case 'radius': {
-      const r = decimal(v[0] ?? fromInteger(0), e);
-      return r.value.num === 0n ? undefined : out([r]);
-    }
+    case 'radius':
+      // Already scaled by one exact common factor. Independent rounding changes ratios.
+      return out(v.map((value) => ({ value, text: undefined })));
     case 'line-glider':
       return out(all(RATIO_EXP));
     case 'stereo': {

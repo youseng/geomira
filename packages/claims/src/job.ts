@@ -29,6 +29,7 @@ import { prepare, type Prepared, type SiteProbe } from './prepare';
 import { withoutProbes } from './probes';
 import { decideSample, floatValues, type SampleOutcome } from './rungs';
 import { drawSample, type Regime } from './sampler';
+import { samplingProblem } from './sampling-domain';
 import {
   globalVerdict,
   localVerdict,
@@ -225,6 +226,8 @@ export function* runJob(
   if (!(Number.isSafeInteger(job.n) && job.n > 0))
     return { kind: 'invalid', reason: 'n must be a positive integer' };
   const prep = p.prepared;
+  const problem = samplingProblem(job.doc, prep.free);
+  if (problem !== undefined) return { kind: 'invalid', reason: problem };
   const budgetBits = env.budgetBits ?? EXACT_BUDGET_BITS;
   const c: Collector = newCollector();
   const flips = newFlipState();

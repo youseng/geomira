@@ -40,8 +40,8 @@ may enable them; URL parameters, persisted settings and document data cannot do 
 
 `claim` and `assume` remain language/document data, preserved through parsing, printing, edits,
 rename, undo, saving, sharing and reopening. Randomize retains applicable assumptions and the
-shared sampling dependencies. This containment does not fix or endorse the sampler: the fixed
-radius-ratio reproduction in ADR-0065 remains a known engine issue for separate work.
+shared sampling dependencies. ADR-0073 preserves fixed-radius ratios and validates sampled
+domains; unresolved retained-engine reactivation gates are in `docs/claims-reactivation.md`.
 
 ## 2. Repository and dependency rules
 packages/num      tolerance, noise floor, seeded RNG, Field<T>: Float, Rational, ModP
@@ -347,6 +347,13 @@ otherwise by rejection, with a retry budget of 50·N and a "hard to satisfy" rep
 5% acceptance (never silently testing fewer figures).
 For exact rungs, samples are rounded to a coarse rational grid (denominators ≈ 2^10) and
 glider parameters to coarse rationals.
+
+Fixed literal radii are construction constants, multiplied by one exact rational common
+similarity scale; neither the sampler nor Randomize rounds them independently onto the
+coordinate grid. Invalid sampled inputs (including unrelated ones) refuse Randomize and
+return structured invalid retained jobs before any RNG domain call. Do not repair zero or
+negative radii, swap bounds or discard objects. Strict circular order requires distinct
+points using the existing BAND margin. Public claim testing remains disabled.
 
 ### 10.5 Verdict rungs and verdicts
 Per sample, the first rung that applies:
