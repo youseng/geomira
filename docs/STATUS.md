@@ -44,8 +44,10 @@ source edits; reviewed changes are integrated before combined verification.
 ### Known bugs
 
 Retained-engine-only discovery freshness and expensive live evaluation remain explicit
-[reactivation gates](claims-reactivation.md). The public tester remains disabled. Further
-integration findings will be fixed or recorded before final acceptance.
+[reactivation gates](claims-reactivation.md). The public tester remains disabled. An additional
+existing large-scale ellipse regression was found in combined CI and corrected with a
+physical-length chord decision; all 425 required degeneracy/baseline/inventory checks and
+43 close regressions then passed. Further integration findings remain subject to final checks.
 
 ### Uncertain
 
@@ -63,6 +65,9 @@ with the final artifact. Intermediate green tests do not establish combined acce
 - ADR-0072: inspected last-digit changes in `packages/export/test/__snapshots__/fixture-conics/`
   `aops.asy`, `standalone.asy`, `figure.svg`; no tolerance change. The SVG change is at the
   existing .001-pixel rounding boundary; complete diffs were inspected independently.
+  `packages/editor/test/fixtures/run-16a-baseline.json` changes only two tiny residual
+  coefficients to exact zero, backed by a new RationalField oracle. Mutation inventories
+  include the extracted conic helpers and precise-matrix implementation.
 - ADR-0075: `apps/web/test/text-apply.test.ts` replaces implicit blur-formatting expectations
   with verbatim source and unchanged apply/history guarantees; explicit Apply still formats.
   `packages/lang/test/exports.test.ts` adds the existing lexer's public subpath coverage.
