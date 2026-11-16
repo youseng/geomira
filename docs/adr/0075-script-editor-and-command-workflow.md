@@ -69,3 +69,9 @@ coalescing and history assertions; its normalization assertion now requires verb
 preservation. This is the intended stronger product contract above. The existing explicit
 apply/format, invalid-draft, stale-draft and typing laws remain. Package lexer export coverage
 is additive. No limits, count floors, numerical assertions or snapshot references are weakened.
+
+The shared completion insertion uses the deprecated but interoperable `insertText` editing
+command because plain value assignments corrupt or bypass native undo. Before the change,
+Text Undo inserted old text at an invalid offset; Command Undo did nothing. The narrow lint
+exception documents this browser API limitation. Native Undo/Redo in both fields is explicitly
+covered in the supported-engine browser projects; no parser or document-history guard is bypassed.

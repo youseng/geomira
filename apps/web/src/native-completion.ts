@@ -10,5 +10,6 @@ export function insertCompletion(
   field.setSelectionRange(start, end);
   // All supported engines retain undo for insertText. A programmatic value assignment
   // instead leaves older native undo records with offsets in the wrong source.
+  // eslint-disable-next-line @typescript-eslint/no-deprecated -- insertText is the interoperable native undo API; value assignments do not preserve that transaction (ADR-0075).
   document.execCommand('insertText', false, inserted);
 }
