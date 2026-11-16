@@ -71,3 +71,15 @@ pwa-site.ts to keep the file within 400 lines. No assertions, budgets or screens
 Later dismisses both the version offer and its paused-update notice, preserving all raw
 input. It also invalidates any asynchronous preparation so an obsolete completion cannot
 reopen that notice or request a dismissed update.
+
+## Multiple controlled clients during an update
+
+The final audit found that a second client retained its draft safely after another client
+activated the offered worker, but its later explicit Reload could wait forever for an
+already-delivered controllerchange. Pwa.applyUpdate now handles that explicit action using
+an available fresh waiting candidate, or reloads directly when its retained offer is already
+activating, activated or redundant. The beforeReload callback still runs before either path.
+A waiting installed worker keeps the existing skip-waiting/controllerchange sequence, with
+its pending reload request consumed once. Passive controller changes still never reload a
+non-initiating page. SafeUpdate's draft, conflict and durable-save guards remain ahead of
+all explicit reload paths. Frozen PWA tests only gain regressions; none are weakened.

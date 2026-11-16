@@ -333,3 +333,42 @@ test('Reload to update refuses an active IME composition and preserves its raw t
   expect(await controllerBuild(page)).toBe(first);
   await expect(input).toHaveValue(raw);
 });
+
+test('a second client preserves its draft when another updates, then can explicitly reload', async ({
+  page,
+  context,
+}) => {
+  await openApp(page, site.url);
+  await offlineReady(page);
+  await command(page, 'A=(1,2)');
+  await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
+    'Saved locally',
+  );
+  await offerUpdate(page, 'twoClients007');
+  const other = await context.newPage();
+  await openApp(other, site.url);
+  const banner = other.getByRole('status', { name: 'New version' });
+  await expect(banner).toBeVisible({ timeout: 30_000 });
+  const draft = other.getByLabel('Command', { exact: true });
+  const raw = 'B=midpoint(A, ';
+  await draft.fill(raw);
+  const origin = await other.evaluate(() => performance.timeOrigin);
+  const firstLoad = page.waitForEvent('load');
+  await page.getByRole('button', { name: 'Reload to update' }).click();
+  await firstLoad;
+  await expect.poll(() => controllerBuild(other)).toBe('twoClients007');
+  expect(await other.evaluate(() => performance.timeOrigin)).toBe(origin);
+  await expect(draft).toHaveValue(raw);
+  await banner.getByRole('button', { name: 'Reload to update' }).click();
+  await expect(other.getByRole('alert', { name: 'Update paused' })).toBeVisible();
+  expect(await other.evaluate(() => performance.timeOrigin)).toBe(origin);
+  await expect(draft).toHaveValue(raw);
+  await draft.fill('');
+  const secondLoad = other.waitForEvent('load');
+  await banner.getByRole('button', { name: 'Reload to update' }).click();
+  await secondLoad;
+  expect(await other.evaluate(() => performance.timeOrigin)).not.toBe(origin);
+  await expectLines(other, 'A = (1, 2)');
+  expect(await controllerBuild(other)).toBe('twoClients007');
+  await other.close();
+});
