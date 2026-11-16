@@ -45,6 +45,7 @@ function useCommandBar(store: EditorStore, inputRef: CommandBarProps['inputRef']
     } else setFeedback({ reason: r.reason, diagnostics: r.diagnostics });
   };
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return;
     const chosen = list[active];
     if (e.key === 'Enter') run();
     else if (e.key === 'Tab' && chosen !== undefined) accept(chosen);

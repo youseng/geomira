@@ -10,7 +10,9 @@ afterEach(() => vi.useRealTimers());
 describe('script source remains deliberate', () => {
   it('applies valid source on blur while preserving its formatting and comments', () => {
     vi.useFakeTimers();
-    const store = new EditorStore({ registry: createRegistry() }, (m) => { throw new Error(m); });
+    const store = new EditorStore({ registry: createRegistry() }, (m) => {
+      throw new Error(m);
+    });
     const applier = new TextApplier(store, timeout, () => Date.now());
     const source = '# keep this explanation\nA=(1,2)\n';
     applier.type(source);

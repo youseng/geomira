@@ -23,6 +23,7 @@ import {
   atPause,
   draftOf,
   follow,
+  hasEdits,
   onApplyNow,
   settled,
   typedInto,
@@ -51,6 +52,7 @@ export interface TextHost {
 export class TextApplier {
   private draft: TextDraft;
   private parsed: ParsedText | null = null;
+  private sourceMessage: string | null = null;
   private cancel: (() => void) | null = null;
   private readonly listeners = new Set<() => void>();
 
@@ -101,6 +103,7 @@ export class TextApplier {
 
   /** The field's text changed: the pause starts again. */
   type(text: string): void {
+    this.sourceMessage = null;
     this.set(typedInto(this.draft, text));
     this.stop();
     this.cancel = this.schedule(() => {
@@ -116,11 +119,11 @@ export class TextApplier {
     this.settle();
   }
 
-  /** The field loses the focus: apply as at the end of a pause; settle. */
+  /** Blur applies valid current text and ends coalescing, preserving source (ADR-0075). */
   leave(): void {
     this.stop();
     this.run(atPause(this.draft, this.facts(), this.now(), TEXT_MERGE_MS));
-    this.settle();
+    this.set({ ...this.draft, session: null });
   }
 
   /** Revert text: the figure's text, the typed edits dropped. */
@@ -134,7 +137,14 @@ export class TextApplier {
    * The figure shown is `doc`: a draft without edits of its own follows it; a pause on an older
    * figure is dropped (its text stays, stale).
    */
+  sourceNotice(): string | null {
+    return this.sourceMessage;
+  }
+
   follow(doc: Document): void {
+    if (doc !== this.draft.doc && !hasEdits(this.draft))
+      this.sourceMessage =
+        'The figure changed; this source was regenerated. Unapplied drafts are preserved.';
     if (doc !== this.draft.doc) this.stop();
     this.set(follow(this.draft, doc, () => this.shown(doc)));
   }

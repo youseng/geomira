@@ -1,9 +1,10 @@
 /** Textarea assistance; parsing and document ownership stay in the shared TextApplier. */
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { acceptCompletion, completions, type Completion } from '@geomira/editor/command';
 import type { EditorState } from '@geomira/editor/state';
 import type { TextApplier } from './text-apply';
-import { lineAt } from './script-source';
+import { lineAt, sourceCompletionsAllowed } from './script-source';
+import { parseText } from '@geomira/lang/parse-text';
 
 export function useScriptCompletion(state: EditorState, applier: TextApplier, text: string) {
   const [cursor, setCursor] = useState(0);
@@ -11,9 +12,16 @@ export function useScriptCompletion(state: EditorState, applier: TextApplier, te
   const [offered, offer] = useState(false);
   const [focused, focus] = useState(false);
   const line = lineAt(text, cursor);
-  const draftState = { ...state, doc: applier.parse().result.doc };
+  const priorDoc = useMemo(
+    () =>
+      offered && focused
+        ? parseText(text.slice(0, line.start), applier.env.registry).result.doc
+        : state.doc,
+    [text, line.start, applier, offered, focused, state.doc],
+  );
+  const draftState = { ...state, doc: priorDoc };
   const list =
-    offered && focused
+    offered && focused && sourceCompletionsAllowed(text, cursor)
       ? completions(draftState, line.text, line.cursor, applier.env).filter((c) => c.kind !== 'gui')
       : [];
   const select = (field: HTMLTextAreaElement) => {
@@ -31,6 +39,8 @@ export function useScriptCompletion(state: EditorState, applier: TextApplier, te
     requestAnimationFrame(() => {
       field?.focus();
       field?.setSelectionRange(at, at);
+      // React's controlled value can emit a selection event at the old end first.
+      setCursor(at);
     });
   };
   return { cursor, active, setActive, offered, offer, focused, focus, list, select, accept };
@@ -56,7 +66,10 @@ export function useScriptComposition(applier: TextApplier, text: string) {
       setValue(text);
     },
     end,
-    change: (text: string) => (value === null ? applier.type(text) : setValue(text)),
+    change: (text: string) => {
+      if (value === null) applier.type(text);
+      else setValue(text);
+    },
   };
 }
 
@@ -67,6 +80,7 @@ export function scriptKey(
   apply: (field: HTMLTextAreaElement) => void,
 ): void {
   if (composing || e.nativeEvent.isComposing) return;
+  const chosen = c.list[c.active];
   if (e.key === ' ' && (e.ctrlKey || e.metaKey)) {
     e.preventDefault();
     c.offer(true);
@@ -78,9 +92,9 @@ export function scriptKey(
   } else if (c.list.length > 0 && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
     e.preventDefault();
     c.setActive((a) => (a + (e.key === 'ArrowDown' ? 1 : c.list.length - 1)) % c.list.length);
-  } else if (c.list[c.active] !== undefined && (e.key === 'Tab' || e.key === 'Enter')) {
+  } else if (chosen !== undefined && (e.key === 'Tab' || e.key === 'Enter')) {
     e.preventDefault();
-    c.accept(c.list[c.active], e.currentTarget);
+    c.accept(chosen, e.currentTarget);
   } else if (e.key === 'Escape' && c.offered) {
     e.preventDefault();
     c.offer(false);
@@ -96,10 +110,15 @@ export function useScriptField(
   const [scroll, setScroll] = useState({ top: 0, left: 0 });
   const composing = ime.value !== null;
   const events = {
-    onScroll: (e: React.UIEvent<HTMLTextAreaElement>) =>
-      setScroll({ top: e.currentTarget.scrollTop, left: e.currentTarget.scrollLeft }),
-    onSelect: (e: React.SyntheticEvent<HTMLTextAreaElement>) => c.select(e.currentTarget),
-    onFocus: () => c.focus(true),
+    onScroll: (e: React.UIEvent<HTMLTextAreaElement>) => {
+      setScroll({ top: e.currentTarget.scrollTop, left: e.currentTarget.scrollLeft });
+    },
+    onSelect: (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+      c.select(e.currentTarget);
+    },
+    onFocus: () => {
+      c.focus(true);
+    },
     onBlur: (e: React.FocusEvent<HTMLTextAreaElement>) => {
       if (composing) ime.end(e.currentTarget.value);
       c.focus(false);
@@ -119,10 +138,13 @@ export function useScriptField(
       c.select(e.currentTarget);
       c.offer(
         !composing &&
+          sourceCompletionsAllowed(e.currentTarget.value, e.currentTarget.selectionStart) &&
           /[\p{L}_\\]{2,}$/u.test(e.currentTarget.value.slice(0, e.currentTarget.selectionStart)),
       );
     },
-    onKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => scriptKey(e, c, composing, apply),
+    onKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => {
+      scriptKey(e, c, composing, apply);
+    },
   };
   return { scroll, events };
 }

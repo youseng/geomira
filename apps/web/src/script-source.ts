@@ -76,7 +76,18 @@ export function signatureAt(text: string, cursor: number, registry: Registry): s
 
 /** The current physical source line and its offset, without changing surrounding text. */
 export function lineAt(text: string, cursor: number) {
-  const start = text.lastIndexOf('\n', cursor - 1) + 1;
-  const end = text.indexOf('\n', cursor);
-  return { start, text: text.slice(start, end < 0 ? text.length : end), cursor: cursor - start };
+  const at = Math.max(0, Math.min(cursor, text.length));
+  const start = at === 0 ? 0 : text.lastIndexOf('\n', at - 1) + 1;
+  const end = text.indexOf('\n', at);
+  return { start, text: text.slice(start, end < 0 ? text.length : end), cursor: at - start };
+}
+
+/** Do not offer executable-looking tokens inside comments or incomplete quoted literals. */
+export function sourceCompletionsAllowed(text: string, cursor: number): boolean {
+  const line = lineAt(text, cursor);
+  const prefix = line.text.slice(0, line.cursor);
+  const lexed = lexLine(prefix, 1);
+  return (
+    lexed.comment === undefined && !lexed.diagnostics.some((d) => prefix[d.column - 1] === '"')
+  );
 }

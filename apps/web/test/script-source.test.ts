@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { createRegistry } from '@geomira/kernel/registry';
-import { commandLines, diagnosticRange, highlightSource, signatureAt } from '../src/script-source';
+import {
+  commandLines,
+  diagnosticRange,
+  highlightSource,
+  signatureAt,
+  lineAt,
+  sourceCompletionsAllowed,
+} from '../src/script-source';
 
 describe('script source assistance', () => {
   it('converts only command separators and preserves quoted, nested and commented text', () => {
-    const input = '@title "a;\\\"b"; A=(0,0); claim harmonic(A,B;C,D) # keep; comment';
+    const input = '@title "a;\\"b"; A=(0,0); claim harmonic(A,B;C,D) # keep; comment';
     expect(commandLines(input)).toBe(
-      '@title "a;\\\"b"\nA=(0,0)\nclaim harmonic(A,B;C,D) # keep; comment',
+      '@title "a;\\"b"\nA=(0,0)\nclaim harmonic(A,B;C,D) # keep; comment',
     );
     expect(commandLines('  # comment; untouched\nA=(0,0)')).toBe('  # comment; untouched\nA=(0,0)');
   });
@@ -37,4 +44,12 @@ describe('script source assistance', () => {
     expect(signatureAt('@title "midpoint("', 18, registry)).toBeNull();
     expect(signatureAt('# midpoint(', 11, registry)).toBeNull();
   });
+});
+
+it('handles the first empty line and clamps stale carets after source replacement', () => {
+  expect(lineAt('\nA=(0,0)', 0)).toEqual({ start: 0, text: '', cursor: 0 });
+  expect(lineAt('A', 999)).toEqual({ start: 0, text: 'A', cursor: 1 });
+  expect(sourceCompletionsAllowed('# midpoint', 10)).toBe(false);
+  expect(sourceCompletionsAllowed('@title "midp', 12)).toBe(false);
+  expect(sourceCompletionsAllowed('M=midp', 6)).toBe(true);
 });

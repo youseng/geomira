@@ -572,3 +572,13 @@ The stable public `geomira.html` download is copied from the tested public singl
 and delivered with the website. `release.json` records the full source SHA, run, base and
 checksums; deployment consumes those bytes without rebuilding. The source repository does not
 carry a separately maintained executable snapshot. Nightly mutation remains a separate policy.
+
+### Source editing assistance (ADR-0075)
+
+The Text panel keeps a native accessible textarea, synchronized line numbers and decorative
+lexer highlighting. Registry-based completion and signature help do not execute document
+statements. Diagnostics select their source spans. IME input commits only its final composition;
+valid text keeps the existing 500 ms apply/coalescing policy and stale-draft protection.
+Blur applies valid current text while preserving its formatting; explicit Apply text/Ctrl+Enter
+may format it. Construction edits regenerate clean text with an explanation, preserving pending
+stale drafts. Command-style semicolon conversion is explicit and does not alter file grammar.

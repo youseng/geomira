@@ -1,4 +1,4 @@
-import { type RefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import type { EditorState } from '@geomira/editor/state';
 import type { TextApplier } from './text-apply';
 import { highlightSource, signatureAt } from './script-source';
@@ -21,7 +21,7 @@ function SourceBackdrop({ text, scroll }: { text: string; scroll: { top: number;
   return (
     <>
       <div className="script-gutter" aria-hidden="true">
-        <pre style={{ transform: `translateY(${-scroll.top}px)` }}>
+        <pre style={{ transform: `translateY(${String(-scroll.top)}px)` }}>
           {text
             .split('\n')
             .map((_, i) => i + 1)
@@ -31,7 +31,7 @@ function SourceBackdrop({ text, scroll }: { text: string; scroll: { top: number;
       <div className="script-overlay" aria-hidden="true">
         <pre
           className="script-highlight"
-          style={{ transform: `translate(${-scroll.left}px, ${-scroll.top}px)` }}
+          style={{ transform: `translate(${String(-scroll.left)}px, ${String(-scroll.top)}px)` }}
         >
           {highlightSource(text).map((part, i) => (
             <span key={i} className={`syntax-${part.kind}`}>
@@ -45,11 +45,16 @@ function SourceBackdrop({ text, scroll }: { text: string; scroll: { top: number;
   );
 }
 function Choices({ c, field }: { c: ScriptCompletion; field: EditorProps['field'] }) {
+  const list = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    list.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
+  }, [c.active, c.list.length]);
   if (!c.focused || !c.offered) return null;
   if (c.list.length === 0) return <p role="status">No matching completions.</p>;
   return (
     <ul
       id="script-completions"
+      ref={list}
       className="script-completions"
       role="listbox"
       aria-label="Text completions"
@@ -57,7 +62,7 @@ function Choices({ c, field }: { c: ScriptCompletion; field: EditorProps['field'
       {c.list.map((choice, i) => (
         <li
           key={`${choice.kind}:${choice.label}`}
-          id={`script-choice-${i}`}
+          id={`script-choice-${String(i)}`}
           role="option"
           aria-selected={i === c.active}
           onPointerDown={(e) => {
@@ -94,7 +99,7 @@ export function ScriptEditor(p: EditorProps) {
           aria-autocomplete="list"
           aria-controls={c.list.length > 0 ? 'script-completions' : undefined}
           aria-activedescendant={
-            c.list[c.active] === undefined ? undefined : `script-choice-${c.active}`
+            c.list[c.active] === undefined ? undefined : `script-choice-${String(c.active)}`
           }
           {...input.events}
         />

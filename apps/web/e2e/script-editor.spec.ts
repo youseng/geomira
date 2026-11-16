@@ -8,16 +8,22 @@ async function source(page: Page, value: string) {
 }
 async function caret(field: Locator, at: number) {
   await field.evaluate((e: HTMLTextAreaElement, cursor: number) => {
-    e.focus(); e.setSelectionRange(cursor, cursor);
+    e.focus();
+    e.setSelectionRange(cursor, cursor);
   }, at);
 }
 
-test('source assistance highlights and numbers exact text; blur preserves source until explicit formatting', async ({ page }) => {
+test('source assistance highlights and numbers exact text; blur preserves source until explicit formatting', async ({
+  page,
+}, testInfo) => {
   await openApp(page);
   const value = '# geometry 🟢\nA=(0,0)\nB=(4,0)\nω=circle(A,2)\n';
   const field = await source(page, value);
   await expect(page.locator('.script-gutter')).toHaveText('1\n2\n3\n4\n5');
   await expect(page.locator('.script-highlight')).toContainText('# geometry 🟢');
+  await expect(field).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(page.locator('.script-overlay')).toHaveCSS('pointer-events', 'none');
+  await page.screenshot({ path: testInfo.outputPath('script-editor.png') });
   await page.waitForTimeout(650);
   await tab(page, 'Objects');
   await tab(page, 'Text');
@@ -27,20 +33,34 @@ test('source assistance highlights and numbers exact text; blur preserves source
   await expect(field).toHaveValue(/# geometry 🟢/u);
 });
 
-test('diagnostic activation scrolls to and selects the exact Unicode source span', async ({ page }) => {
+test('diagnostic activation scrolls to and selects the exact Unicode source span', async ({
+  page,
+}) => {
   await openApp(page);
   const value = `A=(0,0)\n${Array.from({ length: 45 }, (_, i) => `# line ${String(i)} 🟢`).join('\n')}\nω=midpoint(A,Missing)\n`;
   const field = await source(page, value);
-  const diagnostic = page.getByRole('list', { name: 'Diagnostics' }).getByRole('button').filter({ hasText: 'Missing' });
+  const diagnostic = page
+    .getByRole('list', { name: 'Diagnostics' })
+    .getByRole('button')
+    .filter({ hasText: 'Missing' });
   await diagnostic.click();
   await expect(field).toBeFocused();
-  expect(await field.evaluate((e: HTMLTextAreaElement) => e.value.slice(e.selectionStart, e.selectionEnd))).toBe('Missing');
+  expect(
+    await field.evaluate((e: HTMLTextAreaElement) =>
+      e.value.slice(e.selectionStart, e.selectionEnd),
+    ),
+  ).toBe('Missing');
   expect(await field.evaluate((e: HTMLTextAreaElement) => e.scrollTop)).toBeGreaterThan(0);
   const top = await field.evaluate((e: HTMLTextAreaElement) => e.scrollTop);
-  await expect(page.locator('.script-gutter pre')).toHaveCSS('transform', `matrix(1, 0, 0, 1, 0, ${String(-top)})`);
+  await expect(page.locator('.script-gutter pre')).toHaveCSS(
+    'transform',
+    `matrix(1, 0, 0, 1, 0, ${String(-top)})`,
+  );
 });
 
-test('registry completion works in a middle line and after Greek names without changing surrounding source', async ({ page }) => {
+test('registry completion works in a middle line and after Greek names without changing surrounding source', async ({
+  page,
+}) => {
   await openApp(page);
   const value = 'A=(0,0)\nω=circle(A,2)\nM = midp\n# keep suffix\n';
   const field = await source(page, value);
@@ -67,7 +87,9 @@ test('registry completion works in a middle line and after Greek names without c
   await expect(page.getByText('No matching completions.', { exact: true })).toBeVisible();
 });
 
-test('explicit command conversion preserves strings and nested separators, and completion supports pointer choice', async ({ page }) => {
+test('explicit command conversion preserves strings and nested separators, and completion supports pointer choice', async ({
+  page,
+}) => {
   await openApp(page);
   const value = '@title "a;b"; A=(0,0); B=(4,0) # comment; keep';
   const field = await source(page, value);
@@ -80,7 +102,9 @@ test('explicit command conversion preserves strings and nested separators, and c
   await expect(field).toBeFocused();
 });
 
-test('IME composition cannot apply partial text or accept a completion until composition ends', async ({ page }) => {
+test('IME composition cannot apply partial text or accept a completion until composition ends', async ({
+  page,
+}) => {
   await openApp(page, './?dev=1');
   await command(page, 'A=(0,0)');
   const field = await textArea(page);
@@ -97,4 +121,26 @@ test('IME composition cannot apply partial text or accept a completion until com
   await expect(field).toHaveValue(/ω=\(2,3\)/u);
   await tab(page, 'Objects');
   await expect(page.getByRole('button', { name: 'ω', exact: true })).toBeVisible();
+});
+
+test('completion is one normal source edit with one undo; construction regeneration is explained', async ({
+  page,
+}) => {
+  await openApp(page);
+  await command(page, 'A=(0,0)');
+  await command(page, 'B=(4,0)');
+  const field = await textArea(page);
+  const before = await field.inputValue();
+  await caret(field, before.length);
+  await page.keyboard.type('M=midp');
+  await field.press('Control+Space');
+  await field.press('Tab');
+  await page.keyboard.type('A,B)');
+  await page.waitForTimeout(650);
+  await expect(field).toHaveValue(/M=midpoint\(A,B\)/u);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(field).toHaveValue(before);
+  await expect(page.locator('.source-regeneration')).toContainText('source was regenerated');
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(field).toHaveValue(/midpoint\(A, B\)/u);
 });
