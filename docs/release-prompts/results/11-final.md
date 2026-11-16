@@ -125,12 +125,31 @@ evidence, not a production deployment experiment.
 - Local Firefox/WebKit availability, emulated versus physical devices, real screen-reader
   checks and final CI/downloaded-artifact results must be reported separately.
 
+## Final combined-source focused checks
+
+At `c5208237753c033b907bae52c9a949c5ab54c363`, the short local Chromium rerun passed
+**11/11 cases in 24.3 seconds** across applicable desktop, phone and standalone-file projects.
+It reran every one of the nine failed scenarios from the previous local diagnostic: the
+exact angle/Undefined semantics, exposed style-card targets, the phone canvas contract,
+Expand/refused-input handling and short source/canvas exposure. This is focused regression
+evidence, not another full local matrix. Required final CI covers the complete supported matrix.
+
+The early GUI workflow `43865444969` executed both groups: two public missing-reference
+failures and three internal old-reference failures, with no other failed assertion. Artifact
+`14225855788` is 8,369,082 bytes, SHA256
+`e6688746a83d2a2c64d2a096cc5b81935a83a182b2eb917fc20e1dc061db4b75`.
+All five exact CI actual images were inspected individually by implement11 and the integration
+owner, then copied under ADR-0076; paths and hashes are recorded in
+`11-visual-references.json`. Node 22.23.4, pnpm 10.28.0, Playwright 1.56.1 and every recorded
+font hash match the previous CI inputs. This diagnostic has no release artifact or gate dependency;
+the complete required suite must compare these references successfully on the final commit.
+
 ## Remaining acceptance
 
-- Retrieve final CI images, compare every expected/actual/diff, replace only individually
-  approved references under ADR-0076, format the manifest and repeat comparisons.
-- Complete supported public/internal local Chromium projects and isolated performance
-  checks after quiet verification; record exact counts and actual measurements.
+- Compare all 25 references on the final source with the complete required CI matrix;
+  review any new mismatch individually without changing tolerances.
+- Complete isolated original performance checks after normal browser work is idle;
+  record actual measurements and unchanged limits.
 - Integration owner supplies revised-source full verification, required export compilation,
   complete supported remote browser results and the exact downloaded CI artifact.
 - Independent prompt 12 acceptance remains required before publication.

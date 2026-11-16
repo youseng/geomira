@@ -5,7 +5,7 @@
   "archive_sha256": "991711eb6f608e6c13ff02a684f10ac4e4d858a2811e63027d661b7c7091e87b",
   "archive_bytes": 99594638,
   "approved_geometry_references": 20,
-  "pending_gui_references": 5,
+  "pending_gui_references": 0,
   "review": "Every expected/actual/diff inspected by integration owner, independent audit12 and implement11. Only geometry references copied. Final-source comparisons remain required; no tolerance change.",
   "browser": "Playwright 1.56.1 Chromium / Ubuntu24.04",
   "node": "22.23.4",
@@ -220,6 +220,61 @@
       "dimensions": [856, 462],
       "previous_sha256": "22cd0db665ac5777f887d8a555b6e0eca144e80c94df6a4b4ba256ec09d69a3d",
       "sha256": "ff02ec8e1f9dc8055121ba8cc98aeee87589927dc9ac5deaaae6f153fdf3e3c8"
+    },
+    {
+      "scenario": "public-gui: desktop screenshot baseline: public workspace with editable source and file controls",
+      "source": "c5208237753c033b907bae52c9a949c5ab54c363",
+      "run": 43865444969,
+      "artifact": 14225855788,
+      "reference": "apps/web/e2e/public-layout.spec.ts-snapshots/public-workspace-desktop-linux.png",
+      "artifact_path": "public/data/ba68544e6237ede1ddc1e6dddad2b9afa2768e6d.png",
+      "dimensions": [1280, 720],
+      "previous_sha256": null,
+      "sha256": "6d17ceef7f61a3b2b6cd02c057399de88f39c6c518173d1c635b842a03e76aca"
+    },
+    {
+      "scenario": "public-gui: mobile screenshot baseline: public workspace with editable source and file controls",
+      "source": "c5208237753c033b907bae52c9a949c5ab54c363",
+      "run": 43865444969,
+      "artifact": 14225855788,
+      "reference": "apps/web/e2e/public-layout.spec.ts-snapshots/public-workspace-mobile-linux.png",
+      "artifact_path": "public/data/13e3dace3b0b036a811759d1f057f20890a5934b.png",
+      "dimensions": [390, 664],
+      "previous_sha256": null,
+      "sha256": "c3a75c9cc89789ed4cf67360145218f27141f2f765ba93a35f6ed1c57916f75d"
+    },
+    {
+      "scenario": "internal-gui: desktop screenshot baseline: the main screen (nine-point circle)",
+      "source": "c5208237753c033b907bae52c9a949c5ab54c363",
+      "run": 43865444969,
+      "artifact": 14225855788,
+      "reference": "apps/web/e2e/flows-design.spec.ts-snapshots/main-desktop-desktop-linux.png",
+      "artifact_path": "internal/data/696814556ffb386c20e5e9e1dff3bc063182d704.png",
+      "dimensions": [1280, 720],
+      "previous_sha256": "c54cc55b5dba9a729128ce6e25e752bde251b7e467fb00abd9db87274d9f71af",
+      "sha256": "fcca0b4fafa2a1c59484bb59975d3176dfd42bd731a287a80fe2144a668e39cd"
+    },
+    {
+      "scenario": "internal-gui: desktop screenshot baseline: the Claims panel after a local test (seed masked)",
+      "source": "c5208237753c033b907bae52c9a949c5ab54c363",
+      "run": 43865444969,
+      "artifact": 14225855788,
+      "reference": "apps/web/e2e/flows-design.spec.ts-snapshots/claims-desktop-desktop-linux.png",
+      "artifact_path": "internal/data/f7bac28c9684383659369997565b637309c139ee.png",
+      "dimensions": [1280, 720],
+      "previous_sha256": "9b73737a7ebfc39e407720c78eb73967ff065ca9206322264bb7eb5e7f2279d7",
+      "sha256": "5109b2896c5cbb01139b0298cc27bf4fb61a0140f114f19300bd5f087ee3081b"
+    },
+    {
+      "scenario": "internal-gui: mobile screenshot baseline: the phone layout",
+      "source": "c5208237753c033b907bae52c9a949c5ab54c363",
+      "run": 43865444969,
+      "artifact": 14225855788,
+      "reference": "apps/web/e2e/design-mobile.spec.ts-snapshots/main-phone-mobile-linux.png",
+      "artifact_path": "internal/data/f27fe664821acbabdc86f7fe06b2f399061fc5d4.png",
+      "dimensions": [390, 664],
+      "previous_sha256": "c3958f163e5222a5f97b13fc5ec0c46b89def3fce6b99e4ece288fc04de3fda3",
+      "sha256": "569c8aa73643e29a4b0aa0fa44079919bab4bf33a72ab8ea2d3ebb03c06e739a"
     }
   ],
   "pending_gui": [
@@ -248,5 +303,18 @@
       "scenario": "desktop screenshot baseline: public workspace with editable source and file controls",
       "reason": "Require corrected final-source GUI actual after panel/header changes; c540 public-mobile has known A13."
     }
-  ]
+  ],
+  "approved_gui_references": 5,
+  "gui_evidence": {
+    "source": "c5208237753c033b907bae52c9a949c5ab54c363",
+    "run": 43865444969,
+    "artifact": 14225855788,
+    "archive_sha256": "e6688746a83d2a2c64d2a096cc5b81935a83a182b2eb917fc20e1dc061db4b75",
+    "archive_bytes": 8369082,
+    "browser": "Playwright 1.56.1 Chromium / Ubuntu24.04",
+    "node": "22.23.4",
+    "pnpm": "10.28.0",
+    "fonts_match_geometry_evidence": true,
+    "review": "Every actual and all available prior-reference/diff images individually inspected by implement11 and integration owner. Public references had no prior committed image. Final-source full comparisons remain required."
+  }
 }

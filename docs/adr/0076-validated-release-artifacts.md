@@ -149,4 +149,13 @@ complete required browser matrix still executes all five comparisons and decides
 An exact-font local reproduction remained 2.61–3.70% different from same-source CI GUI images,
 so these references must be reviewed from CI output rather than generated locally as equivalent.
 
+The five final GUI references use exact actual images from diagnostic run `43865444969`,
+artifact `14225855788`, source `c5208237753c033b907bae52c9a949c5ab54c363`. The integration
+owner and implement11 inspected both new public images and all three internal
+expected/actual/diff comparisons individually. The phone's Expand and Close controls are
+visibly separate, and the editable source remains available. The small Text-open figure and
+internal-only chip overlap remain explicit limits. Browser, Node and font hashes match the
+recorded CI inputs; per-file paths and hashes are in `11-visual-references.json`. Only those
+five reviewed images are copied. Their required full-matrix comparisons are still pending.
+
 No production publication, merge or release was performed while implementing this decision.
