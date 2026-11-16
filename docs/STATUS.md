@@ -58,10 +58,14 @@ physical-length chord decision; all 425 required degeneracy/baseline/inventory c
 43 close regressions then passed. Further integration findings remain subject to final checks.
 
 The first independent audit and complete browser run found additional blockers: PWA update
-loses unfinished Text/Command drafts; phone recovery/warning panels cover controls; guide and
-selection overlays intercept construction; save-status resizing loses an outside-close click;
-fractional canvas coordinates and startup adoption need correction. Narrow fixes and fresh
-review are in progress. The candidate remains NOT ACCEPTED. See
+lost unfinished Text/Command drafts; phone recovery/warning panels covered controls; guide,
+selection and zoom overlays intercepted construction; save-status resizing lost a click;
+fractional canvas coordinates and startup adoption needed correction. These findings were
+corrected, including native menu-invoker closure, short-viewport focus and first-save layout
+stability. The composed native regression run passed **56/56** and peer visual review passed.
+Application implementation is frozen at `c540412ec2e4d4a68c93c4e59a26343756adaf69`;
+`ab0c5fe` changes CSS/JSON formatting only. Full revised CI and independent acceptance remain
+pending, so the candidate remains NOT ACCEPTED. See
 [integration evidence](release-prompts/results/INTEGRATION.md) for failed runs and exact scope.
 
 ### Uncertain
