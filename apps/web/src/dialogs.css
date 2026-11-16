@@ -77,3 +77,21 @@
   padding-left: 1.25rem;
   color: var(--amber);
 }
+
+.document-files {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.document-name {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 800px) {
+  .document-name {
+    max-width: 70px;
+  }
+}

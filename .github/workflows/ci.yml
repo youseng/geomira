@@ -1,9 +1,7 @@
 name: ci
 
+# Pushes use deploy.yml's identical reusable validation graph. PRs validate their merge SHA.
 on:
-  push:
-    branches: ['**']
-    tags-ignore: ['**']
   pull_request:
   workflow_dispatch:
 
@@ -15,46 +13,5 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 40
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          # The add-only guard (pnpm rules) diffs frozen tests against the latest run-* tag,
-          # so it needs full history and tags; it fails on a shallow clone by design.
-          fetch-depth: 0
-          fetch-tags: true
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Verify (typecheck, lint, depcruise, rules, test)
-        run: pnpm verify
-      - name: Build (the site and the single file)
-        run: pnpm build
-      - name: Upload the single-file build
-        uses: actions/upload-artifact@v7
-        with:
-          name: geomira-single-file
-          path: apps/web/dist-single/index.html
-          retention-days: 30
-      # Run 12: the single file is tested from file:// in Chromium, Firefox and WebKit.
-      - name: Install Playwright browsers
-        run: pnpm --filter @geomira/web exec playwright install --with-deps chromium firefox webkit
-      - name: End-to-end
-        run: pnpm e2e
-      - name: Build internal claim engine (never uploaded as a release)
-        run: pnpm --filter @geomira/web build:claims
-      - name: Internal engine browser flows
-        run: pnpm --filter @geomira/web e2e:claims
-      - name: Upload Playwright report
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-report
-          path: apps/web/playwright-report
-          retention-days: 14
+  validate:
+    uses: ./.github/workflows/validate.yml

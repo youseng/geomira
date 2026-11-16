@@ -7,9 +7,9 @@ import { shareUrl } from '../src/share-url';
  * string "null", which gave `null/home/…/index.html#s=…`, a link that opens nothing.
  */
 describe('shareUrl', () => {
-  it('keeps a file:// address whole (the origin of a file page may be "null")', () => {
+  it('uses the canonical recipient site for file:// senders', () => {
     expect(shareUrl('file:///home/u/geomira/index.html', '#s=AbC')).toBe(
-      'file:///home/u/geomira/index.html#s=AbC',
+      'https://youseng.github.io/geomira/#s=AbC',
     );
   });
 
@@ -18,7 +18,7 @@ describe('shareUrl', () => {
       'https://example.org/geomira/#s=new',
     );
     expect(shareUrl('file:///C:/Users/u/geomira.html?x#y', '#s=Q')).toBe(
-      'file:///C:/Users/u/geomira.html#s=Q',
+      'https://youseng.github.io/geomira/#s=Q',
     );
   });
 

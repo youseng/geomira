@@ -25,9 +25,10 @@ export const SHARE_PREFIX = '#s=';
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$';
 const CHECK_LENGTH = 4;
 /** The longest payload decoded (a figure of 500 objects needs about 6,000 characters). */
-const MAX_PAYLOAD = 20_000;
+export const SHARE_LIMITS = Object.freeze({ payload: 20_000, text: 100_000 });
+const MAX_PAYLOAD = SHARE_LIMITS.payload;
 /** The longest text read from a link (about 3,000 objects; SPEC §17 budgets 500). */
-const MAX_TEXT = 100_000;
+const MAX_TEXT = SHARE_LIMITS.text;
 
 /** 24 bits of FNV-1a of `text` as four characters of ALPHABET. */
 function checksum(text: string): string {
@@ -42,6 +43,27 @@ function checksum(text: string): string {
 export function encodeShare(doc: Document): string {
   const text = print(doc);
   return SHARE_PREFIX + checksum(text) + LZString.compressToEncodedURIComponent(text);
+}
+
+/** A checked offer: every emitted fragment respects the same limits as the decoder. */
+export function encodeShareChecked(
+  doc: Document,
+):
+  | { readonly ok: true; readonly fragment: string }
+  | { readonly ok: false; readonly reason: string } {
+  const text = print(doc);
+  if (text.length > MAX_TEXT)
+    return {
+      ok: false,
+      reason: 'This figure is too large for a share link. Download a .geo file instead.',
+    };
+  const payload = checksum(text) + LZString.compressToEncodedURIComponent(text);
+  if (payload.length > MAX_PAYLOAD)
+    return {
+      ok: false,
+      reason: 'This figure is too large for a share link. Download a .geo file instead.',
+    };
+  return { ok: true, fragment: SHARE_PREFIX + payload };
 }
 
 export type Shared =

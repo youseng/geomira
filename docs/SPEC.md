@@ -422,7 +422,13 @@ Shift or Ctrl held adds the clicked object or takes it out, Ctrl+A selects what 
 the actions on a selection (hide, show, labels, move to a layer, remove) are one batch each
 (ADR-0060). The style card applies every change at once, one undo per control (`liveStyle`,
 ADR-0063). Objects selected in the Move tool become the picks of the tool chosen next, in
-selection order (ADR-0064). With the mouse, a left drag on empty canvas in the Move tool draws a selection box
+selection order (ADR-0064). Input consumption uses the same sequential machine, including
+line-or-two-points slots and partial pairs; automatic finish refusals are reported immediately
+with retryable picks (ADR-0071). Tangent/intersection candidate reuse requires construction
+facts as well as current geometric coincidence, preserving independent coincident objects.
+Apply transformation accepts its full supported shape set, including conics and annotations;
+ideal points can be selected in Objects, since they have no canvas hit shape. Image sugar
+retains its own narrower input capabilities (ADR-0071). With the mouse, a left drag on empty canvas in the Move tool draws a selection box
 (the objects wholly inside it are selected) and the right button pans (ADR-0062). Drags are coalesced (a label drag, ADR-0049, writes its offset), and so is
 the text panel's typing session (replaceText with `typing: 'start' | 'continue'`: one history
 entry until any other action; ADR-0047); at drag end values are rounded to the FINER of the
@@ -441,7 +447,14 @@ History is bounded to ten ordinary revisions per document, 128 revisions and 8 M
 sole document copies, unresolved conflicts and restore predecessors are protected. Capacity
 failure refuses a save instead of evicting protected data. Legacy current/previous slots
 migrate together after whole-document validation, retaining originals until commit.
-See `docs/persistence.md` for the integration interface and lifecycle/platform limits. Share link `#s=` + lz-string(text). Debug report: text, app version, last 50
+See `docs/persistence.md` for the integration interface and lifecycle/platform limits. Portable documents (ADR-0069):
+File offers named New/Open/Save/Save As with canonical `.geo` input/download fallback.
+Complete file validation precedes replacement; unapplied drafts and failed recovery require
+explicit user choices. Duplicate documents have separate recovery identities. Downloads
+acknowledge a request independently of local save state. Checked share offers respect both
+existing decoder limits; offline senders link to the configured canonical HTTPS application.
+See `docs/document-files.md` for limits, draft behavior and privacy.
+ Share link `#s=` + lz-string(text). Debug report: text, app version, last 50
 edits, user agent.
 
 ## 13. Scene and rendering (packages/scene)
@@ -546,3 +559,16 @@ in their ideal point; tools that do not declare it give Undefined with a reason,
 built in Run 16b (ADR-0042: the capability `conic`; a conic where no overload takes one gives
 Undefined "k is a conic: <tool> does not take one", E2, tested in every argument position).
 E9 File versioning and migrations. E10 Registry-driven UI and docs.
+
+### Release candidate provenance and gates (ADR-0076)
+
+A public release is the same artifact tested by a same-revision validation graph: full
+verification, supported public/internal browser flows and export compilation must all succeed
+before the Pages artifact is packaged. Missing, skipped, cancelled or unfinished prerequisites
+cannot authorize publication. Only the default branch may publish, and an obsolete source is
+refused immediately before deployment. PR validation has no publication credentials.
+
+The stable public `geomira.html` download is copied from the tested public single-file build
+and delivered with the website. `release.json` records the full source SHA, run, base and
+checksums; deployment consumes those bytes without rebuilding. The source repository does not
+carry a separately maintained executable snapshot. Nightly mutation remains a separate policy.

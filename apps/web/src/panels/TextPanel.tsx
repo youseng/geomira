@@ -143,7 +143,12 @@ export function TextPanel({ state, applier }: TextPanelProps) {
         onChange={(e) => {
           applier.type(e.target.value);
         }}
-        onBlur={() => {
+        onBlur={(event) => {
+          if (
+            event.relatedTarget instanceof Element &&
+            event.relatedTarget.closest('[data-document-files]') !== null
+          )
+            return;
           applier.leave();
         }}
         onKeyDown={(e) => {

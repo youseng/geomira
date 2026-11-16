@@ -2,7 +2,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { defineConfig, devices, type PlaywrightTestConfig } from '@playwright/test';
 
 const engine = process.env['GEOMIRA_ENGINE_E2E'] === '1';
-const port = engine ? 4174 : 4173;
+const port = Number(process.env['GEOMIRA_PREVIEW_PORT'] ?? (engine ? 4174 : 4173));
 const base = process.env['GEOMIRA_BASE'] ?? '/';
 const local = `http://localhost:${String(port)}${base}`;
 /** Set after a deploy: the smoke test then runs against the GitHub Pages site (Run 9b). */
@@ -13,12 +13,15 @@ const singleFile = pathToFileURL(
 ).href;
 
 /** Specs that run only in their own projects below. */
-const OWN = 'long-task|drag-frame|pages-smoke|file-url|fallback-long-task|fallback-discovery|pwa';
+const OWN =
+  'long-task|drag-frame|pages-smoke|file-url|fallback-long-task|fallback-discovery|pwa|release-download';
 // Legacy feature flows remain exercised by e2e:claims, not against release artifacts.
 const INTERNAL =
   'flows-claimtool|flows-geomdraw|flows-claims|flows-review|flows-discovery|flows-design|design-mobile|drawer-notice-mobile';
 const internalOnly = engine ? '|public-release' : `|${INTERNAL}`;
-const fileSpecs = engine ? /file-url\.spec/u : /(public-release|persistence|modal-safety)\.spec/u;
+const fileSpecs = engine
+  ? /file-url\.spec/u
+  : /(public-release|persistence|modal-safety|release-download|document-files)\.spec/u;
 
 export default defineConfig({
   testDir: 'e2e',
@@ -50,6 +53,11 @@ export default defineConfig({
         },
         testIgnore: new RegExp(`(flows-[a-z]+|${OWN}${internalOnly})\\.spec`, 'u'),
       },
+      ...(['firefox', 'webkit'] as const).map((browserName) => ({
+        name: `desktop-${browserName}`,
+        use: { browserName, viewport: { width: 1280, height: 720 } },
+        testMatch: /(flows-build|flows-persist|flows-keyboard|public-release|modal-safety)\.spec/u,
+      })),
       // Run 9b: the static site's smoke test (locally built, or the deployed Pages site).
       {
         name: 'pages',
@@ -85,13 +93,23 @@ export default defineConfig({
         name: 'measure',
         use: { ...devices['Desktop Chrome'] },
         testMatch: /[/\\]long-task\.spec/u,
-        dependencies: ['desktop', 'mobile', 'file-chromium', 'file-firefox', 'file-webkit'],
+        dependencies: [
+          'desktop',
+          'mobile',
+          'desktop-firefox',
+          'desktop-webkit',
+          'file-chromium',
+          'file-firefox',
+          'file-webkit',
+        ],
       },
       {
         name: 'measure-drag',
         use: { ...devices['Desktop Chrome'] },
         testMatch: /drag-frame\.spec/u,
-        dependencies: engine ? ['measure'] : ['desktop', 'mobile'],
+        dependencies: engine
+          ? ['measure']
+          : ['desktop', 'mobile', 'desktop-firefox', 'desktop-webkit'],
       },
       {
         name: 'measure-fallback',

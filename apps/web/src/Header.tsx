@@ -10,6 +10,7 @@ import { Menu, MenuItem } from './Menu';
 
 export interface HeaderProps {
   readonly persistence?: ReactNode;
+  readonly documents?: ReactNode;
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   readonly canRestore: boolean;
@@ -286,6 +287,7 @@ export function Header(p: HeaderProps) {
   return (
     <header className="topbar">
       <Brand />
+      {p.documents}
       <History {...p} />
       <Randomize {...p} />
       {CLAIM_TESTING && <ClaimBox label="Claim to test" className="claim-form" host={p.claimBox} />}

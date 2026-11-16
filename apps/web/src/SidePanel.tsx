@@ -1,6 +1,6 @@
 import { CLAIM_TESTING } from './features';
 import type { ClaimBoxHost } from './ClaimBox';
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 import type { EditorState } from '@geomira/editor/state';
 import { assertNever } from '@geomira/num/assert';
 import type { Scene } from '@geomira/scene/types';
@@ -10,10 +10,9 @@ import { HelpPanel } from './panels/HelpPanel';
 import { LayersPanel } from './panels/LayersPanel';
 import { ObjectsPanel } from './panels/ObjectsPanel';
 import { TextPanel } from './panels/TextPanel';
-import { timeout } from './long-press';
 import { useSettled } from './settled';
 import type { EditorStore } from './store';
-import { TextApplier } from './text-apply';
+import type { TextApplier } from './text-apply';
 import type { DiscoveryRuns } from './discovery-runs';
 import type { TestRuns } from './test-runs';
 
@@ -101,7 +100,7 @@ export function SidePanel(props: SidePanelProps) {
   const tab = !CLAIM_TESTING && props.tab === 'Claims' ? 'Text' : props.tab;
   const { claimBox, undrawable, onStyle } = props;
   const state = useSettled(props.state);
-  const applier = useMemo(() => new TextApplier(store, timeout, () => performance.now()), [store]);
+  const applier = store.textDraft;
   return (
     <aside className={open ? 'side open' : 'side'} aria-label="Figure">
       <div className="tabs" role="tablist" aria-label="Panels">

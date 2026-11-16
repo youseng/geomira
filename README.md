@@ -9,6 +9,9 @@ export it for an AoPS post or a handout.
 
 ## Features
 
+- **Portable documents.** File offers named New/Open/Save/Save As using `.geo` files.
+  [Document and sharing guide](docs/document-files.md) explains drafts, local recovery and link limits.
+
 - **The text is the figure.** Every figure is a short text (`M_a = midpoint(B, C)`), edited in the Text panel or one line at a time in
   the command line; a share link holds the whole text and opens the same figure again.
 - **Tools in groups** (points, lines, circles, triangle centres, transformations, marks,
@@ -32,10 +35,11 @@ export it for an AoPS post or a handout.
 - **On a phone** too: a tool strip, the panels as a drawer, pan, pinch and drag by touch.
 - **Offline.** After one visit the site opens and works without a network, and can be installed
   as an app; a new version is offered in a banner and applied when you reload. There is also a
-  single-file copy, [`releases/geomira.html`](releases/geomira.html) (one HTML file; a fresh one
-  is also the artifact `geomira-single-file` of each CI run, or `pnpm build` →
-  `apps/web/dist-single/index.html`), that works opened from disk, in Chromium, Firefox and
-  Safari's engine.
+  single-file copy, [Download Geomira](https://youseng.github.io/geomira/geomira.html),
+  delivered from the same validated revision as the website. Save that HTML file and open it
+  from disk in Chromium, Firefox or Safari. [Release provenance](releases/README.md) explains
+  its source identity and checksums; `pnpm build` also produces a local candidate at
+  `apps/web/dist-single/index.html`.
 
 ## An Asymptote export
 

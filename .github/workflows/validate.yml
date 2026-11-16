@@ -1,0 +1,127 @@
+name: validate candidate
+
+# Called in the same run/revision. No path filters, privileged follow-up or status polling.
+on:
+  workflow_call:
+    outputs:
+      pages_artifact:
+        description: Exact tested Pages artifact, including its public offline copy
+        value: ${{ jobs.candidate.outputs.pages_artifact }}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+
+  web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GEOMIRA_BASE: /${{ github.event.repository.name }}/
+      GEOMIRA_BUILD: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build public site and offline candidate
+        run: |
+          pnpm build
+          pnpm exec tsx scripts/release-candidate.ts prepare apps/web/dist apps/web/dist-single/index.html "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GEOMIRA_BASE"
+          grep -q "src=\"${GEOMIRA_BASE}assets/" apps/web/dist/index.html
+          grep -q "href=\"${GEOMIRA_BASE}manifest.webmanifest\"" apps/web/dist/index.html
+          test -f apps/web/dist/sw.js
+      - run: pnpm --filter @geomira/web exec playwright install --with-deps chromium firefox webkit
+      - name: Public browsers, offline copy and PWA
+        run: pnpm e2e
+      - name: Internal engine (never copied to the release)
+        run: |
+          pnpm --filter @geomira/web build:claims
+          pnpm --filter @geomira/web e2e:claims
+      - name: Check bytes after browser validation
+        run: pnpm exec tsx scripts/release-candidate.ts check apps/web/dist apps/web/dist-single/index.html "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GEOMIRA_BASE"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tested-web-${{ github.sha }}-${{ github.run_attempt }}
+          path: apps/web/dist
+          if-no-files-found: error
+          retention-days: 30
+      - name: Browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-${{ github.sha }}-${{ github.run_attempt }}
+          path: apps/web/playwright-report
+          retention-days: 14
+
+  exports:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      # Building locally avoids granting untrusted PR code package-publication rights.
+      - name: Build the repository's export toolchain without registry credentials
+        run: docker build -t geomira-tex:validation .github/tex
+      - name: Compile fixtures and generated exports for this source
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/repo" -w /repo geomira-tex:validation sh -ec '
+            sh tests/fixtures/compile-tex.sh
+            pnpm install --frozen-lockfile
+            pnpm export:tex tests/fixtures/out-export --fuzz 60
+          '
+      - name: Export compilation evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: exports-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            tests/fixtures/out-export/*.pdf
+            tests/fixtures/out-export/*.tex
+            tests/fixtures/out-export/*.asy
+            tests/fixtures/out-export/*.log
+          retention-days: 14
+
+  candidate:
+    needs: [verify, web, exports]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      pages_artifact: pages-${{ github.sha }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          name: tested-web-${{ github.sha }}-${{ github.run_attempt }}
+          path: candidate
+      - name: Verify exact source, run, base and checksums before packaging
+        env:
+          GEOMIRA_BASE: /${{ github.event.repository.name }}/
+        run: pnpm exec tsx scripts/release-candidate.ts check candidate candidate/geomira.html "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GEOMIRA_BASE"
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          name: pages-${{ github.sha }}-${{ github.run_attempt }}
+          path: candidate

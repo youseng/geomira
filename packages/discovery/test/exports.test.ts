@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import pkg from '../package.json' with { type: 'json' };
+import * as construction from '../src/construction';
 import * as branchFix from '../src/branch-fix';
 import * as find from '../src/find';
 import * as hunt from '../src/hunt';
@@ -12,6 +13,7 @@ import * as types from '../src/types';
 
 /** The public modules of @geomira/discovery (ADR-0002, ADR-0035) and the runtime names each exports. */
 const SURFACE: Record<string, { module: object; names: string[] }> = {
+  './construction': { module: construction, names: ['constructionFacts'] },
   './types': { module: types, names: ['CONSTRUCTION_SHOWN', 'DEFAULT_FIND_BUDGET', 'claimArgsOf'] },
   './job': { module: job, names: ['runDiscoveryJob'] },
   './find': { module: find, names: ['find', 'runFind', 'withFact'] },
