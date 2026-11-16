@@ -63,6 +63,11 @@ Refreshing that file once would repeat the same synchronization defect on the ne
   integrity checks, tested-artifact upload and candidate packaging retain success-only gates.
   Cancellation or an earlier prerequisite that skips public tests does not launch internal
   tests. This collects both sets of failure evidence without promoting a failed candidate.
+- Record Node, pnpm, Playwright and OS versions plus the matched system/UI/monospace/math
+  font files and their SHA-256 hashes in the browser job log and report environment file.
+  Scene screenshots keep their bundled math face; the platform UI stack is not overridden.
+  This identifies the actual Ubuntu font inputs and distinguishes local platform differences
+  from product changes without accepting mismatches or raising screenshot tolerances.
 
 ## Frozen tests and remaining work
 
