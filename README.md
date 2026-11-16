@@ -97,7 +97,8 @@ pnpm e2e      # Playwright against the built app
 
 Claim and assumption statements in existing documents are preserved in text, saves, shares
 and exports. The public app does not evaluate claims or offer automated testing or discovery.
-The retained engine's known sampler issue is not repaired by this change (ADR-0065).
+The shared sampler defects are repaired (ADR-0073); the retained engine still has
+documented [reactivation gates](docs/claims-reactivation.md) before public use.
 
 Internal engine development only (never release these output directories):
 
