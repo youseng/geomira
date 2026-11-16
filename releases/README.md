@@ -1,10 +1,31 @@
-# Releases
+# Downloadable Geomira
 
-`geomira.html` is the single-file build of Geomira (ADR-0030): one HTML file with everything
-inlined, the claim tester's worker included. Download it and open it in a browser; it needs no
-network and no server (file:// works in Chromium, Firefox and Safari's engine).
+[Download the public offline HTML](https://youseng.github.io/geomira/geomira.html).
+Save the file, then open it directly in Chromium, Firefox or Safari. It needs no account,
+network or server after download. Browser file-origin storage policies still apply;
+keep portable `.geo` backups of important work.
 
-It is a snapshot, committed by hand: build `5f0ce3be` (the commit it was built from), made with
-`pnpm build` (→ `apps/web/dist-single/index.html`). Help → "About this copy" shows the build it
-came from. It does not follow later changes of the code; every CI run also uploads a fresh copy
-as the artifact `geomira-single-file`.
+The download is copied byte for byte from the public single-file build tested by the
+website's validation run. The same immutable Pages artifact contains the hosted app,
+`geomira.html` and [release.json](https://youseng.github.io/geomira/release.json). The manifest
+records the full source SHA, Actions run/attempt, deployment base, public build mode and
+SHA-256 of every delivered file. Help → About this copy shows that full build SHA.
+
+The old hand-maintained `releases/geomira.html` snapshot has been removed: it could lag
+behind the website and still exposed retired claim testing. Do not distribute a file from
+an old Git commit as the current release. The public URL changes only with an authorized,
+validated deployment; a branch's preview artifact is not a published release.
+
+For an unpublished candidate, use pinned pnpm and `pnpm build`, then package it with:
+
+```sh
+pnpm exec tsx scripts/release-candidate.ts prepare apps/web/dist apps/web/dist-single/index.html "$(git rev-parse HEAD)" local 1 /geomira/
+pnpm exec tsx scripts/release-candidate.ts check apps/web/dist apps/web/dist-single/index.html "$(git rev-parse HEAD)" local 1 /geomira/
+```
+
+This creates `apps/web/dist/geomira.html` and `release.json`; it does not publish anything.
+The deployment graph runs the full verification, public/internal browser tests and export
+compilation for the same source, checks the manifest after download, and uploads exactly
+those tested bytes. Missing, failed, cancelled or unfinished prerequisite jobs cannot
+produce the Pages artifact or enter deployment. Nightly mutation campaigns retain their
+separate main/scheduled policy; they are not silently substituted for release checks.

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && vite build --mode singlefile",
+    "build": "vite build && vite build --mode singlefile && tsx ../../scripts/package-release.ts",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",
     "e2e": "playwright test",

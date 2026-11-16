@@ -546,3 +546,16 @@ in their ideal point; tools that do not declare it give Undefined with a reason,
 built in Run 16b (ADR-0042: the capability `conic`; a conic where no overload takes one gives
 Undefined "k is a conic: <tool> does not take one", E2, tested in every argument position).
 E9 File versioning and migrations. E10 Registry-driven UI and docs.
+
+### Release candidate provenance and gates (ADR-0076)
+
+A public release is the same artifact tested by a same-revision validation graph: full
+verification, supported public/internal browser flows and export compilation must all succeed
+before the Pages artifact is packaged. Missing, skipped, cancelled or unfinished prerequisites
+cannot authorize publication. Only the default branch may publish, and an obsolete source is
+refused immediately before deployment. PR validation has no publication credentials.
+
+The stable public `geomira.html` download is copied from the tested public single-file build
+and delivered with the website. `release.json` records the full source SHA, run, base and
+checksums; deployment consumes those bytes without rebuilding. The source repository does not
+carry a separately maintained executable snapshot. Nightly mutation remains a separate policy.
