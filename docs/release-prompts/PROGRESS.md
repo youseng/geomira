@@ -13,7 +13,7 @@ verification, CI and the independent audit.
 - [x] 01 Public claim testing removed — merged PR #38.
 - [x] 02 Transactional persistence/recovery — merged PR #39.
 - [x] 04 Modal/keyboard safety — merged PR #40.
-- [ ] 03 Document files and reliable sharing — in progress; ADR-0069.
+- [x] 03 Document files and reliable sharing — integrated and cancellation fixes re-reviewed; ADR-0069; 46 unit / 27 browser checks.
 - [x] 05 Properties and inherited visibility — integrated; ADR-0070; 48 unit / 20 browser checks.
 - [x] 06 Tool dependencies and capabilities — integrated; ADR-0071; 108 unit / 3 browser checks.
 - [x] 07 Stable geometry numerics — integrated and independently reviewed; ADR-0072; 101 independent tests.
