@@ -49,6 +49,13 @@ Refreshing that file once would repeat the same synchronization defect on the ne
   keyboard flows, modal isolation and the public boundary. Keep single-file coverage in all
   three engines. The exact distributed HTML also has a file-mode compatibility/zero-job test.
   Ordinary public browser suites and existing performance gates remain enabled.
+- Include the final integration regressions for fractional canvas/native-pointer projection,
+  recovery placement, explicit guide dismissal, stable header actions and repeated point
+  interaction in hosted Firefox/WebKit and all three offline engines. Hosted Firefox/WebKit
+  also run document-file startup draft cases; the existing public offline file, modal, share,
+  script, persistence, Randomize and workspace coverage is retained. Internal offline projects
+  retain their original engine file tests and add the capability-independent geometry/layout
+  regressions without importing public-only capability assertions.
 - Leave the nightly main/schedule mutation policy unchanged. Those hours-long campaigns remain
   explicit separate checks; they are not silently made a per-PR publication prerequisite.
 - Run the internal browser suite after an executed public suite succeeds or fails, retaining
