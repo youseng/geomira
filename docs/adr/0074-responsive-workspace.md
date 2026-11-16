@@ -247,7 +247,7 @@ that complete stripe must provide 120 consecutive drawable pixels. Native outsid
 clicks use the exposed View action, and replacing a card uses the exposed visibility end of
 the other object's row. Color commit and exact Undo assertions remain. No clicks are forced
 through another control. The sheet fixture keeps exact camera attributes and canonical
-source across layout actions and requires closing to restore the pre-open canvas dimensions.
+source across layout actions and requires closing to restore the complete pre-open canvas rectangle, including position.
 Settings is reached through its visible More actions disclosure on phones.
 
 Changed frozen fixtures: `apps/web/e2e/mobile.spec.ts`, `style-popover.spec.ts`, and

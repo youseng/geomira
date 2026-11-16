@@ -129,8 +129,7 @@ test('the panels work on a phone: tabs, objects, claims, command bar', async ({ 
   ).toBe(true);
   await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
   const restored = await board.boundingBox();
-  expect(restored?.width).toBe(closed?.width);
-  expect(restored?.height).toBe(closed?.height);
+  expect(restored).toEqual(closed);
   expect(
     await board.evaluate((e) => [e.dataset['cx'], e.dataset['cy'], e.dataset['zoom']]),
   ).toEqual(camera);

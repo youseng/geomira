@@ -93,8 +93,7 @@ test('nothing is clipped: top bar, tabs, tool strip, command line, drawer', asyn
   await page.getByRole('button', { name: 'Hide panels' }).click();
   await expect(page.getByRole('tabpanel')).toBeHidden();
   const restored = await board.boundingBox();
-  expect(restored?.width).toBe(canvas?.width);
-  expect(restored?.height).toBe(canvas?.height);
+  expect(restored).toEqual(canvas);
   await tab(page, 'Text');
   await expect(page.getByLabel('Text', { exact: true })).toHaveValue(source);
   await page.getByRole('button', { name: 'Hide panels' }).click();
