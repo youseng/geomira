@@ -10,12 +10,14 @@ columns away from the actual command. Files retain one statement per line.
 
 ## Decision
 
-Validate each batch prefix against the original editor state with one cumulative
-source buffer. Replace singleton lines in statement order, including repeated
+Assemble a cumulative source buffer and origin map against the original editor state.
+Parse/evaluate ordinary batches once. Validate an earlier prefix only immediately before
+overwriting a singleton directive already changed within this batch. Replace singleton lines in statement order, including repeated
 directives; append other statements. Keep an origin map from generated lines to
 the source command. Only return the final successful replacement, so the batch
 creates one history entry and any failure leaves the original state intact.
-Validate every prefix so a later replacement cannot hide an earlier invalid input.
+Validate the endangered prefix so a later singleton replacement cannot hide an earlier
+invalid input.
 Use the existing statement splitter and grammar; a batch does not change file syntax.
 
 The remaining Text-panel work will reuse the shared draft introduced by prompt 03.
@@ -25,8 +27,8 @@ must be recorded before this task is marked complete.
 ## Consequences
 
 Batch behavior matches sequential singleton replacement while remaining atomic.
-Prefix validation costs more than one parse; it uses the same bounded interactive
-command path and keeps parser rules as the authority. No execution runtime or
+Repeated singleton replacements require extra prefix validation, while ordinary appended
+batches keep one parse/evaluation. Parser rules remain the authority. No execution runtime or
 new language is introduced. Public claim statements remain inert document data.
 
 ## Alternatives

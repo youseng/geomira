@@ -111,36 +111,48 @@ export function runCommand(state: EditorState, line: string, env: EditorEnv): Co
   return statementsCommand(state, line, env);
 }
 
-/** Validate each prefix, but commit the complete batch as one replaceText/history edit. */
+/** Parse ordinary batches once; validate a prefix only before hiding a repeated singleton. */
 function statementsCommand(state: EditorState, line: string, env: EditorEnv): CommandResult {
   const lines = print(state.doc).trimEnd().split('\n');
   const origins = new Map<number, StatementPiece>();
-  let result: Extract<EditResult, { ok: true }> | undefined;
-  for (const piece of splitStatements(line)) {
+  const pieces = splitStatements(line);
+  if (pieces.length === 0)
+    return { kind: 'error', reason: 'the statement changes nothing', diagnostics: [] };
+  for (const piece of pieces) {
     const index = replacedLine(lines, piece.text) ?? lines.length;
+    if (origins.has(index + 1)) {
+      // A later title/author/viewport must not conceal an earlier malformed value.
+      const prefix = validateBatch(state, lines, origins, line.length, env);
+      if (prefix.kind === 'error') return prefix;
+    }
     lines[index] = piece.text;
     origins.set(index + 1, piece);
-    const next = applyEdit(state, { kind: 'replaceText', text: `${lines.join('\n')}\n` }, env);
-    if (!next.ok) {
-      const diagnostics = (next.diagnostics ?? []).map((d) => {
-        const origin = origins.get(d.line) ?? piece;
-        return {
-          ...d,
-          line: 1,
-          column: d.column + origin.start,
-          endColumn: d.endColumn + origin.start,
-        };
-      });
-      return { kind: 'error', reason: next.reason, diagnostics };
-    }
-    const duplicate = duplicateDefinition(state.doc, next.state.doc, line.length, env);
-    if (duplicate !== undefined)
-      return { kind: 'error', reason: duplicate.message, diagnostics: [duplicate] };
-    result = next;
   }
-  if (result === undefined || result.state.doc === state.doc)
+  const result = validateBatch(state, lines, origins, line.length, env);
+  if (result.kind === 'edit' && result.result.state.doc === state.doc)
     return { kind: 'error', reason: 'the statement changes nothing', diagnostics: [] };
-  return { kind: 'edit', result };
+  return result;
+}
+
+function validateBatch(
+  state: EditorState,
+  lines: readonly string[],
+  origins: ReadonlyMap<number, StatementPiece>,
+  width: number,
+  env: EditorEnv,
+): CommandResult {
+  const result = applyEdit(state, { kind: 'replaceText', text: `${lines.join('\n')}\n` }, env);
+  if (!result.ok) {
+    const diagnostics = (result.diagnostics ?? []).map((d) => {
+      const offset = origins.get(d.line)?.start ?? 0;
+      return { ...d, line: 1, column: d.column + offset, endColumn: d.endColumn + offset };
+    });
+    return { kind: 'error', reason: result.reason, diagnostics };
+  }
+  const duplicate = duplicateDefinition(state.doc, result.state.doc, width, env);
+  return duplicate === undefined
+    ? { kind: 'edit', result }
+    : { kind: 'error', reason: duplicate.message, diagnostics: [duplicate] };
 }
 
 export interface Completion {

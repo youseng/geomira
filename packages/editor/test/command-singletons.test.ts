@@ -54,3 +54,21 @@ describe('singleton directives in atomic command batches', () => {
     if (result.kind === 'error') expect(result.diagnostics[0]?.column).toBeLessThan(12);
   });
 });
+
+it('applies a large plain batch with its exact geometry and one undo entry', () => {
+  const statements = Array.from(
+    { length: 120 },
+    (_, i) => `p_${String(i)}=(${String(i)},${String(i * i + 1)})`,
+  );
+  const before = editorOf('@title "batch"');
+  const result = runCommand(before, statements.join('; '), env);
+  if (result.kind !== 'edit') throw new Error(result.reason);
+  expect(result.result.state.doc.objects).toHaveLength(120);
+  expect(print(result.result.state.doc)).toBe(
+    print(editorOf(`@title "batch"\n${statements.join('\n')}`).doc),
+  );
+  expect(result.result.state.history.past).toHaveLength(1);
+  const undone = applyEdit(result.result.state, { kind: 'undo' }, env);
+  expect(undone.ok).toBe(true);
+  expect(print(undone.state.doc)).toBe(print(before.doc));
+});
