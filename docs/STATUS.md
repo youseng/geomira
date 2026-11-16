@@ -47,7 +47,8 @@ source edits; reviewed changes are integrated before combined verification.
 - Both `9622000` and `c540412` are rejected as release candidates. Full supported-engine CI
   and independent review found further functional defects after the initial focused checks.
   Source corrections and reviewed native-fixture migrations are integrated. The revised
-  application source is frozen at `0cace13`; final combined checks and artifact review follow.
+  correctness candidate was frozen at `0cace13`; the freeze is now lifted for the confirmed
+  300-object performance regression below. Final acceptance remains blocked.
 - Main merge and its configured deployment are authorized only after those gates pass.
   Neither has been performed. No separate tagged release was requested.
 
@@ -80,6 +81,19 @@ clean full `pnpm verify` with **5,036 tests / 552 files**. Because functional so
 afterward, that pass does not establish acceptance of the next candidate. Fresh combined
 verification, all supported-engine checks and exact artifact review remain required. See
 [integration evidence](release-prompts/results/INTEGRATION.md) for failed runs and exact scope.
+
+### Current blocking performance finding
+
+A valid isolated full-UI drag of the 300-object stress figure took **37.51 ms application
+median / 58.05 ms p95**, exceeding the unchanged **8 ms** median gate. Raster median was
+**10.03 ms** and is reported separately under ADR-0014. The original center press selected
+nearby dependent M234 rather than P1, so its **1.57 ms** no-edit trace is invalid. A native
+press one CSS pixel into the exposed P1 dot retains the camera, 300 objects, traced path,
+140 marks and 120 measured frames. The reviewed fixture now also requires coordinate-only
+P1 change, identical other source lines, exact whole-document Undo/Redo and one history
+entry. This strengthening is recorded under ADR-0076. Source highlighting/diagnostics are
+being profiled as possible causes; no causal conclusion or performance pass is assumed.
+Full quiet verification is held until the real benchmark passes after a narrow fix.
 
 ### Uncertain
 
