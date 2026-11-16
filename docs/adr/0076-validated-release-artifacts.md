@@ -71,6 +71,8 @@ ADR-0074 responsive panel contract: after deliberately hiding the panel to drag 
 reopen it with the visible Show panels control before inspecting its tabs. A closed desktop
 panel is now absent rather than merely offscreen. All tab-content, keyboard-navigation,
 document-compatibility and retired-job assertions are retained.
+The 300-object scene measurement opens the visible More actions disclosure before Settings
+on compact headers, retaining the existing measurement, object count and 8 ms limit.
 
 ## Individually reviewed final references
 
