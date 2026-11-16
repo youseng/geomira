@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   gui:
-    name: Five GUI references (diagnostic only)
+    name: Five GUI and four WebKit focus checks (diagnostic only)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -47,6 +47,18 @@ jobs:
           GEOMIRA_ENGINE_E2E: '1'
           PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/internal
         run: pnpm --filter @geomira/web exec playwright test flows-design design-mobile --grep 'screenshot baseline' --project desktop --project mobile --workers 1
+      - name: Public WebKit focus diagnostics
+        id: focus_public
+        if: ${{ !cancelled() && (steps.public_gui.outcome == 'success' || steps.public_gui.outcome == 'failure') }}
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/focus-public
+        run: pnpm --filter @geomira/web exec playwright test recovery-layout --grep 'Recovery queued visibility' --project desktop-webkit --project file-webkit --workers 1
+      - name: Internal WebKit focus diagnostics
+        if: ${{ !cancelled() && (steps.focus_public.outcome == 'success' || steps.focus_public.outcome == 'failure') }}
+        env:
+          GEOMIRA_ENGINE_E2E: '1'
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/focus-internal
+        run: pnpm --filter @geomira/web exec playwright test recovery-layout --grep 'Recovery queued visibility' --project desktop-webkit --project file-webkit --workers 1
       - name: GUI review evidence (not a release artifact)
         if: always()
         uses: actions/upload-artifact@v7

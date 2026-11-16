@@ -160,6 +160,16 @@ complete required browser matrix still executes all five comparisons and decides
 An exact-font local reproduction remained 2.61–3.70% different from same-source CI GUI images,
 so these references must be reviewed from CI output rather than generated locally as equivalent.
 
+After the five GUI comparisons, that same diagnostic workflow also runs exactly the queued
+Recovery focus-ownership case in hosted and file WebKit, once per public/internal mode,
+with worker1. Its four focus checks use separate `focus-public` and `focus-internal` HTML
+directories in the existing always-uploaded diagnostic archive. Comparison failure does not
+prevent focus diagnostics, nor does a public focus failure prevent the internal group;
+cancellation and skipped prerequisites do. The job title names both five GUI and four focus
+checks. Existing builds, browser/font inputs, permissions, artifact retention, release graph
+and full required browser suite remain unchanged. This provides quick evidence for the
+observed WebKit setup issue, without turning diagnostic success into release acceptance.
+
 The required web job also uploads a diagnostic-only public report immediately after an
 actually executed public failure, before collecting the internal suite. This responds to
 the observed roughly 12-minute wait for the combined report while official active-job logs
