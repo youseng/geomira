@@ -32,13 +32,12 @@ an empty document has little guidance. Source screenshots confirm these problems
   within limits reserving at least 300 pixels of canvas. Persist panel width/collapse,
   compact-sheet choice, guide dismissal and recent tools in a separate best-effort
   workspace key. Storage denial never breaks those controls or changes geometry save state.
-- Phone panels have compact/expanded heights, bounded below the actual header/workspace
-  bar. Observe visualViewport height for keyboard/window resizing, keeping the existing
-  canvas world-to-screen mapping through ResizeObserver. Compact panels expose the figure
-  during edits. The native editor and its validation/actions remain scrollable. Its real
-  editing surface is at least 120 pixels high. Short phone/landscape viewports use an
-  in-flow panel and scroll the page instead of compressing source below a fixed header.
-  Long editor guidance is collapsed under Editor help (ADR-0075).
+- Phone panels have compact/expanded editing space in ordinary page flow. Observe the
+  visualViewport height for keyboard/window resizing, preserving the existing canvas
+  world/screen mapping. Drawing and visible source each retain at least 120 pixels in the
+  tested layouts. Native source focus reserves the stage's minimum height as scroll padding
+  instead of centering the editor at the figure's expense. The native editor, validation and
+  actions remain reachable; long Editor help is collapsed under its disclosure (ADR-0075).
 - The current-tool status names picked objects as well as the real machine's next input.
   Add explicit Pan: a press pans even over points and a still press does not construct.
   Existing box selection, right/middle pan, touch pan/pinch, wheel zoom and Escape remain.
@@ -174,3 +173,25 @@ check the canvas rectangle is unchanged before/after input. Guide dismissal is r
 both before and after the click. All other reflow, outline and history assertions remain.
 This changes only fixture expectations; no application code, synthetic events, coordinate
 tolerances, input rounding, screenshot references or typed-coordinate assertions change.
+
+## Frozen-test accounting for prompt 09
+
+The original workspace migration changed these existing browser fixtures deliberately:
+
+- `apps/web/e2e/mobile.spec.ts`: zoom out once before an outward drag whose destination
+  otherwise lies off-screen; the exact final point assertion remains.
+- `apps/web/e2e/property-safety.spec.ts`: reach Fit through View when covered by the card,
+  dismiss through an exposed canvas point, and use the visible existing object action for
+  card re-entry. Exact rename persistence, numeric partial input and one-Undo restoration
+  remain. Later native review exposed real moving-invoker/point-coverage defects; those were
+  fixed in source and receive separate native regressions, rather than another fixture bypass.
+- `apps/web/e2e/tool-dependencies.spec.ts`: close the phone panel before a canvas drag;
+  dynamic dependency and exact parent/child position assertions remain.
+
+`workspace.spec.ts`, `workspace-composed.spec.ts`, `interaction-layout.spec.ts`,
+`recovery-layout.spec.ts`, `layout-visibility.ts` and `public-workspace.test.ts` were new
+files in this release repair. The native-layout follow-up adds/iterates these new regressions;
+it changes no pre-existing mathematical assertions, tolerances or test floor. The separate
+fractional/native projection correction and its existing-fixture list are recorded above.
+Startup-recovery coverage and the independent native Point oracle belong to their linked
+integration records. Screenshot reference changes are reviewed by prompt 11 under ADR-0076.

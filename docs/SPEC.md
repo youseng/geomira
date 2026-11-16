@@ -504,8 +504,11 @@ recent list choose through the same selection-input machine as the palette. The 
 palette uses one roving tab stop and orientation-aware arrows/Home/End. Current-tool status
 names picked objects and the expected next input. Explicit Pan preserves existing gestures
 and wheel zoom; Properties opens the selected object's existing card.
-Desktop panels collapse and resize with a reserved canvas width; compact/expanded phone
-sheets follow the visible viewport and preserve drafts. Workspace preferences are separate
+Desktop panels collapse and resize with a reserved canvas width. Tool, selection and Zoom
+controls occupy a constant strip outside the drawable canvas. Critical notices and recovery
+actions stay in normal page flow; compact/expanded phone panels preserve at least 120 pixels
+each of exposed drawing and visible source. Native focus and page navigation preserve access
+to the figure, panel controls, palette and command bar at short heights. Workspace preferences are separate
 best-effort browser state, never geometry history or evidence of a saved document.
 First-use guidance cannot replace existing geometry or unapplied text. See docs/workspace.md.
 
