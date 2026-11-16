@@ -1,13 +1,16 @@
 # Prompt 11 final candidate validation
 
-Status: **pending final CI references, browser matrix and independent acceptance**.
-Revised application candidate: `c540412ec2e4d4a68c93c4e59a26343756adaf69`.
-Its formatting-only successor passed verification, but later independent findings require
-further source corrections. Checks below identify their actual source rather than treating
-this diagnostic candidate as a release pass.
+Status: **pending real performance repair, revised-source validation and independent acceptance**.
+The complete cross-engine diagnostic at `6723eace46ec559a116d8dc83d1d05e84e35086f`
+passes all nonperformance scenarios and all 25 reviewed references, but its full-UI drag
+fixture does not perform a drag. The corrected pickup reveals a real 37.51 ms failure.
+Detailed current diagnostic counts are in `11-6723-ci-results.md`. Historical checks below
+identify their actual source rather than treating an earlier candidate as a release pass.
 No production publication, main merge, deployment or release was performed in this phase.
 
-## Revised candidate identity and builds
+## Historical c540 candidate identity and builds
+
+Source: `c540412ec2e4d4a68c93c4e59a26343756adaf69`; this file is not the final release candidate.
 
 Pinned pnpm 10.28.0; Node 24.22.1; Playwright 1.56.1 / bundled Chromium 141.
 Frozen-lockfile offline dependency installation passed. With `GEOMIRA_BASE=/geomira/`
@@ -28,9 +31,9 @@ matrix completed **401 passed / 9 failed / 0 skipped**, 410 tests in 1,055.7 sec
 failures match the documented CI categories. A complete 125-failure disposition ledger is in
 `11-c540-ci-dispositions.md`; these are historical results, not revised-source acceptance.
 
-## Visual acceptance still required
+## Reviewed visual references
 
-Twenty-five unique references need final review: eight exported example PNGs, six public
+Twenty-five unique references cover eight exported example PNGs, six public
 scene canvases, six internal scene canvases, three internal full-GUI views and two new
 public full-GUI views. The final phone flow, reserved controls and relocated Zoom controls
 change the viewport again, so the first candidate's approved images are intermediate
@@ -38,9 +41,9 @@ historical evidence and cannot be blindly reused.
 
 The integration owner approved 20 c540 CI geometry references after individual review, also
 independently reviewed by prompt 12. They are copied byte for byte with source/run/artifact,
-font environment and per-file hash provenance in `11-visual-references.json`. All five GUI
-references remain untouched pending final panel/header source. Final-source comparisons are
-still required even where clean geometry dimensions are unchanged.
+font environment and per-file hash provenance in `11-visual-references.json`. Five GUI
+references subsequently came from the corrected c520 source, as recorded below. All 33
+comparison executions pass at 6723. The performance repair must preserve those comparisons.
 
 The two new public references capture untouched native desktop/phone viewports with a
 saved nine-point example and editable source. They explicitly reject claim tabs/chips.
