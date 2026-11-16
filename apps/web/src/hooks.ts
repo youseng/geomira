@@ -67,11 +67,13 @@ export function useStartup(store: EditorStore, runs: { clear(): void }, onReady:
     const openCount = store.getSnapshot().openCount;
     void store.autosave.initialize().then((text) => {
       if (!active) return;
-      // Startup I/O must never replace work entered while the database was opening.
+      // Startup I/O must never replace figure edits, a raw draft or an active composition.
+      // Loaded versions remain in Recovery when the current editing session wins.
       if (
         store.current().doc !== initial.doc ||
         store.current().tool !== initial.tool ||
         store.current().toolState !== initial.toolState ||
+        store.textDraft.unappliedText() !== null ||
         store.getSnapshot().openCount !== openCount
       ) {
         onReady();

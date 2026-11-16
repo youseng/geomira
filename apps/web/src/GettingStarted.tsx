@@ -17,7 +17,10 @@ function GuideActions(p: Props & { empty: boolean; dismiss: () => void }) {
   const triangle = () => {
     const draft = p.store.textDraft.getSnapshot();
     if (p.store.current().doc.objects.length === 0 && draft.text === draft.clean) {
-      p.store.command('triangle A B C');
+      const result = p.store.command('triangle A B C');
+      // This action removes its focused guide button. Give the next construction step a
+      // stable destination instead of leaving native Tab navigation on a removed node.
+      if (result?.kind === 'edit') p.search.current?.focus();
       requestAnimationFrame(p.fit);
     }
   };

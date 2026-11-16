@@ -196,3 +196,17 @@ test('keyboard tool search keeps the active result visible in a long list', asyn
   await field.press('Enter');
   await expect(page.getByRole('status', { name: 'Current tool' })).toContainText(label);
 });
+
+test('guided triangle creation transfers keyboard focus to tool search', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openApp(page, './index.html');
+  const create = page.getByRole('button', { name: 'Create a triangle', exact: true });
+  await create.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('region', { name: 'Getting started' })).toHaveCount(0);
+  const search = page.getByRole('combobox', { name: 'Find a tool' });
+  await expect(search).toBeFocused();
+  await page.keyboard.type('circumcenter');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('status', { name: 'Current tool' })).toContainText('Circumcenter');
+});

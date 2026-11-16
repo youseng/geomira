@@ -194,3 +194,43 @@ test('files: delayed file read cannot replace a newer file action', async ({ pag
   await page.keyboard.press('Escape');
   await expect(await textArea(page)).toHaveValue(/A = \(1, 2\)/u);
 });
+
+for (const valid of [true, false]) {
+  test(`files: startup draft ${valid ? 'valid' : 'invalid'} survives delayed recovery and saves explicitly`, async ({
+    page,
+  }) => {
+    const original = '@version 1\nP = (9, 8)\n';
+    await page.addInitScript((legacy) => {
+      localStorage.setItem('geomira.autosave.current', legacy);
+    }, original);
+    await holdConnections(page, true);
+    await openApp(page, './index.html');
+    await expect(page.locator('html')).toHaveAttribute('data-held-storage', 'yes');
+    const draft = valid ? 'A=(123,456)' : 'A=(123,456)\nB=(';
+    const field = await textArea(page);
+    await field.fill(draft);
+    // Suspend the pause before letting startup finish: neither startup nor a file action
+    // may change the draft's base document while the user decides what to save.
+    await page.getByRole('button', { name: 'File', exact: true }).click();
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('release-storage'));
+    });
+    await saved(page);
+    expect((await readRecovery(page)).revisions.some((r) => r.text === original)).toBe(true);
+    await expect(field).toHaveValue(draft);
+    await expect(page.locator('.text-actions')).not.toContainText('The figure changed meanwhile');
+    const downloading = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Save / Download .geo', exact: true }).click();
+    if (!valid) {
+      const dialog = page.getByRole('dialog', { name: 'Save figure' });
+      await expect(dialog).toContainText('draft has errors');
+      await expect(dialog).not.toContainText('older figure');
+      await dialog.getByRole('button', { name: 'Download draft text', exact: true }).click();
+    }
+    const file = await downloading;
+    expect(readFileSync(await file.path(), 'utf8')).toBe(
+      valid ? '@version 1\nA = (123, 456)\n' : draft,
+    );
+    expect((await readRecovery(page)).revisions.some((r) => r.text === original)).toBe(true);
+  });
+}
