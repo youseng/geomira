@@ -42,11 +42,11 @@ source edits; reviewed changes are integrated before combined verification.
 
 ### Not done
 
-- Final candidate builds, full integrated verification, complete browser/visual/export
-  validation, green final-head CI and prompt 12 independent audit remain pending.
-- Application source froze at `9622000381c6b253067680593090624fafdff23c`; the independent
-  reviewer runs in a clean detached checkout. Final visual references and evidence may
-  follow as explicitly identified validation/documentation changes.
+- All four local builds pass at `c540412`; full integrated verification, complete revised
+  browser/visual/export validation, green final-head CI and independent acceptance remain pending.
+- The initial `9622000` candidate was rejected. Revised application implementation froze at
+  `c540412`; the reviewer uses a clean detached checkout. Formatting, reviewed references,
+  native-pointer fixture corrections and evidence follow as identified validation changes.
 - Main merge, production deployment and release publication are not performed here.
 
 ### Known bugs
