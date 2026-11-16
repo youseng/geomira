@@ -1,3 +1,4 @@
+import { hasEdits } from '@geomira/editor/text-draft';
 import { useEffect, useMemo, useRef, useSyncExternalStore, type RefObject } from 'react';
 import { print } from '@geomira/lang/print';
 import { FileSession } from './file-session';
@@ -7,6 +8,7 @@ import type { EditorStore } from './store';
 
 /** Portable file input/download baseline, also available in file:// and storage-denied sessions. */
 export function DocumentFiles({ store }: { store: EditorStore }) {
+  const unapplied = useUnappliedDraft(store);
   const session = useMemo(() => new FileSession(store), [store]);
   const state = useSyncExternalStore(session.subscribe, session.snapshot, session.snapshot);
   const input = useRef<HTMLInputElement>(null);
@@ -37,9 +39,18 @@ export function DocumentFiles({ store }: { store: EditorStore }) {
       <span className="document-name" title={current.meta.title ?? 'Untitled'}>
         {current.meta.title ?? 'Untitled'}
       </span>
+      {unapplied && (
+        <span className="document-draft" role="status">
+          Unapplied text draft
+        </span>
+      )}
       {state.downloaded !== null && (
         <span className="document-download" role="status">
-          {state.downloaded === print(current) ? 'Download requested' : 'Changed since download'}
+          {unapplied
+            ? 'Draft not included in download'
+            : state.downloaded === print(current)
+              ? 'Download requested'
+              : 'Changed since download'}
         </span>
       )}
       <FileMenu
@@ -76,5 +87,15 @@ function FilePicker({
         else void session.read(file);
       }}
     />
+  );
+}
+
+function useUnappliedDraft(store: EditorStore): boolean {
+  return hasEdits(
+    useSyncExternalStore(
+      store.textDraft.subscribe,
+      store.textDraft.getSnapshot,
+      store.textDraft.getSnapshot,
+    ),
   );
 }

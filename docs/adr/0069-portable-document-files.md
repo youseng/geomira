@@ -14,9 +14,14 @@ Extends ADR-0067 (persistence) and ADR-0068 (modal interaction).
   account, service or runtime dependency is required.
 - Move the existing TextApplier to EditorStore.textDraft, shared by the text panel and file
   operations. File-menu/picker interaction pauses pending automatic application. Cancel
-  does not edit the document, draft, history or recovery. A current valid draft is applied
+  before Continue does not edit the document, draft, history or recovery. A current valid draft is applied
   before saving. Invalid/stale drafts get explicit choices and a raw `.txt` backup.
   New/Open disclose unapplied drafts before an explicit replacement discards them.
+- Continue enters a visible commit phase: all file controls, including Cancel, are disabled
+  and Escape leaves the dialog open until saving completes or fails. This avoids claiming
+  cancellation after an irreversible transaction or draft application has started. Failure
+  unlocks the choices and preserves the latest usable figure and pending backup. Delayed
+  file reads carry an operation token; cancellation or a newer action invalidates them.
 - New/Open/Save As await existing recovery before replacing the editor. Save As opens a
   new file-origin editing identity; both original and duplicate stay recoverable. A failed
   recovery write leaves the figure open and requires an explicit discard choice to continue.

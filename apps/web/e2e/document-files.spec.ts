@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { command, openApp, textArea } from './helpers';
-import { readRecovery } from './recovery-helpers';
+import { readRecovery, holdConnections } from './recovery-helpers';
 
 async function fileAction(page: Page, action: string) {
   await page.getByRole('button', { name: 'File', exact: true }).click();
@@ -140,6 +140,57 @@ test('files: replacement modal blocks Delete and Escape preserves pending constr
   const dialog = page.getByRole('dialog', { name: 'Document files' });
   await dialog.focus();
   await page.keyboard.press('Delete');
+  await page.keyboard.press('Escape');
+  await expect(await textArea(page)).toHaveValue(/A = \(1, 2\)/u);
+});
+
+test('files: confirmed Save As locks all controls and Escape until durability completes', async ({
+  page,
+}) => {
+  await openApp(page, './index.html');
+  await command(page, 'A=(1,2)');
+  await saved(page);
+  await holdConnections(page);
+  await (await textArea(page)).fill('A=(1,2)\nB=(3,4)');
+  await fileAction(page, 'Save As / Duplicate');
+  const dialog = page.getByRole('dialog', { name: 'Document files' });
+  const download = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(dialog).toContainText('Saving before replacement');
+  await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeDisabled();
+  await expect(dialog.getByLabel('Document name')).toBeDisabled();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeVisible();
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('release-storage'));
+  });
+  const file = await download;
+  expect(readFileSync(await file.path(), 'utf8')).toContain('B = (3, 4)');
+  await expect(dialog).toHaveCount(0);
+});
+
+test('files: delayed file read cannot replace a newer file action', async ({ page }) => {
+  await openApp(page, './index.html');
+  await command(page, 'A=(1,2)');
+  await page.evaluate(() => {
+    File.prototype.text = () =>
+      new Promise<string>((resolve) => {
+        window.addEventListener(
+          'release-file',
+          () => {
+            resolve('B=(3,4)');
+          },
+          { once: true },
+        );
+      });
+  });
+  await upload(page, 'B=(3,4)');
+  await fileAction(page, 'New document');
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('release-file'));
+  });
+  const dialog = page.getByRole('dialog', { name: 'Document files' });
+  await expect(dialog.getByRole('heading', { name: 'New document', exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(await textArea(page)).toHaveValue(/A = \(1, 2\)/u);
 });

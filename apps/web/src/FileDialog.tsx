@@ -106,22 +106,30 @@ export function FileDialog({ session, state }: { session: FileSession; state: Fi
               ? 'Save As / Duplicate'
               : 'Save figure'}
       </h2>
-      {state.error !== null && <p role="alert">{state.error}</p>}
-      {issue !== null && <p role="alert">{issue}</p>}
-      <DraftChoices session={session} />
-      {(choice.kind === 'new' || choice.kind === 'save-as') && (
-        <label>
-          Document name
-          <input
-            aria-label="Document name"
-            value={state.name}
-            onChange={(e) => {
-              session.patch({ name: e.target.value });
-            }}
-          />
-        </label>
+      {state.busy && (
+        <p role="status">
+          Saving before replacement… Please wait. This confirmed operation cannot be cancelled while
+          saving.
+        </p>
       )}
-      <ConfirmActions session={session} state={state} />
+      <fieldset disabled={state.busy} className="file-controls">
+        {state.error !== null && <p role="alert">{state.error}</p>}
+        {issue !== null && <p role="alert">{issue}</p>}
+        <DraftChoices session={session} />
+        {(choice.kind === 'new' || choice.kind === 'save-as') && (
+          <label>
+            Document name
+            <input
+              aria-label="Document name"
+              value={state.name}
+              onChange={(e) => {
+                session.patch({ name: e.target.value });
+              }}
+            />
+          </label>
+        )}
+        <ConfirmActions session={session} state={state} />
+      </fieldset>
     </Modal>
   );
 }

@@ -15,14 +15,17 @@ currently no genuine version-0 format to migrate. Unversioned legacy text remain
 Current valid pending text is applied before saving. A draft with errors, or written against
 an older figure, is presented separately. Download its raw `.txt` text, explicitly apply a
 valid stale draft, or download the last valid figure. No download silently pretends an invalid
-draft was saved. New/Open show a replacement confirmation; Cancel keeps the session. Continue
+draft was saved. New/Open show a replacement confirmation; Cancel before Continue keeps the session. Continue
 discards any explicitly disclosed unapplied draft and first preserves the valid figure in
-local recovery. A storage failure keeps the editor open and offers a backup or explicit discard.
+local recovery. While the confirmed operation is saving, a visible progress message replaces
+cancellable choices; Cancel and all other file actions are disabled, and Escape leaves the
+dialog open. A failed operation unlocks the choices. A storage failure keeps the editor open and offers a backup or explicit discard.
 
 **Saved locally** means an IndexedDB transaction completed in this browser. **Download
 requested** means the browser was asked to download the displayed revision. The browser API
 cannot confirm a disk write or whether the user kept the file. Further edits change that
-message to **Changed since download**. Downloads and clipboard copies do not resolve conflicts.
+message to **Changed since download**. An unapplied draft has a separate visible label and
+is never included in a downloaded-revision acknowledgement. Downloads and clipboard copies do not resolve conflicts.
 Keep independent copies of important work; clearing browser storage can remove local recovery.
 
 Share links carry compressed canonical text in the URL fragment. Before offering Copy link,
