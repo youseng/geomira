@@ -85,6 +85,11 @@ export class TextApplier {
     return this.parsed;
   }
 
+  /** Registry and editor environment used by source assistance; never a second registry. */
+  get env(): EditorEnv {
+    return this.host.env;
+  }
+
   hasErrors(): boolean {
     return this.parse().result.diagnostics.some((d) => d.severity === 'error');
   }
