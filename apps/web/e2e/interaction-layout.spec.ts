@@ -1,7 +1,7 @@
 /** ADR-0074: controls never intercept the next geometry interaction. */
 import { expect, test, type Page } from '@playwright/test';
 import { clickWorld, command, openApp, screenOf, text, tool } from './helpers';
-import { expectHeaderClear } from './layout-visibility';
+import { expectHeaderClear, fitAfterPageScroll } from './layout-visibility';
 
 for (const route of ['palette', 'search', 'shortcut', 'command', 'command polygon then point']) {
   test(`choosing Point by ${route} clears the guide before a center canvas click`, async ({
@@ -128,16 +128,11 @@ for (const viewport of [
     expect(
       Math.min(viewport.height, input.y + input.height) - Math.max(0, input.y),
     ).toBeGreaterThanOrEqual(120);
-    const fit = page.getByRole('button', { name: 'Fit', exact: true });
-    expect(
-      await fit.evaluate((button) => {
-        const r = button.getBoundingClientRect();
-        return button.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
-      }),
-    ).toBe(true);
-    await fit.click();
+    await fitAfterPageScroll(page);
     await field.focus();
     await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
+    if (viewport.height < 450)
+      await page.getByRole('button', { name: 'Show all tools', exact: true }).click();
     await expect(page.getByRole('toolbar', { name: 'Tools', exact: true })).toBeVisible();
     await page.getByRole('textbox', { name: 'Command', exact: true }).focus();
     await expect(page.getByRole('textbox', { name: 'Command', exact: true })).toBeFocused();
