@@ -47,14 +47,18 @@ function Backup({ refusal, store, command }: Props & { refusal: UpdateRefusal })
 export function SafeUpdate(props: Props) {
   const [refusal, setRefusal] = useState<UpdateRefusal | null>(null);
   const busy = useRef(false);
+  const attempt = useRef(0);
   const reload = async () => {
     if (busy.current) return;
     busy.current = true;
+    const generation = ++attempt.current;
     try {
       const issue = await prepareUpdate(props.store, () => props.command.current?.value ?? '');
+      if (generation !== attempt.current) return;
       setRefusal(issue);
       if (issue === null) props.pwa.applyUpdate(() => undefined);
     } catch (e) {
+      if (generation !== attempt.current) return;
       setRefusal({
         kind: 'save',
         message: `Saving could not finish: ${String(e)}. Keep this page open and download a backup.`,
@@ -78,6 +82,10 @@ export function SafeUpdate(props: Props) {
       <UpdateBanner
         onReload={() => {
           void reload();
+        }}
+        onLater={() => {
+          attempt.current++;
+          setRefusal(null);
         }}
       />
       {refusal !== null && (

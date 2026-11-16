@@ -81,7 +81,13 @@ export function AboutSection() {
 }
 
 /** The version banner: a new version of the site has installed and waits for a reload. */
-export function UpdateBanner({ onReload }: { onReload: () => void }) {
+export function UpdateBanner({
+  onReload,
+  onLater,
+}: {
+  onReload: () => void;
+  onLater?: () => void;
+}) {
   const about = useContext(AboutContext);
   const pwa = about?.pwa ?? NONE;
   const state = useSyncExternalStore(pwa.subscribe, pwa.current, pwa.current);
@@ -107,6 +113,7 @@ export function UpdateBanner({ onReload }: { onReload: () => void }) {
         className="small-tb tb"
         onClick={() => {
           about.pwa.dismiss();
+          onLater?.();
         }}
       >
         Later

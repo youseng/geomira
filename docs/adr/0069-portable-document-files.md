@@ -67,3 +67,7 @@ Users explicitly Apply/Revert source or finish/clear a command and retry when re
 Frozen `pwa.spec.ts` retains all five previous PWA/download contracts and adds four actual
 controlled-worker transition regressions. Its unchanged serving/control helpers move to
 pwa-site.ts to keep the file within 400 lines. No assertions, budgets or screenshots weaken.
+
+Later dismisses both the version offer and its paused-update notice, preserving all raw
+input. It also invalidates any asynchronous preparation so an obsolete completion cannot
+reopen that notice or request a dismissed update.

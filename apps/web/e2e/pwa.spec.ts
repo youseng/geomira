@@ -218,12 +218,42 @@ test('Reload to update preserves an unapplied invalid draft and offers its exact
   await loaded;
   await expectLines(page, 'A = (1, 2)');
   expect(await controllerBuild(page)).toBe('draft003');
+  await offerUpdate(page, 'laterDraft004');
+  await field.fill(raw);
+  await banner.getByRole('button', { name: 'Reload to update' }).click();
+  await expect(warning).toBeVisible();
+  await banner.getByRole('button', { name: 'Later', exact: true }).click();
+  await expect(banner).toHaveCount(0);
+  await expect(warning).toHaveCount(0);
+  await expect(field).toHaveValue(raw);
+  expect(await controllerBuild(page)).toBe('draft003');
+  await page.getByRole('button', { name: 'Revert text', exact: true }).click();
+  await offerUpdate(page, 'laterDuring005', 'laterDraft004');
+  await holdConnections(page);
+  await banner.getByRole('button', { name: 'Reload to update' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-held-storage', 'yes');
+  const commandDraft = page.getByLabel('Command', { exact: true });
+  await commandDraft.fill('B=midpoint(A, ');
+  await banner.getByRole('button', { name: 'Later', exact: true }).click();
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('release-storage'));
+  });
+  await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
+    'Saved locally',
+  );
+  await expect(banner).toHaveCount(0);
+  await expect(warning).toHaveCount(0);
+  await expect(commandDraft).toHaveValue('B=midpoint(A, ');
 });
 
-async function offerUpdate(page: import('@playwright/test').Page, build: string) {
+async function offerUpdate(
+  page: import('@playwright/test').Page,
+  build: string,
+  servedBuild?: string,
+) {
   const first = await controllerBuild(page);
   const sw = join(site.dir, 'sw.js');
-  writeFileSync(sw, readFileSync(sw, 'utf8').replaceAll(first, build));
+  writeFileSync(sw, readFileSync(sw, 'utf8').replaceAll(servedBuild ?? first, build));
   await page.evaluate(async () => {
     await (await navigator.serviceWorker.getRegistration())?.update();
   });
