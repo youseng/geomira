@@ -97,6 +97,8 @@
   max-width: 130px;
 }
 .document-caption .document-name {
+  /* The reserved status phrase sizes the column; a title change cannot resize input. */
+  contain: inline-size;
   line-height: 16px;
 }
 .document-draft {

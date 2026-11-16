@@ -228,6 +228,27 @@ removed. Frozen migrations: `file-url.spec.ts`, `flows-measurements.spec.ts`; th
 release helper `native-pointer.ts` is refactored as above. Commands and trace evidence are
 recorded in `integration-native-coordinate-ci.md`. Final Firefox/WebKit CI remains required.
 
+### Pending title changes use the same identity budget
+
+Independent review found one remaining source-blur boundary: a pending long `@title`
+increased the caption's intrinsic width from the reserved phrase's 103.67px to its 130px
+maximum. At 1024/1032/1040px that wrapped the header during native input, moving the
+canvas by 36px. Reserving a wider fixed slot would make this extra row permanent.
+
+Use inline-size containment on the already ellipsized title. The reserved draft phrase
+sizes the identity column; title content fills that existing width without contributing
+its own intrinsic width. The full title remains in its tooltip and document metadata.
+No additional blank column, default row or drawing-space loss is introduced. The status
+phrase stays fully readable and its honest visible/accessible state is unchanged.
+
+Two additive native tests cover a long title applied on pointer-down and the same boundary
+after a prior real file download. Each records that a raw draft was actually pending at
+the press, checks exact header/canvas bounds and independently projected canonical point,
+then checks Undo/Redo. A five-width probe covers 320/390/768/1024/1280px. Independent
+download-feedback scanning found no vertical layout change across 673 widths, and that
+feedback behavior is unchanged. Local supported-engine evidence is recorded in
+`integration-title-identity.md`; Firefox/WebKit confirmation remains pending CI.
+
 ## Frozen-test accounting for prompt 09
 
 The original workspace migration changed these existing browser fixtures deliberately:
