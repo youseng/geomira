@@ -42,9 +42,11 @@ async function reachFooterByWheel(page: Page) {
   await expect(page.locator('.palette')).toBeVisible();
   await expect(page.locator('.cmdbar')).toBeVisible();
   if (!(await inside())) {
-    await page
-      .getByText('Scroll up for the figure; down for tools and the command bar.', { exact: true })
-      .hover();
+    const hint = page.getByText('Scroll up for the figure; down for tools and the command bar.', {
+      exact: true,
+    });
+    await expect(hint).toBeInViewport({ ratio: 1 });
+    await hint.hover();
     await page.mouse.wheel(0, 10000);
     await expect.poll(inside).toBe(true);
   }
