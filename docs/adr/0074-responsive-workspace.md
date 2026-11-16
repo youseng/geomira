@@ -197,6 +197,37 @@ four widths, so no extra default row or canvas loss is introduced. Whole-GUI ref
 still require final-source review of the title/status placement; no reference is changed
 here. Commands, measurements and CI limitations are in `integration-draft-identity.md`.
 
+## Integration correction: native projection and exact degeneracy fixtures
+
+CI also exposed two independent fixture assumptions, without a geometry or picking bug:
+
+- The three internal file:// triangle flows expected literal requested coordinates.
+  Firefox requested y=407.191665649 but delivered integer client y=407; its points were
+  A=(0,0.0038), B=(4,0.0038), C=(1,3.0065). The existing independent delivered-pointer
+  oracle now checks each created point and the full canonical polygon document exactly.
+  Local/global claim-engine verdicts, exports and all following assertions remain active.
+- A native angle drag aimed C onto A at a fitted fractional CSS pixel. Chromium delivered
+  client y=566.0608520507812 rather than requested y=566.0608766233765, leaving
+  C=(0,261223535/1125899906842624), a tiny positive distance from A. The canvas rectangle,
+  viewport and zoom remained stable. ADR-0027 correctly refuses rounding C onto A because
+  that would change the dependent angle from number to Undefined. It stays exactly 90°.
+  The fixture now compares the whole native-drag document with an independently projected
+  raw binary Rational endpoint. Its expected initial document is a fixed literal, and it
+  explicitly requires the delivered x projection to be zero. Exact typed C=(0,0) retains
+  the original Undefined-with-reason assertion; Undo restores the exact native state and
+  its 90° value, and Redo restores Undefined. If native input reaches exact coincidence
+  already, Undefined is required directly.
+
+`nativeRawWorldPoint` captures only the native event, CSS/logical dimensions and view
+attributes; it imports no production coordinate or rounding function. Pixel-to-logical
+projection multiplies pixel offsets by logical dimensions before dividing by CSS extent,
+avoiding a different intermediate normalization rounding when raw bits matter. The existing
+rounded helper delegates to this projection and retains its documented construction grid.
+No synthetic events, tolerances, coordinate-grid changes or mathematical assertions are
+removed. Frozen migrations: `file-url.spec.ts`, `flows-measurements.spec.ts`; the shared
+release helper `native-pointer.ts` is refactored as above. Commands and trace evidence are
+recorded in `integration-native-coordinate-ci.md`. Final Firefox/WebKit CI remains required.
+
 ## Frozen-test accounting for prompt 09
 
 The original workspace migration changed these existing browser fixtures deliberately:

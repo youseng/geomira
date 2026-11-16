@@ -10,7 +10,8 @@ export interface NativeWorldPoint {
 }
 export const pointText = (p: NativeWorldPoint) => `(${String(p.x)}, ${String(p.y)})`;
 
-export async function nativeWorldPoint(
+/** Raw projection for a drag whose dependent-kind guard must refuse grid rounding. */
+export async function nativeRawWorldPoint(
   page: Page,
   action: () => Promise<void>,
 ): Promise<NativeWorldPoint> {
@@ -60,13 +61,17 @@ export async function nativeWorldPoint(
       zoom: number;
     };
   });
-  const round = (v: number) => Math.round(v * 10000) / 10000;
   return {
-    x: round(
-      p.cx + (((p.clientX - p.left) / p.width) * p.logicalWidth - p.logicalWidth / 2) / p.zoom,
-    ),
-    y: round(
-      p.cy - (((p.clientY - p.top) / p.height) * p.logicalHeight - p.logicalHeight / 2) / p.zoom,
-    ),
+    x: p.cx + (((p.clientX - p.left) * p.logicalWidth) / p.width - p.logicalWidth / 2) / p.zoom,
+    y: p.cy - (((p.clientY - p.top) * p.logicalHeight) / p.height - p.logicalHeight / 2) / p.zoom,
   };
+}
+
+export async function nativeWorldPoint(
+  page: Page,
+  action: () => Promise<void>,
+): Promise<NativeWorldPoint> {
+  const p = await nativeRawWorldPoint(page, action);
+  const round = (v: number) => Math.round(v * 10000) / 10000;
+  return { x: round(p.x), y: round(p.y) };
 }
