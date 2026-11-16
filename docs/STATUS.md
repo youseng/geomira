@@ -1,6 +1,6 @@
 # STATUS
 
-## Release prompt 04: modal and keyboard safety (ADR-0068): NOT ACCEPTED, verification and maintainer review pending
+## Release prompt 04: modal and keyboard safety (ADR-0068): NOT ACCEPTED, awaiting maintainer review
 
 Base: `8535d51097af931a9bdd6fd924d3a5acbba12a20`, latest main including merged PR #39.
 Fresh clone on `codex/modal-keyboard-safety`; unrelated work preserved. Decision:
@@ -26,8 +26,9 @@ merge, publication and deployment are prohibited.
 
 ### Not done
 
-Final verification and remote CI are in progress. Maintainer acceptance remains separate.
-No merge, publication or deployment is performed.
+Implementation and local verification are complete. Maintainer acceptance remains separate.
+Remote CI and the final documentation revision are reported in draft PR #40; GitHub checks
+are authoritative. No merge, publication or deployment is performed.
 
 ### Known bugs
 
@@ -59,7 +60,9 @@ Lockfile installation: `pnpm install --frozen-lockfile --store-dir /tmp/geomira-
   `@version 1`. The initial 11-case modal suite had 10 failures / 1 pass (native field editing).
 - An initial verification overlapped edits and is invalid as a baseline; the removed hook's
   style-card consumer caused 8 failures. The dependency is preserved as `usePopoverFocus`.
-  A clean, isolated baseline verification at the exact base is running separately.
+  A clean, isolated baseline verification at the exact base passed: 4,904 tests / 534 files,
+  440.10 seconds. Baseline coverage: statements 96.53%, branches 90.49%, functions 99.45%,
+  lines 98.37%.
 - Public and internal web unit projects: 310 passed / 63 files, 36.60 seconds.
 - `pnpm build` and `pnpm --filter @geomira/web build:claims`: passed (Vite chunk advisory).
 - First corrected modal-only desktop run: 10 passed / 1 failure; the latter incorrectly used
@@ -73,11 +76,41 @@ Lockfile installation: `pnpm install --frozen-lockfile --store-dir /tmp/geomira-
   WebKit 26.0: missing GTK4, Graphene, WOFF2, HarfBuzz ICU, Hyphen, Manette and GLESv2 libraries.
   Both failures remain visible; neither is counted as an application pass.
 
-Final full-suite, committed-tree and CI results will follow after completion.
+- Committed implementation `2192a6630fdc4df16f3b1189e24354369c38be5c`: `pnpm verify` passed,
+  4,904 tests / 534 files, 355.62 seconds. Typecheck, ESLint/Prettier, dependency and repository
+  rules passed. Coverage: statements 96.53% (19011/19693), branches 90.49% (15284/16890),
+  functions 99.45% (4209/4232), lines 98.37% (15631/15889). No floors changed.
+- Both public and internal builds were rebuilt successfully at that commit. Playwright's
+  actual Chromium version is 141.0.7390.37. No runtime dependencies or lockfile changes.
+- Full public local run: `playwright test --project=desktop --project=mobile
+--project=file-chromium --project=pages --project=pwa --project=measure-drag --workers=2`:
+  175 passed / 1 failed, 4.6 minutes. Only failure: full UI drag median 10.55 ms versus the
+  unchanged 8 ms gate while verification was running concurrently. After all other local
+  work finished, `playwright test drag-frame.spec.ts --project=measure-drag --no-deps
+--workers=1`: 1 passed, 6.9 seconds; median 4.11 ms, p95 6.13 ms, max 10.51 ms.
+- Exact committed-build modal/ordinary keyboard/touch suite: `playwright test
+modal-safety.spec.ts flows-keyboard.spec.ts mobile.spec.ts --project=desktop
+--project=mobile --project=file-chromium --workers=2`: 44 passed, 1.1 minutes.
+- Full local internal functional run (desktop, mobile, file-chromium): 178 passed / 3 failed,
+  3.3 minutes. The failures are the two `flows-design` full-page references and the phone
+  `design-mobile` reference. Inspected expected/actual/diff images. A fresh base build at
+  8535d51 reproduces all three failures with the original assertions and 0.01 tolerance;
+  its screenshot run has 6 passes / 3 failures, 28.7 seconds. Branch versus clean-main
+  actuals: desktop main 0 changed pixels; phone 0; Claims 7 pixels in (1267,93)–(1270,97).
+  The references contain the old Style tab, old toolbar/script text and platform rendering
+  differences. No screenshot reference was changed and none of these failures is called a pass.
+- GitHub Pages-base validation at 2192a66, run 43819106406: **224 passed**, 4.7 minutes,
+  including modal cases from file:// in Chromium, Firefox and WebKit, ordinary public
+  keyboard/touch, persistence/recovery, exports, PWA and the drag gate. Build job succeeded;
+  deployment and deployed-site smoke jobs were skipped. No publication was performed.
+- Draft PR: https://github.com/youseng/geomira/pull/40. The documentation follow-up changes
+  only this evidence; final CI results are kept in the PR rather than recursively committing
+  claims about checks which have not finished. Real screen-reader/physical-device testing,
+  future task 03 dialogs and task 09 layout integration remain outside this revision.
 
 ### Requests
 
-None for the authorized implementation. Maintainer review remains required.
+None for the authorized implementation. Maintainer review remains required; draft PR #40.
 
 ## Release prompt 02: transactional persistence and recovery (ADR-0067): NOT ACCEPTED, verification and maintainer review pending
 
