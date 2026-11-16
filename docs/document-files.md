@@ -50,6 +50,11 @@ command, failed saving or an unresolved recovery conflict. Download the exact dr
 then explicitly Apply/Revert source or finish/clear the command and retry. The update checks
 again after asynchronous saving, so work entered while saving cannot be silently dropped.
 
+An already-running older copy still uses its older Reload handler. Before its first upgrade,
+copy or download unfinished Text and Command input and keep a `.geo` backup of the valid
+figure. Installing the new build does not retroactively protect drafts held only by old
+JavaScript. Subsequent updates initiated from the new build use the guard described above.
+
 Save As downloads a portable copy and starts a new local editing identity. Its completion
 alone does not acknowledge the duplicate's local durability: wait for **Saved locally** to
 confirm that independent write. Storage-denied sessions can still keep the downloaded copy.

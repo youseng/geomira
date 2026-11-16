@@ -7,6 +7,10 @@ export it for an AoPS post or a handout.
 **Open it:** <https://youseng.github.io/geomira/> · about page:
 <https://youseng.github.io/geomira/about.html>
 
+**Upgrading an older running tab:** back up unfinished Text and Command input before its
+first reload. The new update guard cannot retrofit already-running older JavaScript.
+See [document and update safety](docs/document-files.md).
+
 ## Features
 
 Use **Find a tool**, **Pan**, **Panels** and **Guide** above the canvas; select an object
