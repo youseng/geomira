@@ -33,5 +33,15 @@ measure it on an otherwise idle supported runtime. No busy-machine timing is
 claimed here as an accepted baseline. Add regression/performance evidence and
 retest worker cancellation, live drag and retained local/global verdict equivalence.
 
+## Narrow-screen verdict overlays — unresolved
+
+In the explicit internal build at 390×664, retained verdict chips cover the lower
+labels of the reflection-layer and nine-point-circle examples after the responsive
+workspace change. The independent final reviewer confirmed this in the internal
+screenshots and confirmed that the matching public examples keep those labels
+visible: public builds contain no verdict chips. Before any public reactivation,
+reserve layout space for verdicts or provide a reachable disclosure without covering
+the construction; retest the width matrix and actual mobile keyboards.
+
 These gates are intentionally independent of the repaired public Randomize sampler.
-Reactivation requires a separate product decision and completed evidence for both.
+Reactivation requires a separate product decision and completed evidence for all gates.
