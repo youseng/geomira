@@ -1,6 +1,6 @@
 # Prompt 11 final candidate validation
 
-Status: **blocked by confirmed short-viewport Recovery disclosure A18 on the asset successor**.
+Status: **exact 56 browser validation blocked by four WebKit ownership-test setup failures**.
 Validated application candidate: `4040112d55d0d22792b654339fd96e06ed49b056`. The source correction
 passes genuine public/internal full-UI drag gates at 6.13/6.19 ms with exact geometry and
 history checks. The original invalid no-drag result and genuine 37.51 ms failure remain
@@ -10,6 +10,9 @@ successor requires its own validated candidate before publication.
 The exact 7f8 push then exposed a Firefox focus/disclosure scroll problem despite the
 parallel PR run passing. `11-7f8-ci-results.md` preserves its sole failure and both-mode
 counts; the earlier green source and different PR metadata do not satisfy that push gate.
+The A18/A19 corrections subsequently pass their interface cases at exact 56, but a new
+ownership test's native-scroll precondition fails on WebKit. `11-56-ci-results.md` records
+all four failures, both source identities and actual execution of all six additive cases.
 No production publication, main merge, deployment or release was performed in this phase.
 
 ## Current candidate identity and isolated measurements
