@@ -33,7 +33,7 @@ import {
 import type { Document } from '@geomira/kernel/document';
 import { parseText, type ParsedText } from '@geomira/lang/parse-text';
 import { printShort } from '@geomira/lang/print-short';
-import type { Schedule } from './long-press';
+import type { Schedule } from './schedule';
 
 /** The pause after the last keystroke before the text applies. */
 export const TEXT_APPLY_PAUSE_MS = 500;
