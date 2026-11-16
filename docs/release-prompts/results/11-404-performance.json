@@ -1,0 +1,234 @@
+{
+  "source": "4040112d55d0d22792b654339fd96e06ed49b056",
+  "mode": "built application, /geomira/",
+  "environment": {
+    "node": "24.22.1",
+    "pnpm": "10.28.0",
+    "playwright": "1.56.1",
+    "browser": "bundled Chromium141"
+  },
+  "constraints": "Sequential worker1, no dependency rerun; all other local browser/build work closed. No thresholds, retries or test limits changed.",
+  "stages": [
+    {
+      "name": "public",
+      "stats": {
+        "startTime": "2026-11-16T13:01:40.064Z",
+        "duration": 23719.6,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "cases": [
+        {
+          "project": "desktop",
+          "title": "frame time at 300 objects (SPEC \u00a717: drag frame \u2264 8 ms)",
+          "status": "expected",
+          "annotations": [
+            {
+              "type": "frame-time",
+              "description": "{\"objects\":300,\"drag\":{\"frames\":120,\"median\":4.100000001490116,\"p95\":15.5,\"max\":432.1000000014901},\"pan\":{\"frames\":120,\"median\":2.199999999254942,\"p95\":3.800000000745058,\"max\":421.30000000074506}}"
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 5951,
+              "errors": []
+            }
+          ]
+        },
+        {
+          "project": "mobile",
+          "title": "frame time at 300 objects (SPEC \u00a717: drag frame \u2264 8 ms)",
+          "status": "expected",
+          "annotations": [
+            {
+              "type": "frame-time",
+              "description": "{\"objects\":300,\"drag\":{\"frames\":120,\"median\":4.600000001490116,\"p95\":8.899999998509884,\"max\":240.30000000074506},\"pan\":{\"frames\":120,\"median\":2.7999999970197678,\"p95\":4.899999998509884,\"max\":241}}"
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 4249,
+              "errors": []
+            }
+          ]
+        },
+        {
+          "project": "measure-drag",
+          "title": "a full UI drag frame at 300 objects (SPEC \u00a717: \u2264 8 ms)",
+          "status": "expected",
+          "annotations": [
+            {
+              "type": "drag-frame",
+              "description": "{\"objects\":300,\"app\":{\"frames\":120,\"median\":6.13,\"p95\":11.65,\"max\":29.78},\"raster\":{\"frames\":120,\"median\":10.82,\"p95\":15.44,\"max\":21.16},\"total\":{\"frames\":120,\"median\":17.25,\"p95\":24.89,\"max\":45.22}}"
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 7348,
+              "errors": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "internal",
+      "stats": {
+        "startTime": "2026-11-16T13:02:12.916Z",
+        "duration": 70858.695,
+        "expected": 5,
+        "skipped": 0,
+        "unexpected": 1,
+        "flaky": 0
+      },
+      "cases": [
+        {
+          "project": "desktop",
+          "title": "frame time at 300 objects (SPEC \u00a717: drag frame \u2264 8 ms)",
+          "status": "expected",
+          "annotations": [
+            {
+              "type": "frame-time",
+              "description": "{\"objects\":300,\"drag\":{\"frames\":120,\"median\":4.699999999254942,\"p95\":17,\"max\":539.7999999970198},\"pan\":{\"frames\":120,\"median\":2.800000000745058,\"p95\":6.800000000745058,\"max\":428.5999999977648}}"
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 6220,
+              "errors": []
+            }
+          ]
+        },
+        {
+          "project": "mobile",
+          "title": "frame time at 300 objects (SPEC \u00a717: drag frame \u2264 8 ms)",
+          "status": "expected",
+          "annotations": [
+            {
+              "type": "frame-time",
+              "description": "{\"objects\":300,\"drag\":{\"frames\":120,\"median\":5.5,\"p95\":18.300000000745058,\"max\":284},\"pan\":{\"frames\":120,\"median\":2.800000000745058,\"p95\":4.699999999254942,\"max\":242.89999999850988}}"
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 4795,
+              "errors": []
+            }
+          ]
+        },
+        {
+          "project": "measure",
+          "title": "the main thread never blocks for more than 16 ms during a local and a global test",
+          "status": "unexpected",
+          "annotations": [
+            {
+              "type": "long-task",
+              "description": "{\"tasks\":24485,\"maxTask\":60.5,\"longTasks\":[60],\"pingGaps\":24256,\"maxPingGap\":60.4}"
+            }
+          ],
+          "results": [
+            {
+              "status": "failed",
+              "duration_ms": 5100,
+              "errors": [
+                "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 3\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   60,\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  119 |   );\n  120 |   expect(tasks.length).toBeGreaterThan(100);\n> 121 |   expect(m.longTasks).toEqual([]);\n      |                       ^\n  122 |   expect(maxTask).toBeLessThanOrEqual(16);\n  123 | });\n  124 |\n    at /workspace/geomira-perf11-final/apps/web/e2e/long-task.spec.ts:121:23"
+              ]
+            }
+          ]
+        },
+        {
+          "project": "measure-drag",
+          "title": "a full UI drag frame at 300 objects (SPEC \u00a717: \u2264 8 ms)",
+          "status": "expected",
+          "annotations": [
+            {
+              "type": "drag-frame",
+              "description": "{\"objects\":300,\"app\":{\"frames\":120,\"median\":6.19,\"p95\":12.69,\"max\":37.88},\"raster\":{\"frames\":120,\"median\":11.18,\"p95\":15.45,\"max\":24.85},\"total\":{\"frames\":120,\"median\":17.5,\"p95\":26.09,\"max\":52.22}}"
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 7650,
+              "errors": []
+            }
+          ]
+        },
+        {
+          "project": "measure-fallback",
+          "title": "without workers, the page never blocks for more than 16 ms during a local and a global test",
+          "status": "expected",
+          "annotations": [
+            {
+              "type": "fallback-long-task",
+              "description": "{\"tasks\":110,\"longest\":[13.9,11.9,8.6,8.2,8],\"longTasks\":[]}"
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 2404,
+              "errors": []
+            }
+          ]
+        },
+        {
+          "project": "measure-discovery",
+          "title": "without workers, What is special? on 150 objects completes on the page within the gate",
+          "status": "expected",
+          "annotations": [
+            {
+              "type": "fallback-discovery",
+              "description": "{\"objects\":150,\"tasks\":3979,\"seconds\":16.4,\"longest\":[46.1,40.3,35.9,34.3,29.5],\"over16\":14,\"longTasks\":[]}"
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 33839,
+              "errors": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "worker isolated repeat",
+      "stats": {
+        "startTime": "2026-11-16T13:04:19.532Z",
+        "duration": 6840.527,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "cases": [
+        {
+          "project": "measure",
+          "title": "the main thread never blocks for more than 16 ms during a local and a global test",
+          "status": "expected",
+          "annotations": [
+            {
+              "type": "long-task",
+              "description": "{\"tasks\":19020,\"maxTask\":8.7,\"longTasks\":[],\"pingGaps\":18947,\"maxPingGap\":8.4}"
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 3961,
+              "errors": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { recipientUrl } from './share-recipient';
 import { readFileSync } from 'node:fs';
 import { pngFigureText } from '@geomira/export/png';
 import { expect, test, type Page } from '@playwright/test';
@@ -106,6 +107,9 @@ test('release: load, edit, drag, examples and legacy preferences never run retir
   await tool(page, 'Move');
   await dragWorld(page, [1, 4], [2, 4]);
   await idle(page);
+  // ADR-0074/0076: a closed responsive panel is absent; reopen it through its control.
+  const panels = page.getByRole('button', { name: 'Show panels', exact: true });
+  if (await panels.isVisible()) await panels.click();
   // Every displayed tab has content; help has no retired shortcut hints.
   for (const name of ['Objects', 'Layers', 'Help', 'Text']) {
     await tab(page, name);
@@ -171,7 +175,7 @@ test('release: claim-bearing shares and exports preserve data; Randomize, measur
     .getByRole('textbox')
     .inputValue();
   const other = await context.newPage();
-  const otherErrors = await prepare(other, link);
+  const otherErrors = await prepare(other, recipientUrl(link));
   await expect(await textArea(other)).toHaveValue(before);
   await idle(other);
   await idle(page);

@@ -51,6 +51,7 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'STROKE_WIDTH',
       'dashPattern',
       'drawStyle',
+      'documentStyles',
       'effectiveStyle',
       'labelOf',
       'placedLabel',

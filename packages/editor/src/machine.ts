@@ -56,6 +56,16 @@ const HIT_KINDS: Readonly<Record<PickKind, readonly string[]>> = Object.freeze({
   // A conic is a curve too (ADR-0042); the words name it (ADR-0044).
   curve: ['line', 'circle', 'conic'],
   figure: ['point', 'line', 'circle', 'polygon'],
+  mapped_figure: [
+    'point',
+    'line',
+    'circle',
+    'polygon',
+    'conic',
+    'angle_mark',
+    'segment_mark',
+    'text',
+  ],
   mirror: ['point', 'line'],
   transform: [],
 });
@@ -69,6 +79,7 @@ const PICK_WORDS: Readonly<Record<PickKind, string>> = Object.freeze({
   oval: 'circle or conic',
   curve: 'line, circle or conic',
   figure: 'point, line, circle or polygon',
+  mapped_figure: 'point, line, circle, polygon, conic, mark, text or panel-selected ideal point',
   mirror: 'line or point',
   transform: 'transform',
 });
@@ -76,6 +87,7 @@ const PICK_WORDS: Readonly<Record<PickKind, string>> = Object.freeze({
 /** Whether an object's value fits a pick kind (panel choices). */
 function fits(v: Value<number> | undefined, pick: PickKind): boolean {
   const k = v?.kind;
+  if (pick === 'mapped_figure' && k === 'ideal_point') return true;
   return pick === 'transform' ? k === 'transform' : k !== undefined && HIT_KINDS[pick].includes(k);
 }
 

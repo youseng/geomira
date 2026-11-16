@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
+import { formatRational, fromNumber } from '@geomira/num/rational';
 import { clickWorld, command, dragWorld, openApp, screenOf, tab, text, tool } from './helpers';
+import { nativeRawWorldPoint } from './native-pointer';
 
 /**
  * ADR-0048: measurements are visible. The Distance tool makes a shown measurement (the text
@@ -97,9 +99,34 @@ test('an angle measurement: its arc and value; Undefined is listed with its reas
   await clickWorld(page, 0, 3);
   await expect.poll(() => source(page)).toMatch(/^\S+ = angle\(BAC\) \[show\]$/mu);
   await expect(await measurement(page)).toContainText('90.00° · shown');
-  // Moving C onto A makes the angle Undefined: listed with its reason, not drawn.
+  const before = '@version 1\nA = (0, 0)\nB = (4, 0)\nC = (0, 3)\nα = angle(BAC) [show]\n';
+  expect(await source(page)).toBe(before);
+  // Delivered native pixels can miss exact coincidence. ADR-0027 refuses rounding that
+  // would change the dependent angle's kind, so its raw endpoint must remain exact.
   await tool(page, 'Move');
-  await dragWorld(page, [0, 3], [0, 0]);
+  const actual = await nativeRawWorldPoint(page, () => dragWorld(page, [0, 3], [0, 0]));
+  expect(actual.x).toBe(0);
+  const endpoint = `(${formatRational(fromNumber(actual.x))}, ${formatRational(fromNumber(actual.y))})`;
+  const dragged = before.replace('C = (0, 3)', `C = ${endpoint}`);
+  expect(await source(page)).toBe(dragged);
+  await expect(await measurement(page)).toContainText(
+    actual.y === 0 ? 'undefined: ' : '90.00° · shown',
+  );
+  // Exact source coincidence retains the original Undefined contract and its reason.
+  if (actual.y !== 0) {
+    await tab(page, 'Text');
+    await page
+      .getByLabel('Text', { exact: true })
+      .fill(dragged.replace(`C = ${endpoint}`, 'C = (0, 0)'));
+    await page.getByRole('button', { name: 'Apply text', exact: true }).click();
+  }
   await expect(await measurement(page)).toContainText('undefined: ');
+  if (actual.y !== 0) {
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    expect(await source(page)).toBe(dragged);
+    await expect(await measurement(page)).toContainText('90.00° · shown');
+    await page.getByRole('button', { name: 'Redo', exact: true }).click();
+    await expect(await measurement(page)).toContainText('undefined: ');
+  }
   expect(errors).toEqual([]);
 });

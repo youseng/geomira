@@ -16,7 +16,7 @@ function buildId(): string {
   const env = process.env['GEOMIRA_BUILD'];
   if (env !== undefined && env !== '') return env;
   try {
-    return execFileSync('git', ['rev-parse', '--short=8', 'HEAD'], { encoding: 'utf8' }).trim();
+    return execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   } catch {
     return 'unknown';
   }

@@ -1,21 +1,30 @@
+import { applyValidDraft } from './file-actions';
 import { CLAIM_TESTING, CLAIMS_UNAVAILABLE } from './features';
 /**
  * The page's state and actions (host code over packages/editor): the long-lived objects
  * (editor store, test worker host and runs), the scene of the current figure, and what the
  * header's buttons and the keyboard shortcuts do. Every change is an edit of the store.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type RefObject,
+} from 'react';
 import type { TriangleType } from '@geomira/claims/randomize';
 import { randomizeEdit } from '@geomira/editor/randomize';
 import { selectableIds, selectionEdit } from '@geomira/editor/selection-actions';
-import { chooseTool } from '@geomira/editor/selection-tool';
+import type { ToolId } from '@geomira/editor/tool-state';
 import { claimCompletions } from '@geomira/editor/claim-bar';
 import type { ClaimFeedback } from './ClaimBox';
 import { cycleView } from '@geomira/editor/views';
 import type { ExportFormat } from '@geomira/export/formats';
 import type { KeyAction } from '@geomira/editor/keymap';
 import { debugReport } from '@geomira/editor/report';
-import { encodeShare } from '@geomira/editor/share';
+import { encodeShareChecked } from '@geomira/editor/share';
 import { VERSION } from '@geomira/kernel';
 import { createRegistry } from '@geomira/kernel/registry';
 import { print } from '@geomira/lang/print';
@@ -27,7 +36,7 @@ import { BUILD } from './build-info';
 import { browserPwa, startPwa } from './pwa-browser';
 import { EXAMPLES } from './examples';
 import { figureOf, viewportFor } from './figure';
-import { fitMargin } from './hooks';
+import { fitMargin, useShortcuts } from './hooks';
 import type { HeaderProps } from './Header';
 import { LIGHT_THEME } from './render';
 import { useSettled } from './settled';
@@ -43,7 +52,8 @@ const BENCH_FRAMES = 120;
 const WARM_MS = 300;
 
 export type Dialog =
-  | { readonly kind: 'share' | 'report'; readonly text: string }
+  | { readonly kind: 'share'; readonly text: string; readonly problem?: string }
+  | { readonly kind: 'report'; readonly text: string }
   | { readonly kind: 'export'; readonly format: ExportFormat }
   | null;
 
@@ -141,6 +151,7 @@ export function useKeyActions(
   fit: () => void,
   command: () => void,
   help: () => void,
+  choose: (id: ToolId) => void,
 ) {
   return useCallback(
     (a: KeyAction) => {
@@ -148,7 +159,7 @@ export function useKeyActions(
       switch (a.kind) {
         case 'tool':
           // The selection becomes the tool's picks (ADR-0064).
-          store.run((st, env) => chooseTool(st, a.tool, env));
+          choose(a.tool);
           return;
         case 'undo':
         case 'redo':
@@ -184,8 +195,20 @@ export function useKeyActions(
           return;
       }
     },
-    [store, fit, command, help],
+    [store, fit, command, help, choose],
   );
+}
+
+/** Keyboard tool choices use the same workspace path as search and the palette. */
+export function usePageShortcuts(
+  store: EditorStore,
+  fit: () => void,
+  commandRef: RefObject<HTMLInputElement | null>,
+  help: () => void,
+  choose: (id: ToolId) => void,
+) {
+  const focusCommand = useCallback(() => commandRef.current?.focus(), [commandRef]);
+  useShortcuts(useKeyActions(store, fit, focusCommand, help, choose));
 }
 
 export interface HeaderEnv {
@@ -278,8 +301,17 @@ function actions(env: HeaderEnv) {
     onUndo: () => store.apply({ kind: 'undo' }),
     onRedo: () => store.apply({ kind: 'redo' }),
     onShare: () => {
-      const url = shareUrl(location.href, encodeShare(store.current().doc));
-      env.setDialog({ kind: 'share', text: url });
+      try {
+        applyValidDraft(store);
+        const offer = encodeShareChecked(store.current().doc);
+        env.setDialog(
+          offer.ok
+            ? { kind: 'share', text: shareUrl(location.href, offer.fragment) }
+            : { kind: 'share', text: '', problem: offer.reason },
+        );
+      } catch (e) {
+        env.setDialog({ kind: 'share', text: '', problem: String(e) });
+      }
     },
     onReport: () => {
       env.setDialog({ kind: 'report', text: reportOf(store) });

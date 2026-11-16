@@ -28,7 +28,7 @@ import { applyEdit } from './edit';
 import { toolInput } from './machine';
 import type { EditorEnv, EditorState } from './state';
 import type { ToolId } from './tool-state';
-import { stepsOf } from './tool-steps';
+import { filledSteps, pendingPair, stepsOf } from './tool-steps';
 import { toolUI } from './tools';
 
 /**
@@ -41,42 +41,39 @@ export const TOOL_ALTERNATIVES: Readonly<Partial<Record<ToolId, readonly ToolId[
     circle3: ['circle'],
   });
 
-/** How a selection of `n` objects fits a tool: exactly, partly (fewer picks), or not. */
-type Fit = 'exact' | 'partial' | 'none';
+/** Fit is determined by the same sequential consumption as ordinary panel picks. */
+type Fit = 'exact' | 'partial';
+type Fed = { readonly result: Extract<EditResult, { ok: true }>; readonly fit: Fit };
 
-function fitOf(state: EditorState, tool: ToolId, n: number): Fit {
-  const ui = toolUI(tool);
-  if (ui === undefined || ui.build.kind === 'none') return 'none';
-  const { steps, rest } = stepsOf(ui, state.toolState);
-  if (steps.length === 0) return 'none';
-  if (rest !== undefined) return n >= steps.length ? 'exact' : 'partial';
-  return n === steps.length ? 'exact' : n < steps.length ? 'partial' : 'none';
-}
-
-/**
- * The selection given to `tool` as its picks (`chosen`: the tool just chosen, no picks; the
- * count already fits its steps). The result, or the reason a pick was refused.
- */
-function feed(
-  chosen: EditorState,
-  tool: ToolId,
-  ids: readonly number[],
-  env: EditorEnv,
-):
-  | { readonly ok: true; readonly result: EditResult }
-  | { readonly ok: false; readonly reason: string } {
-  let r: EditResult = { ok: true, state: chosen, removed: NO_REMOVAL, added: [] };
+/** Run tentatively: refusing any pick discards all tentative edits/history. */
+function feed(chosen: EditorState, ids: readonly number[], env: EditorEnv): Fed | string {
+  const ui = toolUI(chosen.tool);
+  if (ui === undefined || ui.build.kind === 'none') return 'it takes a different number of objects';
+  let r: Extract<EditResult, { ok: true }> = {
+    ok: true,
+    state: chosen,
+    removed: NO_REMOVAL,
+    added: [],
+  };
+  let complete = false;
   for (const id of ids) {
-    r = toolInput(r.state, { kind: 'object', id }, env);
-    if (!r.ok) return { ok: false, reason: r.reason };
+    if (complete) return 'it takes a different number of objects';
+    const next = toolInput(r.state, { kind: 'object', id }, env);
+    if (!next.ok) return next.reason;
+    r = next;
+    // Successful fixed-input builds reset their picks, including equivalent-object reuse.
+    complete = r.state.toolState.picks.length === 0;
   }
-  const ui = toolUI(tool);
-  const repeats = ui !== undefined && stepsOf(ui, r.state.toolState).rest !== undefined;
-  if (repeats && r.state.toolState.picks.length > 0) {
-    const f = toolInput(r.state, { kind: 'finish' }, env);
-    if (f.ok) return { ok: true, result: f };
+  const ts = r.state.toolState;
+  const { steps, rest } = stepsOf(ui, ts);
+  if (rest !== undefined && filledSteps(ts) >= steps.length && pendingPair(ts) === undefined) {
+    const finished = toolInput(r.state, { kind: 'finish' }, env);
+    return {
+      result: finished.ok ? finished : { ...r, notice: finished.reason },
+      fit: 'exact',
+    };
   }
-  return { ok: true, result: r };
+  return { result: r, fit: complete ? 'exact' : 'partial' };
 }
 
 function names(state: EditorState): string {
@@ -94,10 +91,10 @@ function tryTool(
 ): EditResult | string | undefined {
   const chosen = applyEdit(state, { kind: 'tool', tool }, env);
   if (!chosen.ok) return chosen.reason;
-  const fit = fitOf(chosen.state, tool, state.selection.length);
-  if (fit === 'none' || (want === 'exact' && fit !== 'exact')) return undefined;
-  const r = feed(chosen.state, tool, state.selection, env);
-  return r.ok ? r.result : r.reason;
+  const r = feed(chosen.state, state.selection, env);
+  if (typeof r === 'string') return r;
+  if (want === 'exact' && r.fit !== 'exact') return undefined;
+  return r.result;
 }
 
 /**

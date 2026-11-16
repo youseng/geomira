@@ -1,10 +1,12 @@
 import { assertNever } from '@geomira/num/assert';
 import { useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { downloadGeo, downloadText } from './backup';
 import type { RecoveryEntry, SaveStatus } from './persist';
 import type { EditorStore } from './store';
+import { useRecoveryFocus } from './recovery-focus';
 
-type PanelProps = { store: EditorStore; onRestore: () => void };
+type PanelProps = { store: EditorStore; onRestore: () => void; outlet?: HTMLElement | null };
 function statusText(phase: SaveStatus['phase']): string {
   switch (phase) {
     case 'saving':
@@ -155,7 +157,12 @@ function RecoveryPanel({
   open,
 }: PanelProps & { status: SaveStatus; open: boolean }) {
   return (
-    <section id="recovery-versions" role="region" aria-label="Recovery versions">
+    <section
+      className="recovery-panel"
+      id="recovery-versions"
+      role="region"
+      aria-label="Recovery versions"
+    >
       <BackupActions store={store} status={status} />
       {open && (
         <>
@@ -179,9 +186,10 @@ export function PersistencePanel(props: PanelProps) {
   const { autosave } = props.store;
   useSyncExternalStore(autosave.subscribe, autosave.getVersion, autosave.getVersion);
   const [open, setOpen] = useState(false);
+  const button = useRecoveryFocus(open);
   const status = autosave.getStatus();
-  const show =
-    open || status.phase === 'not-saved' || status.phase === 'conflict' || status.message !== null;
+  // An unacknowledged initial save is not a failure alert that may resize active input.
+  const show = open || status.phase === 'conflict' || status.message !== null;
   return (
     <div className="persistence">
       <div role="status" aria-label="Local save status" aria-live="polite" aria-atomic="true">
@@ -192,6 +200,7 @@ export function PersistencePanel(props: PanelProps) {
         </span>
       </div>
       <button
+        ref={button}
         type="button"
         aria-label="Recovery versions"
         aria-expanded={open}
@@ -203,7 +212,12 @@ export function PersistencePanel(props: PanelProps) {
       >
         Recovery
       </button>
-      {show && <RecoveryPanel {...props} status={status} open={open} />}
+      {show &&
+        (props.outlet === undefined || props.outlet === null ? (
+          <RecoveryPanel {...props} status={status} open={open} />
+        ) : (
+          createPortal(<RecoveryPanel {...props} status={status} open={open} />, props.outlet)
+        ))}
     </div>
   );
 }

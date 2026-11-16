@@ -11,8 +11,8 @@
  *   redo, the style card, the claim bar, the command bar, Randomize, an example or a link), wins:
  *   the pending apply is dropped, never applied over the newer figure, and the typed text stays
  *   with a note (stale) until Apply text or Revert text.
- * - Apply text and Ctrl+Enter apply now; leaving the field applies like the end of a pause.
- *   Each ends the typing session and shows the printed figure (unless the text was not applied).
+ * - Apply text and Ctrl+Enter apply now and format the source. Leaving the field applies
+ *   like the end of a pause and preserves source (ADR-0075). Each ends the typing session.
  * - The text is parsed once per text: the diagnostics' parse is handed on to the apply.
  */
 import type { Edit } from '@geomira/editor/edit';
@@ -23,6 +23,7 @@ import {
   atPause,
   draftOf,
   follow,
+  hasEdits,
   onApplyNow,
   settled,
   typedInto,
@@ -33,7 +34,7 @@ import {
 import type { Document } from '@geomira/kernel/document';
 import { parseText, type ParsedText } from '@geomira/lang/parse-text';
 import { printShort } from '@geomira/lang/print-short';
-import type { Schedule } from './long-press';
+import type { Schedule } from './schedule';
 
 /** The pause after the last keystroke before the text applies. */
 export const TEXT_APPLY_PAUSE_MS = 500;
@@ -51,6 +52,10 @@ export interface TextHost {
 export class TextApplier {
   private draft: TextDraft;
   private parsed: ParsedText | null = null;
+  private composition: string | null = null;
+  private sourceMessage: string | null = null;
+  private shownDoc: Document | null = null;
+  private shownText = '';
   private cancel: (() => void) | null = null;
   private readonly listeners = new Set<() => void>();
 
@@ -68,7 +73,11 @@ export class TextApplier {
    * same document as the canonical text that files and links hold.
    */
   private shown(doc: Document): string {
-    return printShort(doc, this.host.env.registry);
+    if (this.shownDoc !== doc) {
+      this.shownDoc = doc;
+      this.shownText = printShort(doc, this.host.env.registry);
+    }
+    return this.shownText;
   }
 
   readonly subscribe = (listener: () => void): (() => void) => {
@@ -85,8 +94,23 @@ export class TextApplier {
     return this.parsed;
   }
 
+  /** Registry and editor environment used by source assistance; never a second registry. */
+  get env(): EditorEnv {
+    return this.host.env;
+  }
+
   hasErrors(): boolean {
     return this.parse().result.diagnostics.some((d) => d.severity === 'error');
+  }
+
+  /** Transient IME source is user work even before compositionend commits it to the draft. */
+  compose(text: string | null): void {
+    this.composition = text;
+  }
+
+  /** Exact uncommitted source, including an active IME transaction. */
+  unappliedText(): string | null {
+    return this.composition ?? (hasEdits(this.draft) ? this.draft.text : null);
   }
 
   /** Whether a pause is running (an apply may follow). */
@@ -96,6 +120,7 @@ export class TextApplier {
 
   /** The field's text changed: the pause starts again. */
   type(text: string): void {
+    this.sourceMessage = null;
     this.set(typedInto(this.draft, text));
     this.stop();
     this.cancel = this.schedule(() => {
@@ -111,11 +136,11 @@ export class TextApplier {
     this.settle();
   }
 
-  /** The field loses the focus: apply as at the end of a pause; settle. */
+  /** Blur applies valid current text and ends coalescing, preserving source (ADR-0075). */
   leave(): void {
     this.stop();
     this.run(atPause(this.draft, this.facts(), this.now(), TEXT_MERGE_MS));
-    this.settle();
+    this.set({ ...this.draft, session: null });
   }
 
   /** Revert text: the figure's text, the typed edits dropped. */
@@ -129,9 +154,41 @@ export class TextApplier {
    * The figure shown is `doc`: a draft without edits of its own follows it; a pause on an older
    * figure is dropped (its text stays, stale).
    */
-  follow(doc: Document): void {
+  sourceNotice(): string | null {
+    return this.sourceMessage;
+  }
+
+  follow(doc: Document, replacement = false): void {
+    const current = this.host.current();
+    // Settled panels (ADR-0014): the canvas/document stay live, but clean source is
+    // published once at drag end/cancel. A late effect cannot follow an older figure.
+    if (doc !== current.doc) return;
+    if (current.drag !== null) {
+      this.stop();
+      return;
+    }
+    if (replacement) this.sourceMessage = null;
+    else if (
+      doc !== this.draft.doc &&
+      !hasEdits(this.draft) &&
+      this.draft.text !== this.shown(this.draft.doc)
+    )
+      this.sourceMessage = 'Figure edit reformatted your source.';
     if (doc !== this.draft.doc) this.stop();
     this.set(follow(this.draft, doc, () => this.shown(doc)));
+  }
+
+  /** A file picker/modal must not apply a draft behind a Cancel choice. */
+  hold(): () => void {
+    const pending = this.pending();
+    this.stop();
+    return () => {
+      if (!pending || this.cancel !== null) return;
+      this.cancel = this.schedule(() => {
+        this.cancel = null;
+        this.run(atPause(this.draft, this.facts(), this.now(), TEXT_MERGE_MS));
+      }, TEXT_APPLY_PAUSE_MS);
+    };
   }
 
   private stop(): void {

@@ -5,9 +5,10 @@
  * ONE batch, each written with the GUI selector choice for its touch point on the first curve
  * (choice.ts: tangent(c1, c2, …) is decided as tangent_point(c1, c2, …)); a tangent no selector
  * singles out is named in the notice (with two candidates, the whole build is refused with the
- * reason). A common tangent that is a full line of the figure already is not added again
- * (ADR-0029), and with none left the build is refused with that reason.
+ * reason). A full line known by construction to be a common tangent is not added again
+ * (ADR-0029); with none left the build is refused with that reason.
  */
+import { constructionFacts } from '@geomira/discovery/construction';
 import type { Expr, Selector } from '@geomira/kernel/expr';
 import { call, ref } from '@geomira/kernel/expr';
 import { isZeroNormalized, vCross, vDot, vSub } from '@geomira/kernel/geom';
@@ -17,15 +18,24 @@ import { chooseSelectors } from './choice';
 import { refuse, type EditResult } from './result';
 import type { EditorEnv, EditorState } from './state';
 
-/** Whether a full line of the figure is the line l (the same carrier, decided with EPS). */
-function lineThere(state: EditorState, l: Line<number>): boolean {
+/** Reuse a full carrier only when tangency to both parents follows from its definition. */
+function lineThere(
+  state: EditorState,
+  l: Line<number>,
+  curves: readonly number[],
+  follows: ReturnType<typeof constructionFacts>,
+): boolean {
   const ctx = state.values.ctx;
   const F = FloatField;
-  for (const v of state.values.values.values()) {
+  for (const [id, v] of state.values.values) {
     if (v.kind !== 'line' || v.lo !== null || v.hi !== null || v.outside === true) continue;
     const [dd, ll] = [vDot(F, v.d, v.d), vDot(F, l.d, l.d)];
     if (!isZeroNormalized(F, vCross(F, v.d, l.d), F.mul(dd, ll), 'dimensionless', ctx)) continue;
-    if (isZeroNormalized(F, vCross(F, vSub(F, l.p, v.p), v.d), dd, 'length', ctx)) return true;
+    if (
+      isZeroNormalized(F, vCross(F, vSub(F, l.p, v.p), v.d), dd, 'length', ctx) &&
+      curves.every((curve) => follows('tangent', id, curve))
+    )
+      return true;
   }
   return false;
 }
@@ -59,10 +69,12 @@ export function commonTangents(
   const at = points.candidates(FloatField, args, ctx);
   const ls = lines.candidates(FloatField, args, ctx);
   if (at.length === 0) return refuse(state, noneReason(state, args, env));
+  const follows = constructionFacts(state.doc, env.registry);
   const fresh: Vec<number>[] = [];
   for (const [i, p] of at.entries()) {
     const l = ls[i];
-    if (p.kind === 'point' && !(l?.kind === 'line' && lineThere(state, l))) fresh.push(p);
+    if (p.kind === 'point' && !(l?.kind === 'line' && lineThere(state, l, [a, b], follows)))
+      fresh.push(p);
   }
   if (fresh.length === 0)
     return refuse(state, 'every common tangent of these curves is a line of the figure already');

@@ -2,8 +2,8 @@
  * The canvas renderer (SPEC §13, ADR-0010 decision 14): a pure function of the display list
  * (itself a function of the scene and the view) and of the UI state (hover, selection). It
  * draws exactly the display list's paths, the same paths hit-testing uses (law L8), and
- * writes only to the 2D context it is given. HiDPI: the canvas has css size × dpr device
- * pixels and every frame starts with setTransform(dpr, …), so all drawing is in CSS px.
+ * writes only to the 2D context it is given. Each frame scales logical display coordinates
+ * to the actual backing dimensions, independently per axis when HiDPI rounding differs.
  */
 import { assertNever } from '@geomira/num/assert';
 import type { DisplayList } from '@geomira/scene/display';
@@ -238,17 +238,26 @@ function drawLabel(ctx: Canvas2D, l: PlacedLabel, theme: Theme, fonts: FontState
   }
 }
 
+/** Raster pixels per logical display pixel; fractional DPR rounding may differ by axis. */
+export type RasterScale = number | { readonly x: number; readonly y: number };
+function rasterScale(value: RasterScale): { readonly x: number; readonly y: number } {
+  const valid = (v: number) => (Number.isFinite(v) && v > 0 ? v : 1);
+  return typeof value === 'number'
+    ? { x: valid(value), y: valid(value) }
+    : { x: valid(value.x), y: valid(value.y) };
+}
+
 /** Draws a display list on a surface of css size × dpr pixels (see the module comment). */
 export function drawDisplay(
   ctx: Canvas2D,
   display: DisplayList,
   ui: UiState,
   theme: Theme,
-  dpr: number,
+  dpr: RasterScale,
 ): void {
-  const scale = Number.isFinite(dpr) && dpr > 0 ? dpr : 1;
+  const scale = rasterScale(dpr);
   const { width, height } = display.view.size;
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.setTransform(scale.x, 0, 0, scale.y, 0, 0);
   ctx.globalAlpha = 1;
   ctx.fillStyle = theme.background;
   ctx.fillRect(0, 0, width, height);
@@ -275,10 +284,15 @@ export function drawDisplay(
  * paths dashed in the selection colour at 0.6 opacity, 1 px, as Geomdraw drew it. It does not
  * clear the frame, and nothing in it is hit (it is not in the figure's display list).
  */
-export function drawPreview(ctx: Canvas2D, display: DisplayList, theme: Theme, dpr: number): void {
-  const scale = Number.isFinite(dpr) && dpr > 0 ? dpr : 1;
+export function drawPreview(
+  ctx: Canvas2D,
+  display: DisplayList,
+  theme: Theme,
+  dpr: RasterScale,
+): void {
+  const scale = rasterScale(dpr);
   if (display.problem !== null) return;
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.setTransform(scale.x, 0, 0, scale.y, 0, 0);
   ctx.globalAlpha = 0.6;
   ctx.strokeStyle = theme.selection;
   ctx.fillStyle = theme.selection;

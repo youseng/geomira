@@ -1,3 +1,4 @@
+import { logicalPoint } from './surface-coordinates';
 /**
  * The canvas as a surface (host code): its pixel size follows its CSS size times the
  * devicePixelRatio, also when the ratio changes (a window moved to another screen, a browser
@@ -52,7 +53,7 @@ export function watchPixelRatio(win: RatioSource, onChange: () => void): () => v
   };
 }
 
-/** The canvas's CSS size, kept in sync with its box; its pixel size is css × dpr (HiDPI). */
+/** Logical client size and rounded HiDPI backing dimensions; CSS may stretch fractional bounds. */
 export function useSurface(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   onSize: (s: Size) => void,
@@ -101,7 +102,8 @@ export function useWheelZoom(
       const s = sizeRef.current;
       if (s === null) return;
       const r = canvas.getBoundingClientRect();
-      const at = { x: e.clientX - r.left, y: e.clientY - r.top };
+      const at = logicalPoint({ x: e.clientX, y: e.clientY }, r, s);
+      if (at === null) return;
       const view = { viewport: store.current().viewport, size: s };
       const factor = wheelFactor(e.deltaY, e.deltaMode);
       store.apply({ kind: 'viewport', viewport: zoomViewport(view, at, factor) });

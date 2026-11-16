@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { command, expectLines, openApp, screenOf, tab } from './helpers';
+import { command, expectLines, openApp, screenOf, tab, text } from './helpers';
 
 /** Run 8b (SPEC §15): a phone, 390×664, by touch: pan, pinch, drag and the panels. Mobile project. */
 
@@ -80,6 +80,8 @@ test('pan with one finger, pinch with two', async ({ page }) => {
 test('drag a point with a finger; the text follows', async ({ page }) => {
   await openApp(page);
   await figure(page);
+  // Leave room for the outward destination after the responsive header changes the canvas.
+  await page.getByRole('button', { name: 'Zoom out', exact: true }).click();
   const t = await touches(page);
   const from = await screenOf(page, 4, 0);
   const to = await screenOf(page, 5, 1);
@@ -91,6 +93,10 @@ test('the panels work on a phone: tabs, objects, claims, command bar', async ({ 
   const errors = await openApp(page);
   await figure(page);
   await command(page, 'claim collinear(A, B, C)');
+  await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
+  const board = page.getByLabel('Geometry canvas');
+  const closed = await board.boundingBox();
+  const camera = await board.evaluate((e) => [e.dataset['cx'], e.dataset['cy'], e.dataset['zoom']]);
   await tab(page, 'Objects');
   await expect(page.getByRole('button', { name: 'poly', exact: true })).toBeVisible();
   if (process.env['GEOMIRA_ENGINE_E2E'] === '1') {
@@ -109,7 +115,25 @@ test('the panels work on a phone: tabs, objects, claims, command bar', async ({ 
   await tab(page, 'Layers');
   await page.getByLabel('main').uncheck();
   await expect(page.getByLabel('main')).not.toBeChecked();
-  const canvas = await page.getByLabel('Geometry canvas').boundingBox();
-  expect(canvas?.height ?? 0).toBeGreaterThan(250);
+  const source = await text(page);
+  await tab(page, 'Layers');
+  await expect(page.getByLabel('main')).not.toBeChecked();
+  const canvas = await board.boundingBox();
+  expect(canvas?.height ?? 0).toBeGreaterThanOrEqual(120);
+  await board.scrollIntoViewIfNeeded();
+  expect(
+    await board.evaluate((e) => {
+      const r = e.getBoundingClientRect();
+      return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === e;
+    }),
+  ).toBe(true);
+  await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
+  const restored = await board.boundingBox();
+  expect(restored).toEqual(closed);
+  expect(
+    await board.evaluate((e) => [e.dataset['cx'], e.dataset['cy'], e.dataset['zoom']]),
+  ).toEqual(camera);
+  expect(await text(page)).toBe(source);
+  await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
   expect(errors).toEqual([]);
 });

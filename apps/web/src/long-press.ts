@@ -6,17 +6,8 @@
  * timer is injected, so the logic is tested without a browser.
  */
 import { CLICK_SLOP, LONG_PRESS_MS } from './gestures';
-
-/** Runs `f` after `ms` milliseconds; returns the function that cancels it. */
-export type Schedule = (f: () => void, ms: number) => () => void;
-
-/** The page's timer. */
-export const timeout: Schedule = (f, ms) => {
-  const t = setTimeout(f, ms);
-  return () => {
-    clearTimeout(t);
-  };
-};
+import type { Schedule } from './schedule';
+export { timeout, type Schedule } from './schedule';
 
 export class LongPress {
   private pending: { readonly x: number; readonly y: number; readonly cancel: () => void } | null =

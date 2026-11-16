@@ -10,6 +10,8 @@
     "packages/kernel/src/geom.ts",
     "packages/kernel/src/similarity.ts",
     "packages/kernel/src/conic.ts",
+    "packages/kernel/src/conic-form.ts",
+    "packages/kernel/src/conic-image.ts",
     "packages/kernel/src/conic-glider.ts",
     "packages/kernel/src/conic-pencil.ts",
     "packages/kernel/src/conic-around.ts",

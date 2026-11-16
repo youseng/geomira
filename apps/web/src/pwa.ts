@@ -94,8 +94,10 @@ export class Pwa {
     const c = this.env.container;
     if (!hasContainer(c) || this.registration !== null) return;
     c.addEventListener('controllerchange', () => {
-      if (this.reloading) this.env.reload();
-      else this.set({ offline: { kind: 'ready' } });
+      if (this.reloading) {
+        this.reloading = false;
+        this.env.reload();
+      } else this.set({ offline: { kind: 'ready' } });
     });
     try {
       const reg = await c.register(this.env.swUrl, { scope: this.env.scope });
@@ -133,11 +135,21 @@ export class Pwa {
 
   /** The banner's Reload: save first, then let the new version take over and reload. */
   applyUpdate(beforeReload: () => void): void {
-    const w = this.waiting;
-    if (w === null) return;
+    const offered = this.waiting;
+    if (offered === null) return;
+    const w = this.registration?.waiting ?? offered;
     beforeReload();
+    // Another client may have activated this offer before this tab chose Reload.
+    // Its controllerchange is already past; only this explicit action may reload the tab.
+    const c = this.env.container;
+    const controlsPage = hasContainer(c) && c.controller === w;
+    if (controlsPage || w.state === 'activated' || w.state === 'redundant') {
+      this.reloading = false;
+      this.env.reload();
+      return;
+    }
     this.reloading = true;
-    w.postMessage({ type: 'skip-waiting' }, []);
+    if (w.state !== 'activating') w.postMessage({ type: 'skip-waiting' }, []);
   }
 
   /** The banner's Later: hidden until another version installs. */

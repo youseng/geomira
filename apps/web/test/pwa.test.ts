@@ -171,3 +171,83 @@ describe('Pwa', () => {
     expect(c.reg.updates).toBe(1);
   });
 });
+
+for (const phase of ['activating', 'activated', 'redundant']) {
+  it(`explicit Reload still works after another client leaves the offered worker ${phase}`, async () => {
+    const c = new FakeContainer();
+    c.controller = new FakeWorker();
+    const next = new FakeWorker();
+    next.to('installed');
+    c.reg.waiting = next;
+    const { pwa, reloads } = setup(c);
+    await pwa.start();
+    await tick();
+    c.reg.waiting = null;
+    next.to(phase);
+    const controller = phase === 'redundant' ? new FakeWorker() : next;
+    if (phase === 'redundant') controller.to('activated');
+    c.takeOver(controller);
+    expect(reloads()).toBe(0);
+    let saved = false;
+    pwa.applyUpdate(() => {
+      expect(reloads()).toBe(0);
+      saved = true;
+    });
+    expect(saved).toBe(true);
+    expect(reloads()).toBe(1);
+    expect(next.messages).toEqual([]);
+    c.takeOver(controller);
+    expect(reloads()).toBe(1);
+  });
+}
+
+it('a stale redundant offer uses a newer waiting candidate before an explicit update', async () => {
+  const c = new FakeContainer();
+  c.controller = new FakeWorker();
+  const stale = new FakeWorker();
+  stale.to('installed');
+  c.reg.waiting = stale;
+  const { pwa, reloads } = setup(c);
+  await pwa.start();
+  await tick();
+  stale.to('redundant');
+  const fresh = new FakeWorker();
+  fresh.to('installed');
+  c.reg.waiting = fresh;
+  let saved = 0;
+  pwa.applyUpdate(() => {
+    saved++;
+  });
+  expect(saved).toBe(1);
+  expect(stale.messages).toEqual([]);
+  expect(fresh.messages).toEqual([{ type: 'skip-waiting' }]);
+  expect(reloads()).toBe(0);
+  c.takeOver(fresh);
+  expect(reloads()).toBe(1);
+  c.takeOver(fresh);
+  expect(reloads()).toBe(1);
+});
+
+it('an activating offer that does not yet control the client waits for adoption', async () => {
+  const c = new FakeContainer();
+  c.controller = new FakeWorker();
+  const next = new FakeWorker();
+  next.to('installed');
+  c.reg.waiting = next;
+  const { pwa, reloads } = setup(c);
+  await pwa.start();
+  await tick();
+  c.reg.waiting = null;
+  next.to('activating');
+  let saved = 0;
+  pwa.applyUpdate(() => {
+    saved++;
+  });
+  expect(saved).toBe(1);
+  expect(reloads()).toBe(0);
+  expect(next.messages).toEqual([]);
+  c.takeOver(next);
+  expect(reloads()).toBe(1);
+  c.takeOver(next);
+  expect(reloads()).toBe(1);
+});

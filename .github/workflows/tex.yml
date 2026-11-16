@@ -1,122 +1,13 @@
 name: tex
 
-# Compiles TeX (TikZ) and Asymptote in a container image with TeX Live (latex base, pictures,
-# extra), Asymptote and Node. The image is built from .github/tex/Dockerfile, tagged with that
-# file's hash and pushed to GHCR once; every later run pulls the cached image.
-# The export job (SPEC §14, Run 9a, ADR-0014): every example's and export fixture's TikZ
-# (standalone and snippet) through pdflatex and standalone Asymptote through asy, Asymptote's
-# write() coordinates checked against the kernel (≤ 1e-6·scale), and the same check on random
-# documents. The exports depend on the kernel, the scene and the language, so any package
-# change runs it.
-
+# Export compilation is now an unconditional job of validate.yml for every candidate.
+# Manual diagnostic runs use the same source graph; no image publication token is required.
 on:
-  push:
-    branches: ['**']
-    tags-ignore: ['**']
-    paths:
-      - .github/tex/**
-      - .github/workflows/tex.yml
-      - tests/fixtures/**
-      - packages/**
-      - examples/**
-      - scripts/export-tex.ts
-      - package.json
-      - pnpm-lock.yaml
-  pull_request:
-    paths:
-      - .github/tex/**
-      - .github/workflows/tex.yml
-      - tests/fixtures/**
-      - packages/**
-      - examples/**
-      - scripts/export-tex.ts
-      - package.json
-      - pnpm-lock.yaml
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: tex-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  image:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    permissions:
-      contents: read
-      packages: write
-    outputs:
-      image: ${{ steps.ref.outputs.image }}
-    steps:
-      - uses: actions/checkout@v7
-      - name: Image reference
-        id: ref
-        env:
-          HASH: ${{ hashFiles('.github/tex/Dockerfile') }}
-        run: |
-          owner="$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
-          echo "image=ghcr.io/${owner}/geomira-tex:${HASH:0:16}" >> "$GITHUB_OUTPUT"
-      - uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Look for the cached image
-        id: cached
-        env:
-          IMAGE: ${{ steps.ref.outputs.image }}
-        run: |
-          if docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
-            echo "hit=true" >> "$GITHUB_OUTPUT"
-            echo "Using cached $IMAGE"
-          else
-            echo "hit=false" >> "$GITHUB_OUTPUT"
-            echo "Building $IMAGE"
-          fi
-      - name: Build and push the image
-        if: steps.cached.outputs.hit != 'true'
-        uses: docker/build-push-action@v7
-        with:
-          context: .github/tex
-          push: true
-          tags: ${{ steps.ref.outputs.image }}
-
-  compile:
-    needs: image
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    permissions:
-      contents: read
-      packages: read
-    container:
-      image: ${{ needs.image.outputs.image }}
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - uses: actions/checkout@v7
-      - name: Toolchain versions
-        run: |
-          pdflatex --version | head -n 1
-          asy -version 2>&1 | head -n 1
-          node --version
-      - name: Compile fixtures
-        run: sh tests/fixtures/compile-tex.sh
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: Exports (examples, fixtures, 60 random documents)
-        run: pnpm export:tex tests/fixtures/out-export --fuzz 60
-      - name: Upload the compiled exports
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: exports
-          path: |
-            tests/fixtures/out-export/*.pdf
-            tests/fixtures/out-export/*.tex
-            tests/fixtures/out-export/*.asy
-            tests/fixtures/out-export/*.log
-          retention-days: 14
+  validate:
+    uses: ./.github/workflows/validate.yml

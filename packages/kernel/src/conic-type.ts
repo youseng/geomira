@@ -33,10 +33,14 @@ function semiAxis([a, b, c, d, e, f]: Six<number>): number {
  * (ac − b² over a² + 2b² + c² is an aspect ratio: a thin hyperbola whose centre is in the figure
  * was called a parabola there; Run 16c audit.)
  */
-export function parabolaSign<T>(F: Field<T>, q: Six<T>, ctx: ToleranceContext): FieldSign {
+export function parabolaSign<T>(
+  F: Field<T>,
+  q: Six<T> & { readonly chart?: { readonly q: Six<T> } | undefined },
+  ctx: ToleranceContext,
+): FieldSign {
   const w = F.sub(F.mul(q[0], q[2]), F.mul(q[1], q[1]));
   if (F.kind !== 'float') return F.sign(w, 'dimensionless', ctx);
-  const n = q.map((x) => F.toNumber(x));
+  const n = (q.chart?.q ?? q).map((x) => F.toNumber(x));
   const A = semiAxis([n[0] ?? 0, n[1] ?? 0, n[2] ?? 0, n[3] ?? 0, n[4] ?? 0, n[5] ?? 0]);
   const s = A > 0 ? sign3(ctx.scale / A, 'dimensionless', ctx) : 1;
   if (s !== 1) return s;

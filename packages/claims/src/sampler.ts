@@ -18,13 +18,23 @@
  *     sample may be MIRRORED (x ↦ −x about c, before the similarity) WITHOUT flipping any
  *     selector. Gliders of one form named by an `in_order` hypothesis on one object (on a
  *     line, by (u : v) or by angle) are drawn sorted.
- * Every sample is rounded to a coarse rational grid (size / 2^10 for lengths, 2^−10 for
+ * Free coordinates are rounded to a coarse rational grid (size / 2^10 for lengths, 2^−10 for
  * the dimensionless glider parameters, range / 2^10 for params) so that the exact rungs
  * can run on it; the same rounded document is evaluated by every rung and is the
- * counterexample document.
+ * counterexample document. Fixed radii instead share one exact rational scale (ADR-0073),
+ * preserving ratios without a per-radius grid or positive fallback.
  */
 import { assertNever } from '@geomira/num/assert';
-import { fromInteger, rational, toNumber, ZERO, type Rational } from '@geomira/num/rational';
+import {
+  fromInteger,
+  fromNumber,
+  mul,
+  rational,
+  toNumber,
+  ZERO,
+  type Rational,
+} from '@geomira/num/rational';
+import { roundTo } from '@geomira/num/decimal';
 import { createRng, type Rng, type Seed } from '@geomira/num/rng';
 import type { Document } from '@geomira/kernel/document';
 import { figureDiameter } from '@geomira/kernel/figure-size';
@@ -85,7 +95,10 @@ export function figureSize(prep: SamplerFigure): number {
  */
 function similarity(rng: Rng, prep: SamplerFigure, scale: number, mirrored: boolean): Similarity {
   const theta = rng.uniform(0, 2 * Math.PI);
-  const s = 2 ** rng.uniform(-SIMILARITY_OCTAVES, SIMILARITY_OCTAVES);
+  // One short exact scale for the entire similarity, never one rounded radius per circle.
+  const s = toNumber(
+    roundTo(fromNumber(2 ** rng.uniform(-SIMILARITY_OCTAVES, SIMILARITY_OCTAVES)), -2),
+  );
   const b: readonly [number, number] = [
     rng.uniform(-0.5, 0.5) * scale,
     rng.uniform(-0.5, 0.5) * scale,
@@ -173,10 +186,8 @@ function sampleInput(ctx: Context, input: FreeInput, v: readonly Rational[]): Ra
       const [x, y] = mapPoint(ctx.sim, nx, at(1) + ctx.sigma * g());
       return [dyadic(x, ctx.k), dyadic(y, ctx.k)];
     }
-    case 'radius': {
-      const r = dyadic(at(0) * ctx.sim.s, ctx.k);
-      return [r.num === 0n ? dyadic(2 ** ctx.k, ctx.k) : r];
-    }
+    case 'radius':
+      return [mul(v[0] ?? ZERO, roundTo(fromNumber(ctx.sim.s), -2))];
     case 'line-glider': {
       const [lo, hi, spread, toT] = lineRange(ctx, input, at(0));
       const t = local
@@ -211,12 +222,14 @@ function paramValue(
   x: number,
 ): Rational {
   const w = hi - lo;
+  // Direct sampler callers also retain an invalid domain instead of invoking uniform(lo, hi).
+  const [min, max] = v;
+  if (min === undefined || max === undefined || !(w > 0) || !Number.isFinite(w))
+    return v[2] ?? fromInteger(0);
   const raw =
     ctx.regime === 'local' ? x + LOCAL_SIGMA * w * ctx.rng.gaussian() : ctx.rng.uniform(lo, hi);
   const steps = 2 ** GRID_BITS;
   const k = Math.min(steps, Math.max(0, Math.round(((raw - lo) / w) * steps)));
-  const [min, max] = v;
-  if (min === undefined || max === undefined || !(w > 0)) return v[2] ?? fromInteger(0);
   const frac = rational(BigInt(k), BigInt(steps));
   return addFrac(min, max, frac);
 }

@@ -9,100 +9,43 @@
 import { assertNever } from '@geomira/num/assert';
 import { inexact, isInexact, type Field, type FieldSign, type Inexact } from '@geomira/num/field';
 import { parabolaSign } from './conic-type';
+import { mapConicAround } from './conic-around';
+import { mapCoeffsRaw, mapConicRaw } from './conic-image';
 
 export { parabolaSign };
 import { signNormalized, two, vDot } from './geom';
 import type { EvalContext } from './tool';
-import { adj3, det3, mul3, mulHom, type Hom, type Mat3 } from './transform/projective';
+import { mul3, mulHom, type Mat3 } from './transform/projective';
 import { undef, type Circle, type Conic, type Undefined, type Vec } from './value';
 
-/** The six coefficients of a conic (a, b, c, d, e, f), not necessarily in normal form. */
-export type Coeffs<T> = readonly [T, T, T, T, T, T];
-
-/** The coefficients of a conic value. */
-export function coeffsOf<T>(k: Conic<T>): Coeffs<T> {
-  return [k.a, k.b, k.c, k.d, k.e, k.f];
-}
-
-/** The symmetric matrix M of the coefficients. */
-export function matrixOf<T>(q: Coeffs<T>): Mat3<T> {
-  const [a, b, c, d, e, f] = q;
-  return [a, b, d, b, c, e, d, e, f];
-}
-
-/** The coefficients of a symmetric matrix (its upper triangle). */
-function coeffsOfMatrix<T>(m: Mat3<T>): Coeffs<T> {
-  return [m[0], m[1], m[4], m[2], m[5], m[8]];
-}
-
-/** a² + 2b² + c²: the squared Frobenius norm of the quadratic part (zero only for a line). */
-export function quadNorm<T>(F: Field<T>, q: Coeffs<T>): T {
-  const [a, b, c] = q;
-  return F.add(F.add(F.mul(a, a), F.mul(two(F), F.mul(b, b))), F.mul(c, c));
-}
-
-/** ac − b²: positive for an ellipse, zero for a parabola, negative for a hyperbola. */
-export function delta<T>(F: Field<T>, q: Coeffs<T>): T {
-  return F.sub(F.mul(q[0], q[2]), F.mul(q[1], q[1]));
-}
-
-/** det M. */
-export function conicDet<T>(F: Field<T>, q: Coeffs<T>): T {
-  const [a, b, c, d, e, f] = q;
-  const minor = (x: T, y: T, z: T, w: T): T => F.sub(F.mul(x, w), F.mul(y, z));
-  return F.add(
-    F.sub(F.mul(a, minor(c, e, e, f)), F.mul(b, minor(b, e, d, f))),
-    F.mul(d, minor(b, c, d, e)),
-  );
-}
-
-/** g(X) = (aX + bY + d, bX + cY + e) = ∇Q(X)/2: the polar covector's linear part at X. */
-export function halfGradient<T>(F: Field<T>, q: Coeffs<T>, X: Vec<T>): Vec<T> {
-  const [a, b, c, d, e] = q;
-  return {
-    x: F.add(F.add(F.mul(a, X.x), F.mul(b, X.y)), d),
-    y: F.add(F.add(F.mul(b, X.x), F.mul(c, X.y)), e),
-  };
-}
-
-/** M·(X, 1): the polar of X as a covector (g, h), g·Y + h = 0, with g·X + h = Q(X). */
-export function polarCovector<T>(F: Field<T>, q: Coeffs<T>, X: Vec<T>): Hom<T> {
-  const g = halfGradient(F, q, X);
-  const [, , , d, e, f] = q;
-  return [g.x, g.y, F.add(F.add(F.mul(d, X.x), F.mul(e, X.y)), f)];
-}
-
-/** Q(X). */
-export function qValue<T>(F: Field<T>, q: Coeffs<T>, X: Vec<T>): T {
-  const [g0, g1, h] = polarCovector(F, q, X);
-  return F.add(F.add(F.mul(g0, X.x), F.mul(g1, X.y)), h);
-}
-
-/** The value of the quadratic part on a direction: dᵀ·M₂·d. */
-export function qDirection<T>(F: Field<T>, q: Coeffs<T>, v: Vec<T>): T {
-  const [a, b, c] = q;
-  const cross = F.mul(two(F), F.mul(b, F.mul(v.x, v.y)));
-  return F.add(F.add(F.mul(a, F.mul(v.x, v.x)), cross), F.mul(c, F.mul(v.y, v.y)));
-}
-
-/** The centre in homogeneous coordinates (be − cd, bd − ae, ac − b²): the pole of the line at infinity. */
-export function homCentre<T>(F: Field<T>, q: Coeffs<T>): Hom<T> {
-  const [a, b, c, d, e] = q;
-  return [F.sub(F.mul(b, e), F.mul(c, d)), F.sub(F.mul(b, d), F.mul(a, e)), delta(F, q)];
-}
-
-/** The pole of a line u·(x, y, 1) = 0: adj(M)·u (homogeneous). */
-export function poleOf<T>(F: Field<T>, q: Coeffs<T>, u: Hom<T>): Hom<T> {
-  return mulHom(F, adj3(F, matrixOf(q)), u);
-}
-
-/** Whether every number is a finite double (always true outside FloatField). */
-export function finite<T>(F: Field<T>, xs: readonly T[]): boolean {
-  return F.kind !== 'float' || xs.every((x) => Number.isFinite(F.toNumber(x)));
-}
-
-/** Inexact: a conic beyond the double range. */
-export const CONIC_BEYOND = inexact('the conic is beyond the double range');
+export {
+  coeffsOf,
+  matrixOf,
+  quadNorm,
+  delta,
+  conicDet,
+  halfGradient,
+  polarCovector,
+  qValue,
+  qDirection,
+  homCentre,
+  poleOf,
+} from './conic-form';
+import {
+  coeffsOf,
+  quadNorm,
+  delta,
+  conicDet,
+  halfGradient,
+  qValue,
+  qDirection,
+  type Coeffs,
+  finite,
+  CONIC_BEYOND,
+  normalForm,
+} from './conic-form';
+export type { Coeffs } from './conic-form';
+export { finite, CONIC_BEYOND } from './conic-form';
 
 /**
  * How far the conic is from a degenerate one, as a LENGTH (FloatField only; undefined in exact
@@ -167,26 +110,6 @@ export function coeffsProblem<T>(
 }
 
 /**
- * The normal form of valid coefficients: scaled by (a² + 2b² + c²)/det M (det M ≠ 0, given when
- * the caller knows it more accurately than from the coefficients).
- */
-function normalForm<T>(
-  F: Field<T>,
-  q: Coeffs<T>,
-  det: T = conicDet(F, q),
-): { readonly q: Coeffs<T> } | Inexact {
-  const n = quadNorm(F, q);
-  const k = F.div(n, det);
-  if (F.eq(k, F.zero))
-    return inexact(
-      `the normal form of the conic divides by a² + 2b² + c², which is 0 in ${F.name}`,
-    );
-  const [a, b, c, d, e, f] = q;
-  const m = (x: T): T => F.mul(x, k);
-  return { q: [m(a), m(b), m(c), m(d), m(e), m(f)] };
-}
-
-/**
  * The conic value of coefficients (any scale), with an optional known point. Degenerate cases:
  * as coeffsProblem; the normal form not representable (mod p, a² + 2b² + c² = 0) → Inexact; a
  * result beyond the double range → Inexact.
@@ -197,6 +120,22 @@ export function makeConic<T>(
   anchor: Vec<T> | undefined,
   ctx: EvalContext,
 ): Conic<T> | Undefined | Inexact {
+  if (q.chart !== undefined) {
+    const zero = { x: F.zero, y: F.zero },
+      o = q.chart.origin,
+      z = F.zero;
+    const local = makeConic(F, q.chart.q, undefined, ctx);
+    if (local.kind !== 'conic') return local;
+    const image = mapConicAround(
+      F,
+      coeffsOf(local),
+      [F.one, z, o.x, z, F.one, o.y, z, z, F.one],
+      zero,
+      o,
+      false,
+    );
+    return image.kind !== 'conic' || anchor === undefined ? image : { ...image, anchor };
+  }
   const bad = coeffsProblem(F, q, ctx);
   if (bad !== undefined) return bad;
   const nf = normalForm(F, q);
@@ -213,6 +152,8 @@ export function conicProblem<T>(
   k: Conic<T>,
   ctx: EvalContext,
 ): Undefined | Inexact | undefined {
+  if (k.chart !== undefined && !finite(F, [k.chart.origin.x, k.chart.origin.y, ...k.chart.q]))
+    return CONIC_BEYOND;
   return coeffsProblem(F, coeffsOf(k), ctx);
 }
 
@@ -250,9 +191,12 @@ export function conicType<T>(
  * adj(m)ᵀ·M·adj(m), which is m⁻ᵀ·M·m⁻¹ up to a factor (not in normal form).
  */
 export function mapCoeffs<T>(F: Field<T>, q: Coeffs<T>, m: Mat3<T>): Coeffs<T> {
-  const A = adj3(F, m);
-  const At: Mat3<T> = [A[0], A[3], A[6], A[1], A[4], A[7], A[2], A[5], A[8]];
-  return coeffsOfMatrix(mul3(F, mul3(F, At, matrixOf(q)), A));
+  if (q.chart !== undefined) {
+    const o = q.chart.origin,
+      z = F.zero;
+    return mapCoeffs(F, q.chart.q, mul3(F, m, [F.one, z, o.x, z, F.one, o.y, z, z, F.one]));
+  }
+  return mapCoeffsRaw(F, q, m);
 }
 
 /**
@@ -270,7 +214,9 @@ export function onConicSign<T>(F: Field<T>, k: Conic<T>, P: Vec<T>, ctx: EvalCon
 export function circleCoeffs<T>(F: Field<T>, c: Circle<T>): Coeffs<T> {
   const o = c.c;
   const f = F.sub(F.add(F.mul(o.x, o.x), F.mul(o.y, o.y)), c.r2);
-  return [F.one, F.zero, F.one, F.neg(o.x), F.neg(o.y), f];
+  const q: Coeffs<T> = [F.one, F.zero, F.one, F.neg(o.x), F.neg(o.y), f];
+  const local: Coeffs<T> = [F.one, F.zero, F.one, F.zero, F.zero, F.neg(c.r2)];
+  return F.kind !== 'float' ? q : Object.assign(q, { chart: { origin: o, q: local } });
 }
 
 /**
@@ -286,21 +232,28 @@ export function mapConicBy<T>(
   m: Mat3<T>,
   anchor: Vec<T> | undefined,
 ): Conic<T> | Undefined | Inexact {
-  const image = mapCoeffs(F, q, m);
-  if (!finite(F, image)) return CONIC_BEYOND;
-  // det(adj(m)ᵀ·M·adj(m)) = det(m)⁴·det M: exact algebra, and in floats far better conditioned
-  // than the determinant of the rounded image coefficients.
-  const dm = det3(F, m);
-  const dm2 = F.mul(dm, dm);
-  const det = F.mul(F.mul(dm2, dm2), conicDet(F, q));
-  if (!finite(F, [det]) || F.eq(det, F.zero) || F.eq(quadNorm(F, image), F.zero))
-    return undef('apply: the image of the conic is degenerate in this field');
-  const nf = normalForm(F, image, det);
-  if (isInexact(nf)) return nf;
-  if (!finite(F, nf.q)) return CONIC_BEYOND;
-  const [a, b, c, d, e, f] = nf.q;
-  const base: Conic<T> = { kind: 'conic', a, b, c, d, e, f };
-  return anchor === undefined ? base : { ...base, anchor: { x: anchor.x, y: anchor.y } };
+  if (q.chart !== undefined) {
+    const A = q.chart.origin;
+    const h = mulHom(F, m, [A.x, A.y, F.one]);
+    if (!F.eq(h[2], F.zero)) {
+      const B = { x: F.div(h[0], h[2]), y: F.div(h[1], h[2]) };
+      if (finite(F, [B.x, B.y])) {
+        const image = mapConicAround(F, q, m, A, B, false);
+        return image.kind !== 'conic' || anchor === undefined ? image : { ...image, anchor };
+      }
+    }
+  }
+  if (q.chart !== undefined) {
+    const o = q.chart.origin,
+      z = F.zero;
+    return mapConicRaw(
+      F,
+      q.chart.q,
+      mul3(F, m, [F.one, z, o.x, z, F.one, o.y, z, z, F.one]),
+      anchor,
+    );
+  }
+  return mapConicRaw(F, q, m, anchor);
 }
 
 type Form<T> = readonly [T, T, T];

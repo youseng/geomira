@@ -1,6 +1,8 @@
+import { PanelResize } from './PanelResize';
+import type { Workspace } from './workspace';
 import { CLAIM_TESTING } from './features';
 import type { ClaimBoxHost } from './ClaimBox';
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 import type { EditorState } from '@geomira/editor/state';
 import { assertNever } from '@geomira/num/assert';
 import type { Scene } from '@geomira/scene/types';
@@ -10,20 +12,38 @@ import { HelpPanel } from './panels/HelpPanel';
 import { LayersPanel } from './panels/LayersPanel';
 import { ObjectsPanel } from './panels/ObjectsPanel';
 import { TextPanel } from './panels/TextPanel';
-import { timeout } from './long-press';
 import { useSettled } from './settled';
 import type { EditorStore } from './store';
-import { TextApplier } from './text-apply';
+import type { TextApplier } from './text-apply';
 import type { DiscoveryRuns } from './discovery-runs';
 import type { TestRuns } from './test-runs';
+import { keepPanelFocusVisible } from './panel-focus';
 
 /** The tabs; styles are edited in the style card of each object (ADR-0029), not in a tab. */
-export type Tab = 'Text' | 'Objects' | 'Layers' | 'Claims' | 'Help';
+import type { Tab } from './panel-types';
+export type { Tab } from './panel-types';
 export const TABS: readonly Tab[] = CLAIM_TESTING
   ? ['Text', 'Objects', 'Layers', 'Claims', 'Help']
   : ['Text', 'Objects', 'Layers', 'Help'];
 
+function PanelCompact({ workspace }: { workspace: Workspace | undefined }) {
+  if (workspace === undefined) return null;
+  return (
+    <button
+      type="button"
+      className="sheet-compact"
+      aria-label={workspace.prefs.compact ? 'Expand panel' : 'Compact panel'}
+      onClick={() => {
+        workspace.update({ compact: !workspace.prefs.compact });
+      }}
+    >
+      {workspace.prefs.compact ? 'Expand panel' : 'Compact panel'}
+    </button>
+  );
+}
+
 export interface SidePanelProps {
+  readonly workspace?: Workspace;
   readonly store: EditorStore;
   readonly state: EditorState;
   readonly scene: Scene;
@@ -101,28 +121,39 @@ export function SidePanel(props: SidePanelProps) {
   const tab = !CLAIM_TESTING && props.tab === 'Claims' ? 'Text' : props.tab;
   const { claimBox, undrawable, onStyle } = props;
   const state = useSettled(props.state);
-  const applier = useMemo(() => new TextApplier(store, timeout, () => performance.now()), [store]);
+  const applier = store.textDraft;
   return (
-    <aside className={open ? 'side open' : 'side'} aria-label="Figure">
-      <div className="tabs" role="tablist" aria-label="Panels">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            type="button"
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => {
-              onTab(t);
-            }}
-          >
-            {t}
-          </button>
-        ))}
+    <aside
+      className={`side${open ? ' open' : ''}${props.workspace?.prefs.compact === true ? ' compact' : ''}`}
+      aria-label="Figure"
+      onFocusCapture={keepPanelFocusVisible}
+    >
+      {props.workspace !== undefined && <PanelResize workspace={props.workspace} />}
+      <div className="panel-heading">
+        <div className="tabs" role="tablist" aria-label="Panels">
+          {TABS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              role="tab"
+              aria-selected={tab === t}
+              onClick={() => {
+                onTab(t);
+              }}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+        <PanelCompact workspace={props.workspace} />
         <button type="button" className="drawer-close" title="Hide the panels" onClick={onClose}>
           <span aria-hidden="true">{'✕'}</span>
           <span className="sr-only">Hide panels</span>
         </button>
       </div>
+      <p className="panel-scroll-hint">
+        Scroll up for the figure; down for tools and the command bar.
+      </p>
       <div className="tab-body" role="tabpanel" aria-label={`${tab} panel`}>
         <Body
           tab={tab}

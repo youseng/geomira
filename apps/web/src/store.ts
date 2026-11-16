@@ -1,3 +1,5 @@
+import { TextApplier } from './text-apply';
+import { timeout } from './schedule';
 import type { RecoveryObservation } from '@geomira/editor/persistence';
 import { CLAIM_TESTING, CLAIMS_UNAVAILABLE } from './features';
 /**
@@ -51,6 +53,7 @@ export class EditorStore {
   private snap: Snapshot;
   private readonly listeners = new Set<() => void>();
   readonly autosave: Autosave;
+  readonly textDraft: TextApplier;
 
   constructor(
     readonly env: EditorEnv,
@@ -67,6 +70,7 @@ export class EditorStore {
       openCount: 0,
       fits: 0,
     };
+    this.textDraft = new TextApplier(this, timeout, () => performance.now());
   }
 
   readonly subscribe = (listener: () => void): (() => void) => {
@@ -82,6 +86,8 @@ export class EditorStore {
 
   private publish(patch: Partial<Snapshot>): void {
     this.snap = { ...this.snap, ...patch };
+    if (patch.state !== undefined)
+      this.textDraft.follow(this.snap.state.doc, patch.openCount !== undefined);
     for (const l of this.listeners) l();
   }
 

@@ -81,7 +81,13 @@ export function AboutSection() {
 }
 
 /** The version banner: a new version of the site has installed and waits for a reload. */
-export function UpdateBanner({ onReload }: { onReload: () => void }) {
+export function UpdateBanner({
+  onReload,
+  onLater,
+}: {
+  onReload: () => void;
+  onLater?: () => void;
+}) {
   const about = useContext(AboutContext);
   const pwa = about?.pwa ?? NONE;
   const state = useSyncExternalStore(pwa.subscribe, pwa.current, pwa.current);
@@ -90,9 +96,16 @@ export function UpdateBanner({ onReload }: { onReload: () => void }) {
     <div className="notice notice-info update-banner" role="status" aria-label="New version">
       <div className="notice-text">
         A new version of Geomira is available (build {state.update.build}; this page runs build{' '}
-        {BUILD}). Reloading keeps your figure.
+        {BUILD}). Reload checks saving and unapplied text before updating.
       </div>
-      <button type="button" className="small-tb tb" onClick={onReload}>
+      <button
+        type="button"
+        className="small-tb tb"
+        onMouseDown={(event) => {
+          event.preventDefault();
+        }}
+        onClick={onReload}
+      >
         Reload to update
       </button>
       <button
@@ -100,6 +113,7 @@ export function UpdateBanner({ onReload }: { onReload: () => void }) {
         className="small-tb tb"
         onClick={() => {
           about.pwa.dismiss();
+          onLater?.();
         }}
       >
         Later

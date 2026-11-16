@@ -124,10 +124,11 @@ function dangle<T>(F: Field<T>, args: readonly Value<T>[], ctx: EvalContext): Va
 
 /** The unsigned area |shoelace| / 2 of the vertices. Degenerate: collinear vertices → 0. */
 function areaOf<T>(F: Field<T>, pts: readonly Vec<T>[], ctx: EvalContext): Value<T> {
+  const origin = pts[0] ?? { x: F.zero, y: F.zero };
   let twice = F.zero;
   for (const [i, p] of pts.entries()) {
     const q = pts[(i + 1) % pts.length] ?? p;
-    twice = F.add(twice, vCross(F, p, q));
+    twice = F.add(twice, vCross(F, vSub(F, p, origin), vSub(F, q, origin)));
   }
   const a = abs(F, twice, 'area', ctx);
   return isInexact(a) ? a : numOf(F.mul(a, half(F)));

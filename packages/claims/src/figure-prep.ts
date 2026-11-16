@@ -21,6 +21,7 @@ import {
   type PreparedHypothesis,
 } from './prepare';
 import { addProbes } from './probes';
+import { samplingProblem } from './sampling-domain';
 import type { SamplerFigure } from './sampler';
 
 export interface PreparedFigure extends SamplerFigure {
@@ -55,6 +56,8 @@ export function prepareFigure(doc: Document, registry: Registry): FigurePrepResu
     const v = gliderObjects.get(freeKey(id, path));
     return v?.kind === 'line' || v?.kind === 'circle' ? v.kind : undefined;
   });
+  const problem = samplingProblem(doc, free);
+  if (problem !== undefined) return { ok: false, reason: problem };
   return {
     ok: true,
     figure: {

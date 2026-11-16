@@ -5,6 +5,51 @@ docs/adr/; the test evidence is in docs/STATUS.md.
 
 ## Unreleased
 
+### Upgrading an existing session
+
+- Before reloading an older running copy, back up unfinished Text and Command input. New
+  builds protect update transitions, but cannot retrofit that guard into JavaScript already
+  running in an old tab. Valid saved figures and inactive claim/assumption data remain compatible.
+
+### Files, source editing and properties (ADR-0069, ADR-0070, ADR-0075)
+
+- Add named New/Open/Save/Save As, canonical `.geo` backups, checked share limits and portable
+  HTTPS share links from offline files. Cancelled or invalid Open preserves the current figure.
+- Keep rename, Undo/Redo, style fields and inherited visibility synchronized.
+- Add script highlighting, line diagnostics, completion and signatures using the existing
+  language; preserve source on blur and native Undo for completion/conversion. Command batches
+  replace singleton directives atomically.
+- Refuse PWA updates that would lose raw Text/IME or Command drafts, with exact backup/review
+  actions and checks after awaited saving. Preserve drafts entered during asynchronous startup.
+
+### Geometry and dependent tools (ADR-0071, ADR-0072, ADR-0074)
+
+- Preserve dependent tangent/intersection constructions beside independent coincident objects.
+- Accept semantic line pairs in selection-first tools and report failed automatic finishes.
+- Apply transformations to supported conics, annotations and panel-selected ideal points.
+- Stabilize translated area and conic geometry without weaker numeric tolerances.
+- Map pointer input, zoom anchors and raster pixels consistently through fractional CSS bounds.
+
+### Release validation (ADR-0076)
+
+- Require same-revision verification, supported-browser checks and export compilation before
+  packaging the tested website and offline file. Record source/run identity and file hashes.
+- Advertise the current website's offline file instead of a stale committed HTML snapshot.
+- Review changed visual references individually with recorded browser and font inputs.
+
+### Responsive workspace (ADR-0074)
+
+- Keep header actions reachable, including triangle type on phones, with More actions.
+- Add tool search/recent tools, keyboard palette navigation, named picks, explicit Pan,
+  selected-object Properties and a dismissible guide.
+- Collapse/resize desktop panels and use compact phone sheets while preserving drafts.
+
+### Sampling integrity (ADR-0073)
+
+- Preserve exact fixed-radius ratios through sampling and Randomize, including tiny circles beside distant geometry.
+- Refuse invalid circle radii and parameter domains with actionable feedback instead of silently repairing them or throwing.
+- Require distinct points for strict circular order; public claim testing remains disabled.
+
 ### Modal and keyboard safety (ADR-0068)
 
 - Export, Share and Debug report isolate the figure from keyboard shortcuts and background clicks.
@@ -26,7 +71,8 @@ docs/adr/; the test evidence is in docs/STATUS.md.
 - Existing claim and assumption statements remain in documents, edits, saves, shares and
   exports. Applicable assumptions still constrain Randomize.
 - The claim/discovery engine remains available to explicitly selected internal development
-  and test builds. This change does not repair its known sampler defects.
+  and test builds. Shared sampler defects are repaired; remaining reactivation gates are
+  documented in `docs/claims-reactivation.md`.
 
 ### GUI milestone 4: select first, then the tool (ADR-0064)
 

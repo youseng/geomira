@@ -45,6 +45,9 @@ export function planFetch(
   const base = new URL(scope);
   if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) return null;
   const path = decodeURIComponent(url.pathname.slice(base.pathname.length));
+  // These public release files are assembled after the app's precache list. A navigation
+  // must receive their network bytes, never the hosted app shell (ADR-0076).
+  if (path === 'geomira.html' || path === 'release.json') return null;
   if (precache.has(path)) return { kind: 'cache', key: path };
   if (req.mode === 'navigate' && precache.has('index.html'))
     return { kind: 'cache', key: 'index.html' };

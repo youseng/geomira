@@ -8,27 +8,34 @@ import {
   useRef,
   useState,
   type ReactNode,
-  type RefObject,
 } from 'react';
 import type { Scene, Undrawable } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
-import { AboutContext, UpdateBanner } from './about';
+import { AboutContext } from './about';
 import { Board } from './Board';
-import { useDiscoveryCanvas, ViewBanner } from './discovery-view';
+import { useDiscoveryCanvas } from './discovery-view';
 import { CommandBar } from './CommandBar';
-import { ErrorBanner, TextDialog } from './Dialogs';
+import { TextDialog } from './Dialogs';
 import { ExportDialog } from './ExportDialog';
-import { Header } from './Header';
+import { Header, type HeaderProps } from './Header';
+import { DocumentFiles } from './DocumentFiles';
+import { ShareDialog } from './ShareDialog';
 import { PersistencePanel } from './PersistencePanel';
-import { useAutosave, useFitOnOpen, useInternalErrors, useShortcuts, useStartup } from './hooks';
-import { reportOf, useFit, useHeader, useKeyActions, usePage, type Dialog } from './page';
-import { SidePanel, type Tab } from './SidePanel';
+import { useAutosave, useFitOnOpen, useInternalErrors, useStartup } from './hooks';
+import { useFit, useHeader, usePageShortcuts, usePage, type Dialog } from './page';
+import { SidePanel } from './SidePanel';
 import { useSettled } from './settled';
 import { SelectionBar } from './SelectionBar';
-import { ClaimChips, DevBox, NoticeLine, Stage, ZoomControls } from './Stage';
+import { ClaimChips, DevBox, Stage, ZoomControls } from './Stage';
 import type { EditorStore } from './store';
 import { StyleCard, usePreviewScene, useStyleCard } from './StyleCard';
 import { Palette, StatusLine, ToolHint } from './ToolBar';
+import { usePanels, useWorkspace } from './workspace';
+import { WorkspaceBar } from './WorkspaceBar';
+import { GettingStarted } from './GettingStarted';
+import { WorkspaceNotices } from './WorkspaceNotices';
+import { chooseTool } from '@geomira/editor/selection-tool';
+import type { ToolId } from '@geomira/editor/tool-state';
 
 /** Catches render errors: the page shows them as internal errors with the debug report. */
 class Boundary extends Component<
@@ -71,13 +78,16 @@ function DialogView(p: {
         onError={p.onError}
       />
     );
-  const share = dialog.kind === 'share';
+  if (dialog.kind === 'share')
+    return (
+      <ShareDialog text={dialog.text} problem={dialog.problem} store={p.store} onClose={onClose} />
+    );
   return (
     <TextDialog
-      title={share ? 'Share link' : 'Debug report'}
+      title="Debug report"
       text={dialog.text}
-      copyLabel={share ? 'Copy link' : 'Copy debug report'}
-      multiline={!share}
+      copyLabel="Copy debug report"
+      multiline
       onClose={onClose}
     />
   );
@@ -88,35 +98,6 @@ const Tools = memo(Palette);
 const Hint = memo(ToolHint);
 const Status = memo(StatusLine);
 const Commands = memo(CommandBar);
-
-/** Keyboard shortcuts; "/" focuses the command bar, "?" shows the help. */
-function usePageShortcuts(
-  store: EditorStore,
-  fit: () => void,
-  commandRef: RefObject<HTMLInputElement | null>,
-  toggleHelp: () => void,
-) {
-  const focusCommand = useCallback(() => commandRef.current?.focus(), [commandRef]);
-  useShortcuts(useKeyActions(store, fit, focusCommand, toggleHelp));
-}
-
-/** The panel tabs and, on a phone, whether the drawer is open. */
-function usePanels() {
-  const [tab, setTab] = useState<Tab>('Text');
-  const [open, setOpen] = useState(false);
-  const showTab = useCallback((t: Tab) => {
-    setTab(t);
-    setOpen(true);
-  }, []);
-  const toggleHelp = useCallback(() => {
-    setTab((t) => (t === 'Help' ? 'Text' : 'Help'));
-    setOpen(true);
-  }, []);
-  const close = useCallback(() => {
-    setOpen(false);
-  }, []);
-  return { tab, open, showTab, toggleHelp, close };
-}
 
 /** Fits the view after an edit once its figure is drawn (Randomize moves the figure). */
 function useFitAfterEdit(scene: Scene, fit: () => void) {
@@ -152,6 +133,12 @@ function useUndrawable() {
   return { undrawable: ids, onUndrawable };
 }
 
+function useClaimBox(props: HeaderProps['claimBox']) {
+  const test = useStable(props.test);
+  const complete = useStable(props.complete);
+  return useMemo(() => ({ test, complete }), [test, complete]);
+}
+
 /** The page's state, effects and actions. */
 function useApp() {
   const page = usePage();
@@ -160,7 +147,18 @@ function useApp() {
   const commandRef = useRef<HTMLInputElement>(null);
   const [size, setSize] = useState<Size | null>(null);
   const [ready, setReady] = useState(false);
-  const panels = usePanels();
+  const workspace = useWorkspace();
+  const panels = usePanels(workspace);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const choose = (id: ToolId) => {
+    workspace.setPan(false);
+    workspace.dismissGuide();
+    workspace.remember(id);
+    store.run((s, env) => chooseTool(s, id, env));
+  };
+  useEffect(() => {
+    workspace.setPan(false);
+  }, [workspace.setPan, snap.state.toolState]);
   const [dialog, setDialog] = useState<Dialog>(null);
   const onReady = useCallback(() => {
     setReady(true);
@@ -171,19 +169,14 @@ function useApp() {
   useInternalErrors(onInternal);
   const fit = useFit(store, size, sceneOf);
   const fitAfterEdit = useFitAfterEdit(page.scene, fit);
-  usePageShortcuts(store, fit, commandRef, panels.toggleHelp);
+  usePageShortcuts(store, fit, commandRef, panels.toggleHelp, choose);
   const canvas = useCallback(() => canvasRef.current, []);
   const header = useHeader({
     ...{ store, runs: page.runs, snap, size, ready, fit, canvas, setDialog },
     showTab: panels.showTab,
     fitAfterEdit,
   });
-  const testClaim = useStable(header.props.claimBox.test);
-  const completeClaim = useStable(header.props.claimBox.complete);
-  const claimBox = useMemo(
-    () => ({ test: testClaim, complete: completeClaim }),
-    [testClaim, completeClaim],
-  );
+  const claimBox = useClaimBox(header.props.claimBox);
   const openClaims = useStable(() => {
     panels.showTab('Claims');
   });
@@ -201,6 +194,7 @@ function useApp() {
   const found = useDiscoveryCanvas(page.discovery, store, styled, state.doc);
   return {
     ...{ page, canvasRef, commandRef, setSize, panels, dialog, setDialog, header, size },
+    ...{ workspace, searchRef, choose },
     ...useUndrawable(),
     ...{ claimBox, openClaims, style, shown: found.scene, highlight: found.highlight },
   };
@@ -209,34 +203,28 @@ function useApp() {
 /** The canvas's top-left column: the active tool's controls, internal errors, notices. */
 function StageTop({ app }: { app: ReturnType<typeof useApp> }) {
   const { page, header } = app;
-  const { store, snap } = page;
+  const { store } = page;
   return (
-    <div className="stage-top">
-      <Hint store={store} state={header.settled} />
-      {page.internal !== null && (
-        <ErrorBanner
-          message={page.internal}
-          report={() => reportOf(store)}
-          onClose={() => {
-            page.setInternal(null);
-          }}
-        />
-      )}
-      <UpdateBanner
-        onReload={() => {
-          void store.retrySaving().then((saved) => {
-            if (saved) page.about.pwa.applyUpdate(() => undefined);
-          });
+    <>
+      <GettingStarted
+        workspace={app.workspace}
+        canvasHeight={app.size?.height ?? 200}
+        fit={app.header.props.onFit}
+        store={store}
+        choose={app.choose}
+        search={app.searchRef}
+        text={() => {
+          app.panels.showTab('Text');
+        }}
+        exportFigure={() => {
+          app.setDialog({ kind: 'export', format: 'svg' });
         }}
       />
-      {CLAIM_TESTING && <ViewBanner discovery={page.discovery} />}
-      <NoticeLine
-        notice={snap.notice}
-        onClose={() => {
-          store.setNotice(null);
-        }}
-      />
-    </div>
+      <div className="stage-top">
+        <Hint store={store} state={header.settled} />
+        <SelectionBar store={store} state={header.settled} onProperties={app.style.open} />
+      </div>
+    </>
   );
 }
 
@@ -246,6 +234,7 @@ function Canvas({ app }: { app: ReturnType<typeof useApp> }) {
   return (
     <Board
       canvasRef={app.canvasRef}
+      pan={app.workspace.pan}
       store={app.page.store}
       scene={app.shown}
       viewport={state.viewport}
@@ -277,18 +266,46 @@ function StyleCardView({ app }: { app: ReturnType<typeof useApp> }) {
   );
 }
 
-function PageHeader({ app }: { app: ReturnType<typeof useApp> }) {
+function PageHeader({
+  app,
+  recoveryHost,
+}: {
+  app: ReturnType<typeof useApp>;
+  recoveryHost: HTMLElement | null;
+}) {
   return (
     <Header
       {...app.header.props}
+      documents={<DocumentFiles store={app.page.store} />}
       persistence={
         <PersistencePanel
+          outlet={recoveryHost}
           store={app.page.store}
           onRestore={() => {
             app.page.runs.clear();
           }}
         />
       }
+    />
+  );
+}
+
+function PanelView({ app }: { app: ReturnType<typeof useApp> }) {
+  return (
+    <SidePanel
+      store={app.page.store}
+      workspace={app.workspace}
+      state={app.page.snap.state}
+      scene={app.page.scene}
+      undrawable={app.undrawable}
+      runs={app.page.runs}
+      discovery={app.page.discovery}
+      tab={app.panels.tab}
+      onTab={app.panels.showTab}
+      open={app.panels.open}
+      onClose={app.panels.close}
+      claimBox={app.claimBox}
+      onStyle={app.style.open}
     />
   );
 }
@@ -302,15 +319,33 @@ function PageHeader({ app }: { app: ReturnType<typeof useApp> }) {
  */
 export function App() {
   const app = useApp();
-  const { page, commandRef, panels, dialog, setDialog, header, size } = app;
+  const { page, commandRef, dialog, setDialog, header, size } = app;
   const { store, snap, scene } = page;
-  const { state } = snap;
-  const settled = useSettled(state);
+  const settled = useSettled(snap.state);
+  const [recoveryHost, setRecoveryHost] = useState<HTMLDivElement | null>(null);
   return (
     <AboutContext.Provider value={page.about}>
-      <div className="app">
-        <PageHeader app={app} />
-        <Tools store={store} state={settled} />
+      <div
+        className={`app${app.workspace.prefs.collapsed ? ' panel-collapsed' : ''}${app.workspace.view.height < 450 ? ` short-workspace${app.workspace.toolsExpanded ? ' show-palette' : ''}` : ''}`}
+        style={app.workspace.style}
+      >
+        <PageHeader app={app} recoveryHost={recoveryHost} />
+        <WorkspaceBar
+          workspace={app.workspace}
+          inputRef={app.searchRef}
+          choose={app.choose}
+          hidePanels={app.panels.close}
+          showPanels={() => {
+            app.panels.showTab(app.panels.tab);
+          }}
+        />
+        <WorkspaceNotices
+          page={page}
+          command={commandRef}
+          onRecoveryHost={setRecoveryHost}
+          showTab={app.panels.showTab}
+        />
+        <Tools store={store} state={settled} onChoose={app.choose} />
         <Stage>
           <Canvas app={app} />
           <StageTop app={app} />
@@ -320,27 +355,13 @@ export function App() {
             stats={header.stats}
             times={header.times}
           />
-          <SelectionBar store={store} state={settled} />
-          {CLAIM_TESTING && <ClaimChips store={store} state={state} onOpen={app.openClaims} />}
+          {CLAIM_TESTING && <ClaimChips store={store} state={snap.state} onOpen={app.openClaims} />}
           <ZoomControls onZoom={header.props.onZoom} onFit={header.props.onFit} />
           <Status state={settled} />
         </Stage>
-        <Commands store={store} inputRef={commandRef} />
+        <Commands store={store} inputRef={commandRef} onApplied={app.workspace.dismissGuide} />
         <Boundary onError={page.onInternal}>
-          <SidePanel
-            store={store}
-            state={state}
-            scene={scene}
-            undrawable={app.undrawable}
-            runs={page.runs}
-            discovery={page.discovery}
-            tab={panels.tab}
-            onTab={panels.showTab}
-            open={panels.open}
-            onClose={panels.close}
-            claimBox={app.claimBox}
-            onStyle={app.style.open}
-          />
+          <PanelView app={app} />
         </Boundary>
         <StyleCardView app={app} />
         <DialogView

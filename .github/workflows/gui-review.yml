@@ -1,0 +1,69 @@
+name: GUI review images
+
+# Diagnostic evidence only. Required validation/deployment never depends on this workflow.
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gui-review-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gui:
+    name: Five GUI and four WebKit focus checks (diagnostic only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GEOMIRA_BASE: /${{ github.event.repository.name }}/
+      GEOMIRA_BUILD: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build both modes from this exact source
+        run: |
+          pnpm build
+          pnpm --filter @geomira/web build:claims
+      # Match required validation's browser/font installation, not just its Chromium binary.
+      - run: pnpm --filter @geomira/web exec playwright install --with-deps chromium firefox webkit
+      - name: Record browser and font inputs
+        run: bash scripts/browser-inputs.sh
+      - name: Public native GUI references
+        id: public_gui
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/public
+        run: pnpm --filter @geomira/web exec playwright test public-layout --project desktop --project mobile --workers 1
+      - name: Internal GUI references
+        if: ${{ !cancelled() && (steps.public_gui.outcome == 'success' || steps.public_gui.outcome == 'failure') }}
+        env:
+          GEOMIRA_ENGINE_E2E: '1'
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/internal
+        run: pnpm --filter @geomira/web exec playwright test flows-design design-mobile --grep 'screenshot baseline' --project desktop --project mobile --workers 1
+      - name: Public WebKit focus diagnostics
+        id: focus_public
+        if: ${{ !cancelled() && (steps.public_gui.outcome == 'success' || steps.public_gui.outcome == 'failure') }}
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/focus-public
+        run: pnpm --filter @geomira/web exec playwright test recovery-layout --grep 'Recovery queued visibility' --project desktop-webkit --project file-webkit --workers 1
+      - name: Internal WebKit focus diagnostics
+        if: ${{ !cancelled() && (steps.focus_public.outcome == 'success' || steps.focus_public.outcome == 'failure') }}
+        env:
+          GEOMIRA_ENGINE_E2E: '1'
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/focus-internal
+        run: pnpm --filter @geomira/web exec playwright test recovery-layout --grep 'Recovery queued visibility' --project desktop-webkit --project file-webkit --workers 1
+      - name: GUI review evidence (not a release artifact)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gui-review-${{ github.sha }}-${{ github.run_attempt }}
+          path: apps/web/playwright-report
+          if-no-files-found: error
+          retention-days: 14

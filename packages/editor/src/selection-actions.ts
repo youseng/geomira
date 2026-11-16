@@ -12,6 +12,7 @@
  */
 import { findLayer, type DocObject, type Document, type Style } from '@geomira/kernel/document';
 import { refsOf } from '@geomira/kernel/expr';
+import { documentStyles } from '@geomira/scene/style';
 import { nameProblem } from '@geomira/kernel/names';
 import { assertNever } from '@geomira/num/assert';
 import type { DocumentEdit, Edit } from './edit';
@@ -62,15 +63,19 @@ function styleEdit(
   state: EditorState,
   o: DocObject,
   kind: 'hide' | 'show' | 'hideLabels' | 'showLabels',
+  styles = documentStyles(state.doc),
 ): DocumentEdit | undefined {
   const s = o.style;
+  const hidden = styles.effective(o).hidden === true;
   const isPoint = state.values.values.get(o.id)?.kind === 'point';
   const to = (style: Style): DocumentEdit => ({ kind: 'style', id: o.id, style });
   switch (kind) {
     case 'hide':
-      return s.hidden === true ? undefined : to(restyled(s, true, s.label));
+      return hidden ? undefined : to(restyled(s, true, s.label));
     case 'show':
-      return s.hidden === true ? to(restyled(s, undefined, s.label)) : undefined;
+      return hidden
+        ? to(restyled(s, styles.inherited(o).hidden === true ? false : undefined, s.label))
+        : undefined;
     case 'hideLabels':
       return labelShown(o, isPoint) ? to(restyled(s, s.hidden, '')) : undefined;
     case 'showLabels':
@@ -162,8 +167,10 @@ function editsOf(
     case 'hide':
     case 'show':
     case 'hideLabels':
-    case 'showLabels':
-      return objects.flatMap((o) => styleEdit(state, o, action.kind) ?? []);
+    case 'showLabels': {
+      const styles = documentStyles(state.doc);
+      return objects.flatMap((o) => styleEdit(state, o, action.kind, styles) ?? []);
+    }
     case 'remove':
       return removeEdits(state, objects);
     case 'toLayer':
@@ -191,8 +198,9 @@ export const SELECTION_NAMES = 3;
 
 export function selectionSummary(state: EditorState): SelectionSummary {
   const objects = selected(state);
+  const styles = documentStyles(state.doc);
   const can = (kind: 'hide' | 'show' | 'hideLabels' | 'showLabels'): boolean =>
-    objects.some((o) => styleEdit(state, o, kind) !== undefined);
+    objects.some((o) => styleEdit(state, o, kind, styles) !== undefined);
   return {
     count: objects.length,
     text:
@@ -211,9 +219,10 @@ export function selectionSummary(state: EditorState): SelectionSummary {
  * construction order. Hidden objects are selected from the Objects panel, where they are listed.
  */
 export function selectableIds(state: EditorState): number[] {
+  const styles = documentStyles(state.doc);
   const visible = new Set(state.doc.layers.filter((l) => l.visible).map((l) => l.id));
   return state.doc.objects
-    .filter((o) => o.style.hidden !== true && o.layers.some((l) => visible.has(l)))
+    .filter((o) => styles.effective(o).hidden !== true && o.layers.some((l) => visible.has(l)))
     .map((o) => o.id);
 }
 

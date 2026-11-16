@@ -1,4 +1,13 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { logicalPoint, clientPoint } from './surface-coordinates';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+  type PointerEvent as ReactPointerEvent,
+  type MouseEvent as ReactMouseEvent,
+} from 'react';
 import { toolPreview } from '@geomira/editor/preview';
 import type { ToolState } from '@geomira/editor/tool-state';
 import { layout, type DisplayList } from '@geomira/scene/display';
@@ -22,6 +31,7 @@ import type { EditorStore } from './store';
 import { useSurface, useWheelZoom } from './surface';
 
 export interface BoardProps {
+  readonly pan?: boolean;
   readonly canvasRef: RefObject<HTMLCanvasElement | null>;
   readonly store: EditorStore;
   readonly scene: Scene;
@@ -121,8 +131,14 @@ function useFrame(props: BoardProps, display: DisplayList | null) {
     const ctx = canvasRef.current?.getContext('2d');
     if (display === null || ctx === null || ctx === undefined) return;
     const ui: UiState = { hover, selection: selected, highlight: ringed };
-    drawDisplay(ctx, display, ui, LIGHT_THEME, window.devicePixelRatio);
-    if (preview !== null) drawPreview(ctx, preview, LIGHT_THEME, window.devicePixelRatio);
+    const canvas = canvasRef.current;
+    if (canvas === null) return;
+    const scale = {
+      x: canvas.width / display.view.size.width,
+      y: canvas.height / display.view.size.height,
+    };
+    drawDisplay(ctx, display, ui, LIGHT_THEME, scale);
+    if (preview !== null) drawPreview(ctx, preview, LIGHT_THEME, scale);
   }, [canvasRef, display, hover, selected, ringed, fonts, preview]);
   return { cursor, setCursor };
 }
@@ -160,8 +176,10 @@ function useGestures(props: BoardProps, setBox: (box: DrawnBox | null) => void):
       onHold: (q, display) => {
         const id = pressedObject(display, q, metrics());
         const r = canvasRef.current?.getBoundingClientRect();
-        if (id !== undefined && r !== undefined)
-          onStyle.current(id, around(r.left + q.x, r.top + q.y, ANCHOR_PX));
+        if (id !== undefined && r !== undefined) {
+          const at = clientPoint(q, r, display.view.size);
+          onStyle.current(id, around(at.x, at.y, ANCHOR_PX));
+        }
       },
     };
     const scene = () => sceneRef.current;
@@ -181,9 +199,9 @@ interface ClientPoint {
 }
 
 /** A pointer event's place on the canvas, in CSS px from its corner. */
-function localOf(canvas: HTMLCanvasElement | null, e: ClientPoint): Vec2 {
+function localOf(canvas: HTMLCanvasElement | null, e: ClientPoint, size: Size): Vec2 | null {
   const r = canvas?.getBoundingClientRect();
-  return { x: e.clientX - (r?.left ?? 0), y: e.clientY - (r?.top ?? 0) };
+  return r === undefined ? null : logicalPoint({ x: e.clientX, y: e.clientY }, r, size);
 }
 
 /** Whether Shift, Ctrl or Cmd is held. */
@@ -212,19 +230,88 @@ function BoxOverlay({ box }: { box: DrawnBox | null }) {
   return <div className="selbox" style={style} aria-hidden="true" />;
 }
 
+/** DOM pointer orchestration over the same logical display used to paint the canvas. */
+function pointerEvents(
+  props: BoardProps,
+  display: DisplayList | null,
+  gestures: Gestures,
+  cursor: Vec2 | null,
+  setCursor: (p: Vec2 | null) => void,
+  rightPress: RefObject<boolean>,
+) {
+  const { canvasRef, store, onStyle } = props;
+  const local = (e: ClientPoint) =>
+    display === null ? null : localOf(canvasRef.current, e, display.view.size);
+  return {
+    onPointerDown: (e: ReactPointerEvent<HTMLCanvasElement>) => {
+      const at = local(e);
+      if (display === null || at === null) return;
+      const press = props.pan === true ? 'pan' : pressOf(e);
+      rightPress.current = press === 'right';
+      // Leave a focused field first, so its blur (the text panel applies its draft) comes
+      // before the press starts a drag, which would refuse the text (Run 10 audit).
+      const focused = document.activeElement;
+      if (focused instanceof HTMLElement && focused !== e.currentTarget) focused.blur();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      gestures.down(e.pointerId, at, display, e.pointerType !== 'mouse', press);
+    },
+    onContextMenu: (e: ReactMouseEvent<HTMLCanvasElement>) => {
+      // No browser menu on the canvas; on an object or its label, its style card (ADR-0029).
+      e.preventDefault();
+      // A mouse's right press opens the card itself when released (gestures.ts, ADR-0062).
+      const at = local(e);
+      if (display === null || rightPress.current || at === null) return;
+      const id = pressedObject(display, at, labelMetrics(canvasRef.current));
+      if (id === undefined) return;
+      gestures.endPress();
+      onStyle(id, around(e.clientX, e.clientY, ANCHOR_PX));
+    },
+    onPointerMove: (e: ReactPointerEvent<HTMLCanvasElement>) => {
+      const at = local(e);
+      if (display === null || at === null) return;
+      gestures.move(e.pointerId, at, display);
+      // The preview follows a mouse while a construction tool is active (not a drag's frames).
+      const tooling =
+        props.pan !== true && e.pointerType === 'mouse' && store.current().tool !== 'move';
+      if (tooling || cursor !== null) setCursor(tooling ? at : null);
+    },
+    onPointerUp: (e: ReactPointerEvent<HTMLCanvasElement>) => {
+      // Shift or Ctrl (Cmd): the click or the box adds to the selection (ADR-0060, ADR-0062).
+      const at = local(e);
+      if (display !== null && at !== null) gestures.up(e.pointerId, at, display, extending(e));
+    },
+    onPointerCancel: (e: ReactPointerEvent<HTMLCanvasElement>) => {
+      gestures.cancel(e.pointerId);
+    },
+    onPointerLeave: () => {
+      gestures.leave();
+      setCursor(null);
+    },
+  };
+}
+
 export function Board(props: BoardProps) {
-  const { canvasRef, store, scene, viewport, onSize, onUndrawable, onStyle } = props;
+  const { canvasRef, scene, viewport, onSize, onUndrawable } = props;
   const [box, setBox] = useState<DrawnBox | null>(null);
   const gestures = useGestures(props, setBox);
   const rightPress = useRef(false);
   const size = useSurface(canvasRef, onSize);
-  useWheelZoom(canvasRef, store, size);
+  useWheelZoom(canvasRef, props.store, size);
   const display = useDisplay(scene, viewport, size, onUndrawable);
   const { cursor, setCursor } = useFrame(props, display);
-  const local = (e: ClientPoint) => localOf(canvasRef.current, e);
+  const events = pointerEvents(props, display, gestures, cursor, setCursor, rightPress);
+  const rect =
+    box === null || size === null ? undefined : canvasRef.current?.getBoundingClientRect();
+  const overlay =
+    box === null || size === null || rect === undefined
+      ? box
+      : {
+          a: { x: (box.a.x * rect.width) / size.width, y: (box.a.y * rect.height) / size.height },
+          b: { x: (box.b.x * rect.width) / size.width, y: (box.b.y * rect.height) / size.height },
+        };
   return (
     <>
-      <BoxOverlay box={box} />
+      <BoxOverlay box={overlay} />
       <canvas
         ref={canvasRef}
         className="board"
@@ -234,45 +321,7 @@ export function Board(props: BoardProps) {
         data-cx={viewport.cx}
         data-cy={viewport.cy}
         data-zoom={viewport.zoom}
-        onPointerDown={(e) => {
-          if (display === null) return;
-          const press = pressOf(e);
-          rightPress.current = press === 'right';
-          // Leave a focused field first, so its blur (the text panel applies its draft) comes
-          // before the press starts a drag, which would refuse the text (Run 10 audit).
-          const focused = document.activeElement;
-          if (focused instanceof HTMLElement && focused !== e.currentTarget) focused.blur();
-          e.currentTarget.setPointerCapture(e.pointerId);
-          gestures.down(e.pointerId, local(e), display, e.pointerType !== 'mouse', press);
-        }}
-        onContextMenu={(e) => {
-          // No browser menu on the canvas; on an object or its label, its style card (ADR-0029).
-          e.preventDefault();
-          // A mouse's right press opens the card itself when released (gestures.ts, ADR-0062).
-          if (display === null || rightPress.current) return;
-          const id = pressedObject(display, local(e), labelMetrics(canvasRef.current));
-          if (id === undefined) return;
-          gestures.endPress();
-          onStyle(id, around(e.clientX, e.clientY, ANCHOR_PX));
-        }}
-        onPointerMove={(e) => {
-          if (display === null) return;
-          gestures.move(e.pointerId, local(e), display);
-          // The preview follows a mouse while a construction tool is active (not a drag's frames).
-          const tooling = e.pointerType === 'mouse' && store.current().tool !== 'move';
-          if (tooling || cursor !== null) setCursor(tooling ? local(e) : null);
-        }}
-        onPointerUp={(e) => {
-          // Shift or Ctrl (Cmd): the click or the box adds to the selection (ADR-0060, ADR-0062).
-          if (display !== null) gestures.up(e.pointerId, local(e), display, extending(e));
-        }}
-        onPointerCancel={(e) => {
-          gestures.cancel(e.pointerId);
-        }}
-        onPointerLeave={() => {
-          gestures.leave();
-          setCursor(null);
-        }}
+        {...events}
       />
     </>
   );

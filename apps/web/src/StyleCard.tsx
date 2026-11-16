@@ -11,7 +11,6 @@
  * document (an undo while the card is open shows the style before).
  */
 import {
-  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
@@ -28,7 +27,9 @@ import type { Value, ValueKind } from '@geomira/kernel/value';
 import { assertNever } from '@geomira/num/assert';
 import { buildScene } from '@geomira/scene/build';
 import type { Scene } from '@geomira/scene/types';
+import { documentStyles } from '@geomira/scene/style';
 import { placeCard, type Box } from './card-place';
+import { useViewport } from './workspace';
 import { usePopoverFocus } from './popover-focus';
 import { MathText } from './MathText';
 import type { EditorStore } from './store';
@@ -37,7 +38,6 @@ import {
   changedFields,
   inheritedStyle,
   kindName,
-  sameStyle,
   type Field,
   type MoreField,
 } from './style-draft';
@@ -57,56 +57,8 @@ import {
   type RowProps,
 } from './StyleRows';
 
-/** The open card: its object, where it was opened, the style it shows, and the typed name. */
-export interface OpenCard {
-  readonly id: number;
-  readonly anchor: Box;
-  readonly draft: Style;
-  /** The Name field's text; absent while untouched (the field shows the current name). */
-  readonly name?: string;
-}
-
-/** The card's state: open (on an object, next to an anchor), the draft, the name, close. */
-export function useStyleCard(store: EditorStore) {
-  const [card, setCard] = useState<OpenCard | null>(null);
-  const open = useCallback(
-    (id: number, anchor: Box) => {
-      const o = store.current().doc.objects.find((x) => x.id === id);
-      if (o === undefined) return;
-      // The same object's card stays as it is (a touch's contextmenu after its long press).
-      setCard((c) => (c !== null && c.id === id ? c : { id, anchor, draft: o.style }));
-      store.apply({ kind: 'select', ids: [id], mode: 'replace' });
-    },
-    [store],
-  );
-  // The card shows the object's style as the document has it (after an undo, a text edit).
-  useEffect(
-    () =>
-      store.subscribe(() => {
-        setCard((c) => {
-          if (c === null) return c;
-          const o = store.current().doc.objects.find((x) => x.id === c.id);
-          return o === undefined || sameStyle(o.style, c.draft) ? c : { ...c, draft: o.style };
-        });
-      }),
-    [store],
-  );
-  const close = useCallback(() => {
-    setCard(null);
-  }, []);
-  const setDraft = useCallback((draft: Style) => {
-    setCard((c) => (c === null ? c : { ...c, draft }));
-  }, []);
-  /** The typed name; undefined: untouched again (the field follows the object's name). */
-  const setName = useCallback((name: string | undefined) => {
-    setCard((c) => {
-      if (c === null) return c;
-      const rest = { id: c.id, anchor: c.anchor, draft: c.draft };
-      return name === undefined ? rest : { ...rest, name };
-    });
-  }, []);
-  return { card, open, close, setDraft, setName };
-}
+export { useStyleCard, type OpenCard } from './use-style-card';
+import type { OpenCard } from './use-style-card';
 
 /**
  * The scene the canvas draws: the figure's, or with the card's draft over its object (and
@@ -143,12 +95,13 @@ function useCloseOutside(ref: RefObject<HTMLDivElement | null>, onClose: () => v
 /** The card's position: measured, then placed by its anchor inside the viewport. */
 function usePlacement(ref: RefObject<HTMLDivElement | null>, anchor: Box, more: boolean) {
   const [at, setAt] = useState<{ left: number; top: number } | null>(null);
+  const view = useViewport();
   useLayoutEffect(() => {
     const el = ref.current;
     if (el === null) return;
     const size = { width: el.offsetWidth, height: el.offsetHeight };
-    setAt(placeCard(anchor, size, { width: innerWidth, height: innerHeight }));
-  }, [ref, anchor, more]);
+    setAt(placeCard(anchor, size, view));
+  }, [ref, anchor, more, view.width, view.height]);
   return at ?? { left: 0, top: 0, visibility: 'hidden' as const };
 }
 
@@ -323,6 +276,20 @@ function useLive(store: EditorStore, o: DocObject, shown: Style, onDraft: (s: St
   };
 }
 
+/** Recheck against the live document; outside-close may already have committed blur. */
+function renameCurrent(
+  store: EditorStore,
+  id: number,
+  typed: string | undefined,
+  clear: (name: undefined) => void,
+): void {
+  const doc = store.current().doc;
+  const current = doc.objects.find((x) => x.id === id);
+  if (current === undefined) return;
+  const checked = cardWrite(doc, store.env.registry, current, typed, current.style);
+  if (checked.edit !== null && store.apply(checked.edit).ok) clear(undefined);
+}
+
 function Card(p: StyleCardProps & { o: DocObject }) {
   const { store, state, card, onDraft, onName, onClose, o } = p;
   const ref = usePopoverFocus(onClose);
@@ -335,7 +302,9 @@ function Card(p: StyleCardProps & { o: DocObject }) {
   const value = state.values.values.get(o.id);
   const kind = cardKindFor(o, value, fixed);
   const fields = cardFields(kind, { ...inherited, ...card.draft });
-  const note = notDrawnNote(o, kind, { ...inherited, ...card.draft });
+  const note =
+    notDrawnNote(o, kind, { ...inherited, ...card.draft }) ??
+    documentStyles(state.doc).restriction(o);
   const live = useLive(store, o, card.draft, onDraft);
   const rows: RowProps = { name: o.name, kind, draft: card.draft, inherited, set: live };
   // The name alone: the style is applied as it changes.
@@ -344,8 +313,7 @@ function Card(p: StyleCardProps & { o: DocObject }) {
     [state.doc, store, o, card.name],
   );
   const onRename = () => {
-    // After a rename the field follows the object's name again (an undo shows the old one).
-    if (write.edit !== null && store.apply(write.edit).ok) onName(undefined);
+    renameCurrent(store, o.id, card.name, onName);
   };
   return (
     <div

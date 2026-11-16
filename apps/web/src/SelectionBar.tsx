@@ -3,6 +3,7 @@ import {
   selectionSummary,
   type SelectionAction,
 } from '@geomira/editor/selection-actions';
+import type { Box } from './card-place';
 import type { EditorState } from '@geomira/editor/state';
 import type { EditorStore } from './store';
 
@@ -25,6 +26,7 @@ export function EyeIcon({ open }: { open: boolean }) {
 export interface SelectionBarProps {
   readonly store: EditorStore;
   readonly state: EditorState;
+  readonly onProperties?: (id: number, anchor: Box) => void;
 }
 
 type Run = (action: SelectionAction) => void;
@@ -74,7 +76,7 @@ function LayerSelect({ state, run }: { state: EditorState; run: Run }) {
  * decisions are packages/editor's (selection-actions.ts); a refusal (a locked layer) is the
  * store's notice, as for any edit.
  */
-export function SelectionBar({ store, state }: SelectionBarProps) {
+export function SelectionBar({ store, state, onProperties }: SelectionBarProps) {
   const sum = selectionSummary(state);
   if (sum.count === 0) return null;
   const run: Run = (action) => {
@@ -89,6 +91,18 @@ export function SelectionBar({ store, state }: SelectionBarProps) {
       <span className="selbar-what" title="Shift+click or Ctrl+click adds or removes an object">
         {sum.text}
       </span>
+      {state.selection.length === 1 && onProperties !== undefined && (
+        <button
+          type="button"
+          className="tb small-tb"
+          onClick={(e) => {
+            const id = state.selection[0];
+            if (id !== undefined) onProperties(id, e.currentTarget.getBoundingClientRect());
+          }}
+        >
+          Properties
+        </button>
+      )}
       {sum.canHide && action('Hide', 'Hide the selected objects', { kind: 'hide' })}
       {sum.canShow && action('Show', 'Show the selected objects', { kind: 'show' })}
       {sum.canHideLabels &&

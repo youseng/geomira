@@ -1,5 +1,8 @@
+import { recipientUrl } from './share-recipient';
+import { SITE_URL } from '../src/build-info';
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { nativeWorldPoint, pointText } from './native-pointer';
 import {
   claimItem,
   clickWorld,
@@ -31,17 +34,17 @@ async function openSingle(page: Page): Promise<{ errors: string[]; requests: str
   return { errors, requests };
 }
 
-/** Draws the triangle A(0, 0), B(4, 0), C(1, 3) with the polygon tool. */
+/** Draws near A(0,0), B(4,0), C(1,3), comparing the exact delivered native coordinates. */
 async function drawTriangle(page: Page): Promise<void> {
   await tool(page, 'Polygon');
-  for (const [x, y] of [
-    [0, 0],
-    [4, 0],
-    [1, 3],
-    [0, 0],
-  ] as const)
-    await clickWorld(page, x, y);
-  await expectLines(page, 'A = (0, 0)', 'B = (4, 0)', 'C = (1, 3)');
+  const a = await nativeWorldPoint(page, () => clickWorld(page, 0, 0));
+  const b = await nativeWorldPoint(page, () => clickWorld(page, 4, 0));
+  const c = await nativeWorldPoint(page, () => clickWorld(page, 1, 3));
+  await clickWorld(page, 0, 0);
+  await expectLines(page, `A = ${pointText(a)}`, `B = ${pointText(b)}`, `C = ${pointText(c)}`);
+  expect(await text(page)).toBe(
+    `@version 1\nA = ${pointText(a)}\nB = ${pointText(b)}\nC = ${pointText(c)}\npoly = polygon(ABC)\n`,
+  );
 }
 
 /** Runs the local test of the claim; the assume line makes the global test follow. */
@@ -130,7 +133,8 @@ test('a share link from the file opens the same figure', async ({ page, context 
   await openSingle(page);
   await drawTriangle(page);
   await command(page, 'M = midpoint(A, B)');
-  await expectLines(page, 'M = midpoint(A, B)');
+  await command(page, 'claim collinear(A, B, C)');
+  await expectLines(page, 'M = midpoint(A, B)', 'claim collinear(A, B, C)');
   const figure = await text(page);
   await page.getByRole('button', { name: 'Export', exact: true }).click();
   await page.getByRole('button', { name: 'Share link' }).click();
@@ -140,10 +144,10 @@ test('a share link from the file opens the same figure', async ({ page, context 
     .inputValue();
   const self = page.url().split('#')[0] ?? '';
   expect(self.startsWith('file://')).toBe(true);
-  expect(link.startsWith(`${self}#s=`)).toBe(true);
+  expect(link.startsWith(`${SITE_URL}#s=`)).toBe(true);
   expect(link).toMatch(/#s=[A-Za-z0-9+\-$]+$/u);
   const other = await context.newPage();
-  const errors = await openApp(other, link);
+  const errors = await openApp(other, recipientUrl(link));
   await expect(await textArea(other)).toHaveValue(figure);
   expect(errors).toEqual([]);
 });
@@ -181,7 +185,7 @@ test('views from the file: save and switch; the share link and a reload keep the
     .getByRole('textbox')
     .inputValue();
   const other = await context.newPage();
-  const otherErrors = await openApp(other, link);
+  const otherErrors = await openApp(other, recipientUrl(link));
   await expect(await textArea(other)).toHaveValue(figure);
   await tab(other, 'Layers');
   await other.getByRole('button', { name: 'Show view bare', exact: true }).click();

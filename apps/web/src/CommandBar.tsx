@@ -4,9 +4,12 @@ import { acceptCompletion, completions, type Completion } from '@geomira/editor/
 import type { Diagnostic } from '@geomira/lang/diagnostic';
 import { DiagnosticList } from './panels/TextPanel';
 import type { EditorStore } from './store';
+import { insertCompletion } from './native-completion';
+import { useCompletionCaret } from './completion-caret';
 
 export interface CommandBarProps {
   readonly store: EditorStore;
+  readonly onApplied?: () => void;
   readonly inputRef: RefObject<HTMLInputElement | null>;
 }
 
@@ -15,9 +18,21 @@ interface Feedback {
   readonly diagnostics: readonly Diagnostic[];
 }
 
+/** Successful commands also finish first-use guidance without parsing the language twice. */
+function runLine(store: EditorStore, line: string, onApplied: CommandBarProps['onApplied']) {
+  const result = store.command(line);
+  if (result?.kind === 'edit') onApplied?.();
+  return result;
+}
+
 /** The command bar's state: the line, its cursor, the completions and the last error. */
-function useCommandBar(store: EditorStore, inputRef: CommandBarProps['inputRef']) {
+function useCommandBar(
+  store: EditorStore,
+  inputRef: CommandBarProps['inputRef'],
+  onApplied: CommandBarProps['onApplied'],
+) {
   const [text, setText] = useState('');
+  const restoreCaret = useCompletionCaret(text, inputRef);
   const [cursor, setCursor] = useState(0);
   const [active, setActive] = useState(0);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -31,12 +46,13 @@ function useCommandBar(store: EditorStore, inputRef: CommandBarProps['inputRef']
   );
   const accept = (c: Completion) => {
     const r = acceptCompletion(text, cursor, c);
+    insertCompletion(inputRef.current, r.cursor - c.insert.length, cursor, c.insert);
+    restoreCaret(r.text, r.cursor);
     setText(r.text);
     setCursor(r.cursor);
-    requestAnimationFrame(() => inputRef.current?.setSelectionRange(r.cursor, r.cursor));
   };
   const run = () => {
-    const r = store.command(text);
+    const r = runLine(store, text, onApplied);
     if (r === undefined) return;
     if (r.kind === 'edit') {
       setText('');
@@ -45,6 +61,7 @@ function useCommandBar(store: EditorStore, inputRef: CommandBarProps['inputRef']
     } else setFeedback({ reason: r.reason, diagnostics: r.diagnostics });
   };
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return;
     const chosen = list[active];
     if (e.key === 'Enter') run();
     else if (e.key === 'Tab' && chosen !== undefined) accept(chosen);
@@ -78,8 +95,8 @@ function useCommandBar(store: EditorStore, inputRef: CommandBarProps['inputRef']
  * parser as the text, one edit). Completions come from the registry, the objects, the
  * keywords and the tools: Tab or a click accepts, the arrows choose.
  */
-export function CommandBar({ store, inputRef }: CommandBarProps) {
-  const c = useCommandBar(store, inputRef);
+export function CommandBar({ store, inputRef, onApplied }: CommandBarProps) {
+  const c = useCommandBar(store, inputRef, onApplied);
   return (
     <div className="cmdbar">
       <span className="pr" aria-hidden="true">

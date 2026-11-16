@@ -40,8 +40,8 @@ may enable them; URL parameters, persisted settings and document data cannot do 
 
 `claim` and `assume` remain language/document data, preserved through parsing, printing, edits,
 rename, undo, saving, sharing and reopening. Randomize retains applicable assumptions and the
-shared sampling dependencies. This containment does not fix or endorse the sampler: the fixed
-radius-ratio reproduction in ADR-0065 remains a known engine issue for separate work.
+shared sampling dependencies. ADR-0073 preserves fixed-radius ratios and validates sampled
+domains; unresolved retained-engine reactivation gates are in `docs/claims-reactivation.md`.
 
 ## 2. Repository and dependency rules
 packages/num      tolerance, noise floor, seeded RNG, Field<T>: Float, Rational, ModP
@@ -146,7 +146,10 @@ Generic over the number type T:
   symmetric 3×3 matrix), so one point set has one value; only non-degenerate real conics; the
   type (ellipse, parabola, hyperbola) is derived, never stored; `anchor` a known point (gliders,
   conic_to_circle). A circle is never a conic: circle tools keep returning circles; a projective
-  map's image of a circle or conic is a conic.
+  map's image of a circle or conic is a conic. Float values may additionally retain an immutable
+  local polynomial chart `Q(origin + Y)` (ADR-0072) so translation does not discard useful
+  precision. Numeric consumers preserve/use this chart; document syntax and the canonical
+  six-coefficient exact representation remain unchanged.
 - `Undefined { kind:'undefined', reason }` and `Inexact { kind:'inexact', reason }`.
 Reserved kinds (documented only): Locus. Capabilities: point; curve
 (line | circle); linear; round; number; transform; polygon; and (ADR-0040) ideal, ppoint (a
@@ -348,6 +351,13 @@ otherwise by rejection, with a retry budget of 50·N and a "hard to satisfy" rep
 For exact rungs, samples are rounded to a coarse rational grid (denominators ≈ 2^10) and
 glider parameters to coarse rationals.
 
+Fixed literal radii are construction constants, multiplied by one exact rational common
+similarity scale; neither the sampler nor Randomize rounds them independently onto the
+coordinate grid. Invalid sampled inputs (including unrelated ones) refuse Randomize and
+return structured invalid retained jobs before any RNG domain call. Do not repair zero or
+negative radii, swap bounds or discard objects. Strict circular order requires distinct
+points using the existing BAND margin. Public claim testing remains disabled.
+
 ### 10.5 Verdict rungs and verdicts
 Per sample, the first rung that applies:
 1. EXACT OVER Q: the claim's closure runs over RationalField without `Inexact`, within a
@@ -422,7 +432,13 @@ Shift or Ctrl held adds the clicked object or takes it out, Ctrl+A selects what 
 the actions on a selection (hide, show, labels, move to a layer, remove) are one batch each
 (ADR-0060). The style card applies every change at once, one undo per control (`liveStyle`,
 ADR-0063). Objects selected in the Move tool become the picks of the tool chosen next, in
-selection order (ADR-0064). With the mouse, a left drag on empty canvas in the Move tool draws a selection box
+selection order (ADR-0064). Input consumption uses the same sequential machine, including
+line-or-two-points slots and partial pairs; automatic finish refusals are reported immediately
+with retryable picks (ADR-0071). Tangent/intersection candidate reuse requires construction
+facts as well as current geometric coincidence, preserving independent coincident objects.
+Apply transformation accepts its full supported shape set, including conics and annotations;
+ideal points can be selected in Objects, since they have no canvas hit shape. Image sugar
+retains its own narrower input capabilities (ADR-0071). With the mouse, a left drag on empty canvas in the Move tool draws a selection box
 (the objects wholly inside it are selected) and the right button pans (ADR-0062). Drags are coalesced (a label drag, ADR-0049, writes its offset), and so is
 the text panel's typing session (replaceText with `typing: 'start' | 'continue'`: one history
 entry until any other action; ADR-0047); at drag end values are rounded to the FINER of the
@@ -441,7 +457,14 @@ History is bounded to ten ordinary revisions per document, 128 revisions and 8 M
 sole document copies, unresolved conflicts and restore predecessors are protected. Capacity
 failure refuses a save instead of evicting protected data. Legacy current/previous slots
 migrate together after whole-document validation, retaining originals until commit.
-See `docs/persistence.md` for the integration interface and lifecycle/platform limits. Share link `#s=` + lz-string(text). Debug report: text, app version, last 50
+See `docs/persistence.md` for the integration interface and lifecycle/platform limits. Portable documents (ADR-0069):
+File offers named New/Open/Save/Save As with canonical `.geo` input/download fallback.
+Complete file validation precedes replacement; unapplied drafts and failed recovery require
+explicit user choices. Duplicate documents have separate recovery identities. Downloads
+acknowledge a request independently of local save state. Checked share offers respect both
+existing decoder limits; offline senders link to the configured canonical HTTPS application.
+See `docs/document-files.md` for limits, draft behavior and privacy.
+ Share link `#s=` + lz-string(text). Debug report: text, app version, last 50
 edits, user agent.
 
 ## 13. Scene and rendering (packages/scene)
@@ -475,6 +498,26 @@ example's TikZ and standalone Asymptote and checks Asymptote's `write()` coordin
 against the kernel (≤ 1e-6·scale).
 
 ## 15. Web app
+Workspace navigation (ADR-0074): headers wrap at constrained widths, with triangle type
+and Settings under More actions when needed. A filtered registry-backed tool search and
+recent list choose through the same selection-input machine as the palette. The full
+palette uses one roving tab stop and orientation-aware arrows/Home/End. Current-tool status
+names picked objects and the expected next input. Explicit Pan preserves existing gestures
+and wheel zoom; Properties opens the selected object's existing card.
+Desktop panels collapse and resize with a reserved canvas width. Tool, selection and Zoom
+controls occupy a constant strip outside the drawable canvas. Critical notices and recovery
+actions stay in normal page flow; compact/expanded phone panels preserve at least 120 pixels
+each of exposed drawing and visible source. Native focus and page navigation preserve access
+to the figure, panel controls, palette and command bar at short heights. Workspace preferences are separate
+best-effort browser state, never geometry history or evidence of a saved document.
+First-use guidance cannot replace existing geometry or unapplied text. See docs/workspace.md.
+
+Property cards (ADR-0070) commit a valid pending name before close/switch, including
+Escape; invalid or locked drafts leave a persistent refusal. Fields follow undo/redo and
+external document changes while preserving local partial input. Object visibility controls
+use the scene's inherited style. Show writes `hidden=false` only to override inherited
+hiding; otherwise it removes `hidden`. Layer visibility and opacity remain separate.
+
 Modal dialogs (ADR-0068): Export, Share and Debug report share a native modal boundary.
 Focus enters the named dialog; Tab stays among its visible enabled controls (or the dialog
 itself when empty). The background is inert to pointer, keyboard and assistive navigation.
@@ -546,3 +589,26 @@ in their ideal point; tools that do not declare it give Undefined with a reason,
 built in Run 16b (ADR-0042: the capability `conic`; a conic where no overload takes one gives
 Undefined "k is a conic: <tool> does not take one", E2, tested in every argument position).
 E9 File versioning and migrations. E10 Registry-driven UI and docs.
+
+### Release candidate provenance and gates (ADR-0076)
+
+A public release is the same artifact tested by a same-revision validation graph: full
+verification, supported public/internal browser flows and export compilation must all succeed
+before the Pages artifact is packaged. Missing, skipped, cancelled or unfinished prerequisites
+cannot authorize publication. Only the default branch may publish, and an obsolete source is
+refused immediately before deployment. PR validation has no publication credentials.
+
+The stable public `geomira.html` download is copied from the tested public single-file build
+and delivered with the website. `release.json` records the full source SHA, run, base and
+checksums; deployment consumes those bytes without rebuilding. The source repository does not
+carry a separately maintained executable snapshot. Nightly mutation remains a separate policy.
+
+### Source editing assistance (ADR-0075)
+
+The Text panel keeps a native accessible textarea, synchronized line numbers and decorative
+lexer highlighting. Registry-based completion and signature help do not execute document
+statements. Diagnostics select their source spans. IME input commits only its final composition;
+valid text keeps the existing 500 ms apply/coalescing policy and stale-draft protection.
+Blur applies valid current text while preserving its formatting; explicit Apply text/Ctrl+Enter
+may format it. Construction edits regenerate clean text with an explanation, preserving pending
+stale drafts. Command-style semicolon conversion is explicit and does not alter file grammar.
