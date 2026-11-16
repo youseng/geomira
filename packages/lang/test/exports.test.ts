@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import pkg from '../package.json' with { type: 'json' };
 import * as canonical from '../src/canonical';
+import * as lexer from '../src/lexer';
 import * as diagnostic from '../src/diagnostic';
 import * as docs from '../src/docs';
 import * as grammar from '../src/grammar';
@@ -20,6 +21,7 @@ import * as printShortMod from '../src/print-short';
 import * as statementsMod from '../src/statements';
 
 const SURFACE: Record<string, { module: object; names: string[] }> = {
+  './lexer': { module: lexer, names: ['lexLine'] },
   './parse': { module: parse, names: ['parse'] },
   './print': { module: print, names: ['print'] },
   './print-short': { module: printShortMod, names: ['printShort'] },
