@@ -51,7 +51,9 @@ test('files: named duplicate downloads canonical data and reopens as an independ
   await upload(page, canonical);
   await dialog.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(await textArea(page)).toHaveValue(/claim A = A/u);
-  await expect(page.getByRole('tab', { name: 'Claims', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: 'Claims', exact: true })).toHaveCount(
+    process.env['GEOMIRA_ENGINE_E2E'] === '1' ? 1 : 0,
+  );
 });
 
 test('files: cancelling replacement preserves invalid draft, document and undo history', async ({

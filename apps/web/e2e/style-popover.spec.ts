@@ -111,8 +111,10 @@ test('Escape and a click elsewhere close the card and keep what it applied', asy
   // A click elsewhere on the page closes it too.
   await rightClick(page, 1, 3);
   await card.getByRole('button', { name: 'red', exact: true }).click();
-  await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
+  // The floating phone card can cover the canvas zoom control; View stays reachable.
+  await page.getByRole('button', { name: 'View', exact: true }).click();
   await expect(card).toHaveCount(0);
+  await page.keyboard.press('Escape');
   expect(await source(page)).toMatch(/^C = \(1, 3\) \[color=red\]$/mu);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect.poll(() => source(page)).toMatch(/^C = \(1, 3\) \[color=blue\]$/mu);
@@ -170,12 +172,12 @@ test('empty canvas: no card and no browser menu; the Objects panel opens cards t
   await page.mouse.click(box.x + 15, box.y + box.height - 15, { button: 'right' });
   await expect(page.locator('body')).toHaveAttribute('data-menu', 'prevented');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  // A row of the Objects panel; another object's card replaces it (A's row is above B's, so
-  // the card of B, below B's row on a phone, leaves it uncovered).
+  // A row of the Objects panel; another object's card replaces it. On a phone the
+  // clamped card can cover A's name, so use the exposed visibility end of that same row.
   await tab(page, 'Objects');
   await page.getByRole('button', { name: 'B', exact: true }).click({ button: 'right' });
   await expect(page.getByRole('dialog', { name: 'Style of B' })).toBeVisible();
-  await page.getByRole('button', { name: 'A', exact: true }).click({ button: 'right' });
+  await page.getByRole('button', { name: 'Hide A', exact: true }).click({ button: 'right' });
   await expect(page.getByRole('dialog', { name: 'Style of A' })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(1);
   // The Style tab is gone.

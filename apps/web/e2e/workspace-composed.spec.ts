@@ -93,8 +93,16 @@ test('keyboard navigation alone constructs, inspects and exports a figure', asyn
   await page.setViewportSize({ width: 1280, height: 800 });
   await openApp(page, './index.html');
   const reach = async (target: ReturnType<typeof page.getByRole>) => {
+    // Native Firefox leaves the document at its final Tab stop; navigate backwards to
+    // earlier controls instead of assuming that a forward Tab wraps through browser chrome.
+    const backwards = await target.evaluate((e) => {
+      const active = document.activeElement;
+      return (
+        active !== null && !!(active.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_PRECEDING)
+      );
+    });
     for (let i = 0; i < 60 && !(await target.evaluate((e) => e === document.activeElement)); i++)
-      await page.keyboard.press('Tab');
+      await page.keyboard.press(backwards ? 'Shift+Tab' : 'Tab');
     await expect(target).toBeFocused();
   };
   await reach(page.getByRole('button', { name: 'Create a triangle', exact: true }));

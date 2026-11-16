@@ -85,3 +85,9 @@ A waiting installed worker keeps the existing skip-waiting/controllerchange sequ
 its pending reload request consumed once. Passive controller changes still never reload a
 non-initiating page. SafeUpdate's draft, conflict and durable-save guards remain ahead of
 all explicit reload paths. Frozen PWA tests only gain regressions; none are weakened.
+
+The internal `file-url.spec.ts` fixture also asserts the canonical SITE_URL prefix rather
+than the sender's private file path. It adds a claim before sharing and retains the complete
+byte-for-byte canonical recipient comparison against this run's hosted artifact, covering
+claim data as well as the construction. `document-files.spec.ts` retains its exact public
+Claims-count-zero assertion and explicitly expects one tab only in the internal engine mode.

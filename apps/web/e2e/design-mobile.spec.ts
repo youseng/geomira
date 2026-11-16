@@ -42,7 +42,7 @@ test('nothing is clipped: top bar, tabs, tool strip, command line, drawer', asyn
   await inside(page, '[role="tab"]');
   await inside(page, '.cmdbar');
   await inside(page, '.zoomctl button');
-  // The tool strip scrolls sideways; its group labels are there, written vertically.
+  // The tool strip scrolls sideways; its group labels remain readable.
   const strip = page.locator('.palette');
   await inside(page, '.palette');
   expect(await strip.evaluate((e) => e.scrollWidth > e.clientWidth)).toBe(true);
@@ -50,17 +50,60 @@ test('nothing is clipped: top bar, tabs, tool strip, command line, drawer', asyn
   const last = page.getByRole('button', { name: 'Claim', exact: true });
   await last.scrollIntoViewIfNeeded();
   await inside(page, '.palette [role="toolbar"] [aria-label="Measure / Claim"] .tool');
-  // A tab opens its panel over the canvas, which keeps its size; Hide panels closes it.
-  const canvas = await page.getByLabel('Geometry canvas').boundingBox();
+  // ADR-0074: panels occupy ordinary page flow. Native scrolling reaches their complete
+  // controls; opening/closing a sheet changes layout without changing geometry or viewport.
+  await tab(page, 'Text');
+  const source = await page.getByLabel('Text', { exact: true }).inputValue();
+  await page.getByRole('button', { name: 'Hide panels' }).click();
+  const board = page.getByLabel('Geometry canvas');
+  const canvas = await board.boundingBox();
+  const viewport = await board.evaluate((e) => [
+    e.dataset['cx'],
+    e.dataset['cy'],
+    e.dataset['zoom'],
+  ]);
   await tab(page, 'Objects');
   await expect(page.getByRole('tabpanel')).toBeVisible();
+  await page.locator('.side.open').scrollIntoViewIfNeeded();
   await inside(page, '.side.open');
-  expect(await page.getByLabel('Geometry canvas').boundingBox()).toEqual(canvas);
+  await expect(
+    page.getByText('Scroll up for the figure; down for tools and the command bar.'),
+  ).toBeVisible();
+  const exposed = await board.boundingBox();
+  expect(exposed?.height ?? 0).toBeGreaterThanOrEqual(120);
+  await board.scrollIntoViewIfNeeded();
+  const nativeTarget = await board.evaluate((e) => {
+    const r = e.getBoundingClientRect();
+    const x = r.right - 12;
+    let run = 0;
+    let longest = 0;
+    for (let y = Math.ceil(Math.max(0, r.top)); y < Math.min(innerHeight, r.bottom); y++) {
+      run = document.elementFromPoint(x, y) === e ? run + 1 : 0;
+      longest = Math.max(longest, run);
+    }
+    return { x, y: r.top + r.height / 2, longest };
+  });
+  // Retained claim badges can occupy the left side; the right-hand drawing stripe is real.
+  expect(nativeTarget.longest).toBeGreaterThanOrEqual(120);
+  await page.mouse.click(nativeTarget.x, nativeTarget.y, { button: 'right' });
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(
+    await board.evaluate((e) => [e.dataset['cx'], e.dataset['cy'], e.dataset['zoom']]),
+  ).toEqual(viewport);
   await page.getByRole('button', { name: 'Hide panels' }).click();
   await expect(page.getByRole('tabpanel')).toBeHidden();
-  // Labels hidden on the phone keep their names.
-  for (const name of ['Undo', 'Redo', 'Randomize', 'View', 'Export', 'Settings', 'Help'])
+  const restored = await board.boundingBox();
+  expect(restored?.width).toBe(canvas?.width);
+  expect(restored?.height).toBe(canvas?.height);
+  await tab(page, 'Text');
+  await expect(page.getByLabel('Text', { exact: true })).toHaveValue(source);
+  await page.getByRole('button', { name: 'Hide panels' }).click();
+  // Labels hidden on the phone keep their names; Settings lives in More actions.
+  for (const name of ['Undo', 'Redo', 'Randomize', 'View', 'Export', 'Help'])
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'More actions', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
 });
 
 test('Randomize and the menus work on a phone', async ({ page }) => {

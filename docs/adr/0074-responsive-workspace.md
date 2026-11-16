@@ -229,3 +229,30 @@ Expand/Compact, every public tab, Close/reopen, exact raw draft preservation and
 Undo/Redo. Its focus case injects the traced partly visible native-focus placement and
 retains the 120px exposure and caret assertions. The existing cross-engine exposure matrix
 remains unchanged. No frozen assertion, tolerance or reference is weakened.
+
+## Integration correction: native traversal and page-flow fixtures
+
+The complete Firefox walkthrough reaches the guide's first search correctly and constructs
+O. Its later forward-Tab loop then reaches the document's final Hide O button and leaves
+page focus instead of wrapping through browser chrome. The keyboard-only fixture now uses
+native Shift+Tab for an earlier DOM target. Its 60-key bound, every focus assertion, triangle,
+circumcenter, object selection, Properties, Escape and export assertions are retained.
+No application focus is forced and no browser timeout increases.
+
+The phone fixtures migrate the former fixed-overlay contract to the page-flow contract
+above. An open sheet must leave at least 120 actually exposed drawing pixels, reached through
+native page scrolling and verified with elementFromPoint. The retained-engine example has
+claim badges on the left, so its native empty-canvas hit uses the exposed right-hand stripe;
+that complete stripe must provide 120 consecutive drawable pixels. Native outside-card
+clicks use the exposed View action, and replacing a card uses the exposed visibility end of
+the other object's row. Color commit and exact Undo assertions remain. No clicks are forced
+through another control. The sheet fixture keeps exact camera attributes and canonical
+source across layout actions and requires closing to restore the pre-open canvas dimensions.
+Settings is reached through its visible More actions disclosure on phones.
+
+Changed frozen fixtures: `apps/web/e2e/mobile.spec.ts`, `style-popover.spec.ts`, and
+`design-mobile.spec.ts`. The new release test `workspace-composed.spec.ts` changes only its
+native traversal helper. These are explicit interaction/layout migrations, not changes to
+numeric tolerances, screenshot thresholds, timeouts or mathematical assertions. Shared
+file tests also assert the explicit build capability: public Claims count is exactly zero;
+internal engine Claims count is exactly one. Public claim testing stays retired by ADR-0065.

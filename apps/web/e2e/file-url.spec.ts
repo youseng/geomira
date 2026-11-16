@@ -1,4 +1,5 @@
 import { recipientUrl } from './share-recipient';
+import { SITE_URL } from '../src/build-info';
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import {
@@ -131,7 +132,8 @@ test('a share link from the file opens the same figure', async ({ page, context 
   await openSingle(page);
   await drawTriangle(page);
   await command(page, 'M = midpoint(A, B)');
-  await expectLines(page, 'M = midpoint(A, B)');
+  await command(page, 'claim collinear(A, B, C)');
+  await expectLines(page, 'M = midpoint(A, B)', 'claim collinear(A, B, C)');
   const figure = await text(page);
   await page.getByRole('button', { name: 'Export', exact: true }).click();
   await page.getByRole('button', { name: 'Share link' }).click();
@@ -141,7 +143,7 @@ test('a share link from the file opens the same figure', async ({ page, context 
     .inputValue();
   const self = page.url().split('#')[0] ?? '';
   expect(self.startsWith('file://')).toBe(true);
-  expect(link.startsWith(`${self}#s=`)).toBe(true);
+  expect(link.startsWith(`${SITE_URL}#s=`)).toBe(true);
   expect(link).toMatch(/#s=[A-Za-z0-9+\-$]+$/u);
   const other = await context.newPage();
   const errors = await openApp(other, recipientUrl(link));
