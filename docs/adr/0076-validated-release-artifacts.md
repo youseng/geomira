@@ -56,6 +56,8 @@ Refreshing that file once would repeat the same synchronization defect on the ne
   script, persistence, Randomize and workspace coverage is retained. Internal offline projects
   retain their original engine file tests and add the capability-independent geometry/layout
   regressions without importing public-only capability assertions.
+  The delayed-storage first-save/native-pointer and real blocked-storage regressions also
+  run in these hosted and offline engine projects.
 - Leave the nightly main/schedule mutation policy unchanged. Those hours-long campaigns remain
   explicit separate checks; they are not silently made a per-PR publication prerequisite.
 - Run the internal browser suite after an executed public suite succeeds or fails, retaining
@@ -111,5 +113,15 @@ Known retained-engine limitation: at phone height 664, internal verdict chips ca
 reflected A′ label and triangle-base labels. This is recorded visibly rather than masked by
 test changes; independent review considers it a nonblocking reactivation limitation because
 these chips are absent from the public release. No application change is made here.
+
+Two additional `public-layout.spec.ts` references cover the untouched public desktop and
+phone viewports with a saved nine-point figure, source editor and document controls. They
+retain the existing full-GUI 0.01 ratio and explicitly reject claim tabs/chips. Before any
+capture override, a real native wheel must expose offscreen palette/command controls. An
+additional attachment unclamps overflow only to show the whole existing phone scroll surface;
+exact header/workspace/canvas/panel/palette/command bounds must remain unchanged, and the
+override is removed before the native reference comparison. The attachment is not a reference
+or evidence that the native viewport fits all content at once. The first CI run must collect
+the two missing references for individual review; their absence is a failed check, not a pass.
 
 No production publication, merge or release was performed while implementing this decision.
