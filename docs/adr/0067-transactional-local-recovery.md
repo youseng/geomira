@@ -99,3 +99,31 @@ can preserve races, but concurrent cleanup needs an additional lock protocol. We
 alone would exclude unsupported hosts. IndexedDB supplies native transactions without a new
 runtime dependency. Automatically picking a conflict winner or expiring sole document copies
 would silently discard user work. Cloud services and full file management are outside scope.
+
+## Integration correction: pending startup is not a storage failure
+
+A fresh session has no acknowledged revision while IndexedDB initialization is pending.
+Its truthful status is `Not saved`, with no failure message. Automatically expanding the
+failure/backup region for that ordinary state made its first successful save remove a
+124.375px row during native pointer input. At 390×664 the canvas moved from y=351.375
+to y=227 and grew from 120px to 225px while a Point or box-selection gesture was active.
+The page had not scrolled; the changing layout itself changed the input target.
+
+Automatically expand recovery for a real status message or conflict, and retain explicit
+Recovery disclosure in every state. An ordinary message-null `Not saved` session stays
+compact until the user opens Recovery. The header still says `Not saved` before transaction
+completion, ordinary edits still say `Saving`, and no save is acknowledged early. Actual
+initialization/write errors carry a message; denied storage, quota failures, malformed
+legacy originals and conflicts therefore retain automatic warning/backup exposure. Explicit
+Recovery still offers a portable backup before initialization completes and stays open
+through successful saves. No persistence transaction, retry or conflict policy changes.
+
+Additive state-rendering tests cover initial and dirty states, SecurityError, quota,
+malformed legacy text and conflict. Native delayed-IDB browser regressions hold initialization
+across Point and box-selection input, then require unchanged exact canvas bounds, the strict
+delivered-pointer canonical point and the selection outline. Separate browser checks retain
+the real denied-storage warning and an actual pre-initialization backup download. The two
+gesture regressions failed on the prior source; all four pass hosted and file:// Chromium
+after this correction. ADR-0074's projection and exposed-canvas contracts remain intact.
+No frozen tests, screenshot references or tolerances change. Exact commands and outstanding
+integrated-engine verification are recorded in `results/integration-startup-recovery.md`.
