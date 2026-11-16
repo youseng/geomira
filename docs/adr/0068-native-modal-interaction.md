@@ -18,7 +18,8 @@ The old hook intercepts Escape alone and its CSS shadow does not isolate the bac
   A real `::backdrop` replaces the decorative shadow. No dependency is added.
 - Initial focus is the dialog container, so its title and purpose precede its contents.
   Tab and Shift+Tab explicitly cycle through visible, enabled controls, or keep focus on
-  the container if none exist. Radio groups retain one sequential tab stop. Native editing,
+  the container if none exist. Focused controls scroll into view within long dialogs.
+  Radio groups retain one sequential tab stop. Native editing,
   selection, copying and field undo remain browser actions.
 - Editor shortcut dispatch returns while a native modal is open. It does not cancel key
   defaults. Only unmodified Tab and Escape are handled by the shared modal policy.

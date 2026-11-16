@@ -49,7 +49,9 @@ function cycleFocus(event: KeyboardEvent, dialog: HTMLDialogElement): void {
     : (elements[index + 1] ?? elements[0]);
   event.preventDefault();
   event.stopPropagation();
-  (next ?? dialog).focus({ preventScroll: true });
+  // Native focus scrolling reveals controls below long warning/content sections.
+  // Initial and restored focus still avoid moving the background document.
+  (next ?? dialog).focus();
 }
 
 function restoreFocus(before: Element | null): void {

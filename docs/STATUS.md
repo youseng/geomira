@@ -103,6 +103,11 @@ modal-safety.spec.ts flows-keyboard.spec.ts mobile.spec.ts --project=desktop
   including modal cases from file:// in Chromium, Firefox and WebKit, ordinary public
   keyboard/touch, persistence/recovery, exports, PWA and the drag gate. Build job succeeded;
   deployment and deployed-site smoke jobs were skipped. No publication was performed.
+- Final focus review added a failing scroll regression: Shift+Tab focused Close at y=474.375
+  while the constrained dialog ended at y=222. Tab movement now uses native focus scrolling;
+  initial/restored focus still preserve background scroll. The new assertion passes on
+  desktop, phone and file Chromium (3 passes, 5.0 seconds). This is the thirteenth modal
+  browser case. Required verification is repeated for this follow-up and reported in PR #40.
 - Draft PR: https://github.com/youseng/geomira/pull/40. The documentation follow-up changes
   only this evidence; final CI results are kept in the PR rather than recursively committing
   claims about checks which have not finished. Real screen-reader/physical-device testing,

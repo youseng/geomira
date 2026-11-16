@@ -308,6 +308,27 @@ test('a modal with no focusable children holds focus and Escape still dismisses 
   await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeFocused();
 });
 
+test('Tab reveals its focused control when a dialog must scroll', async ({ page }) => {
+  await fixture(page);
+  const dialog = await openModal(page, 'Export');
+  // A constrained dialog models a small window or a long list of export warnings.
+  await dialog.evaluate((d) => {
+    d.style.maxHeight = '150px';
+    d.scrollTop = 0;
+  });
+  await dialog.focus();
+  await page.keyboard.press('Shift+Tab');
+  const close = dialog.getByRole('button', { name: 'Close', exact: true });
+  await expect(close).toBeFocused();
+  const bounds = await dialog.boundingBox();
+  const focused = await close.boundingBox();
+  if (bounds === null || focused === null) throw new Error('missing dialog/control bounds');
+  expect(focused.y).toBeGreaterThanOrEqual(bounds.y);
+  expect(focused.y + focused.height).toBeLessThanOrEqual(bounds.y + bounds.height);
+  await expect.poll(() => dialog.evaluate((d) => d.scrollTop)).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');
+});
+
 test('Escape closes one modal without cancelling a pending two-pick construction', async ({
   page,
 }, testInfo) => {
