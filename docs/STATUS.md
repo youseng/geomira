@@ -4,7 +4,9 @@
 
 Base: `f95e0056c9e2cb73d23c6dac900acaf9e7f1a06a` (main after PR #40).
 Branch: `codex/release-integration`, draft PR #41. The maintainer authorized autonomous
-implementation, subagents and an integration draft; no main merge or production publication.
+implementation, subagents and an integration draft, then authorized merge commits. The
+release PR may merge only after remaining checks and the independent audit pass. Main's
+configured deployment must validate and publish its own exact merged-revision artifact.
 Task ledger: [PROGRESS](release-prompts/PROGRESS.md). Separate worktrees prevent concurrent
 source edits; reviewed changes are integrated before combined verification.
 

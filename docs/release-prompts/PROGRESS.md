@@ -5,8 +5,10 @@ Branch: `codex/release-integration`.
 
 The maintainer authorized autonomous implementation and subagent delegation for the
 remaining prompts. Each task is developed in a separate worktree, reviewed and
-integrated here. Pushes and a draft integration PR are authorized; main merges and
-production publication remain separate. Completion below requires integration and
+integrated here. Pushes and a draft integration PR were authorized first; the maintainer
+subsequently authorized merge commits. The release PR may merge only after the remaining
+checks and independent audit pass; main's configured deployment then validates and publishes
+its own exact merged-revision artifact. Completion below requires integration and
 task evidence, not merely a subagent's report. Final acceptance requires combined
 verification, CI and the independent audit.
 
