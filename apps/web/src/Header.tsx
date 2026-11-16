@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useViewport } from './workspace';
 import { CLAIM_TESTING } from './features';
 import { TRIANGLE_TYPES, type TriangleType } from '@geomira/claims/randomize';
 import { FORMATS, type ExportFormat } from '@geomira/export/formats';
@@ -70,7 +71,7 @@ function History(p: HeaderProps) {
   );
 }
 
-function Randomize(p: HeaderProps) {
+function Randomize(p: HeaderProps & { readonly compact?: boolean }) {
   return (
     <div className="seg">
       <button
@@ -82,23 +83,29 @@ function Randomize(p: HeaderProps) {
         <Glyph>{'⚄'}</Glyph>
         <span className="hide-narrow">Randomize</span>
       </button>
-      <select
-        className="tb triangle-type"
-        aria-label="Triangle type"
-        title="Triangle type for Randomize (the first three free points)"
-        value={p.triangleType}
-        onChange={(e) => {
-          const t = TRIANGLE_TYPES.find((x) => x === e.target.value);
-          if (t !== undefined) p.onTriangleType(t);
-        }}
-      >
-        {TRIANGLE_TYPES.map((t) => (
-          <option key={t} value={t}>
-            {t}
-          </option>
-        ))}
-      </select>
+      {p.compact === true ? null : <TriangleChoice {...p} />}
     </div>
+  );
+}
+
+function TriangleChoice(p: HeaderProps) {
+  return (
+    <select
+      className="tb triangle-type"
+      aria-label="Triangle type"
+      title="Triangle type for Randomize (the first three free points)"
+      value={p.triangleType}
+      onChange={(e) => {
+        const t = TRIANGLE_TYPES.find((x) => x === e.target.value);
+        if (t !== undefined) p.onTriangleType(t);
+      }}
+    >
+      {TRIANGLE_TYPES.map((t) => (
+        <option key={t} value={t}>
+          {t}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -284,19 +291,33 @@ function HelpMenu(p: HeaderProps) {
  * buttons show their glyphs only; their accessible names stay the words they had.
  */
 export function Header(p: HeaderProps) {
+  const compact = useViewport().width <= 1100;
   return (
     <header className="topbar">
       <Brand />
       {p.documents}
       <History {...p} />
-      <Randomize {...p} />
+      <Randomize {...p} compact={compact} />
       {CLAIM_TESTING && <ClaimBox label="Claim to test" className="claim-form" host={p.claimBox} />}
       <div className="spacer" />
       {p.persistence}
       <ViewMenu {...p} />
       <Examples {...p} />
       <ExportMenu {...p} />
-      <SettingsMenu {...p} />
+      {compact ? (
+        <Menu label="More actions" glyph="⋯" title="More actions">
+          {() => (
+            <>
+              <label>
+                Randomize triangle type <TriangleChoice {...p} />
+              </label>
+              <SettingsMenu {...p} />
+            </>
+          )}
+        </Menu>
+      ) : (
+        <SettingsMenu {...p} />
+      )}
       <HelpMenu {...p} />
     </header>
   );

@@ -498,6 +498,17 @@ example's TikZ and standalone Asymptote and checks Asymptote's `write()` coordin
 against the kernel (≤ 1e-6·scale).
 
 ## 15. Web app
+Workspace navigation (ADR-0074): headers wrap at constrained widths, with triangle type
+and Settings under More actions when needed. A filtered registry-backed tool search and
+recent list choose through the same selection-input machine as the palette. The full
+palette uses one roving tab stop and orientation-aware arrows/Home/End. Current-tool status
+names picked objects and the expected next input. Explicit Pan preserves existing gestures
+and wheel zoom; Properties opens the selected object's existing card.
+Desktop panels collapse and resize with a reserved canvas width; compact/expanded phone
+sheets follow the visible viewport and preserve drafts. Workspace preferences are separate
+best-effort browser state, never geometry history or evidence of a saved document.
+First-use guidance cannot replace existing geometry or unapplied text. See docs/workspace.md.
+
 Property cards (ADR-0070) commit a valid pending name before close/switch, including
 Escape; invalid or locked drafts leave a persistent refusal. Fields follow undo/redo and
 external document changes while preserving local partial input. Object visibility controls

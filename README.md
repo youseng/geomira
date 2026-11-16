@@ -9,6 +9,9 @@ export it for an AoPS post or a handout.
 
 ## Features
 
+Use **Find a tool**, **Pan**, **Panels** and **Guide** above the canvas; select an object
+for **Properties**. See the [workspace guide](docs/workspace.md) for keyboard and phone controls.
+
 - **Portable documents.** File offers named New/Open/Save/Save As using `.geo` files.
   [Document and sharing guide](docs/document-files.md) explains drafts, local recovery and link limits.
 

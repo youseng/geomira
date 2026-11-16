@@ -22,6 +22,7 @@ import type { EditorStore } from './store';
 import { useSurface, useWheelZoom } from './surface';
 
 export interface BoardProps {
+  readonly pan?: boolean;
   readonly canvasRef: RefObject<HTMLCanvasElement | null>;
   readonly store: EditorStore;
   readonly scene: Scene;
@@ -236,7 +237,7 @@ export function Board(props: BoardProps) {
         data-zoom={viewport.zoom}
         onPointerDown={(e) => {
           if (display === null) return;
-          const press = pressOf(e);
+          const press = props.pan === true ? 'pan' : pressOf(e);
           rightPress.current = press === 'right';
           // Leave a focused field first, so its blur (the text panel applies its draft) comes
           // before the press starts a drag, which would refuse the text (Run 10 audit).
@@ -259,7 +260,8 @@ export function Board(props: BoardProps) {
           if (display === null) return;
           gestures.move(e.pointerId, local(e), display);
           // The preview follows a mouse while a construction tool is active (not a drag's frames).
-          const tooling = e.pointerType === 'mouse' && store.current().tool !== 'move';
+          const tooling =
+            props.pan !== true && e.pointerType === 'mouse' && store.current().tool !== 'move';
           if (tooling || cursor !== null) setCursor(tooling ? local(e) : null);
         }}
         onPointerUp={(e) => {

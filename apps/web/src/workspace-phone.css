@@ -1,0 +1,245 @@
+@media (max-width: 760px) {
+  .app,
+  .app.panel-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 48px minmax(80px, 1fr) 44px 76px 44px;
+    grid-template-areas: 'top' 'work' 'stage' 'side' 'pal' 'cmd';
+  }
+  .panel-collapsed .side {
+    visibility: visible;
+  }
+  .topbar {
+    gap: 4px;
+    padding: 4px 6px;
+  }
+  .topbar .tb,
+  .topbar .tb.icon,
+  .topbar .menu-wrap > .tb,
+  .topbar .examples,
+  .topbar .seg .tb:first-child {
+    height: 44px;
+    min-width: 44px;
+  }
+  .topbar .document-files {
+    max-width: 140px;
+  }
+  .topbar .document-name {
+    max-width: 70px;
+  }
+  .topbar .persistence {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    max-width: 150px;
+  }
+  .topbar .persistence > button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .topbar .spacer {
+    display: none;
+  }
+  .workspace-bar {
+    gap: 4px;
+    padding: 2px 4px;
+  }
+  .workspace-bar > button {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 6px;
+  }
+  .tool-search input {
+    font-size: 16px;
+    height: 44px;
+    padding: 0 6px;
+  }
+  .recent-tools summary {
+    min-height: 44px;
+    padding: 8px 4px;
+    font-size: 11px;
+  }
+  .tool-results {
+    top: 44px;
+  }
+  .tabs [role='tab'],
+  .drawer-close {
+    min-height: 44px;
+    padding: 8px 7px;
+  }
+  .side.open {
+    top: auto;
+    bottom: 120px;
+    height: min(
+      65%,
+      calc(
+        var(--workspace-height) - var(--panel-ceiling, 160px) - 120px -
+          var(--stage-controls-height, 64px)
+      )
+    );
+    border-top: 1px solid var(--border);
+  }
+  .side.open.compact {
+    height: min(43%, calc(var(--workspace-height) - var(--panel-ceiling, 160px) - 120px));
+  }
+  .side.open .text-panel > .script-editor {
+    min-height: 120px;
+    flex-shrink: 0;
+  }
+  .side.open .text-panel textarea {
+    min-height: 120px;
+  }
+  .side.open .text-panel {
+    min-height: 220px;
+  }
+  .side.open .tab-body {
+    min-height: 0;
+    overflow: auto;
+  }
+  .side.open .sheet-compact {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 44px;
+    height: 44px;
+    border: 0;
+    background: var(--panel);
+    color: var(--text);
+    font-size: 11px;
+  }
+  .side.open .tabs {
+    padding-right: 132px;
+    min-height: 44px;
+    flex: none;
+  }
+  .side.open .drawer-close {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 44px;
+    justify-content: center;
+    margin: 0;
+  }
+  .side .panel-resizer {
+    display: none;
+  }
+  .tabs {
+    padding-left: 2px;
+  }
+  .palette {
+    padding: 2px 4px;
+  }
+  .pgroup {
+    flex-direction: column;
+    gap: 0;
+    align-items: flex-start;
+  }
+  .pgroup h4 {
+    writing-mode: horizontal-tb;
+    transform: none;
+    max-height: none;
+    font-size: 11px;
+    margin: 0 3px;
+    line-height: 18px;
+  }
+  .tool {
+    width: 44px;
+    height: 44px;
+  }
+  .zoomctl button,
+  .tool-hint button,
+  .tool-hint input,
+  .tool-hint select,
+  .selbar button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .object-name,
+  .object-eye {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .getting-started {
+    max-height: 45dvh;
+  }
+  .getting-started button {
+    min-height: 44px;
+  }
+  .stage {
+    --status-h: 48px;
+  }
+  .statusbar span {
+    max-height: 44px;
+  }
+  .app:has(> .side.open) .stage-top {
+    top: 6px;
+    bottom: auto;
+    z-index: 5;
+  }
+  .app:has(> .side.open) .stage-top > .tool-hint {
+    display: flex;
+  }
+  .sheet-compact + .tabs {
+    padding-left: 2px;
+  }
+  .app.short-workspace {
+    grid-template-rows: auto 48px minmax(60px, 1fr) 44px 0 44px;
+  }
+  .short-workspace.show-palette {
+    grid-template-rows: auto 48px minmax(60px, 1fr) 44px 76px 44px;
+    overflow: auto;
+  }
+  .short-workspace.show-palette .palette {
+    display: block;
+  }
+  .short-workspace .palette {
+    display: none;
+  }
+  /* A short keyboard viewport needs a real editor, not a one-line overlay.
+     Keep its panel in page flow so the field, diagnostics and actions can scroll. */
+  .short-workspace:has(> .side.open) {
+    grid-template-rows: auto 48px 180px minmax(280px, auto) 0 44px;
+  }
+  .short-workspace.show-palette:has(> .side.open) {
+    grid-template-rows: auto 48px 180px minmax(280px, auto) 76px 44px;
+  }
+  .short-workspace .side.open,
+  .short-workspace .side.open.compact {
+    position: relative;
+    top: auto;
+    bottom: auto;
+    height: auto;
+    min-height: 280px;
+  }
+  .short-workspace .side.open .tab-body {
+    overflow: visible;
+  }
+  .short-workspace .getting-started {
+    max-height: 120px;
+  }
+}
+
+.short-workspace {
+  overflow: auto;
+}
+
+@media (max-width: 760px) {
+  .menu button,
+  .menu label,
+  .menu .menu-link {
+    min-height: 44px;
+  }
+  .style-card footer button,
+  .style-card .sc-close,
+  .style-card .sc-text,
+  .style-card .sc-number input,
+  .style-card .sc-number select {
+    min-height: 44px;
+  }
+  .style-card .swatch {
+    width: 44px;
+    height: 44px;
+  }
+  .style-card .sc-label {
+    width: 58px;
+  }
+}

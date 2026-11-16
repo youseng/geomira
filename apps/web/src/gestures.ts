@@ -45,7 +45,7 @@ export interface Hold {
 }
 
 /** Which press a pointer makes: a finger or pen (or a caller that says nothing), or a mouse button. */
-export type Press = 'plain' | 'left' | 'right';
+export type Press = 'plain' | 'left' | 'right' | 'pan';
 
 /** The selection box of the Move tool (ADR-0062), in canvas px. */
 export interface BoxHost {
@@ -97,6 +97,7 @@ type Mode =
       readonly empty: 'pan' | 'box';
       /** A right press: without a move it opens the style card (ADR-0062). */
       readonly menu: boolean;
+      readonly click: boolean;
     }
   /** A long press happened: the rest of the press does nothing. */
   | { readonly kind: 'held' }
@@ -194,14 +195,24 @@ export class Gestures {
     if (this.pointers.size !== 1) return;
     const s = this.store.current();
     // A right (or middle) press drags nothing: it pans, or opens the style card (ADR-0062).
-    const moving = s.tool === 'move' && press !== 'right';
+    const moving = s.tool === 'move' && press !== 'right' && press !== 'pan';
     const target = moving ? hitTest(display, q).hits.find((h) => h.part === 'point') : undefined;
     const point = target !== undefined && this.store.apply({ kind: 'dragStart', id: target.id }).ok;
     const grab = moving && !point ? this.grabLabel(q, display) : null;
     const drag = point || grab !== null;
     const empty = moving && press === 'left' && this.box !== null ? 'box' : 'pan';
     const menu = press === 'right';
-    this.mode = { kind: 'press', start: q, last: q, moved: false, drag, grab, empty, menu };
+    this.mode = {
+      kind: 'press',
+      start: q,
+      last: q,
+      moved: false,
+      drag,
+      grab,
+      empty,
+      menu,
+      click: press !== 'pan',
+    };
     const hold = this.hold;
     if (touch && hold !== null)
       this.unhold = hold.schedule(() => {
@@ -284,7 +295,7 @@ export class Gestures {
     }
     // A still right press is the style card's (the long press's action); never a tool's click.
     if (!m.moved && m.menu) this.hold?.onHold(q, display);
-    else if (!m.moved) this.click(q, display, extend);
+    else if (!m.moved && m.click) this.click(q, display, extend);
   }
 
   cancel(id: number): void {

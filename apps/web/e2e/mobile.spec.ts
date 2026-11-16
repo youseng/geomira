@@ -80,6 +80,8 @@ test('pan with one finger, pinch with two', async ({ page }) => {
 test('drag a point with a finger; the text follows', async ({ page }) => {
   await openApp(page);
   await figure(page);
+  // Leave room for the outward destination after the responsive header changes the canvas.
+  await page.getByRole('button', { name: 'Zoom out', exact: true }).click();
   const t = await touches(page);
   const from = await screenOf(page, 4, 0);
   const to = await screenOf(page, 5, 1);
