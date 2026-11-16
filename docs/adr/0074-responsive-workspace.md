@@ -337,6 +337,29 @@ Undo/Redo, closing/reopening and a native focus handoff before queued visibility
 Supported-engine CI remains required. A separately observed invalid-diagnostic/Command
 overlap is classified independently; it is not hidden by changing these Recovery bounds.
 
+## Integration correction: short panel intrinsic grid rows
+
+A short phone with invalid Text could focus Command while a diagnostic button still painted
+across its native pointer target. The short panel body intentionally uses visible overflow
+and intrinsic height, but a fixed 280px grid-track minimum did not reserve that complete
+content. The generic compact-panel selector also outranked the short default rule, reserving
+palette space even when the short palette was hidden.
+
+Both short open-panel grid tracks now use an intrinsic `min-content` minimum. Their existing
+side-panel `min-height: 280px` remains the floor. Explicit `.app.short-workspace` specificity
+applies the intended short rows in compact and expanded modes, with and without the palette.
+Normal phone and desktop selectors do not change. The correction adds no overlay, z-index,
+forced click or overflow clipping. Changing the side minimum alone is insufficient: the
+side grows while its grid track stays 280px, so Command remains covered.
+
+Four additive `panel-controls.spec.ts` regressions first failed the unchanged native center
+hit test. With the correction they retain real Command click/type, invalid source and caret,
+exact camera, pre-open closed canvas bounds, canonical downloads and single-step Undo/Redo
+across compact/expanded and hidden/shown palette states. The expanded/shown case opens Editor
+help to exercise additional intrinsic content. Existing 120px source/canvas exposure and
+normal panel-control cases remain intact. No existing assertion, tolerance, timeout or
+reference changes. Exact before/after metrics and validation are in the integration result.
+
 ## Integration correction: native traversal and page-flow fixtures
 
 The complete Firefox walkthrough reaches the guide's first search correctly and constructs

@@ -1,5 +1,6 @@
 /** ADR-0074: panel navigation owns separate native targets and never edits the figure. */
-import { expect, test, type Locator } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 import { command, openApp } from './helpers';
 
 async function pointerTarget(control: Locator) {
@@ -103,4 +104,97 @@ for (const width of [320, 390]) {
     await page.getByRole('tab', { name: 'Text', exact: true }).click();
     await expect(field).toHaveValue(draft);
   });
+}
+
+async function validFigureDownload(page: Page) {
+  await page.getByRole('button', { name: 'File', exact: true }).click();
+  await page.getByRole('button', { name: 'Save / Download .geo', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Save figure', exact: true });
+  const pending = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: 'Download current valid figure', exact: true }).click();
+  const path = await (await pending).path();
+  const source = await readFile(path, 'utf8');
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  return source;
+}
+
+async function canvasDocumentBounds(page: Page) {
+  const board = page.getByLabel('Geometry canvas');
+  await board.scrollIntoViewIfNeeded();
+  return board.evaluate((e) => {
+    const r = e.getBoundingClientRect();
+    const app = e.closest('.app');
+    if (!(app instanceof HTMLElement)) throw new Error('no workspace');
+    return { x: r.x + app.scrollLeft, y: r.y + app.scrollTop, width: r.width, height: r.height };
+  });
+}
+
+for (const expanded of [false, true]) {
+  for (const palette of [false, true]) {
+    test(`short invalid Text leaves Command exposed: ${expanded ? 'expanded' : 'compact'}, tools ${palette ? 'shown' : 'hidden'}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 380 });
+      const errors = await openApp(page, './index.html');
+      for (const line of ['A=(0,0)', 'B=(4,0)']) await command(page, line);
+      await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
+        'Saved locally',
+      );
+      if (palette) await page.getByRole('button', { name: 'Show all tools', exact: true }).click();
+      await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
+      const closed = await canvasDocumentBounds(page);
+      const board = page.getByLabel('Geometry canvas');
+      const camera = await board.evaluate((e) => [
+        e.dataset['cx'],
+        e.dataset['cy'],
+        e.dataset['zoom'],
+      ]);
+      const input = page.getByLabel('Command', { exact: true });
+      await input.fill('C=midpoint(');
+      await page.getByRole('tab', { name: 'Text', exact: true }).click();
+      const field = page.getByLabel('Text', { exact: true });
+      const draft = '@version 1\nA=(9,9)\nM=midpoint(\n# keep this invalid draft';
+      await field.fill(draft);
+      await field.evaluate((element: HTMLTextAreaElement) => {
+        element.setSelectionRange(17, 17);
+      });
+      if (expanded) {
+        const expand = page.getByRole('button', { name: 'Expand panel', exact: true });
+        await pointerTarget(expand);
+        await expand.click();
+      }
+      if (expanded && palette) await page.getByText('Editor help', { exact: true }).click();
+      await input.focus();
+      await pointerTarget(input);
+      await expect(input).toBeFocused();
+      await expect(input).toHaveValue('C=midpoint(');
+      await input.click();
+      await input.press('End');
+      await input.press('B');
+      await expect(input).toHaveValue('C=midpoint(B');
+      await expect(field).toHaveValue(draft);
+      expect(await field.evaluate((element: HTMLTextAreaElement) => element.selectionStart)).toBe(
+        17,
+      );
+      expect(
+        await board.evaluate((e) => [e.dataset['cx'], e.dataset['cy'], e.dataset['zoom']]),
+      ).toEqual(camera);
+      expect((await page.locator('.side.open').boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(
+        280,
+      );
+      await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
+      expect(await canvasDocumentBounds(page)).toEqual(closed);
+      await page.getByRole('button', { name: 'Show panels', exact: true }).click();
+      await expect(field).toHaveValue(draft);
+      const ab = '@version 1\nA = (0, 0)\nB = (4, 0)\n';
+      expect(await validFigureDownload(page)).toBe(ab);
+      await page.getByRole('button', { name: 'Undo', exact: true }).click();
+      expect(await validFigureDownload(page)).toBe('@version 1\nA = (0, 0)\n');
+      await page.getByRole('button', { name: 'Redo', exact: true }).click();
+      expect(await validFigureDownload(page)).toBe(ab);
+      await expect(field).toHaveValue(draft);
+      await expect(input).toHaveValue('C=midpoint(B');
+      expect(errors).toEqual([]);
+    });
+  }
 }

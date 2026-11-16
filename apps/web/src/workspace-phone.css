@@ -219,14 +219,14 @@
   }
   /* A short keyboard viewport needs a real editor, not a one-line overlay.
      Keep its panel in page flow so the field, diagnostics and actions can scroll. */
-  .short-workspace:has(> .side.open) {
+  .app.short-workspace:has(> .side.open) {
     grid-template-rows:
-      max-content 48px max-content var(--phone-stage-height) minmax(280px, auto)
+      max-content 48px max-content var(--phone-stage-height) minmax(min-content, auto)
       0 44px;
   }
-  .short-workspace.show-palette:has(> .side.open) {
+  .app.short-workspace.show-palette:has(> .side.open) {
     grid-template-rows:
-      max-content 48px max-content var(--phone-stage-height) minmax(280px, auto)
+      max-content 48px max-content var(--phone-stage-height) minmax(min-content, auto)
       76px 44px;
   }
   .short-workspace .side.open,
