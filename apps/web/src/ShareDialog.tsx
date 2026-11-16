@@ -37,20 +37,7 @@ export function ShareDialog({
         A .geo file preserves the current valid figure. Unapplied text is separate. Links and
         downloads do not upload data.
       </p>
-      {hasEdits(store.textDraft.getSnapshot()) && (
-        <button
-          type="button"
-          onClick={() => {
-            try {
-              downloadDraft(store);
-            } catch (e) {
-              setError(String(e));
-            }
-          }}
-        >
-          Download draft text
-        </button>
-      )}
+      <ShareDraft store={store} onError={setError} />
       <button
         type="button"
         onClick={() => {
@@ -68,5 +55,23 @@ export function ShareDialog({
         Close
       </button>
     </Modal>
+  );
+}
+
+function ShareDraft({ store, onError }: { store: EditorStore; onError: (error: string) => void }) {
+  if (!hasEdits(store.textDraft.getSnapshot())) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        try {
+          downloadDraft(store);
+        } catch (e) {
+          onError(String(e));
+        }
+      }}
+    >
+      Download draft text
+    </button>
   );
 }

@@ -64,6 +64,21 @@ describe('file workflow lifecycle', () => {
     expect(storage.state.revisions.some((r) => r.documentId === firstId)).toBe(true);
     expect(store.current().doc.meta.title).toBe('Duplicate');
   });
+  it('Cancel during an awaited replacement cannot open a late result', async () => {
+    const { storage, store, files } = await fixture();
+    let release: () => void = () => undefined;
+    storage.barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const before = store.current();
+    files.start({ kind: 'new' });
+    const saving = files.confirm();
+    files.finish();
+    release();
+    await saving;
+    expect(store.current()).toBe(before);
+    expect(files.snapshot().choice).toBeNull();
+  });
   it('failed recovery needs an explicit discard, and cancellation keeps usable work', async () => {
     const { storage, store, files } = await fixture();
     store.command('B=(3,4)');

@@ -1,16 +1,9 @@
 import { useEffect } from 'react';
 import type { FileSession, FileState } from './file-session';
-export function FileMenu({
-  session,
-  state,
-  openFile,
-}: {
-  session: FileSession;
-  state: FileState;
-  openFile: () => void;
-}) {
-  useFileMenuDismiss(session, state.menu);
-  if (!state.menu) return;
+
+function useFileMenuDismiss(session: FileSession, open: boolean): void {
+  useEffect(() => {
+    if (!open) return;
     const outside = (event: PointerEvent) => {
       if (
         !(event.target instanceof Element) ||
@@ -30,7 +23,18 @@ export function FileMenu({
       window.removeEventListener('pointerdown', outside);
       window.removeEventListener('keydown', escape, true);
     };
-  }, [session, state.menu]);
+  }, [session, open]);
+}
+export function FileMenu({
+  session,
+  state,
+  openFile,
+}: {
+  session: FileSession;
+  state: FileState;
+  openFile: () => void;
+}) {
+  useFileMenuDismiss(session, state.menu);
   if (!state.menu) return null;
   return (
     <div className="menu" role="group" aria-label="File menu">
@@ -70,7 +74,3 @@ export function FileMenu({
     </div>
   );
 }
-
-function useFileMenuDismiss(session: FileSession, open: boolean): void {
-  useEffect(() => {
-  }

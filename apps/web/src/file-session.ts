@@ -97,6 +97,7 @@ export class FileSession {
   async confirm(discard = false): Promise<void> {
     const choice = this.state.choice;
     if (choice === null) return;
+    const active = () => this.state.choice === choice;
     try {
       if (choice.kind === 'save') {
         if (this.backup()) this.finish();
@@ -106,14 +107,16 @@ export class FileSession {
       if (choice.kind === 'save-as' && draftIssue(this.store) === null) applyValidDraft(this.store);
       const ok =
         choice.kind === 'save-as'
-          ? await duplicateDocument(this.store, this.state.name, discard)
+          ? await duplicateDocument(this.store, this.state.name, discard, active)
           : await replaceDocument(
               this.store,
               choice.kind === 'open' && choice.doc !== undefined
                 ? choice.doc
                 : namedDocument(emptyDocument(), this.state.name),
               discard,
+              active,
             );
+      if (!active()) return;
       if (!ok) {
         this.patch({ failedRecovery: true });
         return;

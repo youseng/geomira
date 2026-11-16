@@ -31,9 +31,11 @@ export async function replaceDocument(
   store: EditorStore,
   doc: Document,
   discardUnsaved: boolean,
+  mayReplace: () => boolean = () => true,
 ): Promise<boolean> {
   const before = store.current().doc;
   const saved = await store.retrySaving();
+  if (!mayReplace()) return false;
   if (store.current().doc !== before)
     throw new Error('The figure changed. Review it before replacing it.');
   if (!saved && !discardUnsaved) return false;
@@ -45,9 +47,10 @@ export async function duplicateDocument(
   store: EditorStore,
   name: string,
   discardUnsaved: boolean,
+  mayReplace: () => boolean = () => true,
 ): Promise<boolean> {
   const duplicate = namedDocument(store.current().doc, name);
-  if (!(await replaceDocument(store, duplicate, discardUnsaved))) return false;
+  if (!(await replaceDocument(store, duplicate, discardUnsaved, mayReplace))) return false;
   downloadGeo(store.current().doc);
   return true;
 }
