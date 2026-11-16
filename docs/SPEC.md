@@ -475,6 +475,14 @@ example's TikZ and standalone Asymptote and checks Asymptote's `write()` coordin
 against the kernel (≤ 1e-6·scale).
 
 ## 15. Web app
+Modal dialogs (ADR-0068): Export, Share and Debug report share a native modal boundary.
+Focus enters the named dialog; Tab stays among its visible enabled controls (or the dialog
+itself when empty). The background is inert to pointer, keyboard and assistive navigation.
+Editor shortcuts do not dispatch while a modal is open; native field editing and browser
+shortcuts remain available. Escape closes only the topmost dialog without cancelling pending
+canvas picks. Closing restores the invoker, an underlying dialog or the geometry canvas.
+Future file dialogs must use the same policy.
+
 Panels: Text (two-way, in the short notation, ADR-0061; per-line diagnostics; applies as you type after a 500 ms pause, never
 over a figure changed meanwhile, ADR-0047), Objects (by layer, Undefined/Inexact
 reasons; first the Measurements: every number with its definition and value as shown, ADR-0048;

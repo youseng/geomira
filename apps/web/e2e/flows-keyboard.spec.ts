@@ -12,10 +12,13 @@ test('Enter works on a focused button and tab (the shortcut does not take it)', 
   await page.keyboard.press('Enter');
   await expect(exportButton).toHaveAttribute('aria-expanded', 'true');
   await page.keyboard.press('Escape');
-  const claims = page.getByRole('tab', { name: 'Claims', exact: true });
-  await claims.focus();
+  const panel = page.getByRole('tab', {
+    name: process.env['GEOMIRA_ENGINE_E2E'] === '1' ? 'Claims' : 'Objects',
+    exact: true,
+  });
+  await panel.focus();
   await page.keyboard.press('Enter');
-  await expect(claims).toHaveAttribute('aria-selected', 'true');
+  await expect(panel).toHaveAttribute('aria-selected', 'true');
   await command(page, 'A = (0, 0)');
   const undo = page.getByRole('button', { name: 'Undo', exact: true });
   await undo.focus();

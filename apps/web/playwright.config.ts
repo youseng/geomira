@@ -16,9 +16,9 @@ const singleFile = pathToFileURL(
 const OWN = 'long-task|drag-frame|pages-smoke|file-url|fallback-long-task|fallback-discovery|pwa';
 // Legacy feature flows remain exercised by e2e:claims, not against release artifacts.
 const INTERNAL =
-  'flows-claimtool|flows-geomdraw|flows-claims|flows-review|mobile|flows-discovery|flows-keyboard|flows-design|design-mobile|drawer-notice-mobile';
+  'flows-claimtool|flows-geomdraw|flows-claims|flows-review|flows-discovery|flows-design|design-mobile|drawer-notice-mobile';
 const internalOnly = engine ? '|public-release' : `|${INTERNAL}`;
-const fileSpecs = engine ? /file-url\.spec/u : /(public-release|persistence)\.spec/u;
+const fileSpecs = engine ? /file-url\.spec/u : /(public-release|persistence|modal-safety)\.spec/u;
 
 export default defineConfig({
   testDir: 'e2e',

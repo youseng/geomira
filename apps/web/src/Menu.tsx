@@ -20,6 +20,7 @@ export interface MenuProps {
 export function Menu({ label, glyph, title, iconOnly = false, children }: MenuProps) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!open) return undefined;
     const outside = (e: PointerEvent) => {
@@ -37,10 +38,13 @@ export function Menu({ label, glyph, title, iconOnly = false, children }: MenuPr
   }, [open]);
   const close = () => {
     setOpen(false);
+    // Menu items disappear. Make the disclosure the invoker before an action opens a modal.
+    trigger.current?.focus({ preventScroll: true });
   };
   return (
     <div className="menu-wrap" ref={box}>
       <button
+        ref={trigger}
         type="button"
         className={iconOnly ? 'tb icon' : 'tb'}
         title={title}
@@ -78,8 +82,8 @@ export function MenuItem(p: {
       disabled={p.disabled}
       title={p.title}
       onClick={() => {
-        p.onClick();
         p.close();
+        p.onClick();
       }}
     >
       {p.children}
