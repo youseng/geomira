@@ -1,8 +1,10 @@
 # Geomira release-repair prompts
 
-These are implementation instructions for future AI sessions, not completed fixes.
-They implement the maintainer's decision to remove public claim testing for this
-release while repairing the reviewed geometry, data-loss, interface and release issues.
+These instructions preserve the scope and acceptance criteria for the release repairs.
+See [PROGRESS](PROGRESS.md) for integrated work and [STATUS](../STATUS.md) for the exact
+validated candidate and remaining release steps. The prompts themselves are not evidence
+that a fix passed. They implement the maintainer's decision to remove public claim testing
+while repairing the reviewed geometry, data-loss, interface and release issues.
 
 Review baseline: `95a7c7e9ff6d64947cf0f0e0b3e89d45412b5128` (main after PR #36).
 Inspect the actual checkout before working; reproduce against its current revision.
