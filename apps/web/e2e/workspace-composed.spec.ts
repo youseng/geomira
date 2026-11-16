@@ -174,3 +174,25 @@ test('an expanded phone panel leaves a refused tool input visibly explained', as
   expect(visible).toBe(true);
   await expect(page.getByRole('status', { name: 'Current tool' })).toContainText(/first|pick/iu);
 });
+
+test('keyboard tool search keeps the active result visible in a long list', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 664 });
+  await openApp(page, './index.html');
+  const field = page.getByRole('combobox', { name: 'Find a tool' });
+  await field.fill('circle');
+  const options = page.getByRole('listbox', { name: 'Matching tools' }).getByRole('option');
+  const count = await options.count();
+  expect(count).toBeGreaterThan(5);
+  for (let i = 0; i < count; i++) await field.press('ArrowDown');
+  const selected = page
+    .getByRole('listbox', { name: 'Matching tools' })
+    .getByRole('option', { selected: true });
+  const label = await selected.locator('strong').innerText();
+  const active = await selected.boundingBox();
+  const popup = await page.locator('.tool-results').boundingBox();
+  if (active === null || popup === null) throw new Error('missing results');
+  expect(active.y).toBeGreaterThanOrEqual(popup.y);
+  expect(active.y + active.height).toBeLessThanOrEqual(popup.y + popup.height);
+  await field.press('Enter');
+  await expect(page.getByRole('status', { name: 'Current tool' })).toContainText(label);
+});
