@@ -42,12 +42,13 @@ source edits; reviewed changes are integrated before combined verification.
 
 ### Not done
 
-- All four local builds pass at `c540412`; full integrated verification, complete revised
-  browser/visual/export validation, green final-head CI and independent acceptance remain pending.
-- The initial `9622000` candidate was rejected. Revised application implementation froze at
-  `c540412`; the reviewer uses a clean detached checkout. Formatting, reviewed references,
-  native-pointer fixture corrections and evidence follow as identified validation changes.
-- Main merge, production deployment and release publication are not performed here.
+- All four local builds passed at `c540412`; final-head browser/visual/export validation,
+  fresh combined verification and independent acceptance remain pending.
+- Both `9622000` and `c540412` are rejected as release candidates. Full supported-engine CI
+  and independent review found further functional defects after the initial focused checks.
+  Source corrections and reviewed native-fixture migrations are being integrated.
+- Main merge and its configured deployment are authorized only after those gates pass.
+  Neither has been performed. No separate tagged release was requested.
 
 ### Known bugs
 
@@ -63,9 +64,15 @@ selection and zoom overlays intercepted construction; save-status resizing lost 
 fractional canvas coordinates and startup adoption needed correction. These findings were
 corrected, including native menu-invoker closure, short-viewport focus and first-save layout
 stability. The composed native regression run passed **56/56** and peer visual review passed.
-Application implementation is frozen at `c540412ec2e4d4a68c93c4e59a26343756adaf69`;
-`ab0c5fe` changes CSS/JSON formatting only. Full revised CI and independent acceptance remain
-pending, so the candidate remains NOT ACCEPTED. See
+The `c540412ec2e4d4a68c93c4e59a26343756adaf69` implementation freeze was lifted after
+full CI and independent review found an already-active-worker Reload stall in a second tab,
+covered Expand/Compact controls, insufficient WebKit source exposure and draft-indicator
+reflow during canvas input. The internal retained claim entry also left its suggestion list
+open after submission. Source fixes are being integrated with failing-first regressions;
+public testing remains disabled. `ab0c5fe` changed CSS/JSON formatting only and passed a
+clean full `pnpm verify` with **5,036 tests / 552 files**. Because functional source changed
+afterward, that pass does not establish acceptance of the next candidate. Fresh combined
+verification, all supported-engine checks and exact artifact review remain required. See
 [integration evidence](release-prompts/results/INTEGRATION.md) for failed runs and exact scope.
 
 ### Uncertain
@@ -141,7 +148,9 @@ Pinned pnpm 10.28.0, Node 24.22.1. Frozen lockfile installation; no runtime depe
 
 ### Requests
 
-None for the authorized repair scope. Production approval remains separate from this draft.
+None for the authorized repair scope. The maintainer authorized merge commits; main merge
+and its configured deployment remain conditional on successful final checks and independent
+audit. No additional production approval is pending for that explicitly authorized sequence.
 
 ## Release prompt 04: modal and keyboard safety (ADR-0068): NOT ACCEPTED, awaiting maintainer review
 
