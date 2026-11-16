@@ -186,8 +186,8 @@ export function PersistencePanel(props: PanelProps) {
   useSyncExternalStore(autosave.subscribe, autosave.getVersion, autosave.getVersion);
   const [open, setOpen] = useState(false);
   const status = autosave.getStatus();
-  const show =
-    open || status.phase === 'not-saved' || status.phase === 'conflict' || status.message !== null;
+  // An unacknowledged initial save is not a failure alert that may resize active input.
+  const show = open || status.phase === 'conflict' || status.message !== null;
   return (
     <div className="persistence">
       <div role="status" aria-label="Local save status" aria-live="polite" aria-atomic="true">
