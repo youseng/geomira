@@ -51,8 +51,16 @@ jobs:
           test -f apps/web/dist/sw.js
       - run: pnpm --filter @geomira/web exec playwright install --with-deps chromium firefox webkit
       - name: Public browsers, offline copy and PWA
+        id: public_browsers
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/public
         run: pnpm e2e
       - name: Internal engine (never copied to the release)
+        # Collect independent diagnostics without erasing a failed public gate. Do not
+        # run after cancellation or an earlier prerequisite skipped the public suite.
+        if: ${{ !cancelled() && (steps.public_browsers.outcome == 'success' || steps.public_browsers.outcome == 'failure') }}
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/internal
         run: |
           pnpm --filter @geomira/web build:claims
           pnpm --filter @geomira/web e2e:claims

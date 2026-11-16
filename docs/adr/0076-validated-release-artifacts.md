@@ -51,6 +51,11 @@ Refreshing that file once would repeat the same synchronization defect on the ne
   Ordinary public browser suites and existing performance gates remain enabled.
 - Leave the nightly main/schedule mutation policy unchanged. Those hours-long campaigns remain
   explicit separate checks; they are not silently made a per-PR publication prerequisite.
+- Run the internal browser suite after an executed public suite succeeds or fails, retaining
+  independent public/internal HTML report folders. A public failure still fails the job;
+  integrity checks, tested-artifact upload and candidate packaging retain success-only gates.
+  Cancellation or an earlier prerequisite that skips public tests does not launch internal
+  tests. This collects both sets of failure evidence without promoting a failed candidate.
 
 ## Frozen tests and remaining work
 
