@@ -310,6 +310,33 @@ retains the 120px exposure and caret assertions, including without the optional 
 API. The existing cross-engine exposure matrix
 remains unchanged. No frozen assertion, tolerance or reference is weakened.
 
+## Explicit Recovery visibility after native focus handoff
+
+Final Firefox CI observed a real short-phone failure after Text focus returned to Recovery:
+the app retained scrollTop 162 with Recovery focused, then opening the normal-flow panel
+advanced it to 364 as the inserted messages track grew by 202px. Recovery's top became
+-203px; the actual screenshot showed the canvas/Text while the focused header control and
+Recovery were above the viewport. Existing active-element checks in Text focus alignment
+did not establish that a stale Text callback caused this transition.
+
+Explicit Recovery opening now owns one bounded visibility adjustment. A layout effect
+measures the actual header, workspace and inserted panel against the visual viewport and
+makes the smallest feasible app scroll that exposes their union. It runs immediately,
+after synchronous native focus/layout work and over two animation frames. Every deferred
+call requires the connected Recovery invoker still to own focus; closing/unmounting cancels
+ownership and pending animation work. No focus is set, no persistent scroll listener or
+overflow-anchor override is added, and passive error/conflict expansion is unchanged.
+Ordinary subsequent scrolling and a focus handoff to Command retain their own position.
+
+The original Firefox native-focus sequence and all its placement/hit-target assertions
+remain unchanged. Additive diagnostics seed only the exact traced 162px post-focus offset,
+then activate with native Enter/Space. This reproduced -203px in Chromium before the fix;
+it is deterministic coverage of the observed precondition, not a claimed Firefox pass.
+The tests retain exact invalid Text/Command, caret and canonical .geo backup bytes across
+Undo/Redo, closing/reopening and a native focus handoff before queued visibility work.
+Supported-engine CI remains required. A separately observed invalid-diagnostic/Command
+overlap is classified independently; it is not hidden by changing these Recovery bounds.
+
 ## Integration correction: native traversal and page-flow fixtures
 
 The complete Firefox walkthrough reaches the guide's first search correctly and constructs

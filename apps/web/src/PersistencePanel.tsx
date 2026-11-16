@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { downloadGeo, downloadText } from './backup';
 import type { RecoveryEntry, SaveStatus } from './persist';
 import type { EditorStore } from './store';
+import { useRecoveryFocus } from './recovery-focus';
 
 type PanelProps = { store: EditorStore; onRestore: () => void; outlet?: HTMLElement | null };
 function statusText(phase: SaveStatus['phase']): string {
@@ -185,6 +186,7 @@ export function PersistencePanel(props: PanelProps) {
   const { autosave } = props.store;
   useSyncExternalStore(autosave.subscribe, autosave.getVersion, autosave.getVersion);
   const [open, setOpen] = useState(false);
+  const button = useRecoveryFocus(open);
   const status = autosave.getStatus();
   // An unacknowledged initial save is not a failure alert that may resize active input.
   const show = open || status.phase === 'conflict' || status.message !== null;
@@ -198,6 +200,7 @@ export function PersistencePanel(props: PanelProps) {
         </span>
       </div>
       <button
+        ref={button}
         type="button"
         aria-label="Recovery versions"
         aria-expanded={open}

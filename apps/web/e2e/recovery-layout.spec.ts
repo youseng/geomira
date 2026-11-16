@@ -2,6 +2,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { command, openApp, tab } from './helpers';
 import { expectHeaderClear } from './layout-visibility';
+import { readFile } from 'node:fs/promises';
 
 async function placedBelowControls(page: Page) {
   const recovery = page.getByRole('region', { name: 'Recovery versions', exact: true });
@@ -31,6 +32,107 @@ async function placedBelowControls(page: Page) {
     }),
   ).toBe(true);
 }
+
+async function seededTextHandoff(page: Page) {
+  await page.setViewportSize({ width: 390, height: 380 });
+  await openApp(page, './index.html');
+  await command(page, 'A=(0,0)');
+  await command(page, 'B=(4,0)');
+  await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
+    'Saved locally',
+  );
+  const input = page.getByLabel('Command', { exact: true });
+  await input.fill('C=midpoint(');
+  await tab(page, 'Text');
+  const field = page.getByLabel('Text', { exact: true });
+  const draft = '@version 1\nA=(9,9)\nM=midpoint(\n# keep this invalid draft';
+  await field.fill(draft);
+  await field.evaluate((element: HTMLTextAreaElement) => {
+    element.setSelectionRange(17, 17);
+  });
+  const toggle = page.getByRole('button', { name: 'Recovery versions', exact: true });
+  await toggle.focus();
+  // The Firefox failure retained app.scrollTop162 after native Text→Recovery focus.
+  // Seed that observed browser position; activation is still an ordinary native key.
+  await toggle.evaluate((element) => {
+    const app = element.closest('.app');
+    if (!(app instanceof HTMLElement)) throw new Error('no workspace scroll host');
+    app.scrollTop = 162;
+  });
+  await expect(toggle).toBeFocused();
+  return { field, draft, toggle, input };
+}
+
+async function canonicalBackup(page: Page) {
+  const pending = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download .geo backup', exact: true }).click();
+  const path = await (await pending).path();
+  return readFile(path, 'utf8');
+}
+
+test('Recovery activation reveals its focused control after a retained native Text scroll', async ({
+  page,
+}) => {
+  const { field, draft, toggle, input } = await seededTextHandoff(page);
+  await toggle.press('Enter');
+  await placedBelowControls(page);
+  await expect(toggle).toBeFocused();
+  await expect(field).toHaveValue(draft);
+  expect(await field.evaluate((element: HTMLTextAreaElement) => element.selectionStart)).toBe(17);
+  const ab = '@version 1\nA = (0, 0)\nB = (4, 0)\n';
+  expect(await canonicalBackup(page)).toBe(ab);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  expect(await canonicalBackup(page)).toBe('@version 1\nA = (0, 0)\n');
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  expect(await canonicalBackup(page)).toBe(ab);
+  await toggle.press('Space');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await toggle.press('Enter');
+  await placedBelowControls(page);
+  await toggle.press('Space');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(field).toHaveValue(draft);
+  await expect(input).toHaveValue('C=midpoint(');
+});
+
+test('Recovery queued visibility yields to a later native Command focus', async ({ page }) => {
+  const { field, draft, toggle, input } = await seededTextHandoff(page);
+  await toggle.evaluate((element) => {
+    const outlet = element.closest('.app')?.querySelector('.recovery-outlet');
+    if (!outlet) throw new Error('no recovery outlet');
+    // Handoff after insertion so the baseline includes native insertion anchoring,
+    // but before deferred Recovery visibility work can act on the new focus owner.
+    const observer = new MutationObserver(() => {
+      if (!outlet.querySelector('#recovery-versions')) return;
+      observer.disconnect();
+      const command = document.querySelector('input[aria-label="Command"]');
+      if (!(command instanceof HTMLInputElement)) throw new Error('no command');
+      command.focus();
+      command.dataset['nativeFocusScroll'] = String(command.closest('.app')?.scrollTop);
+    });
+    observer.observe(outlet, { childList: true, subtree: true });
+  });
+  await toggle.press('Enter');
+  await input.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            resolve();
+          }),
+        ),
+      ),
+  );
+  await expect(input).toBeFocused();
+  const scroll = await input.evaluate((element) => ({
+    before: Number(element.dataset['nativeFocusScroll']),
+    after: element.closest('.app')?.scrollTop,
+  }));
+  expect(scroll.before).toBeGreaterThan(0);
+  expect(scroll.after).toBe(scroll.before);
+  await expect(input).toHaveValue('C=midpoint(');
+  await expect(field).toHaveValue(draft);
+});
 
 for (const viewport of [
   { width: 390, height: 664 },
