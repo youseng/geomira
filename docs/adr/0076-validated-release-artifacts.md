@@ -98,6 +98,17 @@ mouse action. With the phone's panel in page flow, source/footer interaction can
 canvas above the viewport; a user first scrolls back to that surface. This preserves the
 existing world-coordinate, native-event, text and undo assertions and the CSS inverse mapping.
 
+The full-UI 300-object drag fixture's original centre press selects nearby topmost M234 in
+the smaller ADR-0074 fitted viewport. The actual trace reports that this dependent point is
+not draggable, produces a 48 px refusal notice and leaves Undo disabled. Its 1.57 ms trace
+is therefore invalid as a drag measurement. A native press one CSS pixel left and down,
+inside P1's visible dot, selects P1 without changing the camera, canvas, object count or
+cyclic path reference. The ADR-0014 frame count, timing computation and 8 ms limit remain
+unchanged. Assertions outside the measured window now require a coordinate-only P1 edit,
+the exact original document when only that coordinate line is restored, and complete
+one-step Undo/Redo with no older history. This retains dense-figure topmost-pick friction
+as a visible limitation rather than changing hit ordering to satisfy a fixture.
+
 ## Individually reviewed final references
 
 The integration owner reviewed every expected/actual/diff for eight exported example PNGs,

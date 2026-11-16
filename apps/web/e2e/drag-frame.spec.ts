@@ -87,8 +87,13 @@ test('a full UI drag frame at 300 objects (SPEC §17: ≤ 8 ms)', async ({ page,
   await openApp(page);
   await page.getByLabel('Example').selectOption('stress-300');
   await page.waitForTimeout(500);
+  const source = page.getByLabel('Text', { exact: true });
+  const before = await source.inputValue();
+  await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeDisabled();
   const p = await screenOf(page, -4.5, -2.5);
-  await page.mouse.move(p.x, p.y);
+  // ADR-0074/0076: in the smaller fitted viewport, M234's hit radius covers P1's
+  // centre. Its exposed lower-left dot remains a native target at the same camera.
+  await page.mouse.move(p.x - 1, p.y + 1);
   await page.mouse.down();
   await page.evaluate(() => {
     window.__drag = async (x0, y0, frames) => {
@@ -144,5 +149,14 @@ test('a full UI drag frame at 300 objects (SPEC §17: ≤ 8 ms)', async ({ page,
   expect(app.frames).toBe(FRAMES);
   // The drag moved the point (one history entry at the end).
   await expect(page.getByRole('button', { name: 'Undo' })).toBeEnabled();
+  await expect(source).toHaveValue(/^P1 = \(-?\d+(?:\.\d+)?, -?\d+(?:\.\d+)?\)$/mu);
+  await expect(source).not.toHaveValue(/^P1 = \(-4\.5, -2\.5\)$/mu);
+  const after = await source.inputValue();
+  expect(after.replace(/^P1 = \([^\n]+\)$/mu, 'P1 = (-4.5, -2.5)')).toBe(before);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(source).toHaveValue(before);
+  await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(source).toHaveValue(after);
   expect(app.median).toBeLessThanOrEqual(8);
 });

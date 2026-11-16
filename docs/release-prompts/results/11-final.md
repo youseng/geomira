@@ -146,6 +146,18 @@ the complete required suite must compare these references successfully on the fi
 
 ## Remaining acceptance
 
+The first isolated public performance run on c520 passed the existing scene medians:
+desktop drag/pan 4.3/2.2 ms and phone 4.4/2.7 ms. The original full-UI fixture failed
+Undo-enabled because its centre press selected dependent M234; its low 1.57 ms number
+does **not** measure an edit. Native diagnosis showed a visible P1-dot offset of
+(-1,+1) CSS px works at the exact same camera/canvas. The corrected fixture preserves
+all timing assertions and now verifies the entire document and one-step Undo/Redo.
+Its first actual-drag run passed those document/history assertions but **failed** the
+unchanged 8 ms app median at **37.51 ms** (p95 58.05 ms; raster median 10.03 ms).
+This is an unresolved release performance blocker pending source diagnosis, not a passing
+benchmark or an accepted tolerance change. Original and corrected JSON/logs are retained
+separately as c520 public-performance and public-drag-corrected evidence.
+
 - Compare all 25 references on the final source with the complete required CI matrix;
   review any new mismatch individually without changing tolerances.
 - Complete isolated original performance checks after normal browser work is idle;
