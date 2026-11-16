@@ -18,19 +18,24 @@ import { useDiscoveryCanvas, ViewBanner } from './discovery-view';
 import { CommandBar } from './CommandBar';
 import { ErrorBanner, TextDialog } from './Dialogs';
 import { ExportDialog } from './ExportDialog';
-import { Header } from './Header';
+import { Header, type HeaderProps } from './Header';
 import { DocumentFiles } from './DocumentFiles';
 import { ShareDialog } from './ShareDialog';
 import { PersistencePanel } from './PersistencePanel';
 import { useAutosave, useFitOnOpen, useInternalErrors, useShortcuts, useStartup } from './hooks';
 import { reportOf, useFit, useHeader, useKeyActions, usePage, type Dialog } from './page';
-import { SidePanel, type Tab } from './SidePanel';
+import { SidePanel } from './SidePanel';
 import { useSettled } from './settled';
 import { SelectionBar } from './SelectionBar';
 import { ClaimChips, DevBox, NoticeLine, Stage, ZoomControls } from './Stage';
 import type { EditorStore } from './store';
 import { StyleCard, usePreviewScene, useStyleCard } from './StyleCard';
 import { Palette, StatusLine, ToolHint } from './ToolBar';
+import { usePanels, useWorkspace } from './workspace';
+import { WorkspaceBar } from './WorkspaceBar';
+import { GettingStarted } from './GettingStarted';
+import { chooseTool } from '@geomira/editor/selection-tool';
+import type { ToolId } from '@geomira/editor/tool-state';
 
 /** Catches render errors: the page shows them as internal errors with the debug report. */
 class Boundary extends Component<
@@ -105,24 +110,6 @@ function usePageShortcuts(
   useShortcuts(useKeyActions(store, fit, focusCommand, toggleHelp));
 }
 
-/** The panel tabs and, on a phone, whether the drawer is open. */
-function usePanels() {
-  const [tab, setTab] = useState<Tab>('Text');
-  const [open, setOpen] = useState(false);
-  const showTab = useCallback((t: Tab) => {
-    setTab(t);
-    setOpen(true);
-  }, []);
-  const toggleHelp = useCallback(() => {
-    setTab((t) => (t === 'Help' ? 'Text' : 'Help'));
-    setOpen(true);
-  }, []);
-  const close = useCallback(() => {
-    setOpen(false);
-  }, []);
-  return { tab, open, showTab, toggleHelp, close };
-}
-
 /** Fits the view after an edit once its figure is drawn (Randomize moves the figure). */
 function useFitAfterEdit(scene: Scene, fit: () => void) {
   const pending = useRef(false);
@@ -157,6 +144,12 @@ function useUndrawable() {
   return { undrawable: ids, onUndrawable };
 }
 
+function useClaimBox(props: HeaderProps['claimBox']) {
+  const test = useStable(props.test);
+  const complete = useStable(props.complete);
+  return useMemo(() => ({ test, complete }), [test, complete]);
+}
+
 /** The page's state, effects and actions. */
 function useApp() {
   const page = usePage();
@@ -165,7 +158,17 @@ function useApp() {
   const commandRef = useRef<HTMLInputElement>(null);
   const [size, setSize] = useState<Size | null>(null);
   const [ready, setReady] = useState(false);
-  const panels = usePanels();
+  const workspace = useWorkspace();
+  const panels = usePanels(workspace);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const choose = (id: ToolId) => {
+    workspace.setPan(false);
+    workspace.remember(id);
+    store.run((s, env) => chooseTool(s, id, env));
+  };
+  useEffect(() => {
+    workspace.setPan(false);
+  }, [workspace.setPan, snap.state.toolState]);
   const [dialog, setDialog] = useState<Dialog>(null);
   const onReady = useCallback(() => {
     setReady(true);
@@ -183,12 +186,7 @@ function useApp() {
     showTab: panels.showTab,
     fitAfterEdit,
   });
-  const testClaim = useStable(header.props.claimBox.test);
-  const completeClaim = useStable(header.props.claimBox.complete);
-  const claimBox = useMemo(
-    () => ({ test: testClaim, complete: completeClaim }),
-    [testClaim, completeClaim],
-  );
+  const claimBox = useClaimBox(header.props.claimBox);
   const openClaims = useStable(() => {
     panels.showTab('Claims');
   });
@@ -206,6 +204,7 @@ function useApp() {
   const found = useDiscoveryCanvas(page.discovery, store, styled, state.doc);
   return {
     ...{ page, canvasRef, commandRef, setSize, panels, dialog, setDialog, header, size },
+    ...{ workspace, searchRef, choose },
     ...useUndrawable(),
     ...{ claimBox, openClaims, style, shown: found.scene, highlight: found.highlight },
   };
@@ -217,6 +216,19 @@ function StageTop({ app }: { app: ReturnType<typeof useApp> }) {
   const { store, snap } = page;
   return (
     <div className="stage-top">
+      <GettingStarted
+        workspace={app.workspace}
+        canvasHeight={app.size?.height ?? 200}
+        store={store}
+        choose={app.choose}
+        search={app.searchRef}
+        text={() => {
+          app.panels.showTab('Text');
+        }}
+        exportFigure={() => {
+          app.setDialog({ kind: 'export', format: 'svg' });
+        }}
+      />
       <Hint store={store} state={header.settled} />
       {page.internal !== null && (
         <ErrorBanner
@@ -251,6 +263,7 @@ function Canvas({ app }: { app: ReturnType<typeof useApp> }) {
   return (
     <Board
       canvasRef={app.canvasRef}
+      pan={app.workspace.pan}
       store={app.page.store}
       scene={app.shown}
       viewport={state.viewport}
@@ -299,6 +312,26 @@ function PageHeader({ app }: { app: ReturnType<typeof useApp> }) {
   );
 }
 
+function PanelView({ app }: { app: ReturnType<typeof useApp> }) {
+  return (
+    <SidePanel
+      store={app.page.store}
+      workspace={app.workspace}
+      state={app.page.snap.state}
+      scene={app.page.scene}
+      undrawable={app.undrawable}
+      runs={app.page.runs}
+      discovery={app.page.discovery}
+      tab={app.panels.tab}
+      onTab={app.panels.showTab}
+      open={app.panels.open}
+      onClose={app.panels.close}
+      claimBox={app.claimBox}
+      onStyle={app.style.open}
+    />
+  );
+}
+
 /**
  * Geomira (SPEC §15) in Geomdraw's layout (Run 9b): the top bar, the tool palette, the canvas
  * with its hint, status line, live claim chips and zoom buttons, the command line, the panels
@@ -308,15 +341,26 @@ function PageHeader({ app }: { app: ReturnType<typeof useApp> }) {
  */
 export function App() {
   const app = useApp();
-  const { page, commandRef, panels, dialog, setDialog, header, size } = app;
+  const { page, commandRef, dialog, setDialog, header, size } = app;
   const { store, snap, scene } = page;
   const { state } = snap;
   const settled = useSettled(state);
   return (
     <AboutContext.Provider value={page.about}>
-      <div className="app">
+      <div
+        className={`app${app.workspace.prefs.collapsed ? ' panel-collapsed' : ''}${app.workspace.view.height < 450 ? ` short-workspace${app.workspace.toolsExpanded ? ' show-palette' : ''}` : ''}`}
+        style={app.workspace.style}
+      >
         <PageHeader app={app} />
-        <Tools store={store} state={settled} />
+        <WorkspaceBar
+          workspace={app.workspace}
+          inputRef={app.searchRef}
+          choose={app.choose}
+          showPanels={() => {
+            app.panels.showTab(app.panels.tab);
+          }}
+        />
+        <Tools store={store} state={settled} onChoose={app.choose} />
         <Stage>
           <Canvas app={app} />
           <StageTop app={app} />
@@ -326,27 +370,14 @@ export function App() {
             stats={header.stats}
             times={header.times}
           />
-          <SelectionBar store={store} state={settled} />
+          <SelectionBar store={store} state={settled} onProperties={app.style.open} />
           {CLAIM_TESTING && <ClaimChips store={store} state={state} onOpen={app.openClaims} />}
           <ZoomControls onZoom={header.props.onZoom} onFit={header.props.onFit} />
           <Status state={settled} />
         </Stage>
         <Commands store={store} inputRef={commandRef} />
         <Boundary onError={page.onInternal}>
-          <SidePanel
-            store={store}
-            state={state}
-            scene={scene}
-            undrawable={app.undrawable}
-            runs={page.runs}
-            discovery={page.discovery}
-            tab={panels.tab}
-            onTab={panels.showTab}
-            open={panels.open}
-            onClose={panels.close}
-            claimBox={app.claimBox}
-            onStyle={app.style.open}
-          />
+          <PanelView app={app} />
         </Boundary>
         <StyleCardView app={app} />
         <DialogView

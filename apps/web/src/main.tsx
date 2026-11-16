@@ -9,6 +9,8 @@ import './panels.css';
 import './selection.css';
 import './claims.css';
 import './phone.css';
+import './workspace.css';
+import './workspace-phone.css';
 
 const container = document.getElementById('root');
 if (container === null) {

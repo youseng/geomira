@@ -1,3 +1,5 @@
+import { PanelResize } from './PanelResize';
+import type { Workspace } from './workspace';
 import { CLAIM_TESTING } from './features';
 import type { ClaimBoxHost } from './ClaimBox';
 import { memo } from 'react';
@@ -17,12 +19,14 @@ import type { DiscoveryRuns } from './discovery-runs';
 import type { TestRuns } from './test-runs';
 
 /** The tabs; styles are edited in the style card of each object (ADR-0029), not in a tab. */
-export type Tab = 'Text' | 'Objects' | 'Layers' | 'Claims' | 'Help';
+import type { Tab } from './panel-types';
+export type { Tab } from './panel-types';
 export const TABS: readonly Tab[] = CLAIM_TESTING
   ? ['Text', 'Objects', 'Layers', 'Claims', 'Help']
   : ['Text', 'Objects', 'Layers', 'Help'];
 
 export interface SidePanelProps {
+  readonly workspace?: Workspace;
   readonly store: EditorStore;
   readonly state: EditorState;
   readonly scene: Scene;
@@ -102,7 +106,23 @@ export function SidePanel(props: SidePanelProps) {
   const state = useSettled(props.state);
   const applier = store.textDraft;
   return (
-    <aside className={open ? 'side open' : 'side'} aria-label="Figure">
+    <aside
+      className={`side${open ? ' open' : ''}${props.workspace?.prefs.compact === true ? ' compact' : ''}`}
+      aria-label="Figure"
+    >
+      {props.workspace !== undefined && <PanelResize workspace={props.workspace} />}
+      {props.workspace !== undefined && (
+        <button
+          type="button"
+          className="sheet-compact"
+          aria-label={props.workspace.prefs.compact ? 'Expand panel' : 'Compact panel'}
+          onClick={() => {
+            props.workspace?.update({ compact: !props.workspace.prefs.compact });
+          }}
+        >
+          {props.workspace.prefs.compact ? 'Expand panel' : 'Compact panel'}
+        </button>
+      )}
       <div className="tabs" role="tablist" aria-label="Panels">
         {TABS.map((t) => (
           <button

@@ -1,0 +1,228 @@
+/* ADR-0074: workspace preferences and responsive controls do not enter figure history. */
+.app {
+  grid-template-columns: 104px minmax(300px, 1fr) var(--sidebar-width, 320px);
+  grid-template-rows: auto 48px minmax(0, 1fr) 44px;
+  grid-template-areas: 'top top top' 'work work work' 'pal stage side' 'pal cmd side';
+  height: var(--workspace-height, 100dvh);
+}
+.topbar {
+  flex-wrap: wrap;
+  min-height: 48px;
+  padding: 6px 10px;
+}
+.topbar > * {
+  flex-shrink: 0;
+}
+.topbar .claim-form {
+  flex-shrink: 1;
+}
+.topbar .document-files {
+  max-width: min(260px, 30vw);
+}
+.topbar .menu {
+  max-height: min(60dvh, 400px);
+  overflow: auto;
+  max-width: calc(100vw - 12px);
+}
+.topbar .spacer {
+  min-width: 0;
+}
+.workspace-bar {
+  grid-area: work;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+  z-index: 85;
+}
+.tool-search {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  gap: 6px;
+}
+.tool-search > input {
+  width: min(320px, 100%);
+  min-width: 60px;
+  flex: 1;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 10px;
+  background: var(--panel2);
+}
+.tool-results,
+.recent-tools > div {
+  position: absolute;
+  left: 0;
+  top: 44px;
+  width: min(500px, calc(100vw - 16px));
+  max-height: min(50dvh, 360px);
+  overflow: auto;
+  box-shadow: var(--shadow);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px;
+  z-index: 90;
+}
+.tool-results ul {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+}
+.tool-results li {
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.tool-results li[aria-selected='true'],
+.tool-results li:hover {
+  background: var(--accent-soft);
+}
+.tool-results li span {
+  display: block;
+  font-size: 12px;
+}
+.recent-tools {
+  position: relative;
+}
+.recent-tools summary {
+  cursor: pointer;
+  padding: 8px;
+  white-space: nowrap;
+}
+.recent-tools > div {
+  left: auto;
+  right: 0;
+  width: 220px;
+}
+.recent-tools button {
+  display: block;
+  padding: 10px;
+  width: 100%;
+  border: 0;
+  background: var(--panel);
+  text-align: left;
+}
+.workspace-bar button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.panel-collapsed {
+  grid-template-columns: 104px minmax(300px, 1fr) 0;
+}
+.panel-collapsed .side {
+  visibility: hidden;
+}
+.side {
+  position: relative;
+}
+.tabs {
+  padding-left: 12px;
+}
+.drawer-close {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  border: 0;
+  background: var(--panel);
+  color: var(--text);
+}
+.panel-resizer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  z-index: 3;
+  cursor: ew-resize;
+  touch-action: none;
+  border-left: 2px solid var(--border);
+}
+.panel-resizer:hover,
+.panel-resizer:focus {
+  background: var(--accent-soft);
+}
+.sheet-compact {
+  display: none;
+}
+.getting-started {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 10px;
+  max-width: min(450px, 100%);
+  max-height: min(58dvh, 350px);
+  overflow: auto;
+}
+.getting-started > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.getting-started p {
+  margin: 6px 0;
+}
+.getting-started button {
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  border-radius: 5px;
+  padding: 5px 8px;
+}
+.guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.stage {
+  --status-h: 38px;
+}
+.statusbar {
+  white-space: normal;
+  line-height: 1.3;
+}
+.statusbar span {
+  max-height: 34px;
+}
+.selbar {
+  max-width: calc(100% - 20px);
+}
+.persistence section {
+  left: 8px;
+  width: min(480px, calc(100vw - 16px));
+}
+@media (max-width: 1100px) {
+  .topbar .tb {
+    min-width: 36px;
+  }
+  .topbar .menu {
+    position: fixed;
+    top: 50px;
+    right: 6px;
+  }
+  .topbar .menu .menu {
+    position: static;
+    box-shadow: none;
+    min-width: 0;
+  }
+  .topbar .menu .triangle-type {
+    display: block;
+    width: 100%;
+  }
+}
+
+.style-card {
+  max-height: calc(var(--workspace-height, 100dvh) - 12px);
+}
+
+.topbar {
+  position: relative;
+  z-index: 95;
+}

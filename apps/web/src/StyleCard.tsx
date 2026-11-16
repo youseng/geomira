@@ -29,6 +29,7 @@ import { buildScene } from '@geomira/scene/build';
 import type { Scene } from '@geomira/scene/types';
 import { documentStyles } from '@geomira/scene/style';
 import { placeCard, type Box } from './card-place';
+import { useViewport } from './workspace';
 import { usePopoverFocus } from './popover-focus';
 import { MathText } from './MathText';
 import type { EditorStore } from './store';
@@ -94,12 +95,13 @@ function useCloseOutside(ref: RefObject<HTMLDivElement | null>, onClose: () => v
 /** The card's position: measured, then placed by its anchor inside the viewport. */
 function usePlacement(ref: RefObject<HTMLDivElement | null>, anchor: Box, more: boolean) {
   const [at, setAt] = useState<{ left: number; top: number } | null>(null);
+  const view = useViewport();
   useLayoutEffect(() => {
     const el = ref.current;
     if (el === null) return;
     const size = { width: el.offsetWidth, height: el.offsetHeight };
-    setAt(placeCard(anchor, size, { width: innerWidth, height: innerHeight }));
-  }, [ref, anchor, more]);
+    setAt(placeCard(anchor, size, view));
+  }, [ref, anchor, more, view.width, view.height]);
   return at ?? { left: 0, top: 0, visibility: 'hidden' as const };
 }
 

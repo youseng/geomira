@@ -31,6 +31,12 @@ export function HelpPanel() {
         hold a finger on it), to change its style or its name. In the Move tool, drag a label to
         move it next to its object.
       </p>
+      <p>
+        Move: left-drag empty canvas to box-select; Shift adds to selection. Right or middle drag
+        pans, and touch pans or pinches to zoom. The Pan button also pans over points. Escape
+        cancels picks and 0 fits the figure. Select one object and choose Properties; right-click or
+        long-press remains available. Search tools by name above the canvas.
+      </p>
       <AboutSection />
     </div>
   );
