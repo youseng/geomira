@@ -108,7 +108,10 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
       'retainRevisions',
     ],
   },
-  './share': { module: shareMod, names: ['SHARE_PREFIX', 'decodeShare', 'encodeShare'] },
+  './share': {
+    module: shareMod,
+    names: ['SHARE_LIMITS', 'SHARE_PREFIX', 'decodeShare', 'encodeShare', 'encodeShareChecked'],
+  },
   './report': { module: reportMod, names: ['debugReport'] },
   './command': {
     module: commandMod,
