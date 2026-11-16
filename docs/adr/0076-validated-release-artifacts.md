@@ -42,7 +42,9 @@ Refreshing that file once would repeat the same synchronization defect on the ne
   availability initially requires a network; the saved standalone HTML then runs offline.
   Existing app routes still open offline from the app-shell cache. A controlled hosted
   browser test claims/reloads the PWA, navigates to the public file and verifies its exact
-  bytes/SHA-256, then verifies the provenance response.
+  bytes/SHA-256, then verifies the provenance response. The hosted about page offers a
+  same-origin `download="geomira.html"` link so users can save the standalone file directly;
+  the controlled regression checks its native download bytes/hash as well as navigation.
 - Add interactive hosted Firefox/WebKit projects for construction, persistence, command and
   keyboard flows, modal isolation and the public boundary. Keep single-file coverage in all
   three engines. The exact distributed HTML also has a file-mode compatibility/zero-job test.

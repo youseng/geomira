@@ -45,3 +45,17 @@ expected images change. The PWA test server gains the JSON MIME type to model th
 real public provenance response. No dependencies, push, publication or deployment
 are involved. Full final-tree verification, browsers and release provenance remain
 owned by the integration validation and independent audit.
+
+## Native browser download follow-up
+
+The hosted about page now has a same-origin **Download offline copy** link with
+`download="geomira.html"`. The GitHub README explains Save link as and links to that
+button. The controlled-PWA regression first visits the about page, performs a real
+browser download, checks its suggested filename and exact bytes/SHA-256 against
+the standalone candidate and manifest, then retains both direct-navigation checks.
+The added link assertion failed against the preceding build before implementation.
+
+After adding the anchor, both public builds/package generation passed. The complete
+PWA project passed again: **5 tests**, **14.8 seconds**, one worker at `/geomira/`
+using preview port 4192. Native download and direct navigation both deliver the
+claim-free standalone bytes. No test limits or existing assertions were changed.

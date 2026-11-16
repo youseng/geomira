@@ -237,6 +237,18 @@ test('the public download keeps its exact bytes after the PWA claims and reloads
   const original = readFileSync(join(site.dir, 'geomira.html'));
   const manifestText = readFileSync(join(site.dir, 'release.json'), 'utf8');
   const manifest: unknown = JSON.parse(manifestText);
+  await page.goto(new URL('about.html', site.url).href);
+  const link = page.getByRole('link', { name: 'Download offline copy', exact: true });
+  await expect(link).toBeVisible();
+  await expect(link).toHaveAttribute('download', 'geomira.html');
+  const downloading = page.waitForEvent('download');
+  await link.click();
+  const native = await downloading;
+  expect(native.suggestedFilename()).toBe('geomira.html');
+  expect(await native.failure()).toBeNull();
+  const saved = await native.path();
+  const downloaded = readFileSync(saved);
+  expect(downloaded.equals(original)).toBe(true);
   const response = await page.goto(new URL('geomira.html', site.url).href);
   if (response === null) throw new Error('the public download returned no response');
   const received = await response.body();
@@ -253,9 +265,10 @@ test('the public download keeps its exact bytes after the PWA claims and reloads
     manifest.files === null
   )
     throw new Error('release manifest has no file checksums');
-  expect(createHash('sha256').update(received).digest('hex')).toBe(
-    Reflect.get(manifest.files, 'geomira.html'),
-  );
+  for (const bytes of [downloaded, received])
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(
+      Reflect.get(manifest.files, 'geomira.html'),
+    );
   await expect(page.getByLabel('Geometry canvas')).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Claims', exact: true })).toHaveCount(0);
   const provenance = await page.goto(new URL('release.json', site.url).href);

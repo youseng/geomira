@@ -1,7 +1,9 @@
 # Downloadable Geomira
 
 [Download the public offline HTML](https://youseng.github.io/geomira/geomira.html).
-Save the file, then open it directly in Chromium, Firefox or Safari. It needs no account,
+For this GitHub link, use your browser’s **Save link as** action, or open the
+[about page](https://youseng.github.io/geomira/about.html) and choose **Download offline copy**
+for a normal browser download. Open the saved file directly in Chromium, Firefox or Safari. It needs no account,
 network or server after download. Browser file-origin storage policies still apply;
 keep portable `.geo` backups of important work. The initial download and its provenance
 manifest use the network; the PWA does not precache these files or substitute its app shell
