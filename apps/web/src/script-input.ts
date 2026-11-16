@@ -1,13 +1,20 @@
 /** Textarea assistance; parsing and document ownership stay in the shared TextApplier. */
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import { acceptCompletion, completions, type Completion } from '@geomira/editor/command';
 import type { EditorState } from '@geomira/editor/state';
 import type { TextApplier } from './text-apply';
 import { lineAt, sourceCompletionsAllowed } from './script-source';
 import { parseText } from '@geomira/lang/parse-text';
 import { insertCompletion } from './native-completion';
+import { useCompletionCaret } from './completion-caret';
 
-export function useScriptCompletion(state: EditorState, applier: TextApplier, text: string) {
+export function useScriptCompletion(
+  state: EditorState,
+  applier: TextApplier,
+  text: string,
+  field: RefObject<HTMLTextAreaElement | null>,
+) {
+  const restoreCaret = useCompletionCaret(text, field);
   const [cursor, setCursor] = useState(0);
   const [active, setActive] = useState(0);
   const [offered, offer] = useState(false);
@@ -40,15 +47,10 @@ export function useScriptCompletion(state: EditorState, applier: TextApplier, te
       line.start + line.cursor,
       completion.insert,
     );
+    restoreCaret(next, at);
     applier.type(next);
     setCursor(at);
     offer(false);
-    requestAnimationFrame(() => {
-      field?.focus();
-      field?.setSelectionRange(at, at);
-      // React's controlled value can emit a selection event at the old end first.
-      setCursor(at);
-    });
   };
   return { cursor, active, setActive, offered, offer, focused, focus, list, select, accept };
 }
