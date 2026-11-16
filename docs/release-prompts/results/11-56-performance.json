@@ -1,0 +1,243 @@
+{
+  "source": "56fbd30f3457635ac68d8ad48980b37b6f93ea0c",
+  "environment": {
+    "node": "24.22.1",
+    "pnpm": "10.28.0",
+    "playwright": "1.56.1",
+    "browser": "bundled Chromium141",
+    "base": "/geomira/"
+  },
+  "scope": "Only the six relevant original scene/full-UI gates, once per mode, isolated worker1. Worker/fallback/discovery are unchanged and receive fresh full-CI validation, not a repeated local campaign.",
+  "stages": [
+    {
+      "mode": "public",
+      "stats": {
+        "startTime": "2026-11-16T14:22:56.134Z",
+        "duration": 24834.159,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "cases": [
+        {
+          "project": "desktop",
+          "title": "frame time at 300 objects (SPEC \u00a717: drag frame \u2264 8 ms)",
+          "status": "expected",
+          "measurements": [
+            {
+              "kind": "frame-time",
+              "value": {
+                "objects": 300,
+                "drag": {
+                  "frames": 120,
+                  "median": 5.100000001490116,
+                  "p95": 17.300000000745058,
+                  "max": 510.5
+                },
+                "pan": {
+                  "frames": 120,
+                  "median": 2.399999998509884,
+                  "p95": 5.100000001490116,
+                  "max": 460.70000000298023
+                }
+              }
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 6528,
+              "errors": []
+            }
+          ]
+        },
+        {
+          "project": "mobile",
+          "title": "frame time at 300 objects (SPEC \u00a717: drag frame \u2264 8 ms)",
+          "status": "expected",
+          "measurements": [
+            {
+              "kind": "frame-time",
+              "value": {
+                "objects": 300,
+                "drag": {
+                  "frames": 120,
+                  "median": 4.599999997764826,
+                  "p95": 16.199999999254942,
+                  "max": 239.10000000149012
+                },
+                "pan": {
+                  "frames": 120,
+                  "median": 2.600000001490116,
+                  "p95": 3.599999997764826,
+                  "max": 214.80000000074506
+                }
+              }
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 4112,
+              "errors": []
+            }
+          ]
+        },
+        {
+          "project": "measure-drag",
+          "title": "a full UI drag frame at 300 objects (SPEC \u00a717: \u2264 8 ms)",
+          "status": "expected",
+          "measurements": [
+            {
+              "kind": "drag-frame",
+              "value": {
+                "objects": 300,
+                "app": {
+                  "frames": 120,
+                  "median": 7.16,
+                  "p95": 13.24,
+                  "max": 21.57
+                },
+                "raster": {
+                  "frames": 120,
+                  "median": 10.6,
+                  "p95": 15.56,
+                  "max": 21.17
+                },
+                "total": {
+                  "frames": 120,
+                  "median": 17.83,
+                  "p95": 26.88,
+                  "max": 33.15
+                }
+              }
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 7750,
+              "errors": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "internal",
+      "stats": {
+        "startTime": "2026-11-16T14:23:45.806Z",
+        "duration": 23448.052,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "cases": [
+        {
+          "project": "desktop",
+          "title": "frame time at 300 objects (SPEC \u00a717: drag frame \u2264 8 ms)",
+          "status": "expected",
+          "measurements": [
+            {
+              "kind": "frame-time",
+              "value": {
+                "objects": 300,
+                "drag": {
+                  "frames": 120,
+                  "median": 5.700000002980232,
+                  "p95": 17.900000002235174,
+                  "max": 484.5
+                },
+                "pan": {
+                  "frames": 120,
+                  "median": 3.5,
+                  "p95": 12.5,
+                  "max": 476.30000000074506
+                }
+              }
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 6546,
+              "errors": []
+            }
+          ]
+        },
+        {
+          "project": "mobile",
+          "title": "frame time at 300 objects (SPEC \u00a717: drag frame \u2264 8 ms)",
+          "status": "expected",
+          "measurements": [
+            {
+              "kind": "frame-time",
+              "value": {
+                "objects": 300,
+                "drag": {
+                  "frames": 120,
+                  "median": 4.600000001490116,
+                  "p95": 9.300000000745058,
+                  "max": 242.79999999701977
+                },
+                "pan": {
+                  "frames": 120,
+                  "median": 2.699999999254942,
+                  "p95": 3.900000002235174,
+                  "max": 232
+                }
+              }
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 4176,
+              "errors": []
+            }
+          ]
+        },
+        {
+          "project": "measure-drag",
+          "title": "a full UI drag frame at 300 objects (SPEC \u00a717: \u2264 8 ms)",
+          "status": "expected",
+          "measurements": [
+            {
+              "kind": "drag-frame",
+              "value": {
+                "objects": 300,
+                "app": {
+                  "frames": 120,
+                  "median": 6.81,
+                  "p95": 17.24,
+                  "max": 30.72
+                },
+                "raster": {
+                  "frames": 120,
+                  "median": 10.86,
+                  "p95": 19.34,
+                  "max": 21.85
+                },
+                "total": {
+                  "frames": 120,
+                  "median": 18.27,
+                  "p95": 30.46,
+                  "max": 42.55
+                }
+              }
+            }
+          ],
+          "results": [
+            {
+              "status": "passed",
+              "duration_ms": 7365,
+              "errors": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
