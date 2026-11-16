@@ -1,5 +1,122 @@
 # STATUS
 
+## Release prompt 04: modal and keyboard safety (ADR-0068): NOT ACCEPTED, awaiting maintainer review
+
+Base: `8535d51097af931a9bdd6fd924d3a5acbba12a20`, latest main including merged PR #39.
+Fresh clone on `codex/modal-keyboard-safety`; unrelated work preserved. Decision:
+[ADR-0068](adr/0068-native-modal-interaction.md). Push and draft PR are authorized;
+merge, publication and deployment are prohibited.
+
+### Done
+
+- Export, Share and Debug report use the same native modal boundary, real backdrop and
+  background inertness. Editor dispatch respects modal ownership without cancelling native
+  field/browser defaults. → `apps/web/e2e/modal-safety.spec.ts`.
+- Tab/Shift+Tab cycle visible enabled controls, respecting radio groups; an empty dialog
+  retains focus. Escape dismisses only the topmost modal. Restore the usable invoker or
+  canvas fallback, and remove listeners after reopening. → same browser suite.
+- Preserve canonical content and complete undo/redo history, selection, viewport, active tool
+  and pending multi-pick construction. Native text editing, selection, copy and undo remain
+  usable; normal canvas deletion resumes on close. → same browser suite.
+- Keep the style card non-modal with its existing focus/dismissal behavior. Ordinary keyboard
+  and touch specs now run in public builds too; their original internal Claims assertions
+  remain internal. Public claim-bearing data stays compatible and testing remains disabled.
+- SPEC and CHANGELOG document the behavior. Future task 03 dialogs must use the shared Modal;
+  no file-management dialogs exist in this base. Task 09 must preserve its interaction boundary.
+
+### Not done
+
+Implementation and local verification are complete. Maintainer acceptance remains separate.
+Remote CI and the final documentation revision are reported in draft PR #40; GitHub checks
+are authoritative. No merge, publication or deployment is performed.
+
+### Known bugs
+
+The retained claim-engine sampler defect in ADR-0065 remains outside this task.
+
+### Uncertain
+
+Phone input is Chromium touch emulation, not a physical device. Accessibility assertions use
+Chromium's actual accessibility tree; no real screen-reader session was run. Native inertness
+is also checked through blocked background focus, pointer/touch input and unchanged state.
+Firefox startup timed out locally; WebKit lacks system libraries. CI installs its browser
+system dependencies. These local probes are environment failures, not passing app checks.
+
+### Changed frozen tests
+
+Under ADR-0068, `apps/web/e2e/flows-keyboard.spec.ts` activates Objects in public builds and
+retains the original Claims activation internally. Every remaining key/focus/completion/dialog
+assertion stays intact. `apps/web/e2e/mobile.spec.ts` retains all exact pan/pinch/drag/panel
+assertions and the internal Claims verdict; publicly it asserts Claims/badge absence and
+preserved canonical claim text. Neither screenshots nor tolerances, count or coverage floors change.
+
+### Acceptance command output
+
+Environment: Node v24.22.1, pinned pnpm 10.28.0 via `/tmp/geomira-bin` and Corepack's
+`/tmp/geomira-corepack` cache (global pnpm 11.25.0 was not used), Playwright 1.56.1.
+Lockfile installation: `pnpm install --frozen-lockfile --store-dir /tmp/geomira-pnpm10-store` passed.
+
+- Before the fix, built-app Export/container/Delete regression failed: A+B became only
+  `@version 1`. The initial 11-case modal suite had 10 failures / 1 pass (native field editing).
+- An initial verification overlapped edits and is invalid as a baseline; the removed hook's
+  style-card consumer caused 8 failures. The dependency is preserved as `usePopoverFocus`.
+  A clean, isolated baseline verification at the exact base passed: 4,904 tests / 534 files,
+  440.10 seconds. Baseline coverage: statements 96.53%, branches 90.49%, functions 99.45%,
+  lines 98.37%.
+- Public and internal web unit projects: 310 passed / 63 files, 36.60 seconds.
+- `pnpm build` and `pnpm --filter @geomira/web build:claims`: passed (Vite chunk advisory).
+- First corrected modal-only desktop run: 10 passed / 1 failure; the latter incorrectly used
+  DOM role presence to infer native inertness. The replacement inspects Chromium's actual AX
+  tree and asserts one exposed dialog and no exposed Randomize control; behavior checks remain.
+- Combined keyboard/touch/modal iteration: 28 passed / 2 fixture failures (closed Text tab;
+  offscreen second phone point). Corrected targeted phone flows: 2 passed, 5.8 seconds.
+- Captured and inspected `keyboard-export.png`: keyboard focus on Download inside Export,
+  named modal, readable output and dimmed background. No reference screenshot is updated.
+- Firefox 142.0.1 startup: 60-second bounded probe timed out before the app test ran.
+  WebKit 26.0: missing GTK4, Graphene, WOFF2, HarfBuzz ICU, Hyphen, Manette and GLESv2 libraries.
+  Both failures remain visible; neither is counted as an application pass.
+
+- Committed implementation `2192a6630fdc4df16f3b1189e24354369c38be5c`: `pnpm verify` passed,
+  4,904 tests / 534 files, 355.62 seconds. Typecheck, ESLint/Prettier, dependency and repository
+  rules passed. Coverage: statements 96.53% (19011/19693), branches 90.49% (15284/16890),
+  functions 99.45% (4209/4232), lines 98.37% (15631/15889). No floors changed.
+- Both public and internal builds were rebuilt successfully at that commit. Playwright's
+  actual Chromium version is 141.0.7390.37. No runtime dependencies or lockfile changes.
+- Full public local run: `playwright test --project=desktop --project=mobile
+--project=file-chromium --project=pages --project=pwa --project=measure-drag --workers=2`:
+  175 passed / 1 failed, 4.6 minutes. Only failure: full UI drag median 10.55 ms versus the
+  unchanged 8 ms gate while verification was running concurrently. After all other local
+  work finished, `playwright test drag-frame.spec.ts --project=measure-drag --no-deps
+--workers=1`: 1 passed, 6.9 seconds; median 4.11 ms, p95 6.13 ms, max 10.51 ms.
+- Exact committed-build modal/ordinary keyboard/touch suite: `playwright test
+modal-safety.spec.ts flows-keyboard.spec.ts mobile.spec.ts --project=desktop
+--project=mobile --project=file-chromium --workers=2`: 44 passed, 1.1 minutes.
+- Full local internal functional run (desktop, mobile, file-chromium): 178 passed / 3 failed,
+  3.3 minutes. The failures are the two `flows-design` full-page references and the phone
+  `design-mobile` reference. Inspected expected/actual/diff images. A fresh base build at
+  8535d51 reproduces all three failures with the original assertions and 0.01 tolerance;
+  its screenshot run has 6 passes / 3 failures, 28.7 seconds. Branch versus clean-main
+  actuals: desktop main 0 changed pixels; phone 0; Claims 7 pixels in (1267,93)–(1270,97).
+  The references contain the old Style tab, old toolbar/script text and platform rendering
+  differences. No screenshot reference was changed and none of these failures is called a pass.
+- GitHub Pages-base validation at 2192a66, run 43819106406: **224 passed**, 4.7 minutes,
+  including modal cases from file:// in Chromium, Firefox and WebKit, ordinary public
+  keyboard/touch, persistence/recovery, exports, PWA and the drag gate. Build job succeeded;
+  deployment and deployed-site smoke jobs were skipped. No publication was performed.
+- Final focus review added a failing scroll regression: Shift+Tab focused Close at y=474.375
+  while the constrained dialog ended at y=222. Tab movement now uses native focus scrolling;
+  initial/restored focus still preserve background scroll. The new assertion passes on
+  desktop, phone and file Chromium (3 passes, 5.0 seconds). This is the thirteenth modal
+  browser case. Required verification is repeated for this follow-up and reported in PR #40.
+- Draft PR: https://github.com/youseng/geomira/pull/40. The documentation follow-up changes
+  only this evidence; final CI results are kept in the PR rather than recursively committing
+  claims about checks which have not finished. Real screen-reader/physical-device testing,
+  future task 03 dialogs and task 09 layout integration remain outside this revision.
+
+### Requests
+
+None for the authorized implementation. Maintainer review remains required; draft PR #40.
+
 ## Release prompt 02: transactional persistence and recovery (ADR-0067): NOT ACCEPTED, verification and maintainer review pending
 
 Base: `a81917cd862c9c9083e8fa85a6ca44c4cf01bc5b`, latest main including merged PR #38.

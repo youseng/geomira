@@ -93,8 +93,17 @@ test('the panels work on a phone: tabs, objects, claims, command bar', async ({ 
   await command(page, 'claim collinear(A, B, C)');
   await tab(page, 'Objects');
   await expect(page.getByRole('button', { name: 'poly', exact: true })).toBeVisible();
-  await tab(page, 'Claims');
-  await expect(page.locator('.badge')).toHaveText('false in this figure');
+  if (process.env['GEOMIRA_ENGINE_E2E'] === '1') {
+    await tab(page, 'Claims');
+    await expect(page.locator('.badge')).toHaveText('false in this figure');
+  } else {
+    await expect(page.getByRole('tab', { name: 'Claims', exact: true })).toHaveCount(0);
+    await tab(page, 'Text');
+    await expect(page.getByLabel('Text', { exact: true })).toHaveValue(
+      /claim collinear\(A, B, C\)/u,
+    );
+    await expect(page.locator('.badge')).toHaveCount(0);
+  }
   await tab(page, 'Help');
   await expect(page.getByRole('tabpanel')).toContainText('Undo');
   await tab(page, 'Layers');

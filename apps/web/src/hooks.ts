@@ -14,6 +14,7 @@ import type { Scene } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
 import { FIT_MARGIN, viewportFor, WIDE_FIT_MARGIN } from './figure';
 import { watchRecovery } from './watch-recovery';
+import { modalOwnsInteraction } from './Modal';
 import type { EditorStore, Notice, Snapshot } from './store';
 
 /** Autosave this long after the last change (ms). */
@@ -153,6 +154,7 @@ export function shortcutFor(e: KeyEventLike, target: KeyTarget): KeyAction | und
 export function useShortcuts(perform: (a: KeyAction) => void): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || modalOwnsInteraction()) return;
       const a = shortcutFor(
         { key: e.key, ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey, alt: e.altKey },
         keyTarget(e.target),

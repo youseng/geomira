@@ -5,6 +5,12 @@ docs/adr/; the test evidence is in docs/STATUS.md.
 
 ## Unreleased
 
+### Modal and keyboard safety (ADR-0068)
+
+- Export, Share and Debug report isolate the figure from keyboard shortcuts and background clicks.
+- Keep Tab inside dialogs and restore focus on close; Escape preserves unfinished constructions.
+- Preserve native text selection, copying and editing, and ordinary canvas shortcuts after closing.
+
 ### Local persistence and recovery (ADR-0067)
 
 - Preserve simultaneous stale tab writers as recoverable conflicts using IndexedDB transactions.

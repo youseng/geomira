@@ -5,6 +5,8 @@
   z-index: 100;
   left: 50%;
   top: 10%;
+  margin: 0;
+  color: var(--text);
   transform: translateX(-50%);
   width: min(720px, calc(100% - 24px));
   max-height: 84vh;
@@ -13,7 +15,10 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px 14px;
-  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.3);
+}
+
+.dialog::backdrop {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 /* The dialog itself takes the focus when it opens (from code): no ring on the box. */

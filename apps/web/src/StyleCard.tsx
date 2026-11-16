@@ -29,7 +29,7 @@ import { assertNever } from '@geomira/num/assert';
 import { buildScene } from '@geomira/scene/build';
 import type { Scene } from '@geomira/scene/types';
 import { placeCard, type Box } from './card-place';
-import { useDialog } from './Dialogs';
+import { usePopoverFocus } from './popover-focus';
 import { MathText } from './MathText';
 import type { EditorStore } from './store';
 import {
@@ -325,7 +325,7 @@ function useLive(store: EditorStore, o: DocObject, shown: Style, onDraft: (s: St
 
 function Card(p: StyleCardProps & { o: DocObject }) {
   const { store, state, card, onDraft, onName, onClose, o } = p;
-  const ref = useDialog(onClose);
+  const ref = usePopoverFocus(onClose);
   useCloseOutside(ref, onClose);
   const [more, setMore] = useState(false);
   const [generation, setGeneration] = useState(0);
