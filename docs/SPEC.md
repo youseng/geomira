@@ -488,6 +488,12 @@ example's TikZ and standalone Asymptote and checks Asymptote's `write()` coordin
 against the kernel (≤ 1e-6·scale).
 
 ## 15. Web app
+Property cards (ADR-0070) commit a valid pending name before close/switch, including
+Escape; invalid or locked drafts leave a persistent refusal. Fields follow undo/redo and
+external document changes while preserving local partial input. Object visibility controls
+use the scene's inherited style. Show writes `hidden=false` only to override inherited
+hiding; otherwise it removes `hidden`. Layer visibility and opacity remain separate.
+
 Modal dialogs (ADR-0068): Export, Share and Debug report share a native modal boundary.
 Focus enters the named dialog; Tab stays among its visible enabled controls (or the dialog
 itself when empty). The background is inert to pointer, keyboard and assistive navigation.

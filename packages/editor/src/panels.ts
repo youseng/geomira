@@ -13,6 +13,7 @@ import type { Document } from '@geomira/kernel/document';
 import type { Registry } from '@geomira/kernel/registry';
 import { atInfinityText } from '@geomira/kernel/ideal';
 import { formatExpr } from '@geomira/kernel/selector';
+import { documentStyles } from '@geomira/scene/style';
 import { print } from '@geomira/lang/print';
 import { printShort } from '@geomira/lang/print-short';
 import type { EditorEnv, EditorState } from './state';
@@ -32,6 +33,8 @@ export interface ObjectRow {
   /** A managed image of a derived layer. */
   readonly managed: boolean;
   readonly hidden: boolean;
+  /** Other drawing restrictions; the object eye changes style, never a layer. */
+  readonly visibilityNote?: string;
 }
 
 export interface LayerGroup {
@@ -42,14 +45,21 @@ export interface LayerGroup {
   readonly rows: readonly ObjectRow[];
 }
 
-function rowOf(state: EditorState, o: Document['objects'][number], names: Names): ObjectRow {
+function rowOf(
+  state: EditorState,
+  o: Document['objects'][number],
+  names: Names,
+  style: import('@geomira/kernel/document').Style,
+  note: string | undefined,
+): ObjectRow {
   const v = state.values.values.get(o.id);
   const row = {
     id: o.id,
     name: o.name,
     definition: formatExpr(o.def, names),
     managed: o.managedBy !== undefined,
-    hidden: o.style.hidden === true,
+    hidden: style.hidden === true,
+    ...(note === undefined ? {} : { visibilityNote: note }),
   };
   if (v === undefined)
     return { ...row, kind: 'undefined', status: 'undefined', reason: 'not evaluated' };
@@ -64,6 +74,7 @@ type Names = (id: number) => string | undefined;
 
 /** Every layer with its objects, in construction order (an object in two layers is in both). */
 export function objectsByLayer(state: EditorState): LayerGroup[] {
+  const styles = documentStyles(state.doc);
   const byId = new Map(state.doc.objects.map((x) => [x.id, x.name]));
   const names: Names = (id) => byId.get(id);
   return state.doc.layers.map((l) => ({
@@ -73,7 +84,7 @@ export function objectsByLayer(state: EditorState): LayerGroup[] {
     visible: l.visible,
     rows: state.doc.objects
       .filter((o) => o.layers.includes(l.id))
-      .map((o) => rowOf(state, o, names)),
+      .map((o) => rowOf(state, o, names, styles.effective(o), styles.restriction(o))),
   }));
 }
 

@@ -12,9 +12,9 @@
  * finite counts as 1 and one outside [0, 1] is clamped into it. A Style is user data
  * (any document may hold any number), so nothing here assumes the language's checks.
  */
-import type { DocObject, Style } from '@geomira/kernel/document';
+import type { DocObject, Document, Style } from '@geomira/kernel/document';
 import { assertNever } from '@geomira/num/assert';
-import type { DocIndex } from './doc-index';
+import { indexDocument, type DocIndex } from './doc-index';
 import { parseLabel, type LabelRun } from './label-text';
 import type { Dash, DrawStyle, Label, ShapeKind } from './types';
 
@@ -50,6 +50,25 @@ export function effectiveStyle(index: DocIndex, o: DocObject): Style {
     style = { ...inherited, ...x.style };
   }
   return style;
+}
+
+/** One style authority for scene, properties and editor visibility actions. */
+export function documentStyles(doc: Document) {
+  const index = indexDocument(doc);
+  return {
+    effective: (o: DocObject): Style => effectiveStyle(index, o),
+    inherited: (o: DocObject): Style => effectiveStyle(index, { ...o, style: {} }),
+    restriction: (o: DocObject): string | undefined => {
+      const layers = o.layers.flatMap((id) => {
+        const layer = index.layer.get(id);
+        return layer?.visible === true ? [layer] : [];
+      });
+      if (layers.length === 0) return 'All object layers are hidden; show a layer to draw it.';
+      if (layers.every((l) => l.opacity === 0)) return 'Shown layer has zero opacity.';
+      if (effectiveStyle(index, o).opacity === 0) return 'Object opacity is zero.';
+      return undefined;
+    },
+  };
 }
 
 function suffixOf(index: DocIndex, o: DocObject): string {

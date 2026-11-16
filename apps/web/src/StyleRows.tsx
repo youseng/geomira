@@ -49,6 +49,18 @@ export interface RowProps {
   readonly set: (s: Style) => void;
 }
 
+/** Keep partial local input until the document's acknowledged value changes externally. */
+function useFieldText(value: string) {
+  const [local, setLocal] = useState({ value, text: value });
+  if (local.value !== value) setLocal({ value, text: value });
+  return {
+    text: local.value === value ? local.text : value,
+    set: (text: string, acknowledged = value) => {
+      setLocal({ value: acknowledged, text });
+    },
+  };
+}
+
 function shownOf(p: RowProps): Style {
   return { ...p.inherited, ...p.draft };
 }
@@ -156,7 +168,8 @@ export function OpacityRow(p: RowProps) {
 
 /** "show" and the label's text (kept while hidden, so showing again brings it back). */
 export function LabelRow(p: RowProps) {
-  const [text, setText] = useState(() => ownLabel(p.draft));
+  const field = useFieldText(ownLabel(p.draft));
+  const text = field.text;
   const on = labelShown(shownOf(p), p.kind);
   return (
     <div className="sc-row">
@@ -167,7 +180,12 @@ export function LabelRow(p: RowProps) {
           aria-label="Show the label"
           checked={on}
           onChange={(e) => {
-            p.set(withLabel(p.draft, p.inherited, p.kind, p.name, { on: e.target.checked, text }));
+            const next = withLabel(p.draft, p.inherited, p.kind, p.name, {
+              on: e.target.checked,
+              text,
+            });
+            field.set(text, ownLabel(next));
+            p.set(next);
           }}
         />
         show
@@ -180,7 +198,7 @@ export function LabelRow(p: RowProps) {
         value={text}
         disabled={!on}
         onChange={(e) => {
-          setText(e.target.value);
+          field.set(e.target.value, e.target.value);
           p.set(
             withLabel(p.draft, p.inherited, p.kind, p.name, { on: true, text: e.target.value }),
           );
@@ -219,17 +237,18 @@ export function NumberField(props: {
   readonly min: number;
   readonly onValue: (v: number | undefined) => void;
 }) {
-  const [text, setText] = useState(props.value === undefined ? '' : String(props.value));
+  const value = props.value === undefined ? '' : String(props.value);
+  const field = useFieldText(value);
   return (
     <label className="sc-number">
       {props.label}
       <input
         type="text"
         inputMode="decimal"
-        value={text}
+        value={field.text}
         onChange={(e) => {
-          setText(e.target.value);
           const n = typedNumber(e.target.value, props.min);
+          field.set(e.target.value, n === null ? value : n === undefined ? '' : String(n));
           if (n !== null) props.onValue(n);
         }}
       />
@@ -299,17 +318,18 @@ export function OffsetFields(p: RowProps) {
 
 /** "More": a measurement's decimals (ADR-0048; empty: the default, 2). */
 export function DigitsField(p: RowProps) {
-  const [text, setText] = useState(p.draft.digits === undefined ? '' : String(p.draft.digits));
+  const value = p.draft.digits === undefined ? '' : String(p.draft.digits);
+  const field = useFieldText(value);
   return (
     <label className="sc-number">
       Decimals (0–10, empty = 2)
       <input
         type="text"
         inputMode="numeric"
-        value={text}
+        value={field.text}
         onChange={(e) => {
-          setText(e.target.value);
           const n = typedDigits(e.target.value);
+          field.set(e.target.value, n === null ? value : n === undefined ? '' : String(n));
           if (n !== null) p.set(patchStyle(p.draft, { digits: n }));
         }}
       />

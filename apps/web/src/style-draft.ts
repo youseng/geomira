@@ -10,7 +10,7 @@
  * it back leaves nothing to write.
  */
 import type { DocObject, Document, Style } from '@geomira/kernel/document';
-import { sourceOf } from '@geomira/kernel/derived';
+import { documentStyles } from '@geomira/scene/style';
 import type { Value, ValueKind } from '@geomira/kernel/value';
 import { assertNever } from '@geomira/num/assert';
 
@@ -233,26 +233,5 @@ export function withDraft(doc: Document, id: number, draft: Style): Document {
  * effectiveStyle); for any other object, nothing. A source chain that loops stops.
  */
 export function inheritedStyle(doc: Document, o: DocObject): Style {
-  const byId = new Map(doc.objects.map((x) => [x.id, x]));
-  const sourceOfObject = (x: DocObject) => {
-    const id = x.managedBy === undefined ? undefined : sourceOf(x);
-    return id === undefined ? undefined : byId.get(id);
-  };
-  const chain: DocObject[] = [];
-  const seen = new Set([o.id]);
-  for (let s = sourceOfObject(o); s !== undefined && !seen.has(s.id); s = sourceOfObject(s)) {
-    chain.push(s);
-    seen.add(s.id);
-  }
-  let style: Style = {};
-  for (const x of [...chain.reverse(), o]) {
-    const rule = doc.layers.find((l) => l.id === x.managedBy)?.rule;
-    const suffix = x.managedBy === undefined ? '' : (rule?.suffix ?? '');
-    const inherited =
-      style.label === undefined || style.label === ''
-        ? style
-        : { ...style, label: style.label + suffix };
-    style = x === o ? inherited : { ...inherited, ...x.style };
-  }
-  return style;
+  return documentStyles(doc).inherited(o);
 }

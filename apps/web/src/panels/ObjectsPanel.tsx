@@ -52,7 +52,7 @@ function Eye({ row, store, state }: { row: ObjectRow; store: EditorStore; state:
       type="button"
       className={`tb object-eye${row.hidden ? ' off' : ''}`}
       aria-label={`${row.hidden ? 'Show' : 'Hide'} ${row.name}`}
-      title={row.hidden ? 'Hidden: show it' : 'Shown: hide it'}
+      title={`${row.hidden ? 'Hidden: show it' : 'Visibility enabled: hide it'}${row.visibilityNote === undefined ? '' : `. ${row.visibilityNote}`}`}
       onClick={() => {
         const r = selectionEdit(state, { kind: row.hidden ? 'show' : 'hide' }, [row.id]);
         if (r.ok) store.apply(r.edit);
@@ -116,6 +116,7 @@ function Row(p: { row: ObjectRow } & ObjectsPanelProps) {
       <span className="object-status">
         {statusText(row)}
         {row.hidden ? ' · hidden' : ''}
+        {row.visibilityNote === undefined ? '' : ` · ${row.visibilityNote}`}
         {row.managed ? ' · image' : ''}
         {undrawable.includes(row.id) ? ' · not drawable at this zoom' : ''}
       </span>
