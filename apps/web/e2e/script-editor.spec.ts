@@ -295,3 +295,26 @@ test('immediate typing after keyboard or pointer completion never receives an ol
     }
   }
 });
+
+test('command separator conversion is one native text undo with safe invalid drafts', async ({
+  page,
+}) => {
+  await openApp(page, './index.html?dev=1');
+  await command(page, 'O=(9,9)');
+  const field = await textArea(page);
+  await field.press('Control+a');
+  await page.keyboard.type('A=(0,0); B=(4,0)');
+  await page.getByRole('button', { name: 'Convert command separators to lines' }).click();
+  await expect(field).toHaveValue('A=(0,0)\nB=(4,0)');
+  await expect(page.getByTestId('object-counts')).toContainText('2 drawn');
+  await field.focus();
+  await field.press('Control+z');
+  await expect(field).toHaveValue('A=(0,0); B=(4,0)');
+  await expect(page.getByRole('button', { name: 'Apply text', exact: true })).toBeDisabled();
+  // The undone source is invalid file syntax: its pause must leave the last valid figure.
+  await page.waitForTimeout(650);
+  await expect(page.getByTestId('object-counts')).toContainText('2 drawn');
+  await field.press('Control+Shift+z');
+  await expect(field).toHaveValue('A=(0,0)\nB=(4,0)');
+  await expect(page.getByTestId('object-counts')).toContainText('2 drawn');
+});

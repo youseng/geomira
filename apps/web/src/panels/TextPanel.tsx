@@ -9,6 +9,7 @@ import { lineColumnOf, offsetOf, type LineColumn } from '../caret';
 import type { TextApplier } from '../text-apply';
 import { ScriptEditor } from '../ScriptEditor';
 import { commandLines, diagnosticRange } from '../script-source';
+import { insertCompletion } from '../native-completion';
 
 export interface TextPanelProps {
   readonly state: EditorState;
@@ -218,8 +219,8 @@ function SourceActions({
             e.preventDefault();
           }}
           onClick={() => {
+            insertCompletion(field.current, 0, text.length, converted);
             applier.type(converted);
-            field.current?.focus();
           }}
         >
           Convert command separators to lines

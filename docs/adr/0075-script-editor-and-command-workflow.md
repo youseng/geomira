@@ -92,3 +92,8 @@ is compact and appears only when a figure edit actually normalizes clean user-au
 that differs from the printer output. Canonical/generated source does not trigger it, and an
 explicit document replacement clears it. Dirty source continues through the original stale-draft
 path. A one-document printer cache avoids adding a second print to every drag update.
+
+Explicit separator conversion uses the same native insertion transaction over the full source
+range. Native Undo restores the original command text in one step and Redo restores the lines.
+If the undone command-style source is invalid file syntax, the last valid figure remains intact
+under the existing draft guard. The conversion button retains its blur-preventing pointer policy.

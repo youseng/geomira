@@ -1,4 +1,4 @@
-/** Keep completion in the native field's undo transaction before React follows its value. */
+/** Keep assisted edits in the native field's undo transaction before React follows its value. */
 export function insertCompletion(
   field: HTMLInputElement | HTMLTextAreaElement | null,
   start: number,
