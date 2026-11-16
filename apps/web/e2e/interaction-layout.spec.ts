@@ -2,6 +2,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clickWorld, command, openApp, screenOf, text, tool } from './helpers';
 import { expectHeaderClear, fitAfterPageScroll } from './layout-visibility';
+import { nativeWorldPoint, pointText } from './native-pointer';
 
 for (const route of ['palette', 'search', 'shortcut', 'command', 'command polygon then point']) {
   test(`choosing Point by ${route} clears the guide before a center canvas click`, async ({
@@ -28,11 +29,18 @@ for (const route of ['palette', 'search', 'shortcut', 'command', 'command polygo
       await page.keyboard.press('p');
     }
     await expect(page.getByRole('region', { name: 'Getting started' })).toHaveCount(0);
-    await clickWorld(page, 0, 0);
+    const canvas = page.getByLabel('Geometry canvas');
+    await canvas.scrollIntoViewIfNeeded();
+    const before = await canvas.boundingBox();
+    if (before === null) throw new Error('missing canvas');
+    const actual = await nativeWorldPoint(page, () => clickWorld(page, 0, 0));
+    expect(await canvas.boundingBox()).toEqual(before);
+    await expect(page.getByRole('region', { name: 'Getting started' })).toHaveCount(0);
     const source = await text(page);
+    expect(source).toBe(`@version 1\nA = ${pointText(actual)}\n`);
     expect(
       source.split('\n').filter((line) => line.trim() !== '' && !line.startsWith('@')),
-    ).toEqual(['A = (0, 0)']);
+    ).toEqual([`A = ${pointText(actual)}`]);
   });
 }
 

@@ -163,3 +163,14 @@ actual `elementFromPoint` exposure, source visibility and recovery/blocked-stora
 The exposure matrix includes 320/390/760×664, 390×420 and 820×390. No existing mathematical
 assertion, tolerance, screenshot reference or test-count floor is weakened by this correction.
 Final visual references are reviewed separately by the release-artifact owner.
+
+The five Guide-to-Point routes in `interaction-layout.spec.ts` use the same independent
+native-event coordinate oracle as the construction fixtures above. A 225px logical canvas
+has a half-pixel center: at top 227 and zoom 50, requesting y=339.5 but receiving integer
+client y=339 corresponds exactly to world y=0.01. A literal world origin is therefore not
+a valid cross-engine mouse expectation. These routes still require exactly one A, compare
+the complete canonical document byte for byte with the delivered-event expectation, and
+check the canvas rectangle is unchanged before/after input. Guide dismissal is required
+both before and after the click. All other reflow, outline and history assertions remain.
+This changes only fixture expectations; no application code, synthetic events, coordinate
+tolerances, input rounding, screenshot references or typed-coordinate assertions change.
