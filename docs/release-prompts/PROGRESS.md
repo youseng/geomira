@@ -26,8 +26,8 @@ verification, CI and the independent audit.
 ## Verification
 
 Fresh baseline installation: pinned pnpm 10.28.0, frozen lockfile, existing local store.
-Baseline verification runs in an immutable checkout of the base SHA. An earlier attempt
-was invalidated by moving scratch tests and stopped; it is not counted as a pass.
-Full acceptance remains pending the baseline and final combined verification.
+Immutable base `pnpm verify` passed: 4,904 tests / 534 files, with all static and coverage
+gates preserved. Earlier invalidated in-place attempts are not counted as passes.
+Final acceptance remains pending complete combined verification, CI and independent audit.
 Per-task reports belong in `results/`; exact final commands and results will be recorded
 in STATUS. No prior test result is counted as a new check.
