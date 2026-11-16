@@ -219,6 +219,7 @@ function StageTop({ app }: { app: ReturnType<typeof useApp> }) {
       <GettingStarted
         workspace={app.workspace}
         canvasHeight={app.size?.height ?? 200}
+        fit={app.header.props.onFit}
         store={store}
         choose={app.choose}
         search={app.searchRef}
@@ -253,6 +254,7 @@ function StageTop({ app }: { app: ReturnType<typeof useApp> }) {
           store.setNotice(null);
         }}
       />
+      <SelectionBar store={store} state={header.settled} onProperties={app.style.open} />
     </div>
   );
 }
@@ -356,6 +358,7 @@ export function App() {
           workspace={app.workspace}
           inputRef={app.searchRef}
           choose={app.choose}
+          hidePanels={app.panels.close}
           showPanels={() => {
             app.panels.showTab(app.panels.tab);
           }}
@@ -370,7 +373,6 @@ export function App() {
             stats={header.stats}
             times={header.times}
           />
-          <SelectionBar store={store} state={settled} onProperties={app.style.open} />
           {CLAIM_TESTING && <ClaimChips store={store} state={state} onOpen={app.openClaims} />}
           <ZoomControls onZoom={header.props.onZoom} onFit={header.props.onFit} />
           <Status state={settled} />

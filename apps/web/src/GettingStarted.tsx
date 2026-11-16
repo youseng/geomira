@@ -11,12 +11,15 @@ interface Props {
   readonly search: RefObject<HTMLInputElement | null>;
   readonly text: () => void;
   readonly exportFigure: () => void;
+  readonly fit: () => void;
 }
 function GuideActions(p: Props & { empty: boolean; dismiss: () => void }) {
   const triangle = () => {
     const draft = p.store.textDraft.getSnapshot();
-    if (p.store.current().doc.objects.length === 0 && draft.text === draft.clean)
+    if (p.store.current().doc.objects.length === 0 && draft.text === draft.clean) {
       p.store.command('triangle A B C');
+      requestAnimationFrame(p.fit);
+    }
   };
   const actions: readonly [string, () => void][] = [
     [

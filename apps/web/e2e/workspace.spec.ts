@@ -32,10 +32,17 @@ for (const width of [320, 390, 760, 768, 820, 1024, 1440]) {
     if (canvas === null) throw new Error('no canvas');
     expect(canvas.width).toBeGreaterThanOrEqual(width <= 760 ? width - 2 : 300);
     expect(canvas.height).toBeGreaterThan(180);
+    expect(await page.evaluate(() => window.scrollX)).toBe(0);
+    if (width <= 760)
+      for (const name of ['File', 'Undo', 'Redo', 'Randomize', 'Export', 'Help']) {
+        const button = await page.getByRole('button', { name, exact: true }).boundingBox();
+        expect(button?.width ?? 0).toBeGreaterThanOrEqual(44);
+        expect(button?.height ?? 0).toBeGreaterThanOrEqual(44);
+      }
   });
 }
 
-test('sidebar collapse, keyboard resize and reload preserve draft, history and mapping', async ({
+test('sidebar collapse and resize preserve drafts; reload restores layout and mapping', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -171,9 +178,13 @@ test('short phone sheet exposes the canvas and active field with a small viewpor
   await tab(page, 'Text');
   await page.getByRole('button', { name: 'Expand panel', exact: true }).click();
   await page.getByRole('button', { name: 'Compact panel', exact: true }).click();
+  await page.getByLabel('Text', { exact: true }).scrollIntoViewIfNeeded();
   await usable(page, page.getByLabel('Text', { exact: true }));
+  await page.getByRole('button', { name: 'Hide panels', exact: true }).scrollIntoViewIfNeeded();
   await usable(page, page.getByRole('button', { name: 'Hide panels', exact: true }));
   const box = await page.getByRole('tabpanel').boundingBox();
   if (box === null) throw new Error('no sheet');
-  expect(box.height).toBeLessThan(240);
+  expect(box.height).toBeGreaterThanOrEqual(220);
+  const canvas = await page.getByLabel('Geometry canvas').boundingBox();
+  expect(canvas?.height ?? 0).toBeGreaterThanOrEqual(60);
 });

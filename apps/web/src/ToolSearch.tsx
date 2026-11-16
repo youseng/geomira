@@ -89,7 +89,8 @@ function Recent({ recent, choose }: { recent: readonly string[]; choose: (id: To
             key={tool.id}
             type="button"
             aria-label={`Recent: ${tool.label}`}
-            onClick={() => {
+            onClick={(e) => {
+              e.currentTarget.closest('details')?.removeAttribute('open');
               choose(tool.id);
             }}
           >

@@ -21,7 +21,7 @@ const INTERNAL =
 const internalOnly = engine ? '|public-release' : `|${INTERNAL}`;
 const fileSpecs = engine
   ? /file-url\.spec/u
-  : /(public-release|persistence|modal-safety|release-download|document-files|randomize-integrity|script-editor)\.spec/u;
+  : /(public-release|persistence|modal-safety|release-download|document-files|randomize-integrity|script-editor|workspace-composed)\.spec/u;
 
 export default defineConfig({
   testDir: 'e2e',
@@ -57,7 +57,7 @@ export default defineConfig({
         name: `desktop-${browserName}`,
         use: { browserName, viewport: { width: 1280, height: 720 } },
         testMatch:
-          /(flows-build|flows-persist|flows-keyboard|public-release|modal-safety|script-editor)\.spec/u,
+          /(flows-build|flows-persist|flows-keyboard|public-release|modal-safety|script-editor|workspace|workspace-composed)\.spec/u,
       })),
       // Run 9b: the static site's smoke test (locally built, or the deployed Pages site).
       {

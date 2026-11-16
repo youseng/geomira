@@ -69,17 +69,27 @@
   .side.open {
     top: auto;
     bottom: 120px;
-    height: min(65%, calc(var(--workspace-height) - var(--panel-ceiling, 160px) - 120px));
+    height: min(
+      65%,
+      calc(
+        var(--workspace-height) - var(--panel-ceiling, 160px) - 120px -
+          var(--stage-controls-height, 64px)
+      )
+    );
     border-top: 1px solid var(--border);
   }
   .side.open.compact {
     height: min(43%, calc(var(--workspace-height) - var(--panel-ceiling, 160px) - 120px));
   }
+  .side.open .text-panel > .script-editor {
+    min-height: 120px;
+    flex-shrink: 0;
+  }
   .side.open .text-panel textarea {
-    min-height: 80px;
+    min-height: 120px;
   }
   .side.open .text-panel {
-    min-height: 140px;
+    min-height: 220px;
   }
   .side.open .tab-body {
     min-height: 0;
@@ -184,12 +194,24 @@
   .short-workspace .palette {
     display: none;
   }
-  .short-workspace .side.open {
-    bottom: 88px;
-    height: min(60%, calc(var(--workspace-height) - var(--panel-ceiling, 160px) - 88px));
+  /* A short keyboard viewport needs a real editor, not a one-line overlay.
+     Keep its panel in page flow so the field, diagnostics and actions can scroll. */
+  .short-workspace:has(> .side.open) {
+    grid-template-rows: auto 48px 180px minmax(280px, auto) 0 44px;
   }
+  .short-workspace.show-palette:has(> .side.open) {
+    grid-template-rows: auto 48px 180px minmax(280px, auto) 76px 44px;
+  }
+  .short-workspace .side.open,
   .short-workspace .side.open.compact {
-    height: min(45%, calc(var(--workspace-height) - var(--panel-ceiling, 160px) - 88px));
+    position: relative;
+    top: auto;
+    bottom: auto;
+    height: auto;
+    min-height: 280px;
+  }
+  .short-workspace .side.open .tab-body {
+    overflow: visible;
   }
   .short-workspace .getting-started {
     max-height: 120px;

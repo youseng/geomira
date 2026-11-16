@@ -33,6 +33,8 @@ test('common tangent tool builds dependent lines despite independent coincident 
   const result = await text(page);
   expect(result.match(/= tangent\(c, d,/gu)).toHaveLength(2);
   await tool(page, 'Move');
+  const close = page.getByRole('button', { name: 'Hide panels', exact: true });
+  if ((page.viewportSize()?.width ?? 1280) <= 760 && (await close.isVisible())) await close.click();
   await dragWorld(page, [3, 0], [3, 1]);
   await pick(page, 'B');
   await expect(page.getByRole('tabpanel')).not.toContainText('undefined');
@@ -62,6 +64,8 @@ test('intersection tool creates moving intersections beside free coincident poin
   const result = await text(page);
   expect(result.match(/= intersect\(c, l,/gu)).toHaveLength(2);
   await tool(page, 'Move');
+  const close = page.getByRole('button', { name: 'Hide panels', exact: true });
+  if ((page.viewportSize()?.width ?? 1280) <= 760 && (await close.isVisible())) await close.click();
   await dragWorld(page, [0, 0], [0, 0.5]);
   await tab(page, 'Objects');
   await expect(page.getByRole('tabpanel')).not.toContainText('undefined');

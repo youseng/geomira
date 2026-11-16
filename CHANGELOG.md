@@ -12,6 +12,13 @@ docs/adr/; the test evidence is in docs/STATUS.md.
 
 ## Unreleased
 
+### Responsive workspace (ADR-0074)
+
+- Keep header actions reachable, including triangle type on phones, with More actions.
+- Add tool search/recent tools, keyboard palette navigation, named picks, explicit Pan,
+  selected-object Properties and a dismissible guide.
+- Collapse/resize desktop panels and use compact phone sheets while preserving drafts.
+
 ### Sampling integrity (ADR-0073)
 
 - Preserve exact fixed-radius ratios through sampling and Randomize, including tiny circles beside distant geometry.

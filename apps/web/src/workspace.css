@@ -191,8 +191,10 @@
 .statusbar span {
   max-height: 34px;
 }
-.selbar {
-  max-width: calc(100% - 20px);
+.stage-top > .selbar {
+  position: static;
+  transform: none;
+  max-width: 100%;
 }
 .persistence section {
   left: 8px;
