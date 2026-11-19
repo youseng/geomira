@@ -14,7 +14,6 @@ import * as rungs from '../src/rungs';
 import * as verdict from '../src/verdict';
 import * as verdictLine from '../src/verdict-line';
 import * as figureHypotheses from '../src/figure-hypotheses';
-import * as randomize from '../src/randomize';
 import * as kindRegistry from '../src/kind-registry';
 import * as screen from '../src/screen';
 import * as symmetry from '../src/symmetry';
@@ -59,16 +58,6 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
   './figure-hypotheses': {
     module: figureHypotheses,
     names: ['assumptionText', 'hypothesesInFigure'],
-  },
-  './randomize': {
-    module: randomize,
-    names: [
-      'OBTUSE_MIN_DEG',
-      'RANDOMIZE_ATTEMPTS',
-      'SHAPE_MIN_DEG',
-      'TRIANGLE_TYPES',
-      'randomFigure',
-    ],
   },
   './kind-registry': { module: kindRegistry, names: ['claimKindRegistry'] },
   './screen': { module: screen, names: ['screenFigure', 'screenSteps'] },
@@ -119,6 +108,5 @@ describe('@geomira/claims subpath surface', () => {
     expect(Object.isFrozen(kinds.POLYNOMIAL_KINDS)).toBe(true);
     expect(Object.isFrozen(hypotheses.ASSUMPTION_KINDS)).toBe(true);
     expect(Object.isFrozen(rungs.RUNG_NAMES)).toBe(true);
-    expect(Object.isFrozen(randomize.TRIANGLE_TYPES)).toBe(true);
   });
 });

@@ -1,5 +1,52 @@
 # STATUS
 
+## Single-row workspace toolbar
+
+[ADR-0078](adr/0078-unify-workspace-toolbar.md) brings the approved header design
+into the application. The desktop has one toolbar row. Phones use two rows with
+44 px touch targets. The document title opens File, the local status opens
+Recovery and focusing an empty tool search shows recently used tools. View
+contains the workspace controls and More contains examples, help and settings.
+
+The public and internal hosted and single-file builds completed. Chromium checks
+cover the header from 320 to 1440 px, keyboard tool search, document recovery and
+draft input. The reduced header height also changes the fitted drawing area.
+All 33 local visual comparisons passed across 25 workspace, fitted-scene and
+PNG export references. The five GUI comparisons and four WebKit focus checks passed in
+[GUI run 44506157895](https://github.com/youseng/geomira/actions/runs/44506157895).
+Its native public desktop and phone captures are the committed public references.
+The shipped desktop screenshot matches the desktop reference byte for byte.
+
+Frozen test changes under ADR-0078:
+
+- Web unit test: design.
+- Browser tests: design-mobile, document-files, draft-pointer-layout, drag-frame,
+  drawer-notice-mobile, flows-design, flows-export, flows-keyboard, flows-persist,
+  interaction-layout, modal-safety, pages-smoke, panel-controls, persistence,
+  public-layout, public-release, scene, workspace-composed and workspace.
+- Shared browser helpers: helpers and layout-visibility.
+
+## Figure randomizer removal
+
+[ADR-0077](adr/0077-remove-figure-randomizer.md) retires the header action and both
+package entry points. The focused Vitest run passed 93 tests in eight files.
+Both public and internal builds completed in hosted and standalone modes.
+All 18 focused Chromium browser checks passed, including seven toolbar widths
+and modal accessibility on desktop, phone and the standalone build. Type checking,
+lint, dependency checks and repository rules passed.
+
+Five toolbar references use native captures from [GUI run 44501148550](https://github.com/youseng/geomira/actions/runs/44501148550),
+artifact 14517916395 on source `0178957`. The shipped public screenshot matches
+the desktop reference byte for byte (SHA256 `39ce42874136819ea2e724e8ac4e4d85b85f093163bf267decfe90d6415c3526`).
+
+Changed tests and fixtures under ADR-0077:
+
+- Web unit tests: public-claims-off and text-apply.
+- Browser tests: design-mobile, flows-design, interaction-layout, modal-safety,
+  public-release, randomize-integrity, scene, workspace and workspace-composed.
+- Claims tests: exports, randomize, sampler-figure-size, sampler-frame and sampler-integrity.
+- Editor tests: conic-glider, exports, randomize and randomize-integrity.
+
 ## Integrated release repairs (prompts 03, 05–12): ACCEPTED CANDIDATE; publication pending
 
 Accepted checkpoint: **`e0ef71fb8d695ed37fb98c65568de44119757d17`**, 2026-11-16.

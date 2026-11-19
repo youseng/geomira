@@ -1,19 +1,19 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Glyph } from './icons';
+import { HeaderIcon, type HeaderIconName } from './HeaderIcon';
 
 export interface MenuProps {
   /** The button's accessible name, shown beside the glyph where the bar has room. */
   readonly label: string;
-  readonly glyph: string;
+  readonly glyph: HeaderIconName;
   readonly title: string;
-  /** An icon-only button (Settings, Help): the label is never shown. */
+  /** Display only the icon while keeping the label accessible. */
   readonly iconOnly?: boolean;
-  /** The menu's entries; `close` closes the menu (entries call it after acting). */
+  /** Entries close the disclosure before invoking their action. */
   readonly children: (close: () => void) => ReactNode;
 }
 
 /**
- * A top-bar menu as a disclosure (Geomdraw's View, Export, Settings and Help menus): a button
+ * A toolbar disclosure has a button
  * with aria-expanded and a popover of ordinary buttons and checkboxes, so every entry keeps
  * its role and accessible name. Escape, a click outside or an entry's action closes it.
  */
@@ -27,7 +27,10 @@ export function Menu({ label, glyph, title, iconOnly = false, children }: MenuPr
       if (!(e.target instanceof Node) || box.current?.contains(e.target) !== true) setOpen(false);
     };
     const escape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        setOpen(false);
+        trigger.current?.focus({ preventScroll: true });
+      }
     };
     addEventListener('pointerdown', outside);
     addEventListener('keydown', escape);
@@ -42,7 +45,13 @@ export function Menu({ label, glyph, title, iconOnly = false, children }: MenuPr
     trigger.current?.focus({ preventScroll: true });
   };
   return (
-    <div className="menu-wrap" ref={box}>
+    <div
+      className={`menu-wrap menu-${glyph}`}
+      ref={box}
+      onBlur={(e) => {
+        if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) setOpen(false);
+      }}
+    >
       <button
         ref={trigger}
         type="button"
@@ -54,9 +63,9 @@ export function Menu({ label, glyph, title, iconOnly = false, children }: MenuPr
           setOpen((o) => !o);
         }}
       >
-        <Glyph>{glyph}</Glyph>
+        <HeaderIcon name={glyph} />
         <span className={iconOnly ? 'sr-only' : 'hide-narrow'}>{label}</span>
-        {!iconOnly && <Glyph>{'▾'}</Glyph>}
+        {!iconOnly && <HeaderIcon name="down" />}
       </button>
       {open && (
         <div className="menu" role="group" aria-label={`${label} menu`}>
@@ -67,7 +76,7 @@ export function Menu({ label, glyph, title, iconOnly = false, children }: MenuPr
   );
 }
 
-/** A menu entry: a button that acts, then closes the menu. */
+/** Restore focus to the disclosure before invoking the selected action. */
 export function MenuItem(p: {
   readonly onClick: () => void;
   readonly close: () => void;

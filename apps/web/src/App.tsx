@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { Scene, Undrawable } from '@geomira/scene/types';
+import type { Undrawable } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
 import { AboutContext } from './about';
 import { Board } from './Board';
@@ -31,7 +31,8 @@ import type { EditorStore } from './store';
 import { StyleCard, usePreviewScene, useStyleCard } from './StyleCard';
 import { Palette, StatusLine, ToolHint } from './ToolBar';
 import { usePanels, useWorkspace } from './workspace';
-import { WorkspaceBar } from './WorkspaceBar';
+import { ToolSearch } from './ToolSearch';
+import { WorkspaceActions } from './WorkspaceActions';
 import { GettingStarted } from './GettingStarted';
 import { WorkspaceNotices } from './WorkspaceNotices';
 import { chooseTool } from '@geomira/editor/selection-tool';
@@ -99,19 +100,6 @@ const Hint = memo(ToolHint);
 const Status = memo(StatusLine);
 const Commands = memo(CommandBar);
 
-/** Fits the view after an edit once its figure is drawn (Randomize moves the figure). */
-function useFitAfterEdit(scene: Scene, fit: () => void) {
-  const pending = useRef(false);
-  useEffect(() => {
-    if (!pending.current) return;
-    pending.current = false;
-    fit();
-  }, [scene, fit]);
-  return useCallback(() => {
-    pending.current = true;
-  }, []);
-}
-
 /** A callback with a stable identity that always calls the latest `f` (memoised panels keep). */
 function useStable<A extends unknown[], R>(f: (...a: A) => R): (...a: A) => R {
   const ref = useRef(f);
@@ -168,13 +156,11 @@ function useApp() {
   useFitOnOpen(store, snap.fits, size, sceneOf);
   useInternalErrors(onInternal);
   const fit = useFit(store, size, sceneOf);
-  const fitAfterEdit = useFitAfterEdit(page.scene, fit);
   usePageShortcuts(store, fit, commandRef, panels.toggleHelp, choose);
   const canvas = useCallback(() => canvasRef.current, []);
   const header = useHeader({
     ...{ store, runs: page.runs, snap, size, ready, fit, canvas, setDialog },
     showTab: panels.showTab,
-    fitAfterEdit,
   });
   const claimBox = useClaimBox(header.props.claimBox);
   const openClaims = useStable(() => {
@@ -276,6 +262,23 @@ function PageHeader({
   return (
     <Header
       {...app.header.props}
+      search={
+        <ToolSearch
+          inputRef={app.searchRef}
+          onChoose={app.choose}
+          recent={app.workspace.prefs.recent}
+        />
+      }
+      workspaceActions={(close) => (
+        <WorkspaceActions
+          workspace={app.workspace}
+          close={close}
+          hidePanels={app.panels.close}
+          showPanels={() => {
+            app.panels.showTab(app.panels.tab);
+          }}
+        />
+      )}
       documents={<DocumentFiles store={app.page.store} />}
       persistence={
         <PersistencePanel
@@ -330,15 +333,6 @@ export function App() {
         style={app.workspace.style}
       >
         <PageHeader app={app} recoveryHost={recoveryHost} />
-        <WorkspaceBar
-          workspace={app.workspace}
-          inputRef={app.searchRef}
-          choose={app.choose}
-          hidePanels={app.panels.close}
-          showPanels={() => {
-            app.panels.showTab(app.panels.tab);
-          }}
-        />
         <WorkspaceNotices
           page={page}
           command={commandRef}

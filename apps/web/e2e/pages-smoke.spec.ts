@@ -1,3 +1,4 @@
+import { selectExample } from './helpers';
 import { expect, test } from '@playwright/test';
 
 /**
@@ -15,7 +16,7 @@ test('the site opens, draws an example, and its landing page leads to the app', 
   await expect(page.getByRole('heading', { name: 'Geomira' })).toBeVisible();
   const canvas = page.getByLabel('Geometry canvas');
   await expect(canvas).toBeVisible();
-  await page.getByLabel('Example').selectOption('euler-line');
+  await selectExample(page, 'euler-line');
   // Something is drawn: dark pixels of the figure on the canvas.
   await expect
     .poll(() =>

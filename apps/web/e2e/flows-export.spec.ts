@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { command, openApp, RESERVED } from './helpers';
+import { selectExample, command, openApp, RESERVED } from './helpers';
 
 /**
  * Run 9a, note E: the Export dialog, one flow per format (SPEC §14): the text shown, copy, and
@@ -9,7 +9,7 @@ import { command, openApp, RESERVED } from './helpers';
 
 async function openEuler(page: Page): Promise<void> {
   await openApp(page);
-  await page.getByLabel('Example').selectOption('euler-line');
+  await selectExample(page, 'euler-line');
   await page.getByRole('button', { name: 'Export', exact: true }).click();
   await page.getByRole('button', { name: 'SVG', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Export' })).toBeVisible();
@@ -189,7 +189,7 @@ const PNG_GOLDEN = [
 for (const id of PNG_GOLDEN)
   test(`PNG golden: ${id}`, async ({ page }) => {
     const errors = await openApp(page);
-    await page.getByLabel('Example').selectOption(id);
+    await selectExample(page, id);
     await page.evaluate(async () => {
       await document.fonts.ready;
     });

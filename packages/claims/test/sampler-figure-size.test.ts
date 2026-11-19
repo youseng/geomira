@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { toNumber, type Rational } from '@geomira/num/rational';
 import type { Document } from '@geomira/kernel/document';
-import { prepareFigure } from '../src/figure-prep';
 import { readFree } from '../src/free';
 import { testClaim } from '../src/job';
 import { prepare, type Prepared } from '../src/prepare';
-import { randomFigure } from '../src/randomize';
 import { drawSample } from '../src/sampler';
 import { Figure, n, REGISTRY } from './helpers/build';
 
@@ -131,30 +129,5 @@ describe('the samplers measure the figure, not the clamped scale (ADR-0017)', ()
       expect(toNumber(r ?? { num: 0n, den: 1n })).toBeGreaterThan(0.0099);
       expect(toNumber(r ?? { num: 1n, den: 1n })).toBeLessThan(0.0401);
     }
-  });
-});
-
-describe('Randomize keeps a small figure small (ADR-0017)', () => {
-  it('an acute triangle of diameter 0.05 is redrawn at about its size, on decimals of its size', () => {
-    const f = new Figure().point('A', '0.01', '0.03').point('B', 0, 0).point('C', '0.04', 0);
-    // 10^(⌊log10 0.05⌋ − 2) = 10^−4: four decimals, where the clamped scale gave two.
-    const fine: Rational[] = [];
-    for (let seed = 0; seed < 20; seed++) {
-      const r = randomFigure(f.doc, REGISTRY, 'acute', seed);
-      if (r.kind !== 'figure') throw new Error(r.reason);
-      const p = prepareFigure(r.doc, REGISTRY);
-      if (!p.ok) throw new Error(p.reason);
-      const exact = p.figure.free.flatMap((x) => readFree(r.doc, x) ?? []);
-      for (const x of exact) expect(10_000n % x.den, `${String(x.num)}/${String(x.den)}`).toBe(0n);
-      fine.push(...exact.filter((x) => 100n % x.den !== 0n));
-      const pts = p.figure.free.map((x) => (readFree(r.doc, x) ?? []).map(toNumber));
-      const xs = pts.map((v) => v[0] ?? NaN);
-      const ys = pts.map((v) => v[1] ?? NaN);
-      const d = Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
-      expect(d, String(seed)).toBeGreaterThan(0.005);
-      expect(d, String(seed)).toBeLessThan(0.5);
-      expect(obtuseOrRight(pts)).toBe(false);
-    }
-    expect(fine.length).toBeGreaterThan(30);
   });
 });

@@ -31,7 +31,6 @@ import * as claimBarMod from '../src/claim-bar';
 import * as keymapMod from '../src/keymap';
 import * as panelsMod from '../src/panels';
 import * as restoreMod from '../src/restore';
-import * as randomizeMod from '../src/randomize';
 import * as toolGroupsMod from '../src/tool-groups';
 import * as promptMod from '../src/prompt';
 import * as previewMod from '../src/preview';
@@ -123,7 +122,6 @@ const SURFACE: Record<string, { module: object; names: string[] }> = {
     names: ['claimRows', 'hypothesisRows', 'objectsByLayer', 'statementLines'],
   },
   './restore': { module: restoreMod, names: ['openAtStartup', 'restoreOffer', 'restoredSession'] },
-  './randomize': { module: randomizeMod, names: ['randomizeEdit'] },
   './tool-groups': { module: toolGroupsMod, names: ['TOOL_GROUPS', 'keyCap', 'toolGroup'] },
   './prompt': { module: promptMod, names: ['toolPrompt'] },
   './claim-tool': {

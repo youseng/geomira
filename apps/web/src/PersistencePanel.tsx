@@ -1,6 +1,7 @@
 import { assertNever } from '@geomira/num/assert';
 import { useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
+import { HeaderIcon } from './HeaderIcon';
 import { downloadGeo, downloadText } from './backup';
 import type { RecoveryEntry, SaveStatus } from './persist';
 import type { EditorStore } from './store';
@@ -191,7 +192,16 @@ export function PersistencePanel(props: PanelProps) {
   // An unacknowledged initial save is not a failure alert that may resize active input.
   const show = open || status.phase === 'conflict' || status.message !== null;
   return (
-    <div className="persistence">
+    <div className="persistence" data-phase={status.phase}>
+      <HeaderIcon
+        name={
+          status.phase === 'saved'
+            ? 'saved'
+            : status.phase === 'not-saved' || status.phase === 'conflict'
+              ? 'warning'
+              : 'pending'
+        }
+      />
       <div role="status" aria-label="Local save status" aria-live="polite" aria-atomic="true">
         <strong>{statusText(status.phase)}</strong>
         <span className="sr-only">
@@ -203,6 +213,7 @@ export function PersistencePanel(props: PanelProps) {
         ref={button}
         type="button"
         aria-label="Recovery versions"
+        title={`${statusText(status.phase)} · Open recovery versions`}
         aria-expanded={open}
         aria-controls="recovery-versions"
         onClick={() => {
@@ -210,7 +221,7 @@ export function PersistencePanel(props: PanelProps) {
           void autosave.refresh();
         }}
       >
-        Recovery
+        <span className="sr-only">Recovery</span>
       </button>
       {show &&
         (props.outlet === undefined || props.outlet === null ? (

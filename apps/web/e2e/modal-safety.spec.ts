@@ -3,7 +3,7 @@ import { clickWorld, command, openApp, tool } from './helpers';
 
 async function openModal(page: Page, name: string) {
   await page
-    .getByRole('button', { name: name === 'Debug report' ? 'Help' : 'Export', exact: true })
+    .getByRole('button', { name: name === 'Debug report' ? 'More actions' : 'Export', exact: true })
     .click();
   await page.getByRole('button', { name: name === 'Export' ? 'SVG' : name, exact: true }).click();
   return page.getByRole('dialog', { name, exact: true });
@@ -133,7 +133,7 @@ test('Tab stays inside visible enabled controls; backdrop and assistive navigati
   if (browserName === 'chromium') {
     const cdp = await page.context().newCDPSession(page);
     const tree = await cdp.send('Accessibility.getFullAXTree');
-    expect(tree.nodes.filter((n) => !n.ignored && n.name?.value === 'Randomize')).toEqual([]);
+    expect(tree.nodes.filter((n) => !n.ignored && n.name?.value === 'Undo')).toEqual([]);
     expect(tree.nodes.filter((n) => !n.ignored && n.role?.value === 'dialog')).toHaveLength(1);
     await cdp.detach();
   }
@@ -244,7 +244,7 @@ test('Escape and close restore the menu invoker; repeated opening and a removed 
   const listeners = await page.evaluate(() => Reflect.get(window, '__modalKeyListeners') as number);
   for (const name of ['Export', 'Share link', 'Debug report', 'Export']) {
     const trigger = page.getByRole('button', {
-      name: name === 'Debug report' ? 'Help' : 'Export',
+      name: name === 'Debug report' ? 'More actions' : 'Export',
       exact: true,
     });
     await trigger.focus();

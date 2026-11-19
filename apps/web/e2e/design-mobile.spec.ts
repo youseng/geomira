@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openApp, tab } from './helpers';
+import { selectExample, openApp, tab } from './helpers';
 
 /**
  * Run 9b (ADR-0016 decision 18): the phone layout at 390 × 664: icon-only top bar, the tab
@@ -8,7 +8,7 @@ import { openApp, tab } from './helpers';
  */
 
 async function nine(page: Page): Promise<void> {
-  await page.getByLabel('Example').selectOption('nine-point-circle');
+  await selectExample(page, 'nine-point-circle');
   await page.evaluate(async () => {
     await document.fonts.ready;
   });
@@ -97,24 +97,13 @@ test('nothing is clipped: top bar, tabs, tool strip, command line, drawer', asyn
   await tab(page, 'Text');
   await expect(page.getByLabel('Text', { exact: true })).toHaveValue(source);
   await page.getByRole('button', { name: 'Hide panels' }).click();
-  // Labels hidden on the phone keep their names; Settings lives in More actions.
-  for (const name of ['Undo', 'Redo', 'Randomize', 'View', 'Export', 'Help'])
+  // Icon buttons keep their accessible names on the phone.
+  for (const name of ['Undo', 'Redo', 'View', 'Export', 'More actions'])
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'More actions', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
-  await page.keyboard.press('Escape');
 });
 
-test('Randomize and the menus work on a phone', async ({ page }) => {
+test('the export menu fits on a phone', async ({ page }) => {
   await openApp(page);
-  await nine(page);
-  await tab(page, 'Text');
-  const area = page.getByLabel('Text', { exact: true });
-  const before = await area.inputValue();
-  await page.getByRole('button', { name: 'Hide panels' }).click();
-  await page.getByRole('button', { name: 'Randomize', exact: true }).click();
-  await tab(page, 'Text');
-  await expect(area).not.toHaveValue(before);
   await page.getByRole('button', { name: 'Export', exact: true }).click();
   await inside(page, '.menu');
   await expect(page.getByRole('button', { name: 'Share link' })).toBeVisible();

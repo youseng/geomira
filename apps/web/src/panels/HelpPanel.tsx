@@ -33,9 +33,9 @@ export function HelpPanel() {
       </p>
       <p>
         Move: left-drag empty canvas to box-select; Shift adds to selection. Right or middle drag
-        pans, and touch pans or pinches to zoom. The Pan button also pans over points. Escape
+        pans, and touch pans or pinches to zoom. Choose View → Pan canvas to pan over points. Escape
         cancels picks and 0 fits the figure. Select one object and choose Properties; right-click or
-        long-press remains available. Search tools by name above the canvas.
+        long-press remains available. Press Ctrl+K (⌘K on Mac) to search tools by name.
       </p>
       <AboutSection />
     </div>

@@ -1,3 +1,4 @@
+import { selectExample } from './helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { pinSceneFont } from './scene-font';
 
@@ -8,7 +9,7 @@ async function open(page: Page, example: string): Promise<void> {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('./');
-  await page.getByLabel('Example').selectOption(example);
+  await selectExample(page, example);
   await fontReady();
   expect(errors).toEqual([]);
 }
@@ -29,10 +30,7 @@ for (const id of SCREENSHOTS) {
 
 test('frame time at 300 objects (SPEC §17: drag frame ≤ 8 ms)', async ({ page }, info) => {
   await open(page, 'stress-300');
-  // ADR-0074/0076: compact headers expose Settings through their visible overflow.
-  const more = page.getByRole('button', { name: 'More actions', exact: true });
-  if (await more.isVisible()) await more.click();
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'More actions', exact: true }).click();
   await page.getByRole('button', { name: 'Measure frame time' }).click();
   const out = page.getByTestId('frame-times');
   await expect(out).toBeVisible();

@@ -7,7 +7,7 @@ Users: olympiad students, trainers, problem setters, handout authors.
 
 v1 INCLUDES: construction kernel over several number fields, branch selectors,
 similarity transformations, layers including derived layers, views (data model), the
-text language (including saved claim and assumption data), measurements, Randomize,
+text language (including saved claim and assumption data), measurements,
 canvas editor, exports (SVG, PNG, TikZ, Asymptote) compiled in CI, share
 links, static site.
 v1.1 (Runs 12–13, before Phase 2): single-file offline build, PWA, views UI, long-tail
@@ -39,8 +39,8 @@ subscribe to their results. Only explicitly selected internal development/test b
 may enable them; URL parameters, persisted settings and document data cannot do so.
 
 `claim` and `assume` remain language/document data, preserved through parsing, printing, edits,
-rename, undo, saving, sharing and reopening. Randomize retains applicable assumptions and the
-shared sampling dependencies. ADR-0073 preserves fixed-radius ratios and validates sampled
+rename, undo, saving, sharing and reopening. ADR-0077 retires the figure randomizer. The internal claim sampler
+in ADR-0073 preserves fixed-radius ratios and validates sampled
 domains; unresolved retained-engine reactivation gates are in `docs/claims-reactivation.md`.
 
 ## 2. Repository and dependency rules
@@ -352,9 +352,8 @@ For exact rungs, samples are rounded to a coarse rational grid (denominators ≈
 glider parameters to coarse rationals.
 
 Fixed literal radii are construction constants, multiplied by one exact rational common
-similarity scale; neither the sampler nor Randomize rounds them independently onto the
-coordinate grid. Invalid sampled inputs (including unrelated ones) refuse Randomize and
-return structured invalid retained jobs before any RNG domain call. Do not repair zero or
+similarity scale. The sampler preserves their ratios. Invalid sampled inputs (including
+unrelated ones) return structured invalid retained jobs before any RNG domain call. Do not repair zero or
 negative radii, swap bounds or discard objects. Strict circular order requires distinct
 points using the existing BAND margin. Public claim testing remains disabled.
 

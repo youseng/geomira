@@ -1,0 +1,319 @@
+/* The document, tool search and workspace menus share one desktop toolbar. */
+.topbar {
+  position: relative;
+  z-index: 95;
+  min-height: 60px;
+  padding: 0 clamp(12px, 1.5vw, 26px);
+  gap: clamp(12px, 1.45vw, 26px);
+  font-size: 14px;
+}
+.document-group,
+.history-group,
+.header-actions,
+.toolbar-search {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.document-group {
+  gap: clamp(10px, 1.1vw, 18px);
+}
+.history-group,
+.header-actions {
+  gap: 4px;
+}
+.topbar .brand {
+  border-inline-end: 1px solid var(--border);
+  padding-inline-end: clamp(12px, 1.4vw, 24px);
+}
+.topbar .brand h1 {
+  margin: 0;
+}
+.topbar .brand h1::before,
+.topbar .brand h1::after {
+  font-size: 25px;
+}
+.topbar .tb {
+  height: 36px;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0 9px;
+  border-radius: 7px;
+  justify-content: center;
+  gap: 6px;
+  font-size: inherit;
+}
+.topbar .tb:hover:not(:disabled),
+.topbar .tb[aria-expanded='true'],
+.persistence:hover {
+  background: var(--panel2);
+}
+.topbar .tb.icon {
+  width: 34px;
+  padding: 0;
+}
+.topbar .tb:disabled {
+  opacity: 0.35;
+}
+.header-icon {
+  flex: none;
+  pointer-events: none;
+}
+.icon-down {
+  width: 14px;
+  height: 14px;
+}
+.document-files {
+  position: relative;
+  min-width: 0;
+}
+.topbar .document-trigger {
+  max-width: 100%;
+  justify-content: start;
+  font-weight: 500;
+  padding: 0 5px;
+}
+.document-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: clamp(72px, 12vw, 200px);
+}
+.document-draft,
+.document-download {
+  position: absolute;
+  inset-inline-start: 5px;
+  top: calc(50% + 8px);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 12px;
+  white-space: nowrap;
+}
+.document-draft[data-active='false'],
+.document-files:has(.document-download) .document-draft {
+  visibility: hidden;
+}
+.document-files:has(.document-draft[data-active='true'], .document-download) .document-trigger {
+  padding-bottom: 8px;
+}
+.persistence {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  position: relative;
+  min-height: 36px;
+  padding: 0 4px;
+  color: var(--muted);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.persistence > [role='status'] {
+  display: grid;
+}
+.persistence > [role='status']::before {
+  content: 'Saved locally';
+  visibility: hidden;
+  grid-area: 1 / 1;
+}
+.persistence strong {
+  grid-area: 1 / 1;
+  font-weight: 400;
+}
+.persistence > .header-icon {
+  width: 15px;
+}
+.persistence[data-phase='saved'] > .header-icon {
+  color: var(--ok);
+}
+.persistence:is([data-phase='conflict'], [data-phase='not-saved']) {
+  color: var(--bad);
+}
+.persistence > button {
+  position: absolute;
+  inset: 0;
+  background: none;
+  border: 0;
+  border-radius: inherit;
+  width: 100%;
+}
+.toolbar-search {
+  flex: 1;
+  justify-content: center;
+}
+.tool-search {
+  position: relative;
+  width: min(100%, 330px);
+}
+.tool-search input {
+  width: 100%;
+  height: 36px;
+  padding: 0 54px 0 36px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel2);
+  color: var(--text);
+  font-size: 14px;
+}
+.tool-search input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+.tool-search > .header-icon,
+.search-shortcut {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--muted);
+}
+.tool-search > .header-icon {
+  left: 11px;
+  width: 17px;
+}
+.search-shortcut {
+  right: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  background: var(--panel);
+  font:
+    11px/16px system-ui,
+    sans-serif;
+}
+.tool-results {
+  top: calc(100% + 6px);
+  width: max(100%, 280px);
+}
+.tool-results [role='status'] {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 4px 8px;
+}
+.header-actions .menu-view > .tb > .icon-view,
+.header-actions .menu-export > .tb > .icon-export {
+  display: none;
+}
+.topbar .menu-export > .tb {
+  background: var(--text);
+  color: var(--panel);
+  padding: 0 13px;
+  font-weight: 550;
+}
+.topbar .menu-export > .tb:is(:hover:not(:disabled), [aria-expanded='true']) {
+  background: color-mix(in srgb, var(--text) 83%, var(--panel));
+}
+.topbar .menu {
+  top: calc(100% + 8px);
+  max-height: min(420px, calc(var(--workspace-height, 100dvh) - var(--panel-ceiling, 60px) - 10px));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.document-files > .menu {
+  left: 0;
+  right: auto;
+}
+.menu .examples {
+  display: grid;
+}
+.menu .examples select {
+  width: 100%;
+  padding: 5px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.menu button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.topbar .claim-form {
+  flex: 0 1 220px;
+}
+@media (max-width: 950px) and (min-width: 761px) {
+  .topbar {
+    gap: 8px;
+    padding: 0 10px;
+  }
+  .topbar .claim-form {
+    flex-basis: 150px;
+  }
+  .search-shortcut {
+    display: none;
+  }
+  .tool-search input {
+    padding-right: 8px;
+  }
+}
+@media (max-width: 760px) {
+  .topbar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0 4px;
+    padding: 2px 6px 5px;
+  }
+  .document-group {
+    grid-column: 1 / -1;
+    gap: 8px;
+  }
+  .topbar .brand {
+    padding-right: 12px;
+  }
+  .topbar .brand h1::before,
+  .topbar .brand h1::after {
+    font-size: 21px;
+  }
+  .topbar .document-trigger {
+    max-width: min(38vw, 200px);
+  }
+  .topbar .document-name {
+    max-width: 100%;
+  }
+  .persistence {
+    margin-left: auto;
+    min-height: 44px;
+  }
+  .topbar .tb,
+  .topbar .tb.icon {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 6px;
+  }
+  .header-actions,
+  .history-group {
+    gap: 0;
+  }
+  .header-actions .menu-view > .tb > .icon-view,
+  .header-actions .menu-export > .tb > .icon-export {
+    display: block;
+  }
+  .header-actions .icon-down,
+  .search-shortcut {
+    display: none;
+  }
+  .tool-search {
+    width: 100%;
+  }
+  .tool-search input {
+    height: 44px;
+    padding: 0 6px 0 28px;
+    font-size: 16px;
+  }
+  .tool-search > .header-icon {
+    left: 7px;
+    width: 15px;
+  }
+  .topbar .menu,
+  .tool-results {
+    position: fixed;
+    top: var(--panel-ceiling, 98px);
+    left: 6px;
+    right: 6px;
+    width: auto;
+    max-width: none;
+  }
+  .topbar .menu button,
+  .topbar .menu label {
+    min-height: 44px;
+  }
+}

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useSyncExternalStore, type RefObject } from
 import { print } from '@geomira/lang/print';
 import { FileSession } from './file-session';
 import { FileDialog } from './FileDialog';
+import { HeaderIcon } from './HeaderIcon';
 import { FileMenu } from './FileMenu';
 import type { EditorStore } from './store';
 
@@ -21,22 +22,18 @@ export function DocumentFiles({ store }: { store: EditorStore }) {
     };
   }, [session]);
   const current = store.current().doc;
+  const title = current.meta.title ?? 'Untitled';
   return (
     <div className="document-files" data-document-files>
-      <button
-        type="button"
-        className="tb"
-        aria-expanded={state.menu}
-        onMouseDown={(e) => {
-          e.preventDefault();
-        }}
-        onClick={() => {
-          session.toggle();
-        }}
+      <DocumentTrigger session={session} open={state.menu} title={title} />
+      <span
+        className="document-draft"
+        data-active={unapplied}
+        role={unapplied ? 'status' : undefined}
+        aria-hidden={!unapplied}
       >
-        File
-      </button>
-      <DocumentCaption title={current.meta.title ?? 'Untitled'} unapplied={unapplied} />
+        Unapplied text draft
+      </span>
       {state.downloaded !== null && (
         <span className="document-download" role="status">
           {unapplied
@@ -59,22 +56,32 @@ export function DocumentFiles({ store }: { store: EditorStore }) {
   );
 }
 
-/** Keep identity/status geometry stable when canvas input applies a focused draft. */
-function DocumentCaption({ title, unapplied }: { title: string; unapplied: boolean }) {
+function DocumentTrigger({
+  session,
+  open,
+  title,
+}: {
+  session: FileSession;
+  open: boolean;
+  title: string;
+}) {
   return (
-    <span className="document-caption">
-      <span className="document-name" title={title}>
-        {title}
-      </span>
-      <span
-        className="document-draft"
-        data-active={unapplied}
-        role={unapplied ? 'status' : undefined}
-        aria-hidden={!unapplied}
-      >
-        Unapplied text draft
-      </span>
-    </span>
+    <button
+      type="button"
+      className="tb document-trigger"
+      title={`File menu · ${title}`}
+      aria-label={`File: ${title}`}
+      aria-expanded={open}
+      onMouseDown={(e) => {
+        e.preventDefault();
+      }}
+      onClick={() => {
+        session.toggle();
+      }}
+    >
+      <span className="document-name">{title}</span>
+      <HeaderIcon name="down" />
+    </button>
   );
 }
 

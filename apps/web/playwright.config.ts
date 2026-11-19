@@ -21,7 +21,7 @@ const INTERNAL =
 const internalOnly = engine ? '|public-release|public-layout' : `|${INTERNAL}`;
 const fileSpecs = engine
   ? /(file-url|canvas-coordinates|draft-pointer-layout|interaction-layout|panel-controls|recovery-layout|startup-recovery-layout)\.spec/u
-  : /(public-release|persistence|modal-safety|release-download|document-files|randomize-integrity|script-editor|workspace-composed|canvas-coordinates|draft-pointer-layout|interaction-layout|panel-controls|recovery-layout|startup-recovery-layout)\.spec/u;
+  : /(public-release|persistence|modal-safety|release-download|document-files|script-editor|workspace-composed|canvas-coordinates|draft-pointer-layout|interaction-layout|panel-controls|recovery-layout|startup-recovery-layout)\.spec/u;
 
 export default defineConfig({
   testDir: 'e2e',

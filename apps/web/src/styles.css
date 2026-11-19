@@ -205,20 +205,6 @@ button {
   cursor: default;
 }
 
-.seg {
-  display: inline-flex;
-}
-
-.seg .tb:first-child {
-  border-radius: 6px 0 0 6px;
-}
-
-.seg select.tb {
-  border-radius: 0 6px 6px 0;
-  border-left: none;
-  padding: 0 4px;
-}
-
 .claim-form {
   flex: 1 1 260px;
   min-width: 120px;
@@ -243,20 +229,6 @@ button {
 
 .spacer {
   flex: 1;
-}
-
-/* The examples' native select lies over its button, invisible, so a click opens its list. */
-.examples select {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.examples:focus-within {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
 }
 
 /* ---- menus ---- */

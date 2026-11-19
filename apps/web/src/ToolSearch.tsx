@@ -1,5 +1,14 @@
-import { useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react';
 import type { ToolId } from '@geomira/editor/tool-state';
+import { HeaderIcon } from './HeaderIcon';
+import { modalOwnsInteraction } from './Modal';
 import { matchingTools, SEARCH_TOOLS } from './tool-search';
 
 export interface ToolSearchProps {
@@ -7,14 +16,17 @@ export interface ToolSearchProps {
   readonly inputRef: RefObject<HTMLInputElement | null>;
   readonly recent: readonly string[];
 }
-function useSearch(onChoose: ToolSearchProps['onChoose']) {
+function useSearch(onChoose: ToolSearchProps['onChoose'], recent: readonly string[]) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(-1);
-  const matches = matchingTools(query);
+  const matches = query.trim()
+    ? matchingTools(query)
+    : recent.flatMap((id) => SEARCH_TOOLS.find((t) => t.id === id) ?? []);
   const choose = (id: ToolId) => {
     onChoose(id);
     setQuery('');
+    setIndex(-1);
     setOpen(false);
   };
   const key = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -48,15 +60,21 @@ function Results({ search: s }: { search: Search }) {
   useLayoutEffect(() => {
     active.current?.scrollIntoView({ block: 'nearest' });
   }, [s.index]);
-  if (!s.open || s.query === '') return null;
+  if (!s.open || (!s.query.trim() && s.matches.length === 0)) return null;
   return (
     <div className="tool-results">
       <div role="status" aria-label="Tool search results">
-        {s.matches.length === 0
-          ? 'No tools match. Try a name such as midpoint or circle.'
-          : `${String(s.matches.length)} matching tools`}
+        {!s.query.trim()
+          ? 'Recent tools'
+          : s.matches.length === 0
+            ? 'No tools match. Try a name such as midpoint or circle.'
+            : `${String(s.matches.length)} matching tools`}
       </div>
-      <ul id="tool-search-list" role="listbox" aria-label="Matching tools">
+      <ul
+        id="tool-search-list"
+        role="listbox"
+        aria-label={s.query.trim() ? 'Matching tools' : 'Recent tools'}
+      >
         {s.matches.map((tool, i) => (
           <li
             key={tool.id}
@@ -79,55 +97,64 @@ function Results({ search: s }: { search: Search }) {
     </div>
   );
 }
-function Recent({ recent, choose }: { recent: readonly string[]; choose: (id: ToolId) => void }) {
-  const tools = recent.flatMap((id) => {
-    const tool = SEARCH_TOOLS.find((t) => t.id === id);
-    return tool === undefined ? [] : [tool];
-  });
-  if (tools.length === 0) return null;
-  return (
-    <details className="recent-tools">
-      <summary aria-label="Recent tools">Recent</summary>
-      <div role="group" aria-label="Recent tools">
-        {tools.map((tool) => (
-          <button
-            key={tool.id}
-            type="button"
-            aria-label={`Recent: ${tool.label}`}
-            onClick={(e) => {
-              e.currentTarget.closest('details')?.removeAttribute('open');
-              choose(tool.id);
-            }}
-          >
-            {tool.label}
-          </button>
-        ))}
-      </div>
-    </details>
-  );
+function useToolSearchShortcut(
+  inputRef: ToolSearchProps['inputRef'],
+  setOpen: (open: boolean) => void,
+) {
+  useEffect(() => {
+    const focus = (event: globalThis.KeyboardEvent) => {
+      if (
+        !(event.ctrlKey || event.metaKey) ||
+        event.altKey ||
+        event.shiftKey ||
+        event.key.toLowerCase() !== 'k' ||
+        event.defaultPrevented ||
+        modalOwnsInteraction()
+      )
+        return;
+      event.preventDefault();
+      inputRef.current?.focus();
+      inputRef.current?.select();
+      setOpen(true);
+    };
+    window.addEventListener('keydown', focus);
+    return () => {
+      window.removeEventListener('keydown', focus);
+    };
+  }, [inputRef, setOpen]);
 }
+
 export function ToolSearch({ onChoose, inputRef, recent }: ToolSearchProps) {
-  const s = useSearch(onChoose);
+  const s = useSearch(onChoose, recent);
+  const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/u.test(navigator.userAgent);
+  const { setOpen } = s;
+  useToolSearchShortcut(inputRef, setOpen);
+  const expanded = s.open && (s.query.trim() !== '' || s.matches.length > 0);
   return (
     <div className="tool-search">
       <label className="sr-only" htmlFor="tool-search-input">
         Find a tool
       </label>
+      <HeaderIcon name="search" />
       <input
         id="tool-search-input"
         ref={inputRef}
         role="combobox"
         autoComplete="off"
-        placeholder="Find a tool…"
+        placeholder="Find a tool"
+        aria-keyshortcuts="Control+K Meta+K"
         value={s.query}
-        aria-expanded={s.open && s.query !== ''}
-        aria-controls="tool-search-list"
+        aria-expanded={expanded}
+        aria-controls={expanded ? 'tool-search-list' : undefined}
         aria-autocomplete="list"
         aria-activedescendant={
           s.open && s.matches[s.index] !== undefined ? `tool-result-${String(s.index)}` : undefined
         }
+        onClick={() => {
+          s.setOpen(true);
+        }}
         onFocus={() => {
-          if (s.query !== '') s.setOpen(true);
+          s.setOpen(true);
         }}
         onBlur={() => {
           s.setOpen(false);
@@ -138,7 +165,9 @@ export function ToolSearch({ onChoose, inputRef, recent }: ToolSearchProps) {
         onKeyDown={s.key}
       />
       <Results search={s} />
-      <Recent recent={recent} choose={s.choose} />
+      <kbd className="search-shortcut" aria-hidden="true">
+        {mac ? '⌘ K' : 'Ctrl K'}
+      </kbd>
     </div>
   );
 }

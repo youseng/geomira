@@ -20,41 +20,7 @@
     white-space: nowrap;
   }
 
-  .topbar {
-    gap: 3px;
-    padding: 0 6px;
-  }
-
-  .brand h1 {
-    margin-right: 2px;
-  }
-
-  .brand h1::before,
-  .brand h1::after {
-    font-size: 16px;
-  }
-
-  .topbar .tb {
-    padding: 0 7px;
-  }
-
-  .topbar .tb.icon,
-  .topbar .menu-wrap > .tb,
-  .topbar .examples,
-  .topbar .seg .tb:first-child {
-    width: 30px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 6px;
-  }
-
-  .topbar .menu-wrap > .tb .glyph + .hide-narrow + .glyph,
-  .topbar .examples .glyph:last-of-type {
-    display: none;
-  }
-
-  .claim-form,
-  .triangle-type {
+  .claim-form {
     display: none;
   }
 

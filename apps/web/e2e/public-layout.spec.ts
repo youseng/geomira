@@ -1,9 +1,9 @@
 /** ADR-0076: reviewed public header, geometry, source and document controls together. */
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
-import { command, openApp, tab } from './helpers';
+import { selectExample, command, openApp, tab } from './helpers';
 import { pinSceneFont } from './scene-font';
 
-const layout = '.topbar, .workspace-bar, .board, .side, .palette, .cmdbar';
+const layout = '.topbar, .toolbar-search, .board, .side, .palette, .cmdbar';
 function bounds(page: Page) {
   return page.locator(layout).evaluateAll((elements) =>
     elements.map((element) => {
@@ -57,7 +57,7 @@ test('screenshot baseline: public workspace with editable source and file contro
 }, info) => {
   const fontReady = await pinSceneFont(page);
   const errors = await openApp(page, './index.html');
-  await page.getByLabel('Example', { exact: true }).selectOption('nine-point-circle');
+  await selectExample(page, 'nine-point-circle');
   await command(page, '@author "Visual fixture"');
   await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
     'Saved locally',

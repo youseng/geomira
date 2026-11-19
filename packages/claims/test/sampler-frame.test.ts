@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { toNumber } from '@geomira/num/rational';
-import { prepareFigure } from '../src/figure-prep';
 import { readFree } from '../src/free';
 import { testClaim } from '../src/job';
 import { prepare, type Prepared } from '../src/prepare';
@@ -228,20 +227,5 @@ describe('the frame rule (frame.ts), case by case', () => {
       .def('Z', 'point', n(2), c('sqrt', n(3)))
       .def('X', 'midpoint', 'A', 'B');
     expect(frameOf(f)).toEqual(FULL);
-  });
-
-  it('Randomize decides the same for the whole figure (its claims included)', () => {
-    const f = base().def('Z', 'point', n(2), c('sqrt', n(3)));
-    const r = prepareFigure(f.doc, REGISTRY);
-    if (!r.ok) throw new Error(r.reason);
-    expect(r.figure.frame).toMatchObject({ similarity: false, mirror: false });
-    const g = base();
-    g.claim('on', 'A', c('circle', 'B', n(4)));
-    const s = prepareFigure(g.doc, REGISTRY);
-    if (!s.ok) throw new Error(s.reason);
-    expect(s.figure.frame).toMatchObject({ similarity: false, mirror: true });
-    const h = prepareFigure(base().doc, REGISTRY);
-    if (!h.ok) throw new Error(h.reason);
-    expect(h.figure.frame).toEqual(FULL);
   });
 });

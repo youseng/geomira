@@ -4,7 +4,7 @@ import { command, openApp, textArea } from './helpers';
 import { readRecovery, holdConnections } from './recovery-helpers';
 
 async function fileAction(page: Page, action: string) {
-  await page.getByRole('button', { name: 'File', exact: true }).click();
+  await page.getByRole('button', { name: /^File: /u }).click();
   await page.getByRole('button', { name: action, exact: true }).click();
 }
 async function upload(page: Page, content: string, name = 'test.geo') {
@@ -213,7 +213,7 @@ for (const valid of [true, false]) {
     await field.fill(draft);
     // Suspend the pause before letting startup finish: neither startup nor a file action
     // may change the draft's base document while the user decides what to save.
-    await page.getByRole('button', { name: 'File', exact: true }).click();
+    await page.getByRole('button', { name: /^File: /u }).click();
     await page.evaluate(() => {
       window.dispatchEvent(new Event('release-storage'));
     });

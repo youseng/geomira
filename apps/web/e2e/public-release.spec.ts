@@ -2,7 +2,18 @@ import { recipientUrl } from './share-recipient';
 import { readFileSync } from 'node:fs';
 import { pngFigureText } from '@geomira/export/png';
 import { expect, test, type Page } from '@playwright/test';
-import { command, dragWorld, expectLines, openApp, tab, text, textArea, tool } from './helpers';
+import {
+  selectExample,
+  viewAction,
+  command,
+  dragWorld,
+  expectLines,
+  openApp,
+  tab,
+  text,
+  textArea,
+  tool,
+} from './helpers';
 
 const REPRO = `O=(0,0)
 F=(1000,0)
@@ -98,7 +109,7 @@ test('release: load, edit, drag, examples and legacy preferences never run retir
   await expect(page.getByRole('alert')).toContainText('unavailable');
   await input.fill('');
   for (const example of ['nine-point-circle', 'euler-line']) {
-    await page.getByLabel('Example').selectOption(example);
+    await selectExample(page, example);
     await expect(await textArea(page)).toHaveValue(/claim /u);
     await idle(page);
   }
@@ -108,8 +119,7 @@ test('release: load, edit, drag, examples and legacy preferences never run retir
   await dragWorld(page, [1, 4], [2, 4]);
   await idle(page);
   // ADR-0074/0076: a closed responsive panel is absent; reopen it through its control.
-  const panels = page.getByRole('button', { name: 'Show panels', exact: true });
-  if (await panels.isVisible()) await panels.click();
+  await viewAction(page, 'Show panels');
   // Every displayed tab has content; help has no retired shortcut hints.
   for (const name of ['Objects', 'Layers', 'Help', 'Text']) {
     await tab(page, name);
@@ -125,7 +135,7 @@ test('release: load, edit, drag, examples and legacy preferences never run retir
   expect(errors).toEqual([]);
 });
 
-test('release: claim-bearing shares and exports preserve data; Randomize, measurements and undo work', async ({
+test('release: claim-bearing shares and exports preserve data; measurements and undo work', async ({
   page,
   context,
 }) => {
@@ -140,7 +150,7 @@ test('release: claim-bearing shares and exports preserve data; Randomize, measur
   ])
     await command(page, line);
   const before = await text(page);
-  await page.getByRole('button', { name: 'Randomize', exact: true }).click();
+  await command(page, 'D = midpoint(B,C)');
   await expect(await textArea(page)).not.toHaveValue(before);
   await expect(await textArea(page)).toHaveValue(/claim collinear/u);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();

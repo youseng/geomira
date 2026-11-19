@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openApp, screenOf } from './helpers';
+import { selectExample, openApp, screenOf } from './helpers';
 
 /**
  * Run 9a, note F (SPEC §17: drag frame ≤ 8 ms at 300 objects): a FULL UI drag frame — the
@@ -85,7 +85,7 @@ function stats(xs: readonly number[]) {
 
 test('a full UI drag frame at 300 objects (SPEC §17: ≤ 8 ms)', async ({ page, browser }, info) => {
   await openApp(page);
-  await page.getByLabel('Example').selectOption('stress-300');
+  await selectExample(page, 'stress-300');
   await page.waitForTimeout(500);
   const source = page.getByLabel('Text', { exact: true });
   const before = await source.inputValue();

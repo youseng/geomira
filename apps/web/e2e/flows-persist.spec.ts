@@ -97,7 +97,7 @@ test('a damaged share link is refused with its reason; the autosave opens instea
 test('the debug report is reachable from the page and from an internal error', async ({ page }) => {
   await openApp(page);
   await command(page, 'A = (0, 0)');
-  await page.getByRole('button', { name: 'Help', exact: true }).click();
+  await page.getByRole('button', { name: 'More actions', exact: true }).click();
   await page.getByRole('button', { name: 'Debug report' }).click();
   const report = page.getByRole('dialog', { name: 'Debug report' }).getByRole('textbox');
   await expect(report).toHaveValue(/^# GEOMIRA debug report\n/u);
