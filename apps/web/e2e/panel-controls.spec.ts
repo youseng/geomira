@@ -183,7 +183,12 @@ for (const expanded of [false, true]) {
         280,
       );
       await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
-      expect(await canvasDocumentBounds(page)).toEqual(closed);
+      // Firefox reports the sum of the viewport origin and scroll offset with float noise.
+      const afterClose = await canvasDocumentBounds(page);
+      expect(afterClose.x).toBeCloseTo(closed.x, 4);
+      expect(afterClose.y).toBeCloseTo(closed.y, 4);
+      expect(afterClose.width).toBe(closed.width);
+      expect(afterClose.height).toBe(closed.height);
       await viewAction(page, 'Show panels');
       await expect(field).toHaveValue(draft);
       const ab = '@version 1\nA = (0, 0)\nB = (4, 0)\n';

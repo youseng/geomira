@@ -172,12 +172,17 @@ test('empty canvas: no card and no browser menu; the Objects panel opens cards t
   await page.mouse.click(box.x + 15, box.y + box.height - 15, { button: 'right' });
   await expect(page.locator('body')).toHaveAttribute('data-menu', 'prevented');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  // A row of the Objects panel; another object's card replaces it. On a phone the
-  // clamped card can cover A's name, so use the exposed visibility end of that same row.
+  // Another object's row replaces the open card through a real, exposed control.
   await tab(page, 'Objects');
   await page.getByRole('button', { name: 'B', exact: true }).click({ button: 'right' });
   await expect(page.getByRole('dialog', { name: 'Style of B' })).toBeVisible();
-  await page.getByRole('button', { name: 'Hide A', exact: true }).click({ button: 'right' });
+  const name = page.getByRole('button', { name: 'A', exact: true });
+  const nameExposed = await name.evaluate((button) => {
+    const r = button.getBoundingClientRect();
+    return button.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+  });
+  const target = nameExposed ? name : page.getByRole('button', { name: 'Hide A', exact: true });
+  await target.click({ button: 'right' });
   await expect(page.getByRole('dialog', { name: 'Style of A' })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(1);
   // The Style tab is gone.
