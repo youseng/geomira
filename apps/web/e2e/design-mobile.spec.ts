@@ -31,6 +31,9 @@ async function inside(page: Page, selector: string): Promise<void> {
 test('screenshot baseline: the phone layout', async ({ page }) => {
   const errors = await openApp(page);
   await nine(page);
+  await test
+    .info()
+    .attach('main-phone.png', { body: await page.screenshot(), contentType: 'image/png' });
   await expect(page).toHaveScreenshot('main-phone.png', { maxDiffPixelRatio: 0.01 });
   expect(errors).toEqual([]);
 });
