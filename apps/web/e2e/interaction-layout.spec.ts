@@ -199,7 +199,8 @@ test('Zoom controls never cover B and Properties remains visible at 320px', asyn
     const control = page.getByRole('button', { name, exact: true });
     const c = await control.boundingBox();
     if (c === null) throw new Error('no control');
-    expect(c.y + c.height).toBeLessThanOrEqual(box.y);
+    if (name === 'Properties') expect(c.y).toBeGreaterThanOrEqual(box.y + box.height);
+    else expect(c.y + c.height).toBeLessThanOrEqual(box.y);
     expect(
       await control.evaluate((button) => {
         const r = button.getBoundingClientRect();
@@ -209,9 +210,7 @@ test('Zoom controls never cover B and Properties remains visible at 320px', asyn
   }
 });
 
-test('box selection outline starts at the delivered canvas pointer below the controls strip', async ({
-  page,
-}) => {
+test('box selection outline starts at the delivered canvas pointer', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 664 });
   await openApp(page, './index.html');
   await tool(page, 'Move');

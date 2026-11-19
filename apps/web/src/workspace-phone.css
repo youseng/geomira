@@ -112,8 +112,6 @@
     height: 44px;
   }
   .workspace-notices button,
-  .stage-top button,
-  .zoomctl button,
   .tool-hint button,
   .tool-hint input,
   .tool-hint select,
@@ -134,18 +132,9 @@
   }
   .stage {
     --status-h: 48px;
-    --zoom-space: 160px;
   }
   .statusbar span {
     max-height: 44px;
-  }
-  .app:has(> .side.open) .stage-top {
-    top: 6px;
-    bottom: auto;
-    z-index: 5;
-  }
-  .app:has(> .side.open) .stage-top > .tool-hint {
-    display: flex;
   }
   .app.short-workspace {
     grid-template-rows:

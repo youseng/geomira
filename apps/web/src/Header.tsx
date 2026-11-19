@@ -5,7 +5,7 @@ import { SINGLE_FILE, SITE_URL } from './build-info';
 import { EXAMPLES } from './examples';
 import { HeaderIcon } from './HeaderIcon';
 import { usePanelCeiling } from './WorkspaceActions';
-import { SrOnly } from './icons';
+import { SrOnly, ZoomIcon } from './icons';
 import { ClaimBox, type ClaimBoxHost } from './ClaimBox';
 import { Menu, MenuItem } from './Menu';
 
@@ -67,6 +67,40 @@ function History(p: HeaderProps) {
         <SrOnly>Redo</SrOnly>
       </button>
     </>
+  );
+}
+
+/** Direct viewport controls in the workspace header. */
+function ZoomControls(p: { readonly onZoom: (f: number) => void; readonly onFit: () => void }) {
+  return (
+    <div className="zoomctl" role="group" aria-label="Canvas view">
+      <button
+        className="tb icon"
+        type="button"
+        title="Zoom in"
+        onClick={() => {
+          p.onZoom(1.25);
+        }}
+      >
+        <ZoomIcon kind="in" />
+        <SrOnly>Zoom in</SrOnly>
+      </button>
+      <button
+        className="tb icon"
+        type="button"
+        title="Zoom out"
+        onClick={() => {
+          p.onZoom(0.8);
+        }}
+      >
+        <ZoomIcon kind="out" />
+        <SrOnly>Zoom out</SrOnly>
+      </button>
+      <button type="button" className="tb icon" title="Fit the figure (0)" onClick={p.onFit}>
+        <ZoomIcon kind="fit" />
+        <SrOnly>Fit</SrOnly>
+      </button>
+    </div>
   );
 }
 
@@ -246,6 +280,7 @@ export function Header(p: HeaderProps) {
         {p.search}
       </section>
       {CLAIM_TESTING && <ClaimBox label="Claim to test" className="claim-form" host={p.claimBox} />}
+      <ZoomControls onFit={p.onFit} onZoom={p.onZoom} />
       <div className="header-actions">
         <ViewMenu {...p} />
         <ExportMenu {...p} />

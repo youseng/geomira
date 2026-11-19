@@ -26,7 +26,7 @@ import { useFit, useHeader, usePageShortcuts, usePage, type Dialog } from './pag
 import { SidePanel } from './SidePanel';
 import { useSettled } from './settled';
 import { SelectionBar } from './SelectionBar';
-import { ClaimChips, DevBox, Stage, ZoomControls } from './Stage';
+import { ClaimChips, DevBox, Stage } from './Stage';
 import type { EditorStore } from './store';
 import { StyleCard, usePreviewScene, useStyleCard } from './StyleCard';
 import { Palette, StatusLine, ToolHint } from './ToolBar';
@@ -186,31 +186,23 @@ function useApp() {
   };
 }
 
-/** The canvas's top-left column: the active tool's controls, internal errors, notices. */
-function StageTop({ app }: { app: ReturnType<typeof useApp> }) {
-  const { page, header } = app;
-  const { store } = page;
+/** First-use guide anchored inside the drawing area. */
+function CanvasGuide({ app }: { app: ReturnType<typeof useApp> }) {
   return (
-    <>
-      <GettingStarted
-        workspace={app.workspace}
-        canvasHeight={app.size?.height ?? 200}
-        fit={app.header.props.onFit}
-        store={store}
-        choose={app.choose}
-        search={app.searchRef}
-        text={() => {
-          app.panels.showTab('Text');
-        }}
-        exportFigure={() => {
-          app.setDialog({ kind: 'export', format: 'svg' });
-        }}
-      />
-      <div className="stage-top">
-        <Hint store={store} state={header.settled} />
-        <SelectionBar store={store} state={header.settled} onProperties={app.style.open} />
-      </div>
-    </>
+    <GettingStarted
+      workspace={app.workspace}
+      canvasHeight={app.size?.height ?? 200}
+      fit={app.header.props.onFit}
+      store={app.page.store}
+      choose={app.choose}
+      search={app.searchRef}
+      text={() => {
+        app.panels.showTab('Text');
+      }}
+      exportFigure={() => {
+        app.setDialog({ kind: 'export', format: 'svg' });
+      }}
+    />
   );
 }
 
@@ -315,7 +307,7 @@ function PanelView({ app }: { app: ReturnType<typeof useApp> }) {
 
 /**
  * Geomira (SPEC §15) in Geomdraw's layout (Run 9b): the top bar, the tool palette, the canvas
- * with its hint, status line, live claim chips and zoom buttons, the command line, the panels
+ * with its tool controls, status line and live claim chips, the command line, the panels
  * and an object's style card (ADR-0029); over packages/editor (every change is an edit),
  * packages/scene (drawing, hit-testing) and packages/claims (badges here, tests in a Web
  * Worker).
@@ -342,7 +334,7 @@ export function App() {
         <Tools store={store} state={settled} onChoose={app.choose} />
         <Stage>
           <Canvas app={app} />
-          <StageTop app={app} />
+          <CanvasGuide app={app} />
           <DevBox
             scene={scene}
             undrawable={app.undrawable.length}
@@ -350,8 +342,11 @@ export function App() {
             times={header.times}
           />
           {CLAIM_TESTING && <ClaimChips store={store} state={snap.state} onOpen={app.openClaims} />}
-          <ZoomControls onZoom={header.props.onZoom} onFit={header.props.onFit} />
-          <Status state={settled} />
+          <div className="stage-footer">
+            <Hint store={store} state={header.settled} />
+            <SelectionBar store={store} state={header.settled} onProperties={app.style.open} />
+            <Status state={settled} />
+          </div>
         </Stage>
         <Commands store={store} inputRef={commandRef} onApplied={app.workspace.dismissGuide} />
         <Boundary onError={page.onInternal}>

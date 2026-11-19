@@ -130,47 +130,6 @@
 }
 .stage {
   --status-h: 38px;
-  --controls-h: 72px;
-  --zoom-space: 116px;
-}
-.stage::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto;
-  height: var(--controls-h);
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
-  pointer-events: none;
-}
-.stage > .selbox {
-  margin-top: var(--controls-h);
-}
-.board {
-  top: var(--controls-h);
-  height: calc(100% - var(--status-h) - var(--controls-h));
-}
-.zoomctl {
-  top: 8px;
-  bottom: auto;
-  height: 56px;
-  align-items: center;
-  flex-direction: row;
-}
-.stage-top {
-  right: var(--zoom-space);
-  height: calc(var(--controls-h) - 16px);
-  overflow: auto;
-  pointer-events: auto;
-}
-.stage-top > * {
-  flex-shrink: 0;
-}
-.stage-top .tool-hint {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-}
-.stage-top .tool-hint > * {
-  flex-shrink: 0;
 }
 .statusbar {
   white-space: normal;
@@ -179,17 +138,7 @@
 .statusbar span {
   max-height: 34px;
 }
-.stage-top > .selbar {
-  position: static;
-  transform: none;
-  max-width: 100%;
-  width: max-content;
-  overflow-x: auto;
-}
-.stage-top > .selbar > * {
-  flex-shrink: 0;
-}
-.stage-top .selbar-what {
+.stage-footer .selbar-what {
   max-width: min(30vw, 140px);
 }
 .workspace-notices {

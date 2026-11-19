@@ -21,6 +21,12 @@ for (const width of [320, 390, 760, 768, 820, 1024, 1440]) {
     await command(page, 'A=(0,0)');
     for (const name of [/^File: /u, 'Undo', 'Redo', 'View', 'Export', 'More actions'])
       await usable(page, page.getByRole('button', { name, exact: true }));
+    const header = page.getByRole('banner');
+    for (const name of ['Zoom in', 'Zoom out', 'Fit']) {
+      const control = header.getByRole('button', { name, exact: true });
+      await usable(page, control);
+      await control.click({ trial: true });
+    }
     const search = page.getByRole('combobox', { name: 'Find a tool' });
     await search.click({ trial: true });
     expect((await search.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(44);
@@ -30,7 +36,7 @@ for (const width of [320, 390, 760, 768, 820, 1024, 1440]) {
       const positions = await page.getByRole('banner').evaluate((header) =>
         [
           ...header.querySelectorAll(
-            '.document-trigger,.history-group button,.tool-search input,.header-actions > .menu-wrap > button',
+            '.document-trigger,.history-group button,.tool-search input,.zoomctl button,.header-actions > .menu-wrap > button',
           ),
         ].map((control) => {
           const box = control.getBoundingClientRect();
@@ -41,6 +47,7 @@ for (const width of [320, 390, 760, 768, 820, 1024, 1440]) {
     }
     const canvas = await page.getByLabel('Geometry canvas').boundingBox();
     if (canvas === null) throw new Error('no canvas');
+    expect(canvas.y).toBe((await page.getByRole('main').boundingBox())?.y);
     expect(canvas.width).toBeGreaterThanOrEqual(width <= 760 ? width - 2 : 300);
     expect(canvas.height).toBeGreaterThan(180);
     expect(await page.evaluate(() => window.scrollX)).toBe(0);

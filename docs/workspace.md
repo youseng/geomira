@@ -39,7 +39,7 @@ They are separate from saved constructions, downloads and geometry history. If p
 storage is unavailable, the controls still work during the session. Use File actions and
 the persistent local save/recovery state for document protection.
 
-Tool, selection and Zoom controls occupy a reserved row above the drawing: selecting a
-point cannot put a button over it. Long warnings and update/recovery actions appear in a
+Zoom in, Zoom out and Fit are in the header. Tool and selection actions share the status strip
+below the drawing so selecting a point keeps it under the pointer. Long warnings and update/recovery actions appear in a
 separate page section with their full messages. Header menus open below their trigger or the compact header; use the same menu button to close them. Explicit tool choices and
 successful command-bar actions dismiss the first-use guide.

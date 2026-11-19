@@ -47,25 +47,6 @@
   touch-action: none;
 }
 
-/* Top left: the active tool's controls, then notices and internal errors. */
-.stage-top {
-  position: absolute;
-  left: 10px;
-  top: 8px;
-  right: 56px;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  pointer-events: none;
-}
-
-.stage-top > * {
-  pointer-events: auto;
-  max-width: 100%;
-}
-
 .tool-hint,
 .notice,
 .error-banner,
@@ -220,52 +201,36 @@
   text-overflow: ellipsis;
 }
 
-.statusbar {
+.stage-footer {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: auto 0 0;
   height: var(--status-h);
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 10px;
-  font-size: 12px;
-  color: var(--muted);
+  gap: 8px;
+  padding-inline: 8px;
   background: var(--canvas);
-  pointer-events: none;
+  overflow-x: auto;
+}
+.stage-footer > * {
+  flex: none;
+}
+.stage-footer .tool-hint {
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.zoomctl {
-  position: absolute;
-  right: 10px;
-  bottom: calc(var(--status-h) + 6px);
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.zoomctl button {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--text);
+  flex-wrap: nowrap;
+  border: 0;
   padding: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.statusbar {
   display: flex;
   align-items: center;
-  justify-content: center;
+  width: max-content;
+  max-width: 100%;
+  font-size: 12px;
+  color: var(--muted);
 }
-
-/*
- * No hover restyle: the buttons float on the canvas, and repainting them after a hover changes
- * the anti-aliasing of their corners in a picture of the canvas (Run 7's fit test compares two).
- */
 
 /* ---- command line ---- */
 .cmdbar {

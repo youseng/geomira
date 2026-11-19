@@ -202,7 +202,7 @@ function MapOnlyField({ store, state, tool }: ToolBarProps & { tool: ToolUI }) {
 }
 
 /**
- * The active tool's controls on the canvas (top left, Geomdraw's hint box): the claim tool's
+ * The active tool's controls in the stage footer include the claim tool's
  * kind, the text tool's string, a map tool's "Transformation only", the tool's number, Finish
  * and Cancel; shown only when the tool has one.
  */
