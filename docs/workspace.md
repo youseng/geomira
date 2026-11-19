@@ -17,7 +17,7 @@ and do not add geometry undo entries.
 
 On phones, a tab opens a panel in the scrollable page. **Expand panel** and **Compact
 panel** change its editing space. The figure stays above it; scroll down to tools and the
-command bar, or use **Hide panels** to return to drawing. At short heights, **Tools** reveals
+command bar, or use **Hide panels** to return to drawing. At short heights, **View → Show all tools** reveals
 the complete palette. Source and exposed drawing space each retain at least 120 pixels;
 **Editor help** expands shortcut/formatting details. Native keyboard behavior depends on
 the actual browser/device.

@@ -11,7 +11,11 @@ contains the workspace controls and More contains examples, help and settings.
 The public and internal hosted and single-file builds completed. Chromium checks
 cover the header from 320 to 1440 px, keyboard tool search, document recovery and
 draft input. The reduced header height also changes the fitted drawing area.
-The 25 screenshot references cover the full workspace, fitted scenes and PNG exports.
+All 33 local visual comparisons passed across 25 workspace, fitted-scene and
+PNG export references. The five GUI comparisons and four WebKit focus checks passed in
+[GUI run 44506157895](https://github.com/youseng/geomira/actions/runs/44506157895).
+Its native public desktop and phone captures are the committed public references.
+The shipped desktop screenshot matches the desktop reference byte for byte.
 
 Frozen test changes under ADR-0078:
 
