@@ -13,7 +13,6 @@
 import { decimalText, floorLog10, pow10, roundTo } from '@geomira/num/decimal';
 import { div, fromNumber, tryToNumber } from '@geomira/num/rational';
 
-// The exact decimal helpers live in num since Run 9b (Randomize writes decimals too).
 export { decimalText, floorLog10, pow10, roundTo };
 
 /** Pixels: a rounded point moves by less than this on screen (SPEC §12). */

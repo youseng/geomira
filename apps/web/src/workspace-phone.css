@@ -18,8 +18,7 @@
   .topbar .tb,
   .topbar .tb.icon,
   .topbar .menu-wrap > .tb,
-  .topbar .examples,
-  .topbar .seg .tb:first-child {
+  .topbar .examples {
     height: 44px;
     min-width: 44px;
   }

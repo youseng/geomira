@@ -3,11 +3,6 @@ import { nativeWorldPoint, pointText } from './native-pointer';
 import { expect, test, type Page } from '@playwright/test';
 import { clickWorld, command, openApp, screenOf, tab, text, tool } from './helpers';
 
-async function more(page: Page) {
-  const overflow = page.getByRole('button', { name: 'More actions', exact: true });
-  if ((await overflow.isVisible()) && (await overflow.getAttribute('aria-expanded')) !== 'true')
-    await overflow.click();
-}
 async function usable(page: Page, locator: ReturnType<Page['getByRole']>) {
   await expect(locator).toBeVisible();
   const box = await locator.boundingBox();
@@ -24,18 +19,17 @@ for (const width of [320, 390, 760, 768, 820, 1024, 1440]) {
     await page.setViewportSize({ width, height: 768 });
     await openApp(page);
     await command(page, 'A=(0,0)');
-    for (const name of ['File', 'Undo', 'Redo', 'Randomize', 'Export', 'Help'])
+    for (const name of ['File', 'Undo', 'Redo', 'Settings', 'Export', 'Help'])
       await usable(page, page.getByRole('button', { name, exact: true }));
-    await more(page);
-    await usable(page, page.getByRole('button', { name: 'Settings', exact: true }));
-    await usable(page, page.getByLabel('Triangle type', { exact: true }));
+    await expect(page.getByRole('button', { name: 'Randomize', exact: true })).toHaveCount(0);
+    await expect(page.getByLabel('Triangle type', { exact: true })).toHaveCount(0);
     const canvas = await page.getByLabel('Geometry canvas').boundingBox();
     if (canvas === null) throw new Error('no canvas');
     expect(canvas.width).toBeGreaterThanOrEqual(width <= 760 ? width - 2 : 300);
     expect(canvas.height).toBeGreaterThan(180);
     expect(await page.evaluate(() => window.scrollX)).toBe(0);
     if (width <= 760)
-      for (const name of ['File', 'Undo', 'Redo', 'Randomize', 'Export', 'Help']) {
+      for (const name of ['File', 'Undo', 'Redo', 'Settings', 'Export', 'Help']) {
         const button = await page.getByRole('button', { name, exact: true }).boundingBox();
         expect(button?.width ?? 0).toBeGreaterThanOrEqual(44);
         expect(button?.height ?? 0).toBeGreaterThanOrEqual(44);

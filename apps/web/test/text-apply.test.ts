@@ -6,7 +6,6 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Edit } from '@geomira/editor/edit';
-import { randomizeEdit } from '@geomira/editor/randomize';
 import { isStale } from '@geomira/editor/text-draft';
 import { findObjectByName } from '@geomira/kernel/document';
 import { ref } from '@geomira/kernel/expr';
@@ -190,14 +189,6 @@ const OTHERS: readonly (readonly [string, (s: EditorStore) => void])[] = [
     'the command bar',
     (s) => {
       s.command('D = (5, 5)');
-    },
-  ],
-  [
-    'Randomize',
-    (s) => {
-      const r = randomizeEdit(s.current(), s.env, 'any', 20261030);
-      if (r.kind === 'refused') throw new Error(r.reason);
-      s.apply(r.edit);
     },
   ],
   [

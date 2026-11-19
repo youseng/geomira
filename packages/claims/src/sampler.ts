@@ -44,8 +44,8 @@ import { readFree, writeFree, type Assignment, type FreeInput } from './free';
 import { freeKey, type OrderedGroup, type Prepared } from './prepare';
 import { withoutProbes } from './probes';
 
-/** What the sampler reads of a prepared document (a claim's, or a figure's for Randomize). */
-export type SamplerFigure = Pick<
+/** Fields of a prepared claim used to draw a sample. */
+type SamplerFigure = Pick<
   Prepared,
   'doc' | 'free' | 'ordered' | 'baseCtx' | 'gliderObjects' | 'frame'
 >;

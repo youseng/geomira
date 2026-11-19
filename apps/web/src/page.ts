@@ -14,8 +14,6 @@ import {
   useSyncExternalStore,
   type RefObject,
 } from 'react';
-import type { TriangleType } from '@geomira/claims/randomize';
-import { randomizeEdit } from '@geomira/editor/randomize';
 import { selectableIds, selectionEdit } from '@geomira/editor/selection-actions';
 import type { ToolId } from '@geomira/editor/tool-state';
 import { claimCompletions } from '@geomira/editor/claim-bar';
@@ -60,11 +58,6 @@ export type Dialog =
 /** Developer readouts are on from the start with `?dev=1` in the address (Run 9b). */
 export function devFlag(): boolean {
   return typeof location !== 'undefined' && new URLSearchParams(location.search).get('dev') === '1';
-}
-
-/** A fresh seed from the platform's cryptographic source (host code, ADR-0013 decision 9). */
-function freshSeed(): number {
-  return crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
 }
 
 export function reportOf(store: EditorStore): string {
@@ -221,8 +214,6 @@ export interface HeaderEnv {
   readonly canvas: () => HTMLCanvasElement | null;
   readonly setDialog: (d: Dialog) => void;
   readonly showTab: (tab: 'Claims' | 'Help') => void;
-  /** Fits the view once the figure an edit made is drawn. */
-  readonly fitAfterEdit: () => void;
 }
 
 /**
@@ -243,16 +234,6 @@ function testClaim(env: HeaderEnv, text: string): ClaimFeedback | null {
   if (claim !== undefined) env.runs.start(doc, claim.id, 'local');
   env.showTab('Claims');
   return null;
-}
-
-/** Randomize: a new figure through packages/claims' sampler, one undoable edit. */
-function randomize(env: HeaderEnv, type: TriangleType): void {
-  const r = randomizeEdit(env.store.current(), env.store.env, type, freshSeed());
-  if (r.kind === 'refused') {
-    env.store.setNotice({ tone: 'refusal', text: `Randomize: ${r.reason}.` });
-    return;
-  }
-  if (env.store.apply(r.edit).ok) env.fitAfterEdit();
 }
 
 /** Zooms about the canvas's centre. */
@@ -340,7 +321,6 @@ export function useHeader(env: HeaderEnv) {
   const { store, runs, snap, ready } = env;
   const state = snap.state;
   const [times, setTimes] = useState<FrameTimes | null>(null);
-  const [triangleType, setTriangleType] = useState<TriangleType>('acute');
   const [stats, setStats] = useState(devFlag);
   // The text of the settled state: a drag frame does not print the document (note F).
   const settled = useSettled(state);
@@ -352,17 +332,12 @@ export function useHeader(env: HeaderEnv) {
     canUndo: state.history.past.length > 0,
     canRedo: state.history.future.length > 0,
     canRestore: ready && store.autosave.canRestore(printed),
-    triangleType,
     stats,
     onExample: (id) => {
       if (!openExample(store, runs, id)) return;
       setTimes(null);
       // Off the hidden list, so a letter is a shortcut, not another example (ADR-0028).
       env.canvas()?.focus({ preventScroll: true });
-    },
-    onTriangleType: setTriangleType,
-    onRandomize: () => {
-      randomize(env, triangleType);
     },
     onStats: setStats,
     ...actions(env),

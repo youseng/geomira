@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { Scene, Undrawable } from '@geomira/scene/types';
+import type { Undrawable } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
 import { AboutContext } from './about';
 import { Board } from './Board';
@@ -99,19 +99,6 @@ const Hint = memo(ToolHint);
 const Status = memo(StatusLine);
 const Commands = memo(CommandBar);
 
-/** Fits the view after an edit once its figure is drawn (Randomize moves the figure). */
-function useFitAfterEdit(scene: Scene, fit: () => void) {
-  const pending = useRef(false);
-  useEffect(() => {
-    if (!pending.current) return;
-    pending.current = false;
-    fit();
-  }, [scene, fit]);
-  return useCallback(() => {
-    pending.current = true;
-  }, []);
-}
-
 /** A callback with a stable identity that always calls the latest `f` (memoised panels keep). */
 function useStable<A extends unknown[], R>(f: (...a: A) => R): (...a: A) => R {
   const ref = useRef(f);
@@ -168,13 +155,11 @@ function useApp() {
   useFitOnOpen(store, snap.fits, size, sceneOf);
   useInternalErrors(onInternal);
   const fit = useFit(store, size, sceneOf);
-  const fitAfterEdit = useFitAfterEdit(page.scene, fit);
   usePageShortcuts(store, fit, commandRef, panels.toggleHelp, choose);
   const canvas = useCallback(() => canvasRef.current, []);
   const header = useHeader({
     ...{ store, runs: page.runs, snap, size, ready, fit, canvas, setDialog },
     showTab: panels.showTab,
-    fitAfterEdit,
   });
   const claimBox = useClaimBox(header.props.claimBox);
   const openClaims = useStable(() => {

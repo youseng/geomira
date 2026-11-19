@@ -6,7 +6,6 @@ import { parse } from '@geomira/lang/parse';
 import { printShort } from '@geomira/lang/print-short';
 import { decodeShare, encodeShare } from '@geomira/editor/share';
 import { chooseTool } from '@geomira/editor/selection-tool';
-import { randomizeEdit } from '@geomira/editor/randomize';
 import { App } from '../src/App';
 import { EditorStore } from '../src/store';
 import { TestHost } from '../src/worker/host';
@@ -42,16 +41,11 @@ describe('the public release contains claims as document data only', () => {
       'Live claim badges',
       'What is special?',
       'Tests:',
+      'Randomize',
+      'Triangle type',
     ])
       expect(html).not.toContain(text);
-    for (const text of [
-      'Geometry canvas',
-      '>Text<',
-      '>Objects<',
-      '>Layers<',
-      'Randomize',
-      'Command',
-    ])
+    for (const text of ['Geometry canvas', '>Text<', '>Objects<', '>Layers<', 'Command'])
       expect(html).toContain(text);
   });
 
@@ -151,19 +145,5 @@ describe('the public release contains claims as document data only', () => {
         ]);
       }
     }
-  });
-
-  it('keeps assumptions and claims through Randomize and its undo', () => {
-    const store = storeOf();
-    store.openText('triangle A B C acute\nclaim collinear(A,B,C)\n', 'new');
-    const before = store.current().doc;
-    const result = randomizeEdit(store.current(), store.env, 'acute', 42);
-    expect(result.kind).toBe('edit');
-    if (result.kind === 'refused') throw new Error(result.reason);
-    expect(store.apply(result.edit).ok).toBe(true);
-    expect(store.current().doc.claims).toEqual(before.claims);
-    expect(store.current().doc.assumptions).toEqual(before.assumptions);
-    store.apply({ kind: 'undo' });
-    expect(store.current().doc).toEqual(before);
   });
 });

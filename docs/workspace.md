@@ -30,8 +30,7 @@ The status line shows the current tool, picked names and expected next input.
 
 The dismissible **Guide** offers points, a starter triangle, search, Move, text and export.
 It never replaces existing geometry or unapplied text. Starting an action clears the guide
-from the canvas. **More actions** on narrow headers includes Randomize's triangle type and
-Settings. File, recovery, export and help remain reachable.
+from the canvas. **Settings** opens directly from the header at every width. File, recovery, export and help remain reachable.
 
 Panel layout, recent tools and guide dismissal are best-effort preferences in this browser.
 They are separate from saved constructions, downloads and geometry history. If preference

@@ -77,7 +77,7 @@ test('text enlargement keeps menu controls inside the viewport', async ({ page }
   await page.setViewportSize({ width: 820, height: 768 });
   await openApp(page, './index.html');
   await page.addStyleTag({ content: 'body {font-size:20px}' });
-  for (const name of ['File', 'Export', 'Help', 'More actions']) {
+  for (const name of ['File', 'Export', 'Help', 'Settings']) {
     const button = page.getByRole('button', { name, exact: true });
     await expect(button).toBeVisible();
     const box = await button.boundingBox();
@@ -85,8 +85,8 @@ test('text enlargement keeps menu controls inside the viewport', async ({ page }
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(820);
   }
-  await page.getByRole('button', { name: 'More actions', exact: true }).click();
-  await expect(page.getByLabel('Triangle type')).toBeVisible();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByLabel('Show object counts')).toBeVisible();
 });
 
 test('keyboard navigation alone constructs, inspects and exports a figure', async ({ page }) => {

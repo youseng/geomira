@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
-import { claimItem, command, expectLines, openApp, RESERVED, tab, text } from './helpers';
+import { claimItem, openApp, RESERVED, tab } from './helpers';
 
 /**
  * Run 9b (ADR-0016): the design pass on the desktop: screenshot baselines of the main screen
- * and the Claims panel, Randomize, the claim box, the live chips, the developer items, names
+ * and the Claims panel, the claim box, the live chips, the developer items, names
  * and focus. Desktop project.
  */
 
@@ -40,33 +40,6 @@ test('screenshot baseline: the Claims panel after a local test (seed masked)', a
     mask: [page.locator('.verdict-detail')],
   });
   expect(await page.locator('.claims').innerText()).not.toMatch(RESERVED);
-});
-
-test('Randomize draws a new figure of each triangle type as one undoable edit', async ({
-  page,
-}) => {
-  await openApp(page);
-  for (const line of ['A = (1, 3)', 'B = (0, 0)', 'C = (4, 0)', 'H = orthocenter(A, B, C)'])
-    await command(page, line);
-  const before = await text(page);
-  for (const type of ['acute', 'obtuse', 'right', 'any']) {
-    await page.getByLabel('Triangle type').selectOption(type);
-    await page.getByRole('button', { name: 'Randomize', exact: true }).click();
-    await expect(page.getByRole('textbox', { name: 'Text', exact: true })).not.toHaveValue(before);
-    await expectLines(page, 'H = orthocenter(ABC)');
-    expect(await text(page)).toMatch(/^B = \(-?\d+(\.\d{1,4})?, -?\d+(\.\d{1,4})?\)$/mu);
-    await page.getByRole('button', { name: 'Undo', exact: true }).click();
-    await expect(page.getByRole('textbox', { name: 'Text', exact: true })).toHaveValue(before);
-  }
-});
-
-test('Randomize says why it cannot draw a typed triangle', async ({ page }) => {
-  await openApp(page);
-  await command(page, 'A = (0, 0)');
-  await page.getByRole('button', { name: 'Randomize', exact: true }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Randomize' })).toHaveText(
-    /Randomize: a acute triangle needs three free points; this figure has 1\./u,
-  );
 });
 
 test('the claim box adds the claim, opens Claims and tests it; the chip follows', async ({
@@ -116,7 +89,7 @@ test('developer items: behind Settings, or on from the start with ?dev=1', async
 
 test('icon buttons are named by their old labels; keyboard focus is visible', async ({ page }) => {
   await openApp(page);
-  for (const name of ['Undo', 'Redo', 'Randomize', 'View', 'Export', 'Settings', 'Help'])
+  for (const name of ['Undo', 'Redo', 'View', 'Export', 'Settings', 'Help'])
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   for (const name of ['Zoom in', 'Zoom out', 'Fit', 'Move', 'Circle (3 points)', 'Claim'])
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();

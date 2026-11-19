@@ -1,15 +1,13 @@
 /**
  * Gliders on a conic in the editor (Run 16b, ADR-0042): the glider tool makes on(k, u, v) where
  * the conic is clicked; a drag moves it along the conic (u : v) through the kernel's nearest
- * point, rounded at the end; Randomize redraws it and the conic stays defined; the point tool
+ * point, rounded at the end; the point tool
  * snaps to a conic too. A conic without a known point has no glider.
  */
 import { describe, expect, it } from 'vitest';
 import { coeffsOf, qValue } from '@geomira/kernel/conic';
 import { FloatField } from '@geomira/num/float-field';
-import { applyEdit } from '../src/edit';
 import { toolInput } from '../src/machine';
-import { randomizeEdit } from '../src/randomize';
 import type { EditorState } from '../src/state';
 import {
   addedNames,
@@ -20,7 +18,6 @@ import {
   env,
   idOf,
   input,
-  ok,
   useTool,
   valueOf,
   xyOf,
@@ -75,18 +72,6 @@ describe('gliders on a conic', () => {
     t = edit(t, { kind: 'dragEnd' });
     expect(xyOf(t, 'P')[0]).toBeLessThan(-1);
     expect(offConic(t, 'P', 'k')).toBeLessThan(1e-9);
-  });
-
-  it('Randomize redraws a conic glider; the conic and the glider stay defined', () => {
-    const s0 = editorOf(`${FIG}\nP = on(k, 2, 1)`);
-    for (const seed of [1, 2, 3]) {
-      const r = randomizeEdit(s0, env, 'any', seed);
-      if (r.kind !== 'edit') throw new Error(r.reason);
-      const s1 = ok(applyEdit(s0, r.edit, env));
-      expect(valueOf(s1, 'k').kind).toBe('conic');
-      expect(valueOf(s1, 'P').kind).toBe('point');
-      expect(offConic(s1, 'P', 'k')).toBeLessThan(1e-6);
-    }
   });
 
   it('a conic without a known point has no glider', () => {

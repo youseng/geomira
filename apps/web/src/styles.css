@@ -205,20 +205,6 @@ button {
   cursor: default;
 }
 
-.seg {
-  display: inline-flex;
-}
-
-.seg .tb:first-child {
-  border-radius: 6px 0 0 6px;
-}
-
-.seg select.tb {
-  border-radius: 0 6px 6px 0;
-  border-left: none;
-  padding: 0 4px;
-}
-
 .claim-form {
   flex: 1 1 260px;
   min-width: 120px;

@@ -43,5 +43,4 @@ visible: public builds contain no verdict chips. Before any public reactivation,
 reserve layout space for verdicts or provide a reachable disclosure without covering
 the construction; retest the width matrix and actual mobile keyboards.
 
-These gates are intentionally independent of the repaired public Randomize sampler.
 Reactivation requires a separate product decision and completed evidence for all gates.

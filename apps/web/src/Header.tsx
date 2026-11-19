@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
-import { useViewport } from './workspace';
 import { CLAIM_TESTING } from './features';
-import { TRIANGLE_TYPES, type TriangleType } from '@geomira/claims/randomize';
 import { FORMATS, type ExportFormat } from '@geomira/export/formats';
 import { SINGLE_FILE, SITE_URL } from './build-info';
 import { EXAMPLES } from './examples';
@@ -15,7 +13,6 @@ export interface HeaderProps {
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   readonly canRestore: boolean;
-  readonly triangleType: TriangleType;
   readonly stats: boolean;
   readonly onExample: (id: string) => void;
   readonly onFit: () => void;
@@ -27,8 +24,6 @@ export interface HeaderProps {
   readonly onReport: () => void;
   readonly onExport: (format: ExportFormat) => void;
   readonly onMeasure: () => void;
-  readonly onTriangleType: (t: TriangleType) => void;
-  readonly onRandomize: () => void;
   /** The claim box: adds a claim and tests it, completes it, says what it could not read. */
   readonly claimBox: ClaimBoxHost;
   readonly onStats: (on: boolean) => void;
@@ -68,44 +63,6 @@ function History(p: HeaderProps) {
         <SrOnly>Redo</SrOnly>
       </button>
     </>
-  );
-}
-
-function Randomize(p: HeaderProps & { readonly compact?: boolean }) {
-  return (
-    <div className="seg">
-      <button
-        type="button"
-        className="tb"
-        onClick={p.onRandomize}
-        title="Randomize: a new figure of the same construction, with a triangle of the chosen type"
-      >
-        <Glyph>{'⚄'}</Glyph>
-        <span className="hide-narrow">Randomize</span>
-      </button>
-      {p.compact === true ? null : <TriangleChoice {...p} />}
-    </div>
-  );
-}
-
-function TriangleChoice(p: HeaderProps) {
-  return (
-    <select
-      className="tb triangle-type"
-      aria-label="Triangle type"
-      title="Triangle type for Randomize (the first three free points)"
-      value={p.triangleType}
-      onChange={(e) => {
-        const t = TRIANGLE_TYPES.find((x) => x === e.target.value);
-        if (t !== undefined) p.onTriangleType(t);
-      }}
-    >
-      {TRIANGLE_TYPES.map((t) => (
-        <option key={t} value={t}>
-          {t}
-        </option>
-      ))}
-    </select>
   );
 }
 
@@ -285,39 +242,19 @@ function HelpMenu(p: HeaderProps) {
   );
 }
 
-/**
- * The top bar (Geomdraw's layout, Run 9b): brand; undo and redo; Randomize with its triangle
- * type; a claim to test; the View, Examples and Export menus; Settings; Help. On a phone the
- * buttons show their glyphs only; their accessible names stay the words they had.
- */
 export function Header(p: HeaderProps) {
-  const compact = useViewport().width <= 1100;
   return (
     <header className="topbar">
       <Brand />
       {p.documents}
       <History {...p} />
-      <Randomize {...p} compact={compact} />
       {CLAIM_TESTING && <ClaimBox label="Claim to test" className="claim-form" host={p.claimBox} />}
       <div className="spacer" />
       {p.persistence}
       <ViewMenu {...p} />
       <Examples {...p} />
       <ExportMenu {...p} />
-      {compact ? (
-        <Menu label="More actions" glyph="⋯" title="More actions">
-          {() => (
-            <>
-              <label>
-                Randomize triangle type <TriangleChoice {...p} />
-              </label>
-              <SettingsMenu {...p} />
-            </>
-          )}
-        </Menu>
-      ) : (
-        <SettingsMenu {...p} />
-      )}
+      <SettingsMenu {...p} />
       <HelpMenu {...p} />
     </header>
   );

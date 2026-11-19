@@ -148,7 +148,7 @@ for (const viewport of [
 }
 
 for (const width of [320, 390]) {
-  for (const name of ['View', 'More actions']) {
+  for (const name of ['View', 'Settings']) {
     test(`${name} closes with its own invoker at ${String(width)}px without a hidden action`, async ({
       page,
     }) => {

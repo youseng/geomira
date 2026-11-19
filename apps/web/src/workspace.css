@@ -302,17 +302,6 @@
   .topbar .tb {
     min-width: 36px;
   }
-  .topbar .menu .menu {
-    position: static;
-    max-height: none;
-    overflow: visible;
-    box-shadow: none;
-    min-width: 0;
-  }
-  .topbar .menu .triangle-type {
-    display: block;
-    width: 100%;
-  }
 }
 
 .style-card {

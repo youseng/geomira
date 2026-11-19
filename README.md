@@ -32,8 +32,6 @@ for **Properties**. See the [workspace guide](docs/workspace.md) for keyboard an
   does not establish a general theorem.
 - **Transformations and layers.** Reflections, rotations, homotheties, translations and spiral
   similarities; a layer can hold the image of another layer and follows it.
-- **Randomize** draws a new figure of the same construction with an acute, obtuse or right
-  triangle (or any), while respecting applicable assumptions.
 - **Colors by name** (`color=red`, `blue`, `green`, `orange`, `purple`, `grey`, …) in
   Geomdraw's palette, the same on the canvas and in every export; hex colours as written.
   Polygons are outlines unless they are coloured.

@@ -4,7 +4,6 @@ import { prepare } from '../src/prepare';
 import { drawSample } from '../src/sampler';
 import { readFree } from '../src/free';
 import { testClaim, type JobResult } from '../src/job';
-import { randomFigure, type RandomizeResult } from '../src/randomize';
 import { c, Figure, n, q, REGISTRY } from './helpers/build';
 
 function radiusFigure() {
@@ -25,9 +24,9 @@ function radius(doc: Figure['doc'], name: string) {
   return def.args[1].value;
 }
 
-function expectRefusal(result: RandomizeResult | JobResult, reason: string) {
-  expect(['refused', 'invalid']).toContain(result.kind);
-  if (result.kind !== 'refused' && result.kind !== 'invalid') throw new Error('missing refusal');
+function expectRefusal(result: JobResult, reason: string) {
+  expect(result.kind).toBe('invalid');
+  if (result.kind !== 'invalid') throw new Error('missing refusal');
   expect(result.reason).toContain(reason);
 }
 
@@ -56,26 +55,6 @@ describe('sampling preserves fixed construction inputs (ADR-0073)', () => {
     }
   });
 
-  it('Randomize preserves exact radius ratios and the dependency graph', () => {
-    const { f } = radiusFigure();
-    for (let seed = 0; seed < 20; seed++) {
-      const r = randomFigure(f.doc, REGISTRY, 'any', seed);
-      if (r.kind !== 'figure') throw new Error(r.reason);
-      expect(compare(radius(r.doc, 'd'), mul(q(2), radius(r.doc, 'c')))).toBe(0);
-      expect(r.doc.claims).toEqual(f.doc.claims);
-      for (const name of ['A', 'B']) {
-        const before = f.doc.objects.find((o) => o.name === name)?.def;
-        const after = r.doc.objects.find((o) => o.name === name)?.def;
-        expect(before?.kind).toBe('call');
-        expect(after?.kind).toBe('call');
-        if (before?.kind === 'call' && after?.kind === 'call') {
-          expect(after.tool).toBe(before.tool);
-          expect(after.args[0]).toEqual(before.args[0]);
-        }
-      }
-    }
-  });
-
   for (const invalid of [0, -1]) {
     it(`refuses invalid literal radius ${String(invalid)} instead of manufacturing a circle`, () => {
       const f = new Figure()
@@ -83,7 +62,6 @@ describe('sampling preserves fixed construction inputs (ADR-0073)', () => {
         .def('w', 'circle', 'O', n(invalid))
         .def('A', 'on', 'w', n(0));
       const claim = f.claim('on', 'A', 'w');
-      expectRefusal(randomFigure(f.doc, REGISTRY, 'any', 1), 'radius');
       for (const regime of ['local', 'global'] as const)
         expectRefusal(
           testClaim(
@@ -107,7 +85,6 @@ describe('sampling preserves fixed construction inputs (ADR-0073)', () => {
         .def('M', 'midpoint', 'A', 'B')
         .add('p', c('param', n(min ?? 0), n(max ?? 0), n(value ?? 0)));
       const claim = f.claim('collinear', 'A', 'M', 'B');
-      expectRefusal(randomFigure(f.doc, REGISTRY, 'any', 1), 'param');
       for (const regime of ['local', 'global'] as const)
         expectRefusal(
           testClaim(
@@ -123,7 +100,6 @@ describe('sampling preserves fixed construction inputs (ADR-0073)', () => {
     it(`refuses a nonrepresentable radius with ${String(r.length)} digits`, () => {
       const f = new Figure().point('O', 0, 0).def('w', 'circle', 'O', n(r));
       const claim = f.claim('equal', 'O', 'O');
-      expect(randomFigure(f.doc, REGISTRY, 'any', 1).kind).toBe('refused');
       expect(
         testClaim(
           { kind: 'testClaim', doc: f.doc, claim, regime: 'global', seed: 1, n: 1 },
@@ -144,7 +120,6 @@ describe('sampling preserves fixed construction inputs (ADR-0073)', () => {
         .point('O', 0, 0)
         .add('p', c('param', min ?? n(0), max ?? n(1), min ?? n(0)));
       const claim = f.claim('equal', 'O', 'O');
-      expectRefusal(randomFigure(f.doc, REGISTRY, 'any', 1), 'param');
       expectRefusal(
         testClaim(
           { kind: 'testClaim', doc: f.doc, claim, regime: 'global', seed: 1, n: 1 },
@@ -161,7 +136,14 @@ describe('sampling preserves fixed construction inputs (ADR-0073)', () => {
       .point('P', 3, 0)
       .def('w', 'circle', 'O', 'P')
       .def('A', 'on', 'w', n(0), n(0));
-    expectRefusal(randomFigure(f.doc, REGISTRY, 'any', 1), 'nonzero parameter pair');
+    const claim = f.claim('on', 'A', 'w');
+    expectRefusal(
+      testClaim(
+        { kind: 'testClaim', doc: f.doc, claim, regime: 'global', seed: 1, n: 1 },
+        { registry: REGISTRY },
+      ),
+      'nonzero parameter pair',
+    );
   });
 
   it('never rounds a very small positive fixed radius to the figure grid or to zero', () => {

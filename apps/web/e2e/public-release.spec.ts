@@ -125,7 +125,7 @@ test('release: load, edit, drag, examples and legacy preferences never run retir
   expect(errors).toEqual([]);
 });
 
-test('release: claim-bearing shares and exports preserve data; Randomize, measurements and undo work', async ({
+test('release: claim-bearing shares and exports preserve data; measurements and undo work', async ({
   page,
   context,
 }) => {
@@ -140,7 +140,7 @@ test('release: claim-bearing shares and exports preserve data; Randomize, measur
   ])
     await command(page, line);
   const before = await text(page);
-  await page.getByRole('button', { name: 'Randomize', exact: true }).click();
+  await command(page, 'D = midpoint(B,C)');
   await expect(await textArea(page)).not.toHaveValue(before);
   await expect(await textArea(page)).toHaveValue(/claim collinear/u);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();

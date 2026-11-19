@@ -133,7 +133,7 @@ test('Tab stays inside visible enabled controls; backdrop and assistive navigati
   if (browserName === 'chromium') {
     const cdp = await page.context().newCDPSession(page);
     const tree = await cdp.send('Accessibility.getFullAXTree');
-    expect(tree.nodes.filter((n) => !n.ignored && n.name?.value === 'Randomize')).toEqual([]);
+    expect(tree.nodes.filter((n) => !n.ignored && n.name?.value === 'Undo')).toEqual([]);
     expect(tree.nodes.filter((n) => !n.ignored && n.role?.value === 'dialog')).toHaveLength(1);
     await cdp.detach();
   }

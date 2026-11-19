@@ -40,8 +40,7 @@
 
   .topbar .tb.icon,
   .topbar .menu-wrap > .tb,
-  .topbar .examples,
-  .topbar .seg .tb:first-child {
+  .topbar .examples {
     width: 30px;
     padding: 0;
     justify-content: center;
@@ -53,8 +52,7 @@
     display: none;
   }
 
-  .claim-form,
-  .triangle-type {
+  .claim-form {
     display: none;
   }
 

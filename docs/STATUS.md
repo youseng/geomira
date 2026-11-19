@@ -1,5 +1,19 @@
 # STATUS
 
+## Figure randomizer removal
+
+[ADR-0077](adr/0077-remove-figure-randomizer.md) retires the header action and both
+package entry points. The focused Vitest run passed 93 tests in eight files.
+Both public and internal builds completed in hosted and standalone modes.
+
+Changed tests and fixtures under ADR-0077:
+
+- Web unit tests: public-claims-off and text-apply.
+- Browser tests: design-mobile, flows-design, interaction-layout, modal-safety,
+  public-release, randomize-integrity, scene, workspace and workspace-composed.
+- Claims tests: exports, randomize, sampler-figure-size, sampler-frame and sampler-integrity.
+- Editor tests: conic-glider, exports, randomize and randomize-integrity.
+
 ## Integrated release repairs (prompts 03, 05–12): ACCEPTED CANDIDATE; publication pending
 
 Accepted checkpoint: **`e0ef71fb8d695ed37fb98c65568de44119757d17`**, 2026-11-16.
