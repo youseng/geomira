@@ -235,8 +235,20 @@
     gap: 8px;
     padding: 0 10px;
   }
+  .topbar:has(.claim-form) {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    gap: 4px 8px;
+    padding-block: 6px;
+  }
   .topbar .claim-form {
-    flex-basis: 150px;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+  }
+  .topbar:has(.claim-form) .header-actions {
+    grid-column: 4;
+    grid-row: 1;
   }
   .search-shortcut {
     display: none;

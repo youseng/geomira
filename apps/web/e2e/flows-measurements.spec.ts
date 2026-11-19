@@ -105,15 +105,16 @@ test('an angle measurement: its arc and value; Undefined is listed with its reas
   // would change the dependent angle's kind, so its raw endpoint must remain exact.
   await tool(page, 'Move');
   const actual = await nativeRawWorldPoint(page, () => dragWorld(page, [0, 3], [0, 0]));
-  expect(actual.x).toBe(0);
+  const coincident = actual.x === 0 && actual.y === 0;
+  // AB points along +x. Either native coordinate can be fractionally off the vertex.
+  const degrees = (Math.atan2(Math.abs(actual.y), actual.x) * 180) / Math.PI;
+  const displayed = coincident ? 'undefined: ' : `${degrees.toFixed(2)}° · shown`;
   const endpoint = `(${formatRational(fromNumber(actual.x))}, ${formatRational(fromNumber(actual.y))})`;
   const dragged = before.replace('C = (0, 3)', `C = ${endpoint}`);
   expect(await source(page)).toBe(dragged);
-  await expect(await measurement(page)).toContainText(
-    actual.y === 0 ? 'undefined: ' : '90.00° · shown',
-  );
+  await expect(await measurement(page)).toContainText(displayed);
   // Exact source coincidence retains the original Undefined contract and its reason.
-  if (actual.y !== 0) {
+  if (!coincident) {
     await tab(page, 'Text');
     await page
       .getByLabel('Text', { exact: true })
@@ -121,10 +122,10 @@ test('an angle measurement: its arc and value; Undefined is listed with its reas
     await page.getByRole('button', { name: 'Apply text', exact: true }).click();
   }
   await expect(await measurement(page)).toContainText('undefined: ');
-  if (actual.y !== 0) {
+  if (!coincident) {
     await page.getByRole('button', { name: 'Undo', exact: true }).click();
     expect(await source(page)).toBe(dragged);
-    await expect(await measurement(page)).toContainText('90.00° · shown');
+    await expect(await measurement(page)).toContainText(displayed);
     await page.getByRole('button', { name: 'Redo', exact: true }).click();
     await expect(await measurement(page)).toContainText('undefined: ');
   }

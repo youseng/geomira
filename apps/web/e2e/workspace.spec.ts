@@ -21,6 +21,9 @@ for (const width of [320, 390, 760, 768, 820, 1024, 1440]) {
     await command(page, 'A=(0,0)');
     for (const name of [/^File: /u, 'Undo', 'Redo', 'View', 'Export', 'More actions'])
       await usable(page, page.getByRole('button', { name, exact: true }));
+    const search = page.getByRole('combobox', { name: 'Find a tool' });
+    await search.click({ trial: true });
+    expect((await search.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(44);
     await expect(page.getByRole('button', { name: 'Randomize', exact: true })).toHaveCount(0);
     await expect(page.getByLabel('Triangle type', { exact: true })).toHaveCount(0);
     if (width >= 768) {

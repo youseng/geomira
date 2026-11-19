@@ -1,5 +1,22 @@
 # STATUS
 
+## Toolbar deployment repair
+
+The [failed main run](https://github.com/youseng/geomira/actions/runs/44509705212)
+passed verification and exports. Browser validation blocked packaging and Pages
+deployment. Four distinct failures recurred across the public and internal
+reports.
+
+[ADR-0079](adr/0079-verify-toolbar-deployment.md) records the internal tablet
+toolbar fix and the browser expectations for native angle dragging, exposed
+object-row actions and Firefox scroll coordinates. Changed frozen tests:
+workspace, flows-measurements, style-popover and panel-controls. Local Chromium
+reproduced the clipped toolbar, angle assertion and obstructed row target.
+After repair, all 38 focused Chromium cases passed across the two builds, and
+local verification passed 5,018 tests. The diagnostic runner subsequently
+timed out fetching Ubuntu dependencies with HTTP 503. Browser setup now prefers
+the reachable Ubuntu Azure mirror and retains the runner's fallbacks.
+
 ## Single-row workspace toolbar
 
 [ADR-0078](adr/0078-unify-workspace-toolbar.md) brings the approved header design
