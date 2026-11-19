@@ -78,42 +78,6 @@
   color: var(--amber);
 }
 
-.document-files {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.document-name {
-  max-width: 130px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.document-caption {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  min-width: 0;
-  max-width: 130px;
-}
-.document-caption .document-name {
-  /* The reserved status phrase sizes the column; a title change cannot resize input. */
-  contain: inline-size;
-  line-height: 16px;
-}
-.document-draft {
-  font-size: 11px;
-  line-height: 13px;
-}
-.document-draft[data-active='false'] {
-  visibility: hidden;
-}
-@media (max-width: 800px) {
-  .document-name {
-    max-width: 70px;
-  }
-}
-
 .file-controls {
   border: 0;
   padding: 0;

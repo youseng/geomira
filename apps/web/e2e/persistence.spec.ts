@@ -2,7 +2,15 @@ import { nativeWorldPoint, pointText } from './native-pointer';
 import { readFile } from 'node:fs/promises';
 import { currentText, readRecovery, holdConnections, failWrites } from './recovery-helpers';
 import { expect, test } from '@playwright/test';
-import { command, expectLines, openApp, textArea, tool, clickWorld } from './helpers';
+import {
+  selectExample,
+  command,
+  expectLines,
+  openApp,
+  textArea,
+  tool,
+  clickWorld,
+} from './helpers';
 
 test('two tabs retain A+B and A+C after closing and reopening', async ({
   page,
@@ -306,7 +314,7 @@ test('resolving a displayed version preserves a conflict written behind the rest
   const third = await context.newPage();
   await openApp(third, entry);
   await expectLines(third, 'C = (0, 1)');
-  await third.getByLabel('Example', { exact: true }).selectOption('euler-line');
+  await selectExample(third, 'euler-line');
   await expect(third.getByRole('status', { name: 'Local save status' })).toContainText('Browsing');
   await third.getByRole('button', { name: 'Recovery versions', exact: true }).click();
   const before = (await readRecovery(third)).revisions.find(

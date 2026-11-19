@@ -1,6 +1,6 @@
 /** ADR-0074: controls never intercept the next geometry interaction. */
 import { expect, test, type Page } from '@playwright/test';
-import { clickWorld, command, openApp, screenOf, text, tool } from './helpers';
+import { viewAction, clickWorld, command, openApp, screenOf, text, tool } from './helpers';
 import { expectHeaderClear, fitAfterPageScroll } from './layout-visibility';
 import { nativeWorldPoint, pointText } from './native-pointer';
 
@@ -139,8 +139,7 @@ for (const viewport of [
     await fitAfterPageScroll(page);
     await field.focus();
     await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
-    if (viewport.height < 450)
-      await page.getByRole('button', { name: 'Show all tools', exact: true }).click();
+    if (viewport.height < 450) await viewAction(page, 'Show all tools');
     await expect(page.getByRole('toolbar', { name: 'Tools', exact: true })).toBeVisible();
     await page.getByRole('textbox', { name: 'Command', exact: true }).focus();
     await expect(page.getByRole('textbox', { name: 'Command', exact: true })).toBeFocused();
@@ -148,7 +147,7 @@ for (const viewport of [
 }
 
 for (const width of [320, 390]) {
-  for (const name of ['View', 'Settings']) {
+  for (const name of ['View', 'More actions']) {
     test(`${name} closes with its own invoker at ${String(width)}px without a hidden action`, async ({
       page,
     }) => {

@@ -1,7 +1,7 @@
 /** ADR-0074: panel navigation owns separate native targets and never edits the figure. */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { command, openApp } from './helpers';
+import { viewAction, command, openApp } from './helpers';
 
 async function pointerTarget(control: Locator) {
   await control.scrollIntoViewIfNeeded();
@@ -100,14 +100,14 @@ for (const width of [320, 390]) {
     const hide = page.getByRole('button', { name: 'Hide panels', exact: true });
     await pointerTarget(hide);
     await hide.click();
-    await page.getByRole('button', { name: 'Show panels', exact: true }).click();
+    await viewAction(page, 'Show panels');
     await page.getByRole('tab', { name: 'Text', exact: true }).click();
     await expect(field).toHaveValue(draft);
   });
 }
 
 async function validFigureDownload(page: Page) {
-  await page.getByRole('button', { name: 'File', exact: true }).click();
+  await page.getByRole('button', { name: /^File: /u }).click();
   await page.getByRole('button', { name: 'Save / Download .geo', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Save figure', exact: true });
   const pending = page.waitForEvent('download');
@@ -140,7 +140,7 @@ for (const expanded of [false, true]) {
       await expect(page.getByRole('status', { name: 'Local save status' })).toContainText(
         'Saved locally',
       );
-      if (palette) await page.getByRole('button', { name: 'Show all tools', exact: true }).click();
+      if (palette) await viewAction(page, 'Show all tools');
       await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
       const closed = await canvasDocumentBounds(page);
       const board = page.getByLabel('Geometry canvas');
@@ -184,7 +184,7 @@ for (const expanded of [false, true]) {
       );
       await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
       expect(await canvasDocumentBounds(page)).toEqual(closed);
-      await page.getByRole('button', { name: 'Show panels', exact: true }).click();
+      await viewAction(page, 'Show panels');
       await expect(field).toHaveValue(draft);
       const ab = '@version 1\nA = (0, 0)\nB = (4, 0)\n';
       expect(await validFigureDownload(page)).toBe(ab);

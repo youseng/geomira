@@ -3,11 +3,15 @@ import { CLAIM_TESTING } from './features';
 import { FORMATS, type ExportFormat } from '@geomira/export/formats';
 import { SINGLE_FILE, SITE_URL } from './build-info';
 import { EXAMPLES } from './examples';
-import { Glyph, SrOnly } from './icons';
+import { HeaderIcon } from './HeaderIcon';
+import { usePanelCeiling } from './WorkspaceActions';
+import { SrOnly } from './icons';
 import { ClaimBox, type ClaimBoxHost } from './ClaimBox';
 import { Menu, MenuItem } from './Menu';
 
 export interface HeaderProps {
+  readonly search?: ReactNode;
+  readonly workspaceActions?: (close: () => void) => ReactNode;
   readonly persistence?: ReactNode;
   readonly documents?: ReactNode;
   readonly canUndo: boolean;
@@ -49,7 +53,7 @@ function History(p: HeaderProps) {
         onClick={p.onUndo}
         title="Undo (Ctrl+Z)"
       >
-        <Glyph>{'↶'}</Glyph>
+        <HeaderIcon name="undo" />
         <SrOnly>Undo</SrOnly>
       </button>
       <button
@@ -59,7 +63,7 @@ function History(p: HeaderProps) {
         onClick={p.onRedo}
         title="Redo (Ctrl+Shift+Z)"
       >
-        <Glyph>{'↷'}</Glyph>
+        <HeaderIcon name="redo" />
         <SrOnly>Redo</SrOnly>
       </button>
     </>
@@ -68,7 +72,7 @@ function History(p: HeaderProps) {
 
 function ViewMenu(p: HeaderProps) {
   return (
-    <Menu label="View" glyph={'◇'} title="View: fit and zoom">
+    <Menu label="View" glyph="view" title="View and workspace">
       {(close) => (
         <>
           <MenuItem onClick={p.onFit} close={close} kbd="0">
@@ -90,6 +94,8 @@ function ViewMenu(p: HeaderProps) {
           >
             Zoom out by a fifth
           </MenuItem>
+          <hr />
+          {p.workspaceActions?.(close)}
         </>
       )}
     </Menu>
@@ -116,18 +122,10 @@ export function ignoredOnExamples(key: string, modified: boolean): boolean {
   return (key.length === 1 && key !== ' ') || moves.includes(key);
 }
 
-/**
- * The examples as a native select laid over a menu button (its label stays "Example"): the
- * button shows "Examples", the platform's own list opens on a click or a tap.
- */
-function Examples(p: HeaderProps) {
+function Examples(p: { onExample: (id: string) => void }) {
   return (
-    <div className="tb examples" title="Example figures">
-      <Glyph>{'▤'}</Glyph>
-      <span className="hide-narrow" aria-hidden="true">
-        Examples
-      </span>
-      <Glyph>{'▾'}</Glyph>
+    <label className="examples">
+      <span>Examples</span>
       <select
         aria-label="Example"
         value=""
@@ -138,20 +136,20 @@ function Examples(p: HeaderProps) {
           p.onExample(e.target.value);
         }}
       >
-        <option value="">Examples</option>
+        <option value="">Choose a figure…</option>
         {EXAMPLES.map((e) => (
           <option key={e.id} value={e.id}>
             {e.id}
           </option>
         ))}
       </select>
-    </div>
+    </label>
   );
 }
 
 function ExportMenu(p: HeaderProps) {
   return (
-    <Menu label="Export" glyph={'⤓'} title="Export, share, restore">
+    <Menu label="Export" glyph="export" title="Export, share, restore">
       {(close) => (
         <>
           {FORMATS.map((f) => (
@@ -183,41 +181,18 @@ function ExportMenu(p: HeaderProps) {
   );
 }
 
-/** Settings: the developer tools live here (or behind ?dev=1), not in the main bar. */
-function SettingsMenu(p: HeaderProps) {
+function MoreMenu(p: HeaderProps) {
   return (
-    <Menu label="Settings" glyph={'⚙'} title="Settings" iconOnly>
+    <Menu label="More actions" glyph="more" title="More actions" iconOnly>
       {(close) => (
         <>
-          <label>
-            <input
-              type="checkbox"
-              checked={p.stats}
-              onChange={(e) => {
-                p.onStats(e.target.checked);
-              }}
-            />
-            Show object counts
-          </label>
+          <Examples
+            onExample={(id) => {
+              close();
+              p.onExample(id);
+            }}
+          />
           <hr />
-          <MenuItem
-            onClick={p.onMeasure}
-            close={close}
-            title="Times drag and pan frames of this figure"
-          >
-            Measure frame time
-          </MenuItem>
-        </>
-      )}
-    </Menu>
-  );
-}
-
-function HelpMenu(p: HeaderProps) {
-  return (
-    <Menu label="Help" glyph="?" title="Help (?)" iconOnly>
-      {(close) => (
-        <>
           <MenuItem onClick={p.onHelp} close={close} kbd="?">
             Shortcuts and tools
           </MenuItem>
@@ -233,6 +208,19 @@ function HelpMenu(p: HeaderProps) {
             Language reference
           </a>
           <hr />
+          <label>
+            <input
+              type="checkbox"
+              checked={p.stats}
+              onChange={(e) => {
+                p.onStats(e.target.checked);
+              }}
+            />
+            Show object counts
+          </label>
+          <MenuItem onClick={p.onMeasure} close={close}>
+            Measure frame time
+          </MenuItem>
           <MenuItem onClick={p.onReport} close={close} title="For a bug report">
             Debug report
           </MenuItem>
@@ -243,19 +231,26 @@ function HelpMenu(p: HeaderProps) {
 }
 
 export function Header(p: HeaderProps) {
+  const ref = usePanelCeiling();
   return (
-    <header className="topbar">
-      <Brand />
-      {p.documents}
-      <History {...p} />
+    <header className="topbar" ref={ref}>
+      <div className="document-group">
+        <Brand />
+        {p.documents}
+        {p.persistence}
+      </div>
+      <div className="history-group">
+        <History {...p} />
+      </div>
+      <section className="toolbar-search" aria-label="Workspace">
+        {p.search}
+      </section>
       {CLAIM_TESTING && <ClaimBox label="Claim to test" className="claim-form" host={p.claimBox} />}
-      <div className="spacer" />
-      {p.persistence}
-      <ViewMenu {...p} />
-      <Examples {...p} />
-      <ExportMenu {...p} />
-      <SettingsMenu {...p} />
-      <HelpMenu {...p} />
+      <div className="header-actions">
+        <ViewMenu {...p} />
+        <ExportMenu {...p} />
+        <MoreMenu {...p} />
+      </div>
     </header>
   );
 }

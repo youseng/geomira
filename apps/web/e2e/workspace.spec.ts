@@ -1,7 +1,7 @@
 import { nativeWorldPoint, pointText } from './native-pointer';
 /** ADR-0074: the ordinary workspace remains usable across input modes and sizes. */
 import { expect, test, type Page } from '@playwright/test';
-import { clickWorld, command, openApp, screenOf, tab, text, tool } from './helpers';
+import { viewAction, clickWorld, command, openApp, screenOf, tab, text, tool } from './helpers';
 
 async function usable(page: Page, locator: ReturnType<Page['getByRole']>) {
   await expect(locator).toBeVisible();
@@ -19,17 +19,30 @@ for (const width of [320, 390, 760, 768, 820, 1024, 1440]) {
     await page.setViewportSize({ width, height: 768 });
     await openApp(page);
     await command(page, 'A=(0,0)');
-    for (const name of ['File', 'Undo', 'Redo', 'Settings', 'Export', 'Help'])
+    for (const name of [/^File: /u, 'Undo', 'Redo', 'View', 'Export', 'More actions'])
       await usable(page, page.getByRole('button', { name, exact: true }));
     await expect(page.getByRole('button', { name: 'Randomize', exact: true })).toHaveCount(0);
     await expect(page.getByLabel('Triangle type', { exact: true })).toHaveCount(0);
+    if (width >= 768) {
+      const positions = await page.getByRole('banner').evaluate((header) =>
+        [
+          ...header.querySelectorAll(
+            '.document-trigger,.history-group button,.tool-search input,.header-actions > .menu-wrap > button',
+          ),
+        ].map((control) => {
+          const box = control.getBoundingClientRect();
+          return box.y + box.height / 2;
+        }),
+      );
+      expect(Math.max(...positions) - Math.min(...positions)).toBeLessThan(2);
+    }
     const canvas = await page.getByLabel('Geometry canvas').boundingBox();
     if (canvas === null) throw new Error('no canvas');
     expect(canvas.width).toBeGreaterThanOrEqual(width <= 760 ? width - 2 : 300);
     expect(canvas.height).toBeGreaterThan(180);
     expect(await page.evaluate(() => window.scrollX)).toBe(0);
     if (width <= 760)
-      for (const name of ['File', 'Undo', 'Redo', 'Settings', 'Export', 'Help']) {
+      for (const name of [/^File: /u, 'Undo', 'Redo', 'View', 'Export', 'More actions']) {
         const button = await page.getByRole('button', { name, exact: true }).boundingBox();
         expect(button?.width ?? 0).toBeGreaterThanOrEqual(44);
         expect(button?.height ?? 0).toBeGreaterThanOrEqual(44);
@@ -51,7 +64,7 @@ test('sidebar collapse and resize preserve drafts; reload restores layout and ma
   const before = await area.inputValue();
   await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
   await expect(page.getByRole('tabpanel')).not.toBeVisible();
-  await page.getByRole('button', { name: 'Show panels', exact: true }).click();
+  await viewAction(page, 'Show panels');
   await expect(area).toHaveValue(before);
   const separator = page.getByRole('separator', { name: 'Resize panels' });
   await separator.focus();
@@ -60,11 +73,11 @@ test('sidebar collapse and resize preserve drafts; reload restores layout and ma
   expect(await separator.getAttribute('aria-valuenow')).not.toBe(initial);
   await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Show panels', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'View', exact: true })).toBeVisible();
   await tool(page, 'Point');
   const at = await screenOf(page, 2, 1);
   const actual = await nativeWorldPoint(page, () => page.mouse.click(at.x, at.y));
-  await page.getByRole('button', { name: 'Show panels', exact: true }).click();
+  await viewAction(page, 'Show panels');
   expect(await text(page)).toContain(`B = ${pointText(actual)}`);
 });
 
@@ -85,9 +98,13 @@ test('search and recent tools use selection inputs; hidden tools never appear', 
   await search.press('ArrowDown');
   await search.press('Enter');
   expect(await text(page)).toContain('circumcenter(ABC)');
-  await page.locator('.recent-tools summary').click();
+  await page.keyboard.press('Control+k');
+  await expect(search).toBeFocused();
   await expect(
-    page.getByRole('button', { name: 'Recent: Circumcenter', exact: true }),
+    page
+      .getByRole('listbox', { name: 'Recent tools' })
+      .getByRole('option')
+      .filter({ hasText: 'Circumcenter' }),
   ).toBeVisible();
   await search.fill('claim');
   if (process.env['GEOMIRA_ENGINE_E2E'] !== '1')
@@ -125,7 +142,7 @@ test('explicit Pan and visible Properties preserve figure text', async ({ page }
   const before = await text(page);
   if ((page.viewportSize()?.width ?? 1280) <= 760)
     await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
-  await page.getByRole('button', { name: 'Pan canvas', exact: true }).click();
+  await viewAction(page, 'Pan canvas');
   const canvas = page.getByLabel('Geometry canvas');
   const a = await screenOf(page, 0, 0);
   const cx = await canvas.getAttribute('data-cx');
@@ -137,7 +154,7 @@ test('explicit Pan and visible Properties preserve figure text', async ({ page }
   expect(await text(page)).toBe(before);
   if ((page.viewportSize()?.width ?? 1280) <= 760)
     await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
-  await page.getByRole('button', { name: 'Pan canvas', exact: true }).click();
+  await viewAction(page, 'Pan canvas');
   await clickWorld(page, 0, 0);
   await page.getByRole('button', { name: 'Properties', exact: true }).click();
   await expect(page.getByRole('dialog', { name: /Style/iu })).toBeVisible();
@@ -160,7 +177,7 @@ test('first-use guide offers safe actions and workspace storage failures do not 
   await page.getByRole('button', { name: 'Dismiss getting started', exact: true }).click();
   await command(page, 'A=(0,0)');
   const before = await text(page);
-  await page.getByRole('button', { name: 'Getting started', exact: true }).click();
+  await viewAction(page, 'Getting started');
   await expect(page.getByRole('button', { name: 'Create a triangle', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Choose a tool', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Find a tool' })).toBeFocused();

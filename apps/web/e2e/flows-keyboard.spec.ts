@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { command, openApp } from './helpers';
+import { selectExample, command, openApp } from './helpers';
 
 /** Bug-fix round (ADR-0028): keyboard and focus on the desktop. */
 
@@ -31,7 +31,7 @@ test('after choosing an example the canvas has the focus: a letter is no other e
 }) => {
   await openApp(page);
   const examples = page.getByLabel('Example', { exact: true });
-  await examples.selectOption('euler-line');
+  await selectExample(page, 'euler-line');
   await expect(page.getByLabel('Geometry canvas')).toBeFocused();
   const text = page.getByLabel('Text', { exact: true });
   await expect(text).toHaveValue(/^@title "Euler line"$/mu);
@@ -40,6 +40,7 @@ test('after choosing an example the canvas has the focus: a letter is no other e
   await page.keyboard.press('m');
   await expect(text).toHaveValue(/^@title "Euler line"$/mu);
   // A letter or an arrow on the focused, closed list does not open an example either.
+  await page.getByRole('button', { name: 'More actions', exact: true }).click();
   await examples.focus();
   await page.keyboard.press('m');
   await page.keyboard.press('ArrowDown');

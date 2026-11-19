@@ -1,6 +1,6 @@
 /** ADR-0074: visible workflows composed with files, properties and native source assistance. */
 import { expect, test } from '@playwright/test';
-import { command, openApp, tab, tool } from './helpers';
+import { viewAction, command, openApp, tab, tool } from './helpers';
 
 test('a newcomer can create, construct, style, save and export through visible controls', async ({
   page,
@@ -27,7 +27,7 @@ test('a newcomer can create, construct, style, save and export through visible c
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(view.height);
   await card.getByRole('button', { name: 'blue', exact: true }).click();
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'File', exact: true }).click();
+  await page.getByRole('button', { name: /^File: /u }).click();
   await page.getByRole('button', { name: 'Save As / Duplicate', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Document files' });
   await dialog.getByLabel('Document name').fill('My triangle');
@@ -68,7 +68,7 @@ for (const view of [
     );
     expect(span).toBe('Z');
     await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
-    await page.getByRole('button', { name: 'Show all tools', exact: true }).click();
+    await viewAction(page, 'Show all tools');
     await expect(page.getByRole('toolbar', { name: 'Tools', exact: true })).toBeVisible();
   });
 }
@@ -77,7 +77,7 @@ test('text enlargement keeps menu controls inside the viewport', async ({ page }
   await page.setViewportSize({ width: 820, height: 768 });
   await openApp(page, './index.html');
   await page.addStyleTag({ content: 'body {font-size:20px}' });
-  for (const name of ['File', 'Export', 'Help', 'Settings']) {
+  for (const name of [/^File: /u, 'Export', 'View', 'More actions']) {
     const button = page.getByRole('button', { name, exact: true });
     await expect(button).toBeVisible();
     const box = await button.boundingBox();
@@ -85,7 +85,7 @@ test('text enlargement keeps menu controls inside the viewport', async ({ page }
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(820);
   }
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'More actions', exact: true }).click();
   await expect(page.getByLabel('Show object counts')).toBeVisible();
 });
 

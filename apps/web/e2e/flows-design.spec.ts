@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { claimItem, openApp, RESERVED, tab } from './helpers';
+import { selectExample, claimItem, openApp, RESERVED, tab } from './helpers';
 
 /**
  * Run 9b (ADR-0016): the design pass on the desktop: screenshot baselines of the main screen
@@ -8,7 +8,7 @@ import { claimItem, openApp, RESERVED, tab } from './helpers';
  */
 
 async function example(page: Page, id: string): Promise<void> {
-  await page.getByLabel('Example').selectOption(id);
+  await selectExample(page, id);
   await page.evaluate(async () => {
     await document.fonts.ready;
   });
@@ -74,22 +74,22 @@ test('the claim box adds the claim, opens Claims and tests it; the chip follows'
   );
 });
 
-test('developer items: behind Settings, or on from the start with ?dev=1', async ({ page }) => {
+test('developer items: in More actions, or on from the start with ?dev=1', async ({ page }) => {
   await openApp(page);
   await example(page, 'euler-line');
   await expect(page.getByTestId('object-counts')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'More actions', exact: true }).click();
   await page.getByLabel('Show object counts').check();
   await expect(page.getByTestId('object-counts')).toContainText(/\d+ drawn · 0 undefined/u);
   await openApp(page, './?dev=1');
   await expect(page.getByTestId('object-counts')).toBeVisible();
-  await page.getByRole('button', { name: 'Help', exact: true }).click();
+  await page.getByRole('button', { name: 'More actions', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Debug report' })).toBeVisible();
 });
 
 test('icon buttons are named by their old labels; keyboard focus is visible', async ({ page }) => {
   await openApp(page);
-  for (const name of ['Undo', 'Redo', 'View', 'Export', 'Settings', 'Help'])
+  for (const name of ['Undo', 'Redo', 'View', 'Export', 'More actions'])
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   for (const name of ['Zoom in', 'Zoom out', 'Fit', 'Move', 'Circle (3 points)', 'Claim'])
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openApp, tab } from './helpers';
+import { selectExample, openApp, tab } from './helpers';
 
 /**
  * Bug-fix round (ADR-0028): on the phone layout (390 × 664) a refusal notice was drawn
@@ -8,7 +8,7 @@ import { openApp, tab } from './helpers';
 
 test('a refusal notice is visible above the open drawer', async ({ page }) => {
   await openApp(page);
-  await page.getByLabel('Example').selectOption('euler-line');
+  await selectExample(page, 'euler-line');
   await tab(page, 'Claims');
   const box = page.getByLabel('New claim');
   await box.fill('Z, A, B collinear');

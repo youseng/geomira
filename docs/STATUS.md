@@ -1,5 +1,27 @@
 # STATUS
 
+## Single-row workspace toolbar
+
+[ADR-0078](adr/0078-unify-workspace-toolbar.md) brings the approved header design
+into the application. The desktop has one toolbar row. Phones use two rows with
+44 px touch targets. The document title opens File, the local status opens
+Recovery and focusing an empty tool search shows recently used tools. View
+contains the workspace controls and More contains examples, help and settings.
+
+The public and internal hosted and single-file builds completed. Chromium checks
+cover the header from 320 to 1440 px, keyboard tool search, document recovery and
+draft input. The reduced header height also changes the fitted drawing area.
+The 25 screenshot references cover the full workspace, fitted scenes and PNG exports.
+
+Frozen test changes under ADR-0078:
+
+- Web unit test: design.
+- Browser tests: design-mobile, document-files, draft-pointer-layout, drag-frame,
+  drawer-notice-mobile, flows-design, flows-export, flows-keyboard, flows-persist,
+  interaction-layout, modal-safety, pages-smoke, panel-controls, persistence,
+  public-layout, public-release, scene, workspace-composed and workspace.
+- Shared browser helpers: helpers and layout-visibility.
+
 ## Figure randomizer removal
 
 [ADR-0077](adr/0077-remove-figure-randomizer.md) retires the header action and both

@@ -3,7 +3,7 @@ import { clickWorld, command, openApp, tool } from './helpers';
 
 async function openModal(page: Page, name: string) {
   await page
-    .getByRole('button', { name: name === 'Debug report' ? 'Help' : 'Export', exact: true })
+    .getByRole('button', { name: name === 'Debug report' ? 'More actions' : 'Export', exact: true })
     .click();
   await page.getByRole('button', { name: name === 'Export' ? 'SVG' : name, exact: true }).click();
   return page.getByRole('dialog', { name, exact: true });
@@ -244,7 +244,7 @@ test('Escape and close restore the menu invoker; repeated opening and a removed 
   const listeners = await page.evaluate(() => Reflect.get(window, '__modalKeyListeners') as number);
   for (const name of ['Export', 'Share link', 'Debug report', 'Export']) {
     const trigger = page.getByRole('button', {
-      name: name === 'Debug report' ? 'Help' : 'Export',
+      name: name === 'Debug report' ? 'More actions' : 'Export',
       exact: true,
     });
     await trigger.focus();

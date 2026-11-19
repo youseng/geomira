@@ -63,7 +63,7 @@ for (const transition of ['title', 'download feedback']) {
     await tool(page, 'Move');
     if (transition === 'download feedback') {
       const download = page.waitForEvent('download');
-      await page.getByRole('button', { name: 'File', exact: true }).click();
+      await page.getByRole('button', { name: /^File: /u }).click();
       await page.getByRole('button', { name: 'Save / Download .geo', exact: true }).click();
       await download;
     }

@@ -13,6 +13,18 @@ export async function openApp(page: Page, url = './'): Promise<string[]> {
   return errors;
 }
 
+/** Open a bundled example from the toolbar overflow. */
+export async function selectExample(page: Page, id: string) {
+  await page.getByRole('button', { name: 'More actions', exact: true }).click();
+  await page.getByLabel('Example', { exact: true }).selectOption(id);
+}
+
+/** Workspace commands are reachable from View at every width. */
+export async function viewAction(page: Page, name: string) {
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  await page.getByRole('button', { name, exact: true }).click();
+}
+
 export function commandInput(page: Page): Locator {
   return page.getByLabel('Command', { exact: true });
 }

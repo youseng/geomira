@@ -96,8 +96,9 @@ describe('the page', () => {
   it('keeps the old labels as accessible names of icon buttons', () => {
     for (const name of ['Undo', 'Redo', 'Zoom in', 'Zoom out', 'Fit'])
       expect(html).toContain(`<span class="sr-only">${name}</span>`);
-    for (const name of ['Settings', 'Help']) expect(html).toContain(`>${name}</span>`);
-    expect(html).toContain('aria-label="Example"');
+    for (const name of ['View', 'Export', 'More actions'])
+      expect(html).toContain(`>${name}</span>`);
+    expect(html).toContain('role="combobox"');
     expect(html).toContain('aria-label="Command"');
   });
 

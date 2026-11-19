@@ -31,7 +31,8 @@ import type { EditorStore } from './store';
 import { StyleCard, usePreviewScene, useStyleCard } from './StyleCard';
 import { Palette, StatusLine, ToolHint } from './ToolBar';
 import { usePanels, useWorkspace } from './workspace';
-import { WorkspaceBar } from './WorkspaceBar';
+import { ToolSearch } from './ToolSearch';
+import { WorkspaceActions } from './WorkspaceActions';
 import { GettingStarted } from './GettingStarted';
 import { WorkspaceNotices } from './WorkspaceNotices';
 import { chooseTool } from '@geomira/editor/selection-tool';
@@ -261,6 +262,23 @@ function PageHeader({
   return (
     <Header
       {...app.header.props}
+      search={
+        <ToolSearch
+          inputRef={app.searchRef}
+          onChoose={app.choose}
+          recent={app.workspace.prefs.recent}
+        />
+      }
+      workspaceActions={(close) => (
+        <WorkspaceActions
+          workspace={app.workspace}
+          close={close}
+          hidePanels={app.panels.close}
+          showPanels={() => {
+            app.panels.showTab(app.panels.tab);
+          }}
+        />
+      )}
       documents={<DocumentFiles store={app.page.store} />}
       persistence={
         <PersistencePanel
@@ -315,15 +333,6 @@ export function App() {
         style={app.workspace.style}
       >
         <PageHeader app={app} recoveryHost={recoveryHost} />
-        <WorkspaceBar
-          workspace={app.workspace}
-          inputRef={app.searchRef}
-          choose={app.choose}
-          hidePanels={app.panels.close}
-          showPanels={() => {
-            app.panels.showTab(app.panels.tab);
-          }}
-        />
         <WorkspaceNotices
           page={page}
           command={commandRef}

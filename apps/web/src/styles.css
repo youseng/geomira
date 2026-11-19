@@ -231,20 +231,6 @@ button {
   flex: 1;
 }
 
-/* The examples' native select lies over its button, invisible, so a click opens its list. */
-.examples select {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.examples:focus-within {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
 /* ---- menus ---- */
 .menu-wrap {
   position: relative;
