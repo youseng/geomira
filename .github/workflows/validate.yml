@@ -50,7 +50,7 @@ jobs:
           grep -q "src=\"${GEOMIRA_BASE}assets/" apps/web/dist/index.html
           grep -q "href=\"${GEOMIRA_BASE}manifest.webmanifest\"" apps/web/dist/index.html
           test -f apps/web/dist/sw.js
-      - run: pnpm --filter @geomira/web exec playwright install --with-deps chromium firefox webkit
+      - run: bash scripts/install-browsers.sh chromium firefox webkit
       - name: Record browser and font inputs
         run: bash scripts/browser-inputs.sh
       - name: Public browsers, offline copy and PWA

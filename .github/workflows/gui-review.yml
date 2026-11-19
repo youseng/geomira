@@ -33,7 +33,7 @@ jobs:
           pnpm build
           pnpm --filter @geomira/web build:claims
       # Match required validation's browser/font installation, not just its Chromium binary.
-      - run: pnpm --filter @geomira/web exec playwright install --with-deps chromium firefox webkit
+      - run: bash scripts/install-browsers.sh chromium firefox webkit
       - name: Record browser and font inputs
         run: bash scripts/browser-inputs.sh
       - name: Public native GUI references

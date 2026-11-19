@@ -12,6 +12,10 @@ toolbar fix and the browser expectations for native angle dragging, exposed
 object-row actions and Firefox scroll coordinates. Changed frozen tests:
 workspace, flows-measurements, style-popover and panel-controls. Local Chromium
 reproduced the clipped toolbar, angle assertion and obstructed row target.
+After repair, all 38 focused Chromium cases passed across the two builds, and
+local verification passed 5,018 tests. The diagnostic runner subsequently
+timed out fetching Ubuntu dependencies with HTTP 503. Browser setup now prefers
+the reachable Ubuntu Azure mirror and retains the runner's fallbacks.
 
 ## Single-row workspace toolbar
 

@@ -19,5 +19,9 @@ Three browser fixtures assumed a particular viewport or browser representation:
   The observed difference was 0.000008 px. Width, height and camera state
   still require exact equality.
 
-The existing screenshot references and the deployment workflow continue to
-apply. Both browser reports identified the same four cases.
+The existing screenshot references continue to apply. On the repair branch the
+default Ubuntu mirrors returned HTTP 503 during Playwright installation. Browser
+jobs now add Ubuntu's Azure archive to the runner's APT mirror list if it is
+reachable. APT verifies the Ubuntu signatures and retains the original mirrors
+as fallbacks. Validation, publication and smoke tests use the same pinned
+Playwright version and dependency installer.
