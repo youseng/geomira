@@ -3,7 +3,6 @@ import { claimRows, type ClaimRow } from '@geomira/editor/panels';
 import type { EditorState } from '@geomira/editor/state';
 import type { Scene } from '@geomira/scene/types';
 import type { FrameTimes } from './bench';
-import { SrOnly, ZoomIcon } from './icons';
 import { MathText } from './MathText';
 import { useSettled } from './settled';
 import type { EditorStore, Notice } from './store';
@@ -47,41 +46,6 @@ export const ClaimChips = memo(function ClaimChips(p: {
     </div>
   );
 });
-
-/** Zoom and fit, floating at the bottom right of the canvas. */
-export function ZoomControls(p: {
-  readonly onZoom: (f: number) => void;
-  readonly onFit: () => void;
-}) {
-  return (
-    <div className="zoomctl">
-      <button
-        type="button"
-        title="Zoom in"
-        onClick={() => {
-          p.onZoom(1.25);
-        }}
-      >
-        <ZoomIcon kind="in" />
-        <SrOnly>Zoom in</SrOnly>
-      </button>
-      <button
-        type="button"
-        title="Zoom out"
-        onClick={() => {
-          p.onZoom(0.8);
-        }}
-      >
-        <ZoomIcon kind="out" />
-        <SrOnly>Zoom out</SrOnly>
-      </button>
-      <button type="button" title="Fit the figure (0)" onClick={p.onFit}>
-        <ZoomIcon kind="fit" />
-        <SrOnly>Fit</SrOnly>
-      </button>
-    </div>
-  );
-}
 
 /** A refusal, an error or information about the figure, until dismissed or answered. */
 export function NoticeLine({ notice, onClose }: { notice: Notice | null; onClose: () => void }) {

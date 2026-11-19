@@ -70,8 +70,8 @@ function LayerSelect({ state, run }: { state: EditorState; run: Run }) {
 }
 
 /**
- * The selection bar (ADR-0060): while objects are selected it floats at the top of the canvas
- * and says what is selected and what can be done with ALL of it in one click, each one history
+ * The selection bar in the stage footer shows what is selected and which actions apply to
+ * the whole selection (ADR-0060). Each action produces one history
  * entry: hide or show, labels off or on, move to a layer, remove; ✕ clears the selection. The
  * decisions are packages/editor's (selection-actions.ts); a refusal (a locked layer) is the
  * store's notice, as for any edit.

@@ -96,22 +96,11 @@
   color: var(--bad);
 }
 
-/* ---- the selection bar: top centre of the canvas, while objects are selected ---- */
+/* Selection actions in the status strip. */
 .selbar {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 5;
   display: flex;
   align-items: center;
   gap: 4px;
-  max-width: calc(100% - 20px);
-  padding: 4px 6px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--panel);
-  box-shadow: var(--shadow);
   font-size: 12.5px;
   white-space: nowrap;
 }

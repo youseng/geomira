@@ -1,5 +1,17 @@
 # STATUS
 
+## Zoom controls in the workspace header
+
+[ADR-0080](adr/0080-zoom-in-workspace-header.md) moves Zoom in, Zoom out and Fit
+to the workspace header. Chromium measurements against the previous release
+showed 72 additional CSS pixels of drawing height at both 320 and 1440 px wide.
+The public header remained 96 px and 60 px tall respectively. Tool and selection
+actions share the existing bottom status strip.
+
+Changed frozen tests under ADR-0080: workspace, interaction-layout and the
+visual fixtures in public-layout, flows-design, design-mobile, scene and
+flows-export.
+
 ## Toolbar deployment repair
 
 The [failed main run](https://github.com/youseng/geomira/actions/runs/44509705212)
