@@ -21,9 +21,6 @@ test('screenshot baseline: the main screen (nine-point circle)', async ({ page }
   const errors = await openApp(page);
   await example(page, 'nine-point-circle');
   await page.mouse.move(0, 0);
-  await test
-    .info()
-    .attach('main-desktop.png', { body: await page.screenshot(), contentType: 'image/png' });
   await expect(page).toHaveScreenshot('main-desktop.png', PAGE_DIFF);
   expect(errors).toEqual([]);
 });
@@ -38,12 +35,6 @@ test('screenshot baseline: the Claims panel after a local test (seed masked)', a
     { timeout: 60_000 },
   );
   await page.mouse.move(0, 0);
-  await test
-    .info()
-    .attach('claims-desktop.png', {
-      body: await page.screenshot({ mask: [page.locator('.verdict-detail')] }),
-      contentType: 'image/png',
-    });
   await expect(page).toHaveScreenshot('claims-desktop.png', {
     ...PAGE_DIFF,
     mask: [page.locator('.verdict-detail')],

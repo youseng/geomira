@@ -5,6 +5,13 @@
 [ADR-0077](adr/0077-remove-figure-randomizer.md) retires the header action and both
 package entry points. The focused Vitest run passed 93 tests in eight files.
 Both public and internal builds completed in hosted and standalone modes.
+All 18 focused Chromium browser checks passed, including seven toolbar widths
+and modal accessibility on desktop, phone and the standalone build. Type checking,
+lint, dependency checks and repository rules passed.
+
+Five toolbar references use native captures from [GUI run 44501148550](https://github.com/youseng/geomira/actions/runs/44501148550),
+artifact 14517916395 on source `0178957`. The shipped public screenshot matches
+the desktop reference byte for byte (SHA256 `39ce42874136819ea2e724e8ac4e4d85b85f093163bf267decfe90d6415c3526`).
 
 Changed tests and fixtures under ADR-0077:
 
