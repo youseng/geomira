@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 import { command, openApp, selectExample, tab } from './helpers';
+import { holdConnections } from './recovery-helpers';
 
 async function writer(page: Page) {
   await tab(page, 'Write-up');
@@ -130,10 +131,40 @@ test('denied browser storage leaves malformed Markdown downloadable', async ({ p
   const source = 'Draft $\\frac{\n';
   await (await writer(page)).fill(source);
   await expect(page.getByRole('status', { name: 'Local save status' })).toContainText('Not saved');
+  expect(
+    await page.evaluate(() =>
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true })),
+    ),
+  ).toBe(false);
   const downloading = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download .md', exact: true }).click();
   const path = await (await downloading).path();
   if (!path) throw new Error('Missing backup');
   expect(await readFile(path, 'utf8')).toBe(source);
   expect(errors).toEqual([]);
+});
+
+test('leaving with an uncommitted write-up is guarded until the transaction completes', async ({
+  page,
+}) => {
+  await openApp(page, './index.html');
+  const area = await writer(page);
+  const status = page.getByRole('status', { name: 'Local save status' });
+  await area.fill('Saved baseline');
+  await expect(status).toContainText('Saved locally');
+  const canLeave = () =>
+    page.evaluate(() => window.dispatchEvent(new Event('beforeunload', { cancelable: true })));
+  expect(await canLeave()).toBe(true);
+  await holdConnections(page);
+  await area.fill('');
+  expect(await canLeave()).toBe(false);
+  const raw = 'Last edit $\\frac{';
+  await area.fill(raw);
+  expect(await canLeave()).toBe(false);
+  await expect(area).toHaveValue(raw);
+  await page.evaluate(() => window.dispatchEvent(new Event('release-storage')));
+  await expect(status).toContainText('Saved locally');
+  expect(await canLeave()).toBe(true);
+  await page.reload();
+  await expect(await writer(page)).toHaveValue(raw);
 });

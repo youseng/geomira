@@ -121,7 +121,7 @@ export function useAutosave(store: EditorStore, snap: Snapshot, ready: boolean):
         history.replaceState(null, '', location.pathname + location.search);
     }, AUTOSAVE_MS);
   }, [store, doc, ready, snap.state.drag, snap.writeUpRevision]);
-  useEffect(() => watchRecovery(store.autosave, window, document), [store]);
+  useEffect(() => watchRecovery(store, window, document), [store]);
 }
 
 export { flushWhenHidden } from './save-lifecycle';
