@@ -6,6 +6,8 @@
 
 Changed frozen coverage includes the language export surface and full-workspace images in public-layout, flows-design and design-mobile.
 
+Local `pnpm verify` passed 5,031 tests across 552 files. The 24 focused Chromium cases passed across the public and internal desktop, phone and standalone builds. In a separate offline check, opening Write-up for the first time after disconnecting typeset a fraction, and a second offline reload restored the exact source, including an unfinished formula.
+
 ### Requests
 
 The maintainer approved KaTeX and markdown-it for local rendering and publication after CI.
