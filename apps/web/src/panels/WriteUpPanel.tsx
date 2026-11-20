@@ -76,7 +76,7 @@ export const WriteUpPanel = memo(function WriteUpPanel({ store, source, active }
   const input = useRef<HTMLTextAreaElement>(null);
   const [error, setError] = useState('');
   return (
-    <div hidden={!active} className="writeup">
+    <div aria-hidden={!active} className="writeup">
       <div className="writeup-heading">
         <label htmlFor="writeup-source">Markdown + LaTeX</label>
         <button

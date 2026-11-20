@@ -115,7 +115,9 @@ test('a preview failure leaves saving, editing and native undo available', async
   await writer(page);
   await area.focus();
   await area.press('Control+z');
-  expect(await area.inputValue()).not.toBe('First step');
+  await expect(area).not.toHaveValue('First step');
+  await area.press('Control+Shift+z');
+  await expect(area).toHaveValue('First step');
 });
 
 test('denied browser storage leaves malformed Markdown downloadable', async ({ page }) => {

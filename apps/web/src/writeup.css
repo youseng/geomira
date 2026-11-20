@@ -1,5 +1,13 @@
 .writeup {
+  overflow: hidden;
   padding: 12px;
+}
+/* Keep the native text editor laid out. Firefox discards its Undo stack when an
+   ancestor switches to display:none, even when React keeps the node mounted. */
+.writeup[aria-hidden='true'] {
+  visibility: hidden;
+  height: 0;
+  padding: 0;
 }
 .writeup-heading {
   display: flex;

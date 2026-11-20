@@ -39,8 +39,12 @@
     overflow: hidden;
   }
 
-  .side .tab-body {
-    display: none;
+  /* A collapsed sheet keeps the write-up textarea's native Undo history in Firefox. */
+  .side:not(.open) .tab-body {
+    flex: 0 0 0;
+    height: 0;
+    padding: 0;
+    visibility: hidden;
   }
 
   .tabs {
