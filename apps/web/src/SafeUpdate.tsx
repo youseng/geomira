@@ -27,7 +27,7 @@ function Backup({ refusal, store, command }: Props & { refusal: UpdateRefusal })
               );
             else if (refusal.kind === 'command')
               downloadText(command.current?.value ?? '', 'geomira-command-draft.txt');
-            else downloadGeo(store.current().doc);
+            else downloadGeo(store.document());
           } catch (e) {
             setError(String(e));
           }

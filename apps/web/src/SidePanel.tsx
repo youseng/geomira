@@ -11,6 +11,7 @@ import { ClaimsPanel } from './panels/ClaimsPanel';
 import { HelpPanel } from './panels/HelpPanel';
 import { LayersPanel } from './panels/LayersPanel';
 import { ObjectsPanel } from './panels/ObjectsPanel';
+import { WriteUpPanel } from './panels/WriteUpPanel';
 import { TextPanel } from './panels/TextPanel';
 import { useSettled } from './settled';
 import type { EditorStore } from './store';
@@ -23,8 +24,8 @@ import { keepPanelFocusVisible } from './panel-focus';
 import type { Tab } from './panel-types';
 export type { Tab } from './panel-types';
 export const TABS: readonly Tab[] = CLAIM_TESTING
-  ? ['Text', 'Objects', 'Layers', 'Claims', 'Help']
-  : ['Text', 'Objects', 'Layers', 'Help'];
+  ? ['Text', 'Objects', 'Layers', 'Claims', 'Write-up', 'Help']
+  : ['Text', 'Objects', 'Layers', 'Write-up', 'Help'];
 
 function PanelCompact({ workspace }: { workspace: Workspace | undefined }) {
   if (workspace === undefined) return null;
@@ -71,6 +72,13 @@ type BodyProps = Pick<
   readonly applier: TextApplier;
 };
 
+function PanelWriteUp({ store, tab }: Pick<SidePanelProps, 'store' | 'tab'>) {
+  const { openCount, writeUp } = store.getSnapshot();
+  return (
+    <WriteUpPanel key={openCount} store={store} source={writeUp} active={tab === 'Write-up'} />
+  );
+}
+
 /** The tab's panel; memoised, so a drag frame (with the settled state unchanged) skips it. */
 const Body = memo(function Body({
   tab,
@@ -85,6 +93,8 @@ const Body = memo(function Body({
   onStyle,
 }: BodyProps) {
   switch (tab) {
+    case 'Write-up':
+      return null;
     case 'Text':
       return <TextPanel state={state} applier={applier} />;
     case 'Objects':
@@ -155,6 +165,7 @@ export function SidePanel(props: SidePanelProps) {
         Scroll up for the figure; down for tools and the command bar.
       </p>
       <div id="figure-panel-body" className="tab-body" role="tabpanel" aria-label={`${tab} panel`}>
+        <PanelWriteUp store={store} tab={tab} />
         <Body
           tab={tab}
           store={store}

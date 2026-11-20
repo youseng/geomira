@@ -9,6 +9,7 @@ import * as docs from '../src/docs';
 import * as grammar from '../src/grammar';
 import * as migrate from '../src/migrate';
 import * as notation from '../src/notation';
+import * as portable from '../src/portable';
 import * as parse from '../src/parse';
 import * as sameConstruction from '../src/same-construction';
 import * as parseInto from '../src/parse-into';
@@ -22,6 +23,7 @@ import * as statementsMod from '../src/statements';
 
 const SURFACE: Record<string, { module: object; names: string[] }> = {
   './lexer': { module: lexer, names: ['lexLine'] },
+  './portable': { module: portable, names: ['parsePortable', 'printPortable'] },
   './parse': { module: parse, names: ['parse'] },
   './print': { module: print, names: ['print'] },
   './print-short': { module: printShortMod, names: ['printShort'] },

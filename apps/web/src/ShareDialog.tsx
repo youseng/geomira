@@ -1,6 +1,8 @@
 import { hasEdits } from '@geomira/editor/text-draft';
 import { downloadDraft } from './file-actions';
-import { useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { encodeShareChecked } from '@geomira/editor/share';
+import { shareUrl } from './share-url';
 import { TextDialog } from './Dialogs';
 import { Modal } from './Modal';
 import { downloadGeo } from './backup';
@@ -17,22 +19,63 @@ export function ShareDialog({
   readonly store: EditorStore;
   readonly onClose: () => void;
 }) {
-  const [error, setError] = useState<string | null>(null);
-  if (problem === undefined)
+  const [include, setInclude] = useState(false);
+  const source = store.getSnapshot().writeUp;
+  const geometry = store.current().doc;
+  const offer = useMemo(
+    () =>
+      include && source && problem === undefined
+        ? encodeShareChecked({ ...geometry, writeUp: source })
+        : undefined,
+    [include, source, geometry, problem],
+  );
+  const choice =
+    source && problem === undefined ? (
+      <label>
+        <input
+          type="checkbox"
+          checked={include}
+          onChange={(event) => {
+            setInclude(event.target.checked);
+          }}
+        />{' '}
+        Include write-up
+      </label>
+    ) : null;
+  const issue = offer && !offer.ok ? offer.reason : problem;
+  if (issue === undefined)
     return (
       <TextDialog
         title="Share link"
-        text={text}
+        text={offer && offer.ok ? shareUrl(location.href, offer.fragment) : text}
         copyLabel="Copy link"
         multiline={false}
         description="The recipient opens the hosted app. Figure data stays in the URL fragment; it is not uploaded."
         onClose={onClose}
-      />
+      >
+        {choice}
+      </TextDialog>
     );
+  return <ShareFailure choice={choice} issue={issue} store={store} onClose={onClose} />;
+}
+
+function ShareFailure({
+  choice,
+  issue,
+  store,
+  onClose,
+}: {
+  choice: ReactNode;
+  issue: string;
+  store: EditorStore;
+  onClose: () => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
   return (
     <Modal title="Share link" onClose={onClose}>
       <h2>Share link</h2>
-      <p>{problem}</p>
+      {choice}
+      <p>{issue}</p>
       <p>
         A .geo file preserves the current valid figure. Unapplied text is separate. Links and
         downloads do not upload data.
@@ -42,7 +85,7 @@ export function ShareDialog({
         type="button"
         onClick={() => {
           try {
-            downloadGeo(store.current().doc);
+            downloadGeo(store.document());
           } catch (e) {
             setError(String(e));
           }

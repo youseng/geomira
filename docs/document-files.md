@@ -58,3 +58,9 @@ JavaScript. Subsequent updates initiated from the new build use the guard descri
 Save As downloads a portable copy and starts a new local editing identity. Its completion
 alone does not acknowledge the duplicate's local durability: wait for **Saved locally** to
 confirm that independent write. Storage-denied sessions can still keep the downloaded copy.
+
+## Write-ups
+
+Open **Write-up** in the figure panels to type Markdown and LaTeX. The live preview updates as you type. Use `$…$` for inline formulas and `$$…$$` for display math. An invalid formula remains editable and autosaves. Select its diagnostic to return to the formula.
+
+A document with a write-up downloads as version 2 with one JSON-quoted `@writeup` field. Geometry alone continues to use version 1. **Download .md** saves just the source. Share links start with the figure alone. Select **Include write-up** to send the notes too. The local save indicator covers geometry and write-up together.

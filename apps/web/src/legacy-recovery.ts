@@ -1,18 +1,17 @@
+import { parsePortable, printPortable } from '@geomira/lang/portable';
 import { commitRevision, type LegacyEntry, type RecoveryState } from '@geomira/editor/persistence';
 import type { Registry } from '@geomira/kernel/registry';
-import { parse } from '@geomira/lang/parse';
-import { print } from '@geomira/lang/print';
 
 export const LEGACY_KEYS = ['geomira.autosave.previous', 'geomira.autosave.current'] as const;
 
 /** Never accept a partial parse as a saved or migrated document. */
 export function validatedText(text: string, registry: Registry): string {
-  const parsed = parse(text, registry);
+  const parsed = parsePortable(text, registry);
   if (parsed.diagnostics.some((d) => d.severity === 'error'))
     throw new Error(
       'The figure contains invalid text; it has not been saved. Download the original for recovery.',
     );
-  return print(parsed.doc);
+  return printPortable(parsed.doc);
 }
 
 export function readLegacy(registry: Registry): readonly LegacyEntry[] {

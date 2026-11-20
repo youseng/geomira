@@ -39,7 +39,11 @@ export default defineConfig(({ mode }) => {
       __GEOMIRA_CLAIM_TESTING__: JSON.stringify(claims),
     },
     plugins: single
-      ? [react(), singleFileHtmlPlugin(path('public/favicon.svg')), viteSingleFile()]
+      ? [
+          react(),
+          singleFileHtmlPlugin(path('public/favicon.svg')),
+          viteSingleFile({ deleteInlinedFiles: false }),
+        ]
       : [react(), pwaPlugin({ template: path('src/sw/service-worker.ts'), build })],
     ...(single
       ? {
@@ -57,6 +61,7 @@ export default defineConfig(({ mode }) => {
         : single
           ? 'dist-single'
           : 'dist',
+      license: { fileName: 'third-party-licenses.txt' },
       sourcemap: !single,
     },
   };

@@ -11,11 +11,9 @@
  * opening a different figure. A payload's %XX escapes (a client may write `+` as %2B) are
  * decoded first, one byte each; a malformed escape is refused.
  */
-import type { Document } from '@geomira/kernel/document';
+import { type PortableDocument, parsePortable, printPortable } from '@geomira/lang/portable';
 import type { Registry } from '@geomira/kernel/registry';
 import type { Diagnostic } from '@geomira/lang/diagnostic';
-import { parse } from '@geomira/lang/parse';
-import { print } from '@geomira/lang/print';
 import LZString from 'lz-string';
 import { decompressBounded } from './lz-bounded';
 
@@ -40,18 +38,18 @@ function checksum(text: string): string {
 }
 
 /** The fragment of a share link to `doc`. */
-export function encodeShare(doc: Document): string {
-  const text = print(doc);
+export function encodeShare(doc: PortableDocument): string {
+  const text = printPortable(doc);
   return SHARE_PREFIX + checksum(text) + LZString.compressToEncodedURIComponent(text);
 }
 
 /** A checked offer: every emitted fragment respects the same limits as the decoder. */
 export function encodeShareChecked(
-  doc: Document,
+  doc: PortableDocument,
 ):
   | { readonly ok: true; readonly fragment: string }
   | { readonly ok: false; readonly reason: string } {
-  const text = print(doc);
+  const text = printPortable(doc);
   if (text.length > MAX_TEXT)
     return {
       ok: false,
@@ -67,7 +65,7 @@ export function encodeShareChecked(
 }
 
 export type Shared =
-  | { readonly ok: true; readonly text: string; readonly doc: Document }
+  | { readonly ok: true; readonly text: string; readonly doc: PortableDocument }
   | { readonly ok: false; readonly reason: string; readonly diagnostics?: readonly Diagnostic[] };
 
 /** A payload's text, bounded by MAX_TEXT (lz-bounded.ts) and canonical, or why not. */
@@ -123,7 +121,7 @@ export function decodeShare(fragment: string, registry: Registry): Shared {
   const read = readPayload(payload);
   if ('reason' in read) return { ok: false, reason: read.reason };
   const text = read.text;
-  const r = parse(text, registry);
+  const r = parsePortable(text, registry);
   const errors = r.diagnostics.filter((d) => d.severity === 'error');
   if (errors.length > 0)
     return { ok: false, reason: 'the linked text has errors', diagnostics: errors };

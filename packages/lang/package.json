@@ -6,6 +6,7 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
+    "./portable": "./src/portable.ts",
     "./parse": "./src/parse.ts",
     "./print": "./src/print.ts",
     "./print-short": "./src/print-short.ts",

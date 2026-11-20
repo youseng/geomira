@@ -1,5 +1,15 @@
 # STATUS
 
+## Write-up editor with live math
+
+[ADR-0082](adr/0082-live-writeups.md) adds the Write-up tab, live typesetting and source-first recovery. Version 2 files carry the exact source. The public and internal workspaces share the same editor.
+
+Changed frozen coverage includes the language export surface and full-workspace images in public-layout, flows-design and design-mobile.
+
+### Requests
+
+The maintainer approved KaTeX and markdown-it for local rendering and publication after CI.
+
 ## Direct access to figure panels
 
 The sidebar icon beside View opens or closes the last-used figure panel on desktop and phone. Its expanded state follows the existing panel controls. [ADR-0081](adr/0081-panel-shortcut.md) records the header change. The [Write-up editor proposal](design/write-up-editor.md) describes document storage, Markdown and LaTeX preview, and the release tests for a future editor.

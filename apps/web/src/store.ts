@@ -18,11 +18,10 @@ import { applyEdit, type Edit } from '@geomira/editor/edit';
 import { toolInput, type ToolInput } from '@geomira/editor/machine';
 import type { EditResult } from '@geomira/editor/result';
 import { createEditor, type EditorEnv, type EditorState } from '@geomira/editor/state';
-import { emptyDocument, type Document } from '@geomira/kernel/document';
+import { emptyDocument } from '@geomira/kernel/document';
 import type { Diagnostic } from '@geomira/lang/diagnostic';
-import { parse } from '@geomira/lang/parse';
+import { parsePortable, printPortable, type PortableDocument } from '@geomira/lang/portable';
 import { Autosave } from './persist';
-import { print } from '@geomira/lang/print';
 import type { RevisionStorage } from './revision-storage';
 
 export interface Notice {
@@ -38,6 +37,8 @@ export interface Snapshot {
   readonly notice: Notice | null;
   /** Increases whenever a document is opened. */
   readonly openCount: number;
+  readonly writeUp: string;
+  readonly writeUpRevision: number;
   /**
    * Increases whenever the view is to fit the figure: a document opened, or a sample figure
    * of a verdict shown (ADR-0028).
@@ -68,6 +69,8 @@ export class EditorStore {
       state: createEditor(emptyDocument(), env),
       notice: null,
       openCount: 0,
+      writeUp: '',
+      writeUpRevision: 0,
       fits: 0,
     };
     this.textDraft = new TextApplier(this, timeout, () => performance.now());
@@ -82,6 +85,77 @@ export class EditorStore {
 
   current(): EditorState {
     return this.snap.state;
+  }
+
+  writeUpComposing = false;
+  private switchIntent = 0;
+
+  document(geometry = this.current().doc): PortableDocument {
+    return this.snap.writeUp === '' ? geometry : { ...geometry, writeUp: this.snap.writeUp };
+  }
+
+  canReplace(before: Snapshot): boolean {
+    return (
+      !this.writeUpComposing &&
+      before.state.doc === this.current().doc &&
+      before.openCount === this.snap.openCount &&
+      before.writeUpRevision === this.snap.writeUpRevision
+    );
+  }
+
+  setWriteUp(source: string): void {
+    if (source === this.snap.writeUp) return;
+    this.autosave.edited();
+    this.publish({ writeUp: source, writeUpRevision: this.snap.writeUpRevision + 1 });
+    // Register before returning from native input, including a pagehide before React effects.
+    this.autosave.schedule(() => {
+      this.saveSettled();
+    }, 200);
+  }
+
+  saveSettled(): void {
+    const doc = this.document(this.beforeDrag ?? this.current().doc);
+    void this.autosave.save(() => printPortable(doc));
+  }
+
+  /** Examples and incoming links preserve the current write-up before replacing it. */
+  beforeBrowse(open: () => void): void {
+    const intent = ++this.switchIntent;
+    const before = this.snap;
+    if (
+      this.writeUpComposing ||
+      ((before.writeUp !== '' || before.writeUpRevision > 0) &&
+        this.textDraft.unappliedText() !== null)
+    ) {
+      this.setNotice({
+        tone: 'info',
+        text: 'Finish the current text edit before switching documents.',
+      });
+      return;
+    }
+    if (!before.writeUp && before.writeUpRevision === 0) {
+      open();
+      return;
+    }
+    void this.retrySaving()
+      .then((saved) => {
+        if (intent !== this.switchIntent) return;
+        if (
+          saved &&
+          this.canReplace(before) &&
+          this.textDraft.unappliedText() === null &&
+          this.autosave.getStatus().phase !== 'conflict'
+        )
+          open();
+        else
+          this.setNotice({
+            tone: 'info',
+            text: 'Your document remains open. Check its save status and retry the switch.',
+          });
+      })
+      .catch(() => {
+        this.setNotice({ tone: 'error', text: 'Saving failed. Your document remains open.' });
+      });
   }
 
   private publish(patch: Partial<Snapshot>): void {
@@ -200,25 +274,36 @@ export class EditorStore {
     }
   }
 
-  open(doc: Document, origin: Origin, notice: Notice | null = null, preserveCurrent = true): void {
+  open(
+    doc: PortableDocument,
+    origin: Origin,
+    notice: Notice | null = null,
+    preserveCurrent = true,
+  ): void {
     // Capture committed edits even if React's debounce effect has not run yet.
     const before = this.current();
+    const prior = this.document(this.beforeDrag ?? before.doc);
     if (
       preserveCurrent &&
-      before.drag === null &&
+      (before.drag === null || this.snap.writeUpRevision > 0) &&
       (this.snap.openCount > 0 || this.autosave.wasEdited())
     )
       this.autosave.schedule(() => {
-        void this.autosave.save(() => print(before.doc));
+        void this.autosave.save(() => printPortable(prior));
       }, 0);
     void this.autosave.flush();
-    this.autosave.opened(origin, print(doc));
+    this.autosave.opened(origin, printPortable(doc));
+    this.switchIntent++;
+    this.writeUpComposing = false;
     this.beforeDrag = null;
-    const state = createEditor(doc, this.env);
+    const { writeUp, ...geometry } = doc;
+    const state = createEditor(writeUp === undefined ? doc : geometry, this.env);
     this.publish({
       state,
       notice,
       openCount: this.snap.openCount + 1,
+      writeUp: writeUp ?? '',
+      writeUpRevision: 0,
       fits: this.snap.fits + 1,
     });
   }
@@ -228,7 +313,7 @@ export class EditorStore {
     const state = this.current();
     if (state.drag !== null) return Promise.resolve(false);
     this.autosave.schedule(() => {
-      void this.autosave.save(() => print(state.doc));
+      this.saveSettled();
     }, 0);
     return this.autosave.retry();
   }
@@ -239,10 +324,16 @@ export class EditorStore {
     resolve = false,
     observation?: RecoveryObservation,
   ): Promise<boolean> {
-    const before = this.current().doc;
-    const text = await this.autosave.restore(print(before), id, resolve, observation);
+    if (this.writeUpComposing) return false;
+    const before = this.snap;
+    const text = await this.autosave.restore(
+      printPortable(this.document()),
+      id,
+      resolve,
+      observation,
+    );
     if (text === undefined) return false;
-    if (this.current().doc !== before) {
+    if (!this.canReplace(before)) {
       this.setNotice({
         tone: 'info',
         text: 'Recovery was saved, but the figure changed while restoring. Choose the recovery version again to open it.',
@@ -260,7 +351,7 @@ export class EditorStore {
 
   /** Opens a text (parse is total: lines with errors are left out and listed). */
   openText(text: string, origin: Origin, preserveCurrent = true): void {
-    const r = parse(text, this.env.registry);
+    const r = parsePortable(text, this.env.registry);
     const errors = r.diagnostics.filter((d) => d.severity === 'error');
     const notice: Notice | null =
       errors.length === 0

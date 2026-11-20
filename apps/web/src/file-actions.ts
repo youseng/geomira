@@ -1,8 +1,7 @@
 /** File operations coordinate the shared draft and transactional recovery, never the filesystem. */
+import { type PortableDocument, printPortable } from '@geomira/lang/portable';
 import { hasEdits, isStale } from '@geomira/editor/text-draft';
-import type { Document } from '@geomira/kernel/document';
-import { print } from '@geomira/lang/print';
-import { downloadGeo, downloadText } from './backup';
+import { downloadableGeo, downloadGeo, downloadText } from './backup';
 import { namedDocument } from './document-file';
 import type { EditorStore } from './store';
 
@@ -24,19 +23,21 @@ export function downloadDraft(store: EditorStore): void {
   downloadText(store.textDraft.getSnapshot().text, 'geomira-draft.txt');
 }
 export function downloadFigure(store: EditorStore): string {
-  downloadGeo(store.current().doc);
-  return print(store.current().doc);
+  downloadGeo(store.document());
+  return printPortable(store.document());
 }
 export async function replaceDocument(
   store: EditorStore,
-  doc: Document,
+  doc: PortableDocument,
   discardUnsaved: boolean,
   mayReplace: () => boolean = () => true,
 ): Promise<boolean> {
-  const before = store.current().doc;
+  if (store.writeUpComposing)
+    throw new Error('Finish composing the write-up before switching documents.');
+  const before = store.getSnapshot();
   const saved = await store.retrySaving();
   if (!mayReplace()) return false;
-  if (store.current().doc !== before)
+  if (!store.canReplace(before))
     throw new Error('The figure changed. Review it before replacing it.');
   if (!saved && !discardUnsaved) return false;
   store.open(doc, 'file', null, false);
@@ -49,8 +50,9 @@ export async function duplicateDocument(
   discardUnsaved: boolean,
   mayReplace: () => boolean = () => true,
 ): Promise<boolean> {
-  const duplicate = namedDocument(store.current().doc, name);
+  const duplicate = namedDocument(store.document(), name);
+  if (duplicate.writeUp) downloadableGeo(duplicate);
   if (!(await replaceDocument(store, duplicate, discardUnsaved, mayReplace))) return false;
-  downloadGeo(store.current().doc);
+  downloadGeo(store.document());
   return true;
 }

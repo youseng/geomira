@@ -1,6 +1,6 @@
+import { printPortable } from '@geomira/lang/portable';
 import { hasEdits } from '@geomira/editor/text-draft';
 import { useEffect, useMemo, useRef, useSyncExternalStore, type RefObject } from 'react';
-import { print } from '@geomira/lang/print';
 import { FileSession } from './file-session';
 import { FileDialog } from './FileDialog';
 import { HeaderIcon } from './HeaderIcon';
@@ -21,7 +21,7 @@ export function DocumentFiles({ store }: { store: EditorStore }) {
       session.dispose();
     };
   }, [session]);
-  const current = store.current().doc;
+  const current = store.document();
   const title = current.meta.title ?? 'Untitled';
   return (
     <div className="document-files" data-document-files>
@@ -38,7 +38,7 @@ export function DocumentFiles({ store }: { store: EditorStore }) {
         <span className="document-download" role="status">
           {unapplied
             ? 'Draft not included in download'
-            : state.downloaded === print(current)
+            : state.downloaded === printPortable(current)
               ? 'Download requested'
               : 'Changed since download'}
         </span>

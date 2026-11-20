@@ -8,7 +8,6 @@ import { useEffect, useRef } from 'react';
 import { keyAction, type KeyAction, type KeyEventLike } from '@geomira/editor/keymap';
 import { decodeShare, SHARE_PREFIX } from '@geomira/editor/share';
 import { emptyDocument } from '@geomira/kernel/document';
-import { print } from '@geomira/lang/print';
 import { assertNever } from '@geomira/num/assert';
 import type { Scene } from '@geomira/scene/types';
 import type { Size } from '@geomira/scene/viewport';
@@ -70,6 +69,8 @@ export function useStartup(store: EditorStore, runs: { clear(): void }, onReady:
       // Startup I/O must never replace figure edits, a raw draft or an active composition.
       // Loaded versions remain in Recovery when the current editing session wins.
       if (
+        store.writeUpComposing ||
+        store.getSnapshot().writeUpRevision > 0 ||
         store.current().doc !== initial.doc ||
         store.current().tool !== initial.tool ||
         store.current().toolState !== initial.toolState ||
@@ -88,8 +89,12 @@ export function useStartup(store: EditorStore, runs: { clear(): void }, onReady:
       onReady();
     });
     const onHash = () => {
-      const notice = openLaterLink(store, runs, location.hash);
-      if (notice !== null) store.setNotice(notice);
+      const hash = location.hash;
+      if (hash.startsWith(SHARE_PREFIX))
+        store.beforeBrowse(() => {
+          const notice = openLaterLink(store, runs, hash);
+          if (notice !== null) store.setNotice(notice);
+        });
     };
     addEventListener('hashchange', onHash);
     return () => {
@@ -111,11 +116,11 @@ export function useAutosave(store: EditorStore, snap: Snapshot, ready: boolean):
     // The hash of this figure: a link opened later is not removed by this figure's save.
     const hash = location.hash;
     store.autosave.schedule(() => {
-      void store.autosave.save(() => print(doc));
+      store.saveSettled();
       if (store.autosave.wasEdited() && hash.startsWith(SHARE_PREFIX) && location.hash === hash)
         history.replaceState(null, '', location.pathname + location.search);
     }, AUTOSAVE_MS);
-  }, [store, doc, ready, snap.state.drag]);
+  }, [store, doc, ready, snap.state.drag, snap.writeUpRevision]);
   useEffect(() => watchRecovery(store.autosave, window, document), [store]);
 }
 

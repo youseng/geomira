@@ -40,7 +40,11 @@ export class Autosave {
   private readonly listeners = new Set<() => void>();
   private readonly pendingSaves = new Map<string, Pending>();
   private readonly bases = new Map<string, string>();
-  private scheduled: { task: () => void; timer: ReturnType<typeof setTimeout> } | null = null;
+  private scheduled: {
+    since: number;
+    task: () => void;
+    timer: ReturnType<typeof setTimeout>;
+  } | null = null;
   private queue: Promise<unknown> = Promise.resolve();
   private ready: Promise<string | null> | null = null;
   private initialized = false;
@@ -172,11 +176,17 @@ export class Autosave {
 
   schedule(task: () => void, ms: number): void {
     if (this.scheduled !== null) clearTimeout(this.scheduled.timer);
+    const now = performance.now();
+    const since = this.scheduled?.since ?? now;
     this.scheduled = {
+      since,
       task,
-      timer: setTimeout(() => {
-        void this.flush();
-      }, ms),
+      timer: setTimeout(
+        () => {
+          void this.flush();
+        },
+        Math.min(ms, Math.max(0, since + 1000 - now)),
+      ),
     };
   }
   /** Starts pending work now; callers that can wait MUST await the returned durability result. */

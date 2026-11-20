@@ -1,0 +1,83 @@
+.writeup {
+  padding: 12px;
+}
+.writeup-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.writeup-heading label,
+.writeup-preview h3 {
+  font:
+    600 13px/1.5 system-ui,
+    sans-serif;
+  color: var(--muted);
+}
+.writeup-heading button {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 4px 8px;
+}
+.writeup textarea {
+  width: 100%;
+  min-height: 130px;
+  height: clamp(130px, 26dvh, 350px);
+  resize: vertical;
+  margin: 8px 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 9px;
+  background: var(--panel);
+  color: var(--text);
+  font:
+    14px/1.5 ui-monospace,
+    monospace;
+}
+.writeup-preview {
+  border-top: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.writeup-preview h3 {
+  margin: 10px 0 4px;
+}
+.writeup-prose {
+  font: 16px/1.5 var(--serif);
+}
+.writeup-prose > :first-child {
+  margin-top: 4px;
+}
+.writeup-prose pre,
+.writeup-prose .katex-display {
+  display: block;
+  overflow-x: auto;
+}
+.writeup-error {
+  color: var(--bad);
+}
+.writeup-error small {
+  display: block;
+  font-family: system-ui, sans-serif;
+}
+@media (max-width: 760px) {
+  .writeup textarea {
+    font-size: 16px;
+  }
+  .writeup-heading button {
+    min-height: 44px;
+  }
+}
+
+.writeup-error button {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: start;
+  font: inherit;
+  font-size: 0.85em;
+  text-decoration: underline;
+}
