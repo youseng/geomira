@@ -254,6 +254,13 @@ function PageHeader({
   return (
     <Header
       {...app.header.props}
+      panels={{
+        expanded: app.panels.expanded,
+        toggle: () => {
+          if (app.panels.expanded) app.panels.close();
+          else app.panels.showTab(app.panels.tab);
+        },
+      }}
       search={
         <ToolSearch
           inputRef={app.searchRef}

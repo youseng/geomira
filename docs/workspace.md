@@ -10,7 +10,7 @@ The complete grouped palette stays available. Tab enters its last focused tool o
 leaves the palette. Up/Down move within the desktop toolbar; Left/Right follow the phone
 strip; Home/End go to its ends. Native text-field arrows continue to edit text.
 
-On desktop, **Hide panels** makes room for the canvas and **View → Show panels** restores the sidebar.
+Use the sidebar icon beside **View** to open or close **Figure panels** on desktop or phone. It reopens the last-used tab. **Hide panels** and **View → Show panels** also control the sidebar.
 Drag its left edge or focus the **Resize panels** separator and use arrow keys, Home or End.
 The width is constrained to preserve drawing space. Collapse and resize preserve text drafts
 and do not add geometry undo entries.

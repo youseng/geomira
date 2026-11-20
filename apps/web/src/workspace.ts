@@ -88,5 +88,6 @@ export function usePanels(workspace: Workspace) {
     setOpen(false);
     if (window.innerWidth > 760) workspace.update({ collapsed: true });
   }, [workspace.update]);
-  return { tab, open, showTab, toggleHelp, close };
+  const expanded = workspace.view.width <= 760 ? open : !workspace.prefs.collapsed;
+  return { tab, open, expanded, showTab, toggleHelp, close };
 }

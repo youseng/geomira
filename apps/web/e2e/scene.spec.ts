@@ -65,7 +65,7 @@ test.describe('HiDPI', () => {
 test('hiding the source layer draws the coincident images (image only view)', async ({ page }) => {
   await open(page, 'reflection-layer');
   await page.getByRole('tab', { name: 'Layers', exact: true }).click();
-  const panel = page.getByLabel('Figure');
+  const panel = page.getByRole('complementary', { name: 'Figure', exact: true });
   await expect(panel).toContainText('coincident images hidden');
   const before = await panel.textContent();
   expect(before).toMatch(/[1-9]\d* coincident images hidden/);

@@ -154,7 +154,7 @@ export function SidePanel(props: SidePanelProps) {
       <p className="panel-scroll-hint">
         Scroll up for the figure; down for tools and the command bar.
       </p>
-      <div className="tab-body" role="tabpanel" aria-label={`${tab} panel`}>
+      <div id="figure-panel-body" className="tab-body" role="tabpanel" aria-label={`${tab} panel`}>
         <Body
           tab={tab}
           store={store}
