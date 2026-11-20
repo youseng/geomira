@@ -1,5 +1,17 @@
 # STATUS
 
+## Direct access to figure panels
+
+The sidebar icon beside View opens or closes the last-used figure panel on desktop and phone. Its expanded state follows the existing panel controls. [ADR-0081](adr/0081-panel-shortcut.md) records the header change. The [Write-up editor proposal](design/write-up-editor.md) describes document storage, Markdown and LaTeX preview, and the release tests for a future editor.
+
+Local Chromium checked the shortcut, active tab and exact unfinished Text draft at 320, 390, 768 and 1440 px. The public header measured 96 px at the two phone sizes and 60 px at both desktop sizes. Both public and all three internal full-workspace screenshot cases passed.
+
+Changed frozen tests under ADR-0081 include the workspace header checks and the full-workspace images in public-layout, flows-design and design-mobile.
+
+### Requests
+
+Review the proposed versioned write-up field and the offline math renderer, fonts, licences and size budget before editor implementation. This change adds no runtime dependencies.
+
 ## Zoom controls in the workspace header
 
 [ADR-0080](adr/0080-zoom-in-workspace-header.md) moves Zoom in, Zoom out and Fit

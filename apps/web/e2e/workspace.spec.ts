@@ -22,7 +22,7 @@ for (const width of [320, 390, 760, 768, 820, 1024, 1440]) {
     for (const name of [/^File: /u, 'Undo', 'Redo', 'View', 'Export', 'More actions'])
       await usable(page, page.getByRole('button', { name, exact: true }));
     const header = page.getByRole('banner');
-    for (const name of ['Zoom in', 'Zoom out', 'Fit']) {
+    for (const name of ['Zoom in', 'Zoom out', 'Fit', 'Figure panels']) {
       const control = header.getByRole('button', { name, exact: true });
       await usable(page, control);
       await control.click({ trial: true });
@@ -36,7 +36,7 @@ for (const width of [320, 390, 760, 768, 820, 1024, 1440]) {
       const positions = await page.getByRole('banner').evaluate((header) =>
         [
           ...header.querySelectorAll(
-            '.document-trigger,.history-group button,.tool-search input,.zoomctl button,.header-actions > .menu-wrap > button',
+            '.document-trigger,.history-group button,.tool-search input,.zoomctl button,.panel-toggle,.header-actions > .menu-wrap > button',
           ),
         ].map((control) => {
           const box = control.getBoundingClientRect();
@@ -213,3 +213,37 @@ test('short phone sheet exposes the canvas and active field with a small viewpor
   const canvas = await page.getByLabel('Geometry canvas').boundingBox();
   expect(canvas?.height ?? 0).toBeGreaterThanOrEqual(60);
 });
+
+for (const width of [320, 1280]) {
+  test(`toolbar panel shortcut retains tab and exact draft at ${String(width)} pixels`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 800 });
+    const errors = await openApp(page);
+    const toggle = page.getByRole('banner').getByRole('button', { name: 'Figure panels' });
+    const body = page.locator('#figure-panel-body');
+    await expect(toggle).toHaveAttribute('aria-controls', 'figure-panel-body');
+    await expect(toggle).toHaveAttribute('aria-expanded', String(width > 760));
+    if (width <= 760) await toggle.click();
+    const area = page.getByLabel('Text', { exact: true });
+    const draft = 'A = (0, 0)\nB = (\n';
+    await area.fill(draft);
+    await tab(page, 'Layers');
+    await toggle.press('Enter');
+    await expect(body).toBeHidden();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await toggle.press('Space');
+    await expect(body).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Layers' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await page.getByRole('button', { name: 'Hide panels', exact: true }).click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await toggle.click();
+    await tab(page, 'Text');
+    await expect(area).toHaveValue(draft);
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(errors).toEqual([]);
+  });
+}

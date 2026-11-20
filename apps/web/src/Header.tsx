@@ -11,6 +11,7 @@ import { Menu, MenuItem } from './Menu';
 
 export interface HeaderProps {
   readonly search?: ReactNode;
+  readonly panels?: { readonly expanded: boolean; readonly toggle: () => void };
   readonly workspaceActions?: (close: () => void) => ReactNode;
   readonly persistence?: ReactNode;
   readonly documents?: ReactNode;
@@ -281,6 +282,19 @@ export function Header(p: HeaderProps) {
       </section>
       {CLAIM_TESTING && <ClaimBox label="Claim to test" className="claim-form" host={p.claimBox} />}
       <ZoomControls onFit={p.onFit} onZoom={p.onZoom} />
+      {p.panels && (
+        <button
+          type="button"
+          className="tb icon panel-toggle"
+          aria-label="Figure panels"
+          aria-controls="figure-panel-body"
+          aria-expanded={p.panels.expanded}
+          title={p.panels.expanded ? 'Close figure panels' : 'Open figure panels'}
+          onClick={p.panels.toggle}
+        >
+          <HeaderIcon name="panels" />
+        </button>
+      )}
       <div className="header-actions">
         <ViewMenu {...p} />
         <ExportMenu {...p} />
