@@ -129,7 +129,7 @@ function BackupActions({ store, status }: { store: EditorStore; status: SaveStat
         type="button"
         onClick={() => {
           try {
-            downloadGeo(store.current().doc);
+            downloadGeo(store.document());
             setBackup('Backup download requested. Local save status is unchanged.');
           } catch (e) {
             setBackup(`Backup could not download: ${String(e)}`);

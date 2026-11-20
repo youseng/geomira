@@ -6,6 +6,8 @@ export interface UpdateRefusal {
   readonly message: string;
 }
 function pendingText(store: EditorStore, command: () => string): UpdateRefusal | null {
+  if (store.writeUpComposing)
+    return { kind: 'changed', message: 'Finish composing the write-up before updating.' };
   if (store.textDraft.unappliedText() !== null)
     return {
       kind: 'text',
@@ -36,13 +38,13 @@ export async function prepareUpdate(
 ): Promise<UpdateRefusal | null> {
   const pending = pendingText(store, command) ?? conflict(store);
   if (pending !== null) return pending;
-  const before = store.current().doc;
+  const before = store.getSnapshot();
   if (store.current().drag !== null)
     return { kind: 'changed', message: 'Finish the current drag before updating.' };
   const saved = await store.retrySaving();
   const after = pendingText(store, command) ?? conflict(store);
   if (after !== null) return after;
-  if (store.current().doc !== before || store.current().drag !== null)
+  if (!store.canReplace(before) || store.current().drag !== null)
     return {
       kind: 'changed',
       message:

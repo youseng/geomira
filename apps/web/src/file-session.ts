@@ -1,6 +1,6 @@
 /** Coordinates file actions without acknowledging downloads as durable local saves. */
-import { emptyDocument, type Document } from '@geomira/kernel/document';
-import { print } from '@geomira/lang/print';
+import { type PortableDocument, printPortable } from '@geomira/lang/portable';
+import { emptyDocument } from '@geomira/kernel/document';
 import { readDocumentFile, namedDocument } from './document-file';
 import {
   applyValidDraft,
@@ -11,7 +11,7 @@ import {
 } from './file-actions';
 import type { EditorStore } from './store';
 
-export type FileChoice = { kind: 'new' | 'open' | 'save-as' | 'save'; doc?: Document };
+export type FileChoice = { kind: 'new' | 'open' | 'save-as' | 'save'; doc?: PortableDocument };
 export interface FileState {
   readonly busy: boolean;
   readonly menu: boolean;
@@ -140,7 +140,7 @@ export class FileSession {
       }
       this.patch({
         busy: false,
-        downloaded: choice.kind === 'save-as' ? print(this.store.current().doc) : null,
+        downloaded: choice.kind === 'save-as' ? printPortable(this.store.document()) : null,
       });
       this.finish();
     } catch (e) {

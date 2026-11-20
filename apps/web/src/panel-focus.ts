@@ -9,7 +9,7 @@ export function keepPanelFocusVisible(event: FocusEvent<HTMLElement>): void {
   if (
     innerWidth > 760 ||
     !(field instanceof HTMLTextAreaElement) ||
-    field.getAttribute('aria-label') !== 'Text'
+    (field.getAttribute('aria-label') !== 'Text' && field.id !== 'writeup-source')
   )
     return;
   const app = event.currentTarget.closest('.app');

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Modal } from './Modal';
 
 /** Copies text to the clipboard when the browser allows it; the text stays selectable anyway. */
@@ -44,6 +44,7 @@ export interface TextDialogProps {
   readonly onClose: () => void;
   readonly multiline: boolean;
   readonly description?: string;
+  readonly children?: ReactNode;
 }
 
 /** A dialog showing a text to copy (share link, debug report). */
@@ -54,11 +55,13 @@ export function TextDialog({
   onClose,
   multiline,
   description,
+  children,
 }: TextDialogProps) {
   return (
     <Modal title={title} onClose={onClose}>
       <h2>{title}</h2>
       {description !== undefined && <p>{description}</p>}
+      {children}
       {multiline ? (
         <textarea readOnly value={text} aria-label={`${title} content`} rows={12} />
       ) : (
@@ -72,7 +75,7 @@ export function TextDialog({
         />
       )}
       <div>
-        <CopyButton text={text} label={copyLabel} />
+        <CopyButton key={text} text={text} label={copyLabel} />
         <button type="button" onClick={onClose}>
           Close
         </button>

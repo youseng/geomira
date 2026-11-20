@@ -1,4 +1,6 @@
 import { hasEdits } from '@geomira/editor/text-draft';
+import { downloadGeo, downloadText } from './backup';
+import { documentFileName } from './document-file';
 import { Modal } from './Modal';
 import { draftIssue, downloadDraft } from './file-actions';
 import type { FileSession, FileState } from './file-session';
@@ -38,6 +40,43 @@ function DraftChoices({ session }: { session: FileSession }) {
     </>
   );
 }
+function SeparateBackups({ session }: { session: FileSession }) {
+  const { store } = session;
+  const download = (markdown: boolean) => {
+    try {
+      const figure = store.current().doc;
+      if (markdown)
+        downloadText(
+          store.getSnapshot().writeUp,
+          documentFileName(figure).replace(/\.geo$/u, '.md'),
+        );
+      else downloadGeo(figure);
+    } catch (error) {
+      session.patch({ error: String(error) });
+    }
+  };
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => {
+          download(false);
+        }}
+      >
+        Download figure only
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          download(true);
+        }}
+      >
+        Download write-up Markdown
+      </button>
+    </div>
+  );
+}
+
 function ConfirmActions({ session, state }: { session: FileSession; state: FileState }) {
   const choice = state.choice;
   if (choice === null) return null;
@@ -114,6 +153,9 @@ export function FileDialog({ session, state }: { session: FileSession; state: Fi
       )}
       <fieldset disabled={state.busy} className="file-controls">
         {state.error !== null && <p role="alert">{state.error}</p>}
+        {state.error && session.store.getSnapshot().writeUp && (
+          <SeparateBackups session={session} />
+        )}
         {issue !== null && <p role="alert">{issue}</p>}
         <DraftChoices session={session} />
         {(choice.kind === 'new' || choice.kind === 'save-as') && (

@@ -25,7 +25,7 @@ import { debugReport } from '@geomira/editor/report';
 import { encodeShareChecked } from '@geomira/editor/share';
 import { VERSION } from '@geomira/kernel';
 import { createRegistry } from '@geomira/kernel/registry';
-import { print } from '@geomira/lang/print';
+import { printPortable } from '@geomira/lang/portable';
 import { buildScene } from '@geomira/scene/build';
 import type { Scene } from '@geomira/scene/types';
 import { zoomViewport, type Size } from '@geomira/scene/viewport';
@@ -311,8 +311,10 @@ function actions(env: HeaderEnv) {
 export function openExample(store: EditorStore, runs: { clear(): void }, id: string): boolean {
   const e = EXAMPLES.find((x) => x.id === id);
   if (e === undefined) return false;
-  runs.clear();
-  store.openText(e.text, 'example');
+  store.beforeBrowse(() => {
+    runs.clear();
+    store.openText(e.text, 'example');
+  });
   return true;
 }
 
@@ -324,7 +326,10 @@ export function useHeader(env: HeaderEnv) {
   const [stats, setStats] = useState(devFlag);
   // The text of the settled state: a drag frame does not print the document (note F).
   const settled = useSettled(state);
-  const printed = useMemo(() => print(settled.doc), [settled.doc]);
+  const printed = useMemo(
+    () => printPortable({ ...settled.doc, writeUp: snap.writeUp }),
+    [settled.doc, snap.writeUp],
+  );
   // Re-render when the autosave writes the slots: "Restore previous figure" depends on them.
   const { subscribe, getVersion } = store.autosave;
   useSyncExternalStore(subscribe, getVersion, getVersion);

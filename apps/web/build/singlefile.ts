@@ -20,6 +20,25 @@ export function singleFileHtmlPlugin(faviconPath: string): Plugin {
   return {
     name: 'geomira-single-file-html',
     apply: 'build',
+    generateBundle: {
+      order: 'post',
+      handler(_options, bundle) {
+        const notices = bundle['third-party-licenses.txt'];
+        const index = bundle['index.html'];
+        if (notices?.type !== 'asset' || index?.type !== 'asset')
+          this.error('Missing standalone dependency notices');
+        // Vite collects licences from chunks before we drop the files already inlined by viteSingleFile.
+        for (const name of Object.keys(bundle)) {
+          if (name.endsWith('.js') || name.endsWith('.css')) Reflect.deleteProperty(bundle, name);
+        }
+        const text = String(notices.source).replaceAll('&', '&amp;').replaceAll('<', '&lt;');
+        index.source = String(index.source).replace(
+          '</body>',
+          () => `<template id="third-party-licenses"><pre>${text}</pre></template></body>`,
+        );
+        delete bundle['third-party-licenses.txt'];
+      },
+    },
     transformIndexHtml: {
       order: 'pre',
       handler: (html) => singleFileHtml(html, readFileSync(faviconPath, 'utf8')),

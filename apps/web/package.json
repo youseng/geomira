@@ -22,6 +22,8 @@
     "@geomira/lang": "workspace:*",
     "@geomira/num": "workspace:*",
     "@geomira/scene": "workspace:*",
+    "katex": "0.19.1",
+    "markdown-it": "15.0.3",
     "react": "19.2.9",
     "react-dom": "19.2.9"
   },
