@@ -1,91 +1,164 @@
 .writeup {
+  padding: 4px 2px 16px;
   overflow: hidden;
-  padding: 12px;
 }
-/* Keep the native text editor laid out. Firefox discards its Undo stack when an
-   ancestor switches to display:none, even when React keeps the node mounted. */
 .writeup[aria-hidden='true'] {
   visibility: hidden;
   height: 0;
   padding: 0;
+  overflow: hidden;
 }
 .writeup-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+  padding: 0 0 9px;
+  border-bottom: 1px solid var(--border);
 }
-.writeup-heading label,
-.writeup-preview h3 {
-  font:
-    600 13px/1.5 system-ui,
-    sans-serif;
+.writeup-modes {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+  background: var(--panel2);
+}
+.writeup-modes .tb {
   color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font:
+    500 13px/1.4 system-ui,
+    sans-serif;
+  cursor: pointer;
 }
-.writeup-heading button {
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--panel);
-  color: var(--text);
-  padding: 4px 8px;
+.writeup-modes .tb[aria-pressed='true'] {
+  background: var(--accent);
+  color: white;
 }
+.writeup-surface .cm-editor,
 .writeup textarea {
-  width: 100%;
-  min-height: 130px;
-  height: clamp(130px, 26dvh, 350px);
-  resize: vertical;
-  margin: 8px 0;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 9px;
-  background: var(--panel);
+  min-height: clamp(170px, 40dvh, 520px);
+  margin: 6px 0 0;
   color: var(--text);
+  background: var(--panel);
+}
+.writeup-surface .cm-editor.cm-focused {
+  outline: 1px solid var(--border);
+  outline-offset: -1px;
+  border-radius: 3px;
+}
+.writeup-surface .cm-scroller {
+  overflow: visible;
+  font: 16px/1.6 var(--serif);
+}
+.writeup-surface .cm-content {
+  width: 100%;
+  padding: 7px 0 20px;
+  caret-color: var(--text);
+}
+.writeup textarea,
+.writeup-surface [data-writing-mode='source'] .cm-scroller {
   font:
     14px/1.5 ui-monospace,
     monospace;
 }
-.writeup-preview {
-  border-top: 1px solid var(--border);
-  overflow-wrap: anywhere;
-}
-.writeup-preview h3 {
-  margin: 10px 0 4px;
-}
-.writeup-prose {
-  font: 16px/1.5 var(--serif);
-}
-.writeup-prose > :first-child {
-  margin-top: 4px;
-}
-.writeup-prose pre,
-.writeup-prose .katex-display {
+.writeup textarea {
   display: block;
+  box-sizing: border-box;
+  width: 100%;
+  border: 0;
+  padding: 7px 4px;
+}
+.writeup-surface .cm-placeholder {
+  color: var(--muted);
+}
+.writeup-surface .wu-heading {
+  color: var(--text);
+  font-family: var(--serif);
+  font-weight: 700;
+  line-height: 1.5;
+}
+.wu-h1 {
+  font-size: 1.85em;
+}
+.wu-h2 {
+  font-size: 1.55em;
+}
+.wu-h3 {
+  font-size: 1.32em;
+}
+.wu-h4 {
+  font-size: 1.16em;
+}
+.wu-h5 {
+  font-size: 1.05em;
+}
+.wu-h6 {
+  font-size: 1em;
+}
+.wu-strong {
+  font-weight: bold;
+}
+.wu-em {
+  font-style: italic;
+}
+.wu-s {
+  text-decoration: line-through;
+}
+.wu-code {
+  font:
+    0.92em/1.6 ui-monospace,
+    monospace;
+  background: var(--panel2);
+}
+.wu-quote {
+  color: var(--muted);
+}
+.wu-syntax {
+  color: var(--muted);
+}
+.writeup-surface button.writeup-error {
+  font: inherit;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow-wrap: anywhere;
+  color: var(--bad);
+  text-decoration: underline dotted;
+  cursor: text;
+}
+.writeup-math {
+  cursor: text;
+}
+.writeup-math math[display='block'] {
+  max-width: 100%;
   overflow-x: auto;
 }
-.writeup-error {
-  color: var(--bad);
-}
-.writeup-error small {
-  display: block;
-  font-family: system-ui, sans-serif;
+.writeup-message {
+  color: var(--muted);
+  font:
+    13px/1.45 system-ui,
+    sans-serif;
 }
 @media (max-width: 760px) {
-  .writeup textarea {
+  .writeup textarea,
+  .writeup-surface [data-writing-mode='source'] .cm-scroller {
     font-size: 16px;
   }
   .writeup-heading button {
     min-height: 44px;
   }
 }
-
-.writeup-error button {
-  display: block;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  text-align: start;
-  font: inherit;
-  font-size: 0.85em;
-  text-decoration: underline;
+.writeup-surface .wu-quote {
+  border-inline-start: 2px solid var(--border);
+  padding-inline-start: 10px;
+}
+.writeup-surface .cm-focused[data-writing-mode='live'] .cm-activeLine {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.writeup-surface .cm-activeLine {
+  background: transparent;
 }

@@ -1,5 +1,17 @@
 # STATUS
 
+## In-place Write-up editing
+
+[ADR-0083](adr/0083-inline-writeup.md) moves formatting into the writing area. Live and Source share the document, caret and Undo history. The six heading levels now follow one descending type scale. Completing a formula typesets it at the caret, and clicking it reveals its LaTeX.
+
+Changed frozen tests are `apps/web/test/writeup.test.ts` and `apps/web/e2e/writeup.spec.ts`. The tests now inspect source ranges, inline MathML, heading typography, exact downloads and writing history. Storage denial, portable files, sharing and pending-save checks still exercise the document store through the editor.
+
+The focused public and internal Chromium, Firefox and WebKit runs passed 126 browser cases across desktop, phone and standalone configurations. Local smoke checks at 1440 and 390 px confirmed inline typesetting, editing a rendered fraction, recovery after malformed TeX and byte-for-byte Markdown downloads. First opening the editor offline also typeset a fraction and restored the original Markdown on a second offline reload.
+
+### Requests
+
+The maintainer approved bundling CodeMirror 6 for the Write-up surface and publishing after verification.
+
 ## Write-up editor with live math
 
 [ADR-0082](adr/0082-live-writeups.md) adds the Write-up tab, live typesetting and source-first recovery. Version 2 files carry the exact source. The public and internal workspaces share the same editor.

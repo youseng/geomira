@@ -14,6 +14,9 @@
     "e2e:claims": "GEOMIRA_ENGINE_E2E=1 playwright test"
   },
   "dependencies": {
+    "@codemirror/commands": "6.11.1",
+    "@codemirror/state": "6.7.6",
+    "@codemirror/view": "6.43.15",
     "@geomira/claims": "workspace:*",
     "@geomira/discovery": "workspace:*",
     "@geomira/editor": "workspace:*",
