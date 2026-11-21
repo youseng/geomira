@@ -4,7 +4,7 @@ import { parsePortable } from '@geomira/lang/portable';
 import { encodeShareChecked, decodeShare } from '@geomira/editor/share';
 import { EditorStore } from '../src/store';
 import { replaceDocument } from '../src/file-actions';
-import { renderWriteUp } from '../src/writeup-preview';
+import { createWriteUpFormatter } from '../src/writeup-layout';
 import { MemoryRevisions } from './memory-revisions';
 import { installStorage, removeStorage } from './fake-storage';
 
@@ -64,24 +64,26 @@ describe('independent write-up recovery', () => {
   });
 });
 
-describe('Markdown and LaTeX preview', () => {
-  it('typesets valid expressions on both sides of an invalid one', () => {
-    const html = renderWriteUp(
-      '# Steps\n\n- $\\angle ABC$\n- $\\unknown{1}$\n- **done**\n\n$$\n\\frac{3}{4}\n$$',
+describe('in-place Markdown and LaTeX', () => {
+  it('typesets expressions on both sides of a failure and marks actual emphasis', () => {
+    const source =
+      '# Steps\n\n- $\\angle ABC$\n- $\\unknown{1}$\n- **done**\n\n$$\n\\frac{3}{4}\n$$';
+    const { formulas, marks } = createWriteUpFormatter()(source);
+    expect(formulas.map((f) => !!f.html)).toEqual([true, false, true]);
+    expect(formulas[1]?.error).toContain('unknown');
+    expect(formulas[2]?.html).toContain('mfrac');
+    expect(marks.filter((m) => m.kind === 'strong').map((m) => source.slice(m.from, m.to))).toEqual(
+      ['**done**'],
     );
-    expect(html.match(/<math[ >]/gu)).toHaveLength(2);
-    expect(html).toContain('mfrac');
-    expect(html).toContain('writeup-error');
-    expect(html).toContain('<strong>done</strong>');
   });
-  it('keeps code, escaped dollars, unfinished math and pasted HTML literal', () => {
-    const html = renderWriteUp(
-      '\\$5 and `$x$`\n\n```\n$y$\n```\n\n<b>literal</b> ![remote](https://example.com/x)\n\n$\\frac{',
-    );
-    expect(html).not.toContain('<math');
-    expect(html).not.toContain('<img');
-    expect(html).toContain('&lt;b&gt;');
-    expect(html).toContain('$\\frac{');
+  it('leaves code, escaped dollars, unfinished math and pasted HTML as document text', () => {
+    const source =
+      '\\$5 and `$x$`\n\n```\n$y$\n```\n\n<b>literal</b> ![remote](https://example.com/x)\n\n$\\frac{';
+    const { formulas, marks } = createWriteUpFormatter()(source);
+    expect(formulas).toEqual([]);
+    expect(marks.filter((m) => m.kind === 'code').map((m) => source.slice(m.from, m.to))).toEqual([
+      '`$x$`',
+    ]);
   });
 });
 
@@ -104,11 +106,31 @@ it('protects both write-ups when tabs edit the same saved figure', async () => {
 
 it('keeps budget failures in preview and allows storage with a write-up beyond its preview size', async () => {
   const source = '# Notes\n' + 'a'.repeat(81_000);
-  expect(() => renderWriteUp(source)).toThrow('preview limit');
+  expect(() => createWriteUpFormatter()(source)).toThrow('formatting limit');
   const { store, storage } = await open();
   store.setWriteUp(source);
   expect(await store.retrySaving()).toBe(true);
   const head = storage.state.revisions.find((r) => r.id === storage.state.currentId);
   if (!head) throw new Error('Missing durable head');
   expect(parsePortable(head.text, registry).doc.writeUp).toBe(source);
+});
+
+it('locates inline and display formulas in the original source, including repeated and nested math', () => {
+  const md = '> - **a** $x$ and $x$\n\n`$code$` and \\$5\n\n$$\n\\frac{1}{2}\n$$\n\n$\\badcommand$';
+  const { formulas } = createWriteUpFormatter()(md);
+  expect(formulas.map((f) => md.slice(f.from, f.to))).toEqual([
+    '$x$',
+    '$x$',
+    '$$\n\\frac{1}{2}\n$$',
+    '$\\badcommand$',
+  ]);
+  expect(formulas[2]?.html).toContain('mfrac');
+  expect(formulas[3]?.error).toContain('badcommand');
+});
+
+it('maps delimiters to the original bytes inside CRLF and prefixed blocks', () => {
+  const source = '> ### Heading\r\n> a $x$\r\n\r\n> $$  \r\n> y^2\r\n> $$  ';
+  const { formulas, lines } = createWriteUpFormatter()(source);
+  expect(formulas.map((f) => source.slice(f.from, f.to))).toEqual(['$x$', '$$  \r\n> y^2\r\n> $$']);
+  expect(lines.some((l) => l.level === 3)).toBe(true);
 });
