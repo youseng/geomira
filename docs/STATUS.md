@@ -6,7 +6,7 @@
 
 Changed frozen tests are `apps/web/test/writeup.test.ts` and `apps/web/e2e/writeup.spec.ts`. The tests now inspect source ranges, inline MathML, heading typography, exact downloads and writing history. Storage denial, portable files, sharing and pending-save checks still exercise the document store through the editor.
 
-Local smoke checks at 1440 and 390 px confirmed inline typesetting, editing a rendered fraction, recovery after malformed TeX and byte-for-byte Markdown downloads. First opening the editor offline also typeset a fraction and restored the original Markdown on a second offline reload.
+The focused public and internal Chromium and Firefox runs passed 90 browser cases across desktop, phone and standalone configurations. Local smoke checks at 1440 and 390 px confirmed inline typesetting, editing a rendered fraction, recovery after malformed TeX and byte-for-byte Markdown downloads. First opening the editor offline also typeset a fraction and restored the original Markdown on a second offline reload.
 
 ### Requests
 

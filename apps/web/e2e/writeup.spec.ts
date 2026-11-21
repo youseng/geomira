@@ -281,10 +281,22 @@ test('composition leaves input in place and typesets after commit', async ({
     });
   } else {
     await live.dispatchEvent('compositionstart', { data: '' });
-    await live.evaluate(
-      (node, text) => node.ownerDocument.execCommand('insertText', false, text),
-      data,
-    );
+    await live.evaluate((node, text) => {
+      const selection = node.ownerDocument.getSelection();
+      if (!selection?.rangeCount) throw new Error('Missing composition caret');
+      const range = selection.getRangeAt(0);
+      const inserted = node.ownerDocument.createTextNode(text);
+      range.insertNode(inserted);
+      selection.collapse(inserted, text.length);
+      node.dispatchEvent(
+        new InputEvent('input', {
+          data: text,
+          inputType: 'insertCompositionText',
+          isComposing: true,
+          bubbles: true,
+        }),
+      );
+    }, data);
   }
   await expect(live).toHaveText(data);
   await expect(live.locator('math')).toHaveCount(0);
