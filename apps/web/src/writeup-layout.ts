@@ -90,7 +90,7 @@ function typeset(token: Token): Pick<WriteUpFormula, 'html' | 'error'> {
   }
 }
 
-/** Keep only the current document's formula results. Typing prose around a proof
+/** Keep only the current document's formula results. Editing the surrounding prose
  * can move every equation without requiring KaTeX to typeset any of them again. */
 export function createWriteUpFormatter() {
   const md = markdown();
